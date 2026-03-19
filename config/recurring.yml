@@ -1,0 +1,5 @@
+production:
+  post_digest:
+    class: PostDigestJob
+    schedule: "0 8 * * *"  # Daily at 8am UTC
+    queue: default

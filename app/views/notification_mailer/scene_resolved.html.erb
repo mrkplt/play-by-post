@@ -1,0 +1,9 @@
+<p>A scene in <strong><%= @game.name %></strong> has been resolved.</p>
+
+<h2><%= @scene.title %></h2>
+
+<% if @scene.resolution.present? %>
+  <p><strong>Outcome:</strong> <%= @scene.resolution %></p>
+<% end %>
+
+<p><%= link_to "View scene", @scene_url %></p>

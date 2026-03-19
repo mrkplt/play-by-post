@@ -1,0 +1,30 @@
+<h1>Edit — <%= @character.name %></h1>
+
+<%= form_with model: [@game, @character] do |f| %>
+  <div class="field">
+    <%= f.label :name %>
+    <%= f.text_field :name %>
+  </div>
+
+  <div class="field">
+    <%= f.label :content, "Sheet" %>
+    <%= f.text_area :content, rows: 15, class: "character-sheet" %>
+  </div>
+
+  <div class="field">
+    <label style="font-weight:normal; cursor:pointer;">
+      <%= f.check_box :hidden %> Hide from other players
+    </label>
+  </div>
+
+  <% if @game.game_master?(current_user) %>
+    <div class="field">
+      <label style="font-weight:normal; cursor:pointer;">
+        <%= f.check_box :active %> Active
+      </label>
+    </div>
+  <% end %>
+
+  <%= f.submit "Save", class: "btn" %>
+  <%= link_to "Cancel", game_character_path(@game, @character), class: "btn btn--secondary" %>
+<% end %>

@@ -1,0 +1,16 @@
+<h2>Edit Participants — <%= @scene.title %></h2>
+
+<%= form_with url: game_scene_participants_path(@game, @scene), method: :patch do |f| %>
+  <div class="field">
+    <% @all_participants.each do |user| %>
+      <label style="display:block; font-weight:normal; margin-bottom:0.25rem;">
+        <input type="checkbox" name="participant_ids[]" value="<%= user.id %>"
+          <%= "checked" if @current_participant_ids.include?(user.id) %>>
+        <%= user.display_name || user.email %>
+      </label>
+    <% end %>
+  </div>
+
+  <%= f.submit "Update Participants", class: "btn" %>
+  <%= link_to "Cancel", game_scene_path(@game, @scene), class: "btn btn--secondary" %>
+<% end %>

@@ -1,0 +1,97 @@
+<nav style="font-size:0.85rem; margin-bottom:1rem; color:#64748b;">
+  <%= link_to "Games", root_path %> &rsaquo;
+  <%= link_to @game.name, game_path(@game) %> &rsaquo;
+  Manage Players
+</nav>
+
+<h1>Manage Players — <%= @game.name %></h1>
+
+<!-- Invite Player -->
+<div class="section">
+  <div class="section__header"><h2>Invite a Player</h2></div>
+  <%= form_with url: game_player_management_invitations_path(@game), method: :post do |f| %>
+    <div style="display:flex; gap:0.5rem; align-items:flex-end; flex-wrap:wrap;">
+      <div class="field" style="margin:0; flex:1; min-width:200px;">
+        <label>Email address</label>
+        <input type="email" name="invitation[email]" placeholder="player@example.com" style="width:100%;">
+      </div>
+      <button type="submit" class="btn">Send Invitation</button>
+    </div>
+  <% end %>
+</div>
+
+<!-- Current Players -->
+<div class="section">
+  <div class="section__header"><h2>Current Players</h2></div>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Email</th>
+        <th>Role</th>
+        <th>Status</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @members.each do |member| %>
+        <tr>
+          <td><%= member.user.display_name || "—" %></td>
+          <td><%= member.user.email %></td>
+          <td><span class="badge <%= member.game_master? ? 'badge--blue' : 'badge--green' %>"><%= member.game_master? ? "GM" : "Player" %></span></td>
+          <td><span class="badge <%= member.removed? ? 'badge--yellow' : 'badge--green' %>"><%= member.status.capitalize %></span></td>
+          <td>
+            <% unless member.game_master? %>
+              <% if member.active? %>
+                <%= form_with url: game_player_management_game_member_path(@game, member), method: :patch, style: "display:inline;" do |f| %>
+                  <%= f.hidden_field :status, value: "removed" %>
+                  <%= f.submit "Remove", class: "btn btn--secondary", style: "font-size:0.8rem; padding:0.25rem 0.5rem;",
+                      data: { confirm: "Remove this player? They will keep read-only access." } %>
+                <% end %>
+                <%= form_with url: game_player_management_game_member_path(@game, member), method: :patch, style: "display:inline;" do |f| %>
+                  <%= f.hidden_field :status, value: "banned" %>
+                  <%= f.submit "Ban", class: "btn btn--danger", style: "font-size:0.8rem; padding:0.25rem 0.5rem;",
+                      data: { confirm: "Ban this player? This will permanently revoke all access." } %>
+                <% end %>
+              <% elsif member.removed? %>
+                <%= form_with url: game_player_management_game_member_path(@game, member), method: :patch, style: "display:inline;" do |f| %>
+                  <%= f.hidden_field :status, value: "active" %>
+                  <%= f.submit "Reinstate", class: "btn", style: "font-size:0.8rem; padding:0.25rem 0.5rem;" %>
+                <% end %>
+              <% end %>
+            <% end %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>
+
+<!-- Pending Invitations -->
+<% if @pending_invitations.any? %>
+  <div class="section">
+    <div class="section__header"><h2>Pending Invitations</h2></div>
+    <table>
+      <thead>
+        <tr>
+          <th>Email</th>
+          <th>Sent</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @pending_invitations.each do |inv| %>
+          <tr>
+            <td><%= inv.email %></td>
+            <td><%= time_ago_in_words(inv.created_at) %> ago</td>
+            <td>
+              <%= form_with url: game_player_management_invitation_path(@game, inv), method: :delete, style: "display:inline;" do |f| %>
+                <%= f.submit "Cancel", class: "btn btn--secondary", style: "font-size:0.8rem; padding:0.25rem 0.5rem;" %>
+              <% end %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+<% end %>

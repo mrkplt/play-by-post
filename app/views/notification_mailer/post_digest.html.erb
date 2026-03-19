@@ -1,0 +1,24 @@
+<p>New activity in <strong><%= @game.name %></strong> — <strong><%= @scene.title %></strong>.</p>
+
+<% @posts.each do |post| %>
+  <div style="border-left:3px solid #e2e8f0; padding-left:1rem; margin-bottom:1rem;">
+    <p style="font-size:0.85em; color:#64748b; margin:0 0 0.25rem;">
+      <strong><%= post.user.display_name || post.user.email %></strong>
+      &middot; <%= post.created_at.strftime("%b %-d, %Y") %>
+      <% if post.is_ooc? %>[OOC]<% end %>
+    </p>
+    <p style="margin:0;"><%= post.content %></p>
+  </div>
+<% end %>
+
+<% if @extra_count > 0 %>
+  <p style="color:#64748b;">...and <%= @extra_count %> more <%= "post".pluralize(@extra_count) %>.</p>
+<% end %>
+
+<p><%= link_to "View scene", @scene_url %></p>
+
+<hr>
+<p style="font-size:0.8em; color:#64748b;">
+  Reply to this email to post in the scene. |
+  <%= link_to "Mute this scene", @mute_url %>
+</p>

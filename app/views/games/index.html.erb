@@ -1,0 +1,36 @@
+<div class="section__header">
+  <h1>My Games</h1>
+  <%= link_to "New Game", new_game_path, class: "btn" %>
+</div>
+
+<% if @dashboard_items.empty? %>
+  <div class="card" style="text-align:center; padding:2.5rem; color:#64748b;">
+    <p style="font-size:1.1rem; margin-bottom:0.5rem;">You're not in any games yet.</p>
+    <p style="margin-bottom:1.5rem;">Create a new game to get started, or ask a Game Master to invite you.</p>
+    <%= link_to "Create a game", new_game_path, class: "btn" %>
+  </div>
+<% else %>
+  <% @dashboard_items.each do |item| %>
+    <% game = item[:game] %>
+    <% membership = item[:membership] %>
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+        <div>
+          <%= link_to game.name, game_path(game), style: "font-size:1.1rem; font-weight:bold; text-decoration:none; color:inherit;" %>
+          <% if membership.removed? %>
+            <span class="badge badge--gray">Former</span>
+          <% end %>
+        </div>
+        <span class="badge <%= membership.game_master? ? 'badge--blue' : 'badge--green' %>">
+          <%= membership.game_master? ? "GM" : "Player" %>
+        </span>
+      </div>
+      <div style="font-size:0.85rem; color:#64748b; margin-top:0.5rem;">
+        <% if item[:primary_character] %>
+          <%= link_to item[:primary_character].name, game_character_path(game, item[:primary_character]) %> &middot;
+        <% end %>
+        <%= item[:active_scene_count] %> active <%= "scene".pluralize(item[:active_scene_count]) %>
+      </div>
+    </div>
+  <% end %>
+<% end %>

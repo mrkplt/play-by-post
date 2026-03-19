@@ -1,0 +1,7 @@
+<p>You've been invited to join <strong><%= @game.name %></strong> on Play by Post.</p>
+
+<p><%= link_to "Accept Invitation", @accept_url %></p>
+
+<p>Or copy this link: <%= @accept_url %></p>
+
+<p style="color:#64748b; font-size:0.85rem;">This invitation was sent by <%= @invitation.invited_by.display_name || @invitation.invited_by.email %>.</p>

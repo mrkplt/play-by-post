@@ -1,0 +1,27 @@
+default: &default
+  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+
+development:
+  <<: *default
+  adapter: sqlite3
+  database: storage/development.sqlite3
+
+test:
+  <<: *default
+  adapter: sqlite3
+  database: storage/test.sqlite3
+
+production:
+  primary: &primary_production
+    adapter: postgresql
+    encoding: unicode
+    url: <%= ENV["DATABASE_URL"] %>
+    pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+  cache:
+    <<: *primary_production
+    database: play_by_post_production_cache
+    migrations_paths: db/cache_migrate
+  queue:
+    <<: *primary_production
+    database: play_by_post_production_queue
+    migrations_paths: db/queue_migrate

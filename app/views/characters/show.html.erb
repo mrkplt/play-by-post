@@ -1,0 +1,51 @@
+<nav style="font-size:0.85rem; margin-bottom:1rem; color:#64748b;">
+  <%= link_to "Games", root_path %> &rsaquo;
+  <%= link_to @game.name, game_path(@game) %> &rsaquo;
+  <%= @character.name %>
+</nav>
+
+<div class="section__header">
+  <h1><%= @character.name %></h1>
+  <% if @character.editable_by?(current_user, @game) %>
+    <%= link_to "Edit", edit_game_character_path(@game, @character), class: "btn btn--secondary" %>
+  <% end %>
+</div>
+
+<p style="font-size:0.85rem; color:#64748b;">
+  Player: <%= @character.user.display_name || @character.user.email %>
+  <% unless @character.active? %>
+    <span class="badge badge--gray">Inactive</span>
+  <% end %>
+  <% if @character.hidden? %>
+    <span class="badge badge--yellow">Hidden</span>
+  <% end %>
+</p>
+
+<div class="card">
+  <% if @character.content.present? %>
+    <div class="character-sheet"><%= @character.content %></div>
+  <% else %>
+    <p style="color:#94a3b8;">No sheet content yet.</p>
+  <% end %>
+</div>
+
+<!-- Version History -->
+<details style="margin-top:1.5rem;">
+  <summary style="cursor:pointer; font-weight:600; margin-bottom:0.75rem;">Version History (<%= @versions.count %>)</summary>
+  <table>
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Edited by</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @versions.each do |version| %>
+        <tr>
+          <td><%= version.created_at.strftime("%b %-d, %Y %-I:%M %p") %></td>
+          <td><%= version.edited_by.display_name || version.edited_by.email %></td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</details>

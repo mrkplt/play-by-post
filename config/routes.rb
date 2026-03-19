@@ -1,0 +1,34 @@
+Rails.application.routes.draw do
+  if Rails.env.development?
+    mount LetterOpenerWeb::Engine, at: "/letter_opener"
+  end
+
+  devise_for :users, controllers: {
+    sessions: "users/sessions"
+  }
+
+  get "up" => "rails/health#show", as: :rails_health_check
+  get "invitations/:token/accept", to: "invitations#accept", as: :accept_invitation
+
+  authenticate :user do
+    resource :profile, only: %i[edit update], controller: "profiles"
+    resources :games, only: %i[index new create show] do
+      resources :scenes, only: %i[new create show] do
+        member do
+          patch :resolve
+          post :toggle_notification_preference
+        end
+        resources :posts, only: %i[create edit update]
+        resource :participants, only: %i[edit update], controller: "scene_participants"
+      end
+      resource :player_management, only: %i[show], controller: "player_management" do
+        resources :invitations, only: %i[create destroy]
+        resources :game_members, only: %i[update]
+      end
+      resources :game_files, only: %i[index create destroy]
+      resources :characters, only: %i[new create show edit update]
+    end
+  end
+
+  root "games#index"
+end

@@ -1,0 +1,31 @@
+<h1>New Character</h1>
+
+<%= form_with model: [@game, @character] do |f| %>
+  <% if @character.errors.any? %>
+    <div class="flash flash--alert">
+      <% @character.errors.full_messages.each do |msg| %>
+        <div><%= msg %></div>
+      <% end %>
+    </div>
+  <% end %>
+
+  <% if @game.game_master?(current_user) %>
+    <div class="field">
+      <label>Player</label>
+      <%= f.select :user_id, @users.map { |u| [u.display_name || u.email, u.id] }, { include_blank: "— myself —" } %>
+    </div>
+  <% end %>
+
+  <div class="field">
+    <%= f.label :name %>
+    <%= f.text_field :name, autofocus: true %>
+  </div>
+
+  <div class="field">
+    <%= f.label :content, "Sheet (optional)" %>
+    <%= f.text_area :content, rows: 10, class: "character-sheet" %>
+  </div>
+
+  <%= f.submit "Create Character", class: "btn" %>
+  <%= link_to "Cancel", game_path(@game), class: "btn btn--secondary" %>
+<% end %>

@@ -1,0 +1,17 @@
+<div id="<%= dom_id(post) %>" class="post <%= post.is_ooc? ? 'post--ooc' : '' %>" data-ooc="<%= post.is_ooc? %>">
+  <div class="post__meta">
+    <strong><%= post.user.display_name || post.user.email %></strong>
+    &middot;
+    <%= post.created_at.strftime("%b %-d, %Y %-I:%M %p") %>
+    <% if post.is_ooc? %>
+      <span class="badge badge--gray">OOC</span>
+    <% end %>
+    <% if post.last_edited_at.present? %>
+      <span style="font-style:italic;">(edited)</span>
+    <% end %>
+    <% if post.editable_by?(current_user) %>
+      &middot; <%= link_to "Edit", edit_game_scene_post_path(game, scene, post), style: "font-size:0.8rem;" %>
+    <% end %>
+  </div>
+  <div class="post__content"><%= simple_format(post.content) %></div>
+</div>

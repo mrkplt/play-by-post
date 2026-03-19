@@ -1,0 +1,63 @@
+<% quick = params[:quick].present? %>
+
+<h1><%= quick ? "Quick Scene" : "New Scene" %></h1>
+
+<%= form_with model: [@game, @scene] do |f| %>
+  <% if f.object.errors.any? %>
+    <div class="flash flash--alert">
+      <% f.object.errors.full_messages.each do |msg| %>
+        <div><%= msg %></div>
+      <% end %>
+    </div>
+  <% end %>
+
+  <div class="field">
+    <%= f.label :title %>
+    <%= f.text_field :title, maxlength: 200, autofocus: true %>
+  </div>
+
+  <div class="field">
+    <%= f.label :description, "Description (optional)" %>
+    <%= f.text_area :description, rows: 4 %>
+  </div>
+
+  <% unless quick %>
+    <div class="field">
+      <label>Participants</label>
+      <p style="font-size:0.85rem; color:#64748b; margin:0.25rem 0 0.5rem;">The GM is always included. You are checked by default and cannot be removed.</p>
+      <% @participants.each do |user| %>
+        <% is_self = user == current_user %>
+        <label style="display:block; font-weight:normal; margin-bottom:0.25rem;">
+          <input type="checkbox" name="participant_ids[]" value="<%= user.id %>"
+            <%= "checked" if is_self || params[:participant_ids]&.include?(user.id.to_s) || @scene.scene_participants.map(&:user_id).include?(user.id) %>
+            <%= "disabled" if is_self %>>
+          <%= user.display_name || user.email %>
+        </label>
+        <% if is_self %>
+          <input type="hidden" name="participant_ids[]" value="<%= user.id %>">
+        <% end %>
+      <% end %>
+    </div>
+
+    <div class="field">
+      <%= f.label :parent_scene_id, "Parent scene (optional)" %>
+      <%= f.select :parent_scene_id,
+          @game.scenes.order(:title).map { |s| [s.title, s.id] },
+          { include_blank: "— none —", selected: params[:parent_scene_id] } %>
+    </div>
+
+    <div class="field">
+      <label style="font-weight:normal; cursor:pointer;">
+        <%= f.check_box :private %> Private scene
+      </label>
+    </div>
+  <% else %>
+    <%= f.hidden_field :parent_scene_id, value: params[:parent_scene_id] %>
+    <% Array(params[:participant_ids]).each do |uid| %>
+      <input type="hidden" name="participant_ids[]" value="<%= uid %>">
+    <% end %>
+  <% end %>
+
+  <%= f.submit quick ? "Create Quick Scene" : "Create Scene", class: "btn" %>
+  <%= link_to "Cancel", params[:parent_scene_id].present? ? game_scene_path(@game, params[:parent_scene_id]) : game_path(@game), class: "btn btn--secondary" %>
+<% end %>

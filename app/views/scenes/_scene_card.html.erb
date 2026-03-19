@@ -1,0 +1,27 @@
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:0.5rem;">
+    <h3 style="margin:0; font-size:1rem;">
+      <%= link_to scene.title, game_scene_path(game, scene) %>
+    </h3>
+    <div style="display:flex; gap:0.4rem; flex-shrink:0; margin-left:0.5rem;">
+      <% if scene.private? %>
+        <span class="badge badge--yellow">Private</span>
+      <% end %>
+    </div>
+  </div>
+
+  <% if scene.description.present? %>
+    <p style="font-size:0.85rem; color:#475569; margin:0 0 0.5rem;">
+      <%= truncate(scene.description, length: 120) %>
+    </p>
+  <% end %>
+
+  <div style="font-size:0.8rem; color:#94a3b8;">
+    <% if scene.parent_scene.present? %>
+      <span>↳ <%= link_to scene.parent_scene.title, game_scene_path(game, scene.parent_scene) %></span> &middot;
+    <% end %>
+    <span><%= scene.users.where.not(id: game.game_master).map { |u| u.display_name || u.email }.join(", ") %></span>
+    &middot;
+    <span><%= time_ago_in_words(scene.updated_at) %> ago</span>
+  </div>
+</div>

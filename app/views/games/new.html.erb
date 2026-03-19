@@ -1,0 +1,20 @@
+<h1>New Game</h1>
+
+<%= form_with model: @game do |f| %>
+  <div class="field">
+    <%= f.label :name %>
+    <%= f.text_field :name, maxlength: 200, autofocus: true %>
+    <% if @game.errors[:name].any? %>
+      <span class="field-error"><%= @game.errors[:name].first %></span>
+    <% end %>
+  </div>
+
+  <div class="field">
+    <%= f.label :description, "Description (optional)" %>
+    <%= f.text_area :description, rows: 4 %>
+  </div>
+
+  <p style="font-size:0.9rem; color:#64748b;">You will become the Game Master of this game.</p>
+
+  <%= f.submit "Create game", data: { confirm: "Create this game? You will be the GM." } %>
+<% end %>

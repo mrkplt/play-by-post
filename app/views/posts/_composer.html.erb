@@ -1,0 +1,18 @@
+<%= form_with model: [game, scene, post], data: { controller: "markdown-preview" } do |f| %>
+  <div class="field">
+    <%= f.text_area :content, rows: 5, placeholder: "Write your post...",
+        data: { markdown_preview_target: "input", action: "input->markdown-preview#update" } %>
+  </div>
+
+  <div data-markdown-preview-target="preview" style="display:none; border:1px solid #e2e8f0; border-radius:4px; padding:0.75rem; margin-bottom:0.75rem; min-height:3rem; background:#fafafa;"></div>
+
+  <div style="display:flex; gap:1rem; align-items:center; flex-wrap:wrap;">
+    <label style="font-size:0.9rem; cursor:pointer;">
+      <%= f.check_box :is_ooc %> Out of character
+    </label>
+    <button type="button" class="btn btn--secondary" style="font-size:0.85rem;" data-action="click->markdown-preview#togglePreview">
+      Preview
+    </button>
+    <%= f.submit "Post", class: "btn" %>
+  </div>
+<% end %>

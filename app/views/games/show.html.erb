@@ -1,0 +1,89 @@
+<div class="section__header">
+  <h1><%= @game.name %></h1>
+  <% if @is_gm %>
+    <%= link_to "Manage Players", game_player_management_path(@game), class: "btn btn--secondary" %>
+  <% end %>
+</div>
+<% if @game.description.present? %>
+  <p><%= @game.description %></p>
+<% end %>
+
+<!-- Character Roster -->
+<div class="section">
+  <div class="section__header">
+    <h2>Characters</h2>
+    <%= link_to "New Character", new_game_character_path(@game), class: "btn btn--secondary" %>
+  </div>
+  <% if @characters.empty? %>
+    <p style="color:#94a3b8;">No characters yet.</p>
+  <% else %>
+    <div style="display:flex; flex-wrap:wrap; gap:0.75rem;">
+      <% @characters.each do |character| %>
+        <div class="card" style="flex:1; min-width:160px; max-width:260px; padding:0.75rem;">
+          <div style="font-weight:600;">
+            <%= link_to character.name, game_character_path(@game, character) %>
+          </div>
+          <div style="font-size:0.8rem; color:#64748b; margin-top:0.2rem;">
+            <%= character.user.display_name || character.user.email %>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
+</div>
+
+<!-- Active Scenes -->
+<div class="section">
+  <div class="section__header">
+    <h2>Active Scenes</h2>
+    <%= link_to "New Scene", new_game_scene_path(@game), class: "btn" %>
+  </div>
+  <% if @scene_groups.empty? %>
+    <p style="color:#94a3b8;">No active scenes yet.</p>
+  <% else %>
+    <% @scene_groups.each do |group| %>
+      <div class="scene-row">
+        <% group.each do |scene| %>
+          <%= render "scenes/scene_card", scene: scene, game: @game %>
+        <% end %>
+      </div>
+    <% end %>
+  <% end %>
+</div>
+
+<!-- Resolved Scenes -->
+<div class="section">
+  <div class="section__header"><h2>Resolved Scenes</h2></div>
+  <% if @resolved_scenes.empty? %>
+    <p style="color:#94a3b8;">No resolved scenes yet.</p>
+  <% else %>
+    <table>
+      <thead>
+        <tr>
+          <th>Title</th>
+          <th>Resolved</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @resolved_scenes.each do |scene| %>
+          <tr>
+            <td><%= link_to scene.title, game_scene_path(@game, scene) %></td>
+            <td><%= scene.resolved_at.strftime("%b %-d, %Y") %></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+    <%= pagy_nav(@pagy_resolved) if @pagy_resolved.pages > 1 %>
+  <% end %>
+</div>
+
+<!-- Game Files -->
+<div class="section">
+  <div class="section__header">
+    <h2>Game Files</h2>
+    <% if @is_gm %>
+      <%= link_to "Upload File", game_game_files_path(@game), class: "btn btn--secondary" %>
+    <% end %>
+  </div>
+  <p style="color:#94a3b8; font-size:0.9rem;">Game files coming in Phase 8.</p>
+</div>

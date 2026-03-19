@@ -1,0 +1,15 @@
+<div class="auth-card">
+  <h1>Set your display name</h1>
+  <p>Choose a name that other players will see.</p>
+
+  <%= form_with model: @profile, url: profile_path, method: :patch do |f| %>
+    <div class="field">
+      <%= f.label :display_name, "Display name" %>
+      <%= f.text_field :display_name, autofocus: true, maxlength: 100 %>
+      <% if @profile.errors[:display_name].any? %>
+        <span class="field-error"><%= @profile.errors[:display_name].first %></span>
+      <% end %>
+    </div>
+    <%= f.submit "Save" %>
+  <% end %>
+</div>

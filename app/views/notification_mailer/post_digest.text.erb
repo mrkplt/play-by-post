@@ -1,0 +1,18 @@
+New activity in <%= @game.name %> — <%= @scene.title %>.
+
+<% @posts.each do |post| %>
+---
+<%= post.user.display_name || post.user.email %> · <%= post.created_at.strftime("%b %-d, %Y") %><% if post.is_ooc? %> [OOC]<% end %>
+
+<%= post.content %>
+<% end %>
+<% if @extra_count > 0 %>
+
+...and <%= @extra_count %> more <%= "post".pluralize(@extra_count) %>.
+<% end %>
+
+View scene: <%= @scene_url %>
+
+---
+Reply to this email to post in the scene.
+Mute this scene: <%= @mute_url %>

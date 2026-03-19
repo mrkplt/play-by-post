@@ -1,0 +1,9 @@
+<h2>Edit Post</h2>
+
+<%= form_with model: [@game, @scene, @post] do |f| %>
+  <div class="field">
+    <%= f.text_area :content, rows: 6 %>
+  </div>
+  <%= f.submit "Save" %>
+  <%= link_to "Cancel", game_scene_path(@game, @scene), class: "btn btn--secondary" %>
+<% end %>
