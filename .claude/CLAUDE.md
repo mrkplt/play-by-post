@@ -5,10 +5,11 @@ Play-by-Post TTRPG is a web application for asynchronous tabletop role-playing g
 
 ## Documentation
 
-- [architecture information](../context/architecture.md) includes Tech stack (Next.js, Supabase, Vercel, Mailgun, OpenRouter, Pulumi)
 - [Domain](../context/domain.md) concepts, data model relationships, business rules
 - [product requirements](../context/pbp_ttrpg_requirements.md)
 
+## Ruby
+PATH="/opt/homebrew/opt/ruby/bin:$PATH" bundle exec ruby
 ## Development
     The software development cycle is:
         1. Create a testing plan for the feature or bug fix as a markdown file in the tests/integration directory.

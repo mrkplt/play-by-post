@@ -4,7 +4,7 @@ class NotificationMailer < ApplicationMailer
     @game = scene.game
     @recipient = recipient
     @scene_url = game_scene_url(@game, @scene)
-    @mute_url = toggle_game_scene_notification_preference_url(@game, @scene)
+    @mute_url = toggle_notification_preference_game_scene_url(@game, @scene)
 
     mail(
       to: recipient.email,
@@ -32,7 +32,7 @@ class NotificationMailer < ApplicationMailer
     @posts = posts.first(10)
     @extra_count = [ posts.size - 10, 0 ].max
     @scene_url = game_scene_url(@game, @scene)
-    @mute_url = toggle_game_scene_notification_preference_url(@game, @scene)
+    @mute_url = toggle_notification_preference_game_scene_url(@game, @scene)
 
     mail(
       to: recipient.email,

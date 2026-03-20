@@ -35,7 +35,7 @@
     </thead>
     <tbody>
       <% @members.each do |member| %>
-        <tr>
+        <tr data-member-id="<%= member.user_id %>">
           <td><%= member.user.display_name || "—" %></td>
           <td><%= member.user.email %></td>
           <td><span class="badge <%= member.game_master? ? 'badge--blue' : 'badge--green' %>"><%= member.game_master? ? "GM" : "Player" %></span></td>

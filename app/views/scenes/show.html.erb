@@ -91,7 +91,7 @@
 </div>
 
 <!-- Post Composer -->
-<% if (@is_participant || @is_gm) && !@scene.resolved? %>
+<% if (@is_participant || @is_gm) && !@scene.resolved? && @game.member_for(current_user)&.active? %>
   <div id="post_composer" class="card" style="margin-top:1.5rem;">
     <%= render "posts/composer", post: @post, scene: @scene, game: @game %>
   </div>

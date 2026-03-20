@@ -10,7 +10,7 @@ class GameMembersController < ApplicationController
       return
     end
 
-    new_status = params[:game_member][:status]
+    new_status = params.dig(:game_member, :status) || params[:status]
     unless GameMember::STATUSES.include?(new_status)
       redirect_to game_player_management_path(@game), alert: "Invalid status."
       return

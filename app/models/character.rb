@@ -10,7 +10,6 @@ class Character < ApplicationRecord
   scope :active, -> { where(active: true) }
   scope :visible_to, ->(viewer, game) {
     return all if game.game_master?(viewer)
-    return all if game.sheets_hidden == false
 
     where(hidden: false).or(where(user: viewer))
   }
