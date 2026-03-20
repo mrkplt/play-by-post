@@ -17,14 +17,18 @@
     </label>
   </div>
 
-  <% if @game.game_master?(current_user) %>
-    <div class="field">
-      <label style="font-weight:normal; cursor:pointer;">
-        <%= f.check_box :active %> Active
-      </label>
-    </div>
-  <% end %>
-
   <%= f.submit "Save", class: "btn" %>
   <%= link_to "Cancel", game_character_path(@game, @character), class: "btn btn--secondary" %>
+<% end %>
+
+<% if @game.game_master?(current_user) %>
+  <div style="margin-top:1.5rem; padding-top:1rem; border-top:1px solid #f1f5f9;">
+    <% if @character.archived? %>
+      <%= button_to "Restore character", restore_game_character_path(@game, @character),
+          method: :patch, class: "btn btn--secondary" %>
+    <% else %>
+      <%= button_to "Archive character", archive_game_character_path(@game, @character),
+          method: :patch, class: "btn btn--secondary" %>
+    <% end %>
+  </div>
 <% end %>

@@ -13,4 +13,10 @@ class ProfilesController < ApplicationController
       render :edit, status: :unprocessable_entity
     end
   end
+
+  def toggle_hide_ooc
+    profile = current_user.user_profile || current_user.build_user_profile
+    profile.update!(hide_ooc: !profile.hide_ooc?)
+    head :ok
+  end
 end

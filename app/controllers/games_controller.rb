@@ -11,7 +11,7 @@ class GamesController < ApplicationController
     @dashboard_items = @memberships.map do |membership|
       game = membership.game
       active_scenes = game.scenes.where(resolved_at: nil).count
-      primary_character = game.characters.find_by(user: current_user, active: true)
+      primary_character = game.characters.active.find_by(user: current_user)
       {
         game: game,
         membership: membership,
@@ -47,6 +47,7 @@ class GamesController < ApplicationController
     @pagy_resolved, @resolved_scenes = pagy(
       @game.scenes.resolved
         .visible_to(current_user, @game)
+        .includes(:parent_scene)
         .order(resolved_at: :desc),
       items: 10
     )

@@ -108,10 +108,12 @@ RSpec.describe "Characters", type: :feature do
   end
 
   describe "character visibility" do
+    let(:other_player) { create(:user, :with_profile) }
+
+    before { create(:game_member, game: game, user: other_player) }
+
     it "hidden characters are not visible to other players" do
       create(:character, :hidden, game: game, user: player, name: "Secret Character")
-      other_player = create(:user, :with_profile)
-      create(:game_member, game: game, user: other_player)
 
       sign_in_as(other_player)
       visit game_path(game)
@@ -135,6 +137,37 @@ RSpec.describe "Characters", type: :feature do
       visit game_path(game)
 
       expect(page).to have_text("Secret Character")
+    end
+
+    it "player can hide their character sheet and other players cannot access it" do
+      character = create(:character, game: game, user: player, name: "Sable")
+
+      # Player checks the hide checkbox
+      sign_in_as(player)
+      visit edit_game_character_path(game, character)
+      check "Hide from other players"
+      click_on "Save"
+
+      expect(page).to have_text("Character updated")
+
+      # Other player cannot see it on the roster
+      sign_in_as(other_player)
+      visit game_path(game)
+      expect(page).not_to have_text("Sable")
+
+      # Other player cannot access the sheet URL directly
+      visit game_character_path(game, character)
+      expect(page).to have_current_path(game_path(game))
+      expect(page).to have_text("hidden")
+    end
+
+    it "hidden character sheet is still accessible by the GM" do
+      character = create(:character, :hidden, game: game, user: player, name: "Sable")
+
+      sign_in_as(gm)
+      visit game_character_path(game, character)
+
+      expect(page).to have_text("Sable")
     end
   end
 end

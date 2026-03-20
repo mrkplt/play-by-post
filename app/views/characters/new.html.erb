@@ -12,7 +12,7 @@
   <% if @game.game_master?(current_user) %>
     <div class="field">
       <label>Player</label>
-      <%= f.select :user_id, @users.map { |u| [u.display_name || u.email, u.id] }, { include_blank: "— myself —" } %>
+      <%= f.select :user_id, @users.map { |u| [u.display_name || u.email, u.id] }, { prompt: "Select a player" } %>
     </div>
   <% end %>
 

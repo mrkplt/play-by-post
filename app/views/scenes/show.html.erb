@@ -4,27 +4,85 @@
   <%= @scene.title %>
 </nav>
 
-<div class="card">
+<div data-controller="ooc-filter"
+     data-ooc-filter-hide-ooc-value="<%= @hide_ooc %>"
+     data-ooc-filter-toggle-url-value="<%= toggle_hide_ooc_profile_path %>">
+
+<div class="card" style="position:relative;" data-controller="menu" data-action="click@window->menu#close">
   <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-    <h1 style="margin:0 0 0.5rem; font-size:1.4rem;"><%= @scene.title %></h1>
-    <div style="display:flex; gap:0.4rem;">
-      <% if @scene.private? %>
-        <span class="badge badge--yellow">Private</span>
-      <% end %>
-      <% if @scene.resolved? %>
-        <span class="badge badge--gray">Resolved</span>
-      <% end %>
+    <div>
+      <h1 style="margin:0 0 0.5rem; font-size:1.4rem;"><%= @scene.title %></h1>
+      <div style="display:flex; gap:0.4rem; flex-wrap:wrap;">
+        <% if @scene.private? %>
+          <span class="badge badge--yellow">Private</span>
+        <% end %>
+        <% if @scene.resolved? %>
+          <span class="badge badge--gray">Resolved</span>
+        <% end %>
+      </div>
     </div>
+
+    <% if !@scene.resolved? %>
+      <div style="position:relative; flex-shrink:0; margin-left:0.75rem;">
+        <button data-action="click->menu#toggle" style="background:none; border:1px solid #cbd5e1; border-radius:6px; padding:0.35rem 0.6rem; cursor:pointer; color:#475569; font-size:1.1rem; line-height:1;" title="Scene actions">
+          &#9776;
+        </button>
+        <div data-menu-target="dropdown" hidden style="position:absolute; right:0; top:calc(100% + 4px); background:#fff; border:1px solid #e2e8f0; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.1); min-width:200px; z-index:100; padding:0.4rem 0;">
+          <%= link_to "Quick Scene", new_game_scene_path(@game, quick: true, parent_scene_id: @scene.id),
+              style: "display:block; padding:0.5rem 1rem; color:#1e293b; text-decoration:none; font-size:0.9rem; white-space:nowrap;" %>
+          <%= link_to "New Scene", new_game_scene_path(@game, parent_scene_id: @scene.id),
+              style: "display:block; padding:0.5rem 1rem; color:#1e293b; text-decoration:none; font-size:0.9rem; white-space:nowrap;" %>
+          <% if @is_participant || @is_gm %>
+            <%= link_to "Edit Participants", edit_game_scene_participants_path(@game, @scene),
+                style: "display:block; padding:0.5rem 1rem; color:#1e293b; text-decoration:none; font-size:0.9rem; white-space:nowrap;" %>
+          <% end %>
+          <div style="border-top:1px solid #f1f5f9; margin:0.3rem 0;"></div>
+          <button data-action="click->ooc-filter#toggle"
+              style="display:flex; justify-content:space-between; align-items:center; width:100%; padding:0.5rem 1rem; background:none; border:none; cursor:pointer; color:#1e293b; font-size:0.9rem; white-space:nowrap;">
+            <span>Hide OOC posts</span>
+            <span data-ooc-filter-target="indicator" style="color:#94a3b8; font-size:0.8rem;">Off</span>
+          </button>
+          <div style="border-top:1px solid #f1f5f9; margin:0.3rem 0;"></div>
+          <%= button_to @is_muted ? "Unmute notifications" : "Mute notifications",
+              toggle_notification_preference_game_scene_path(@game, @scene),
+              method: :post,
+              style: "display:block; width:100%; text-align:left; padding:0.5rem 1rem; background:none; border:none; cursor:pointer; color:#1e293b; font-size:0.9rem; white-space:nowrap;" %>
+          <% if @is_gm %>
+            <div style="border-top:1px solid #f1f5f9; margin:0.3rem 0;"></div>
+            <button data-action="click->menu#toggle" onclick="document.getElementById('resolve-form').hidden=false; this.closest('[data-controller=menu]').querySelector('[data-menu-target=dropdown]').hidden=true"
+                style="display:block; width:100%; text-align:left; padding:0.5rem 1rem; background:none; border:none; cursor:pointer; color:#dc2626; font-size:0.9rem; white-space:nowrap;">
+              End Scene
+            </button>
+          <% end %>
+        </div>
+      </div>
+    <% end %>
   </div>
 
   <% if @scene.parent_scene.present? %>
-    <p style="font-size:0.85rem; color:#64748b; margin:0 0 0.5rem;">
+    <p style="font-size:0.85rem; color:#64748b; margin:0.5rem 0 0.25rem;">
       ↳ Continues from <%= link_to @scene.parent_scene.title, game_scene_path(@game, @scene.parent_scene) %>
+      <% if @scene.parent_scene.resolved? %>
+        <span class="badge badge--gray">Resolved</span>
+      <% end %>
     </p>
   <% end %>
 
-  <p style="font-size:0.85rem; color:#64748b; margin:0 0 0.75rem;">
-    Participants: <%= @scene.users.map { |u| u.display_name || u.email }.join(", ") %>
+  <% if @child_scenes.any? %>
+    <p style="font-size:0.85rem; color:#64748b; margin:0.25rem 0 0.25rem;">
+      <% @child_scenes.each do |child| %>
+        ⤷ <%= link_to child.title, game_scene_path(@game, child) %>
+        <% if child.resolved? %>
+          <span class="badge badge--gray">Resolved</span>
+        <% else %>
+          <span class="badge badge--green">Active</span>
+        <% end %>
+      <% end %>
+    </p>
+  <% end %>
+
+  <p style="font-size:0.85rem; color:#64748b; margin:0.25rem 0 0.75rem;">
+    Participants: <%= @scene.scene_participants.includes(:character, :user).map(&:display_name).join(", ") %>
   </p>
 
   <% if @scene.description.present? %>
@@ -38,57 +96,37 @@
       <strong>Resolution:</strong> <%= @scene.resolution %>
     </div>
   <% end %>
-</div>
 
-<!-- Scene Toolbar -->
-<% if !@scene.resolved? %>
-  <div style="display:flex; gap:0.5rem; margin-bottom:1.5rem; flex-wrap:wrap;">
-    <%= link_to "Quick Scene", new_game_scene_path(@game, quick: true, parent_scene_id: @scene.id), class: "btn btn--secondary" %>
-    <%= link_to "New Scene", new_game_scene_path(@game, parent_scene_id: @scene.id), class: "btn btn--secondary" %>
-    <% if @is_participant || @is_gm %>
-      <%= link_to "Edit Participants", edit_game_scene_participants_path(@game, @scene), class: "btn btn--secondary" %>
-    <% end %>
-    <%= button_to @is_muted ? "Unmute" : "Mute",
-        toggle_notification_preference_game_scene_path(@game, @scene),
-        method: :post, class: "btn btn--secondary" %>
-    <% if @is_gm %>
-      <button class="btn btn--danger" onclick="document.getElementById('resolve-form').style.display='block'; this.style.display='none'">
-        End Scene
-      </button>
-    <% end %>
-  </div>
-
-  <% if @is_gm %>
-    <div id="resolve-form" style="display:none;" class="card">
+  <% if @is_gm && !@scene.resolved? %>
+    <div id="resolve-form" hidden style="border-top:1px solid #f1f5f9; margin-top:0.75rem; padding-top:0.75rem;">
       <%= form_with url: resolve_game_scene_path(@game, @scene), method: :patch do |f| %>
-        <h3 style="margin-top:0;">End this scene</h3>
+        <h3 style="margin-top:0; font-size:1rem;">End this scene</h3>
         <div class="field">
           <%= f.label :resolution, "Outcome (optional)" %>
           <%= f.text_area :resolution, rows: 3, placeholder: "What happened? What was gained or lost?" %>
         </div>
         <%= f.submit "Confirm — End Scene", class: "btn btn--danger" %>
+        <button type="button" onclick="document.getElementById('resolve-form').hidden=true"
+            style="background:none; border:none; cursor:pointer; color:#64748b; font-size:0.9rem; margin-left:0.5rem;">
+          Cancel
+        </button>
       <% end %>
     </div>
   <% end %>
-<% end %>
 
-<!-- Post Thread -->
-<div id="posts">
-  <% if @posts.empty? %>
-    <p style="color:#94a3b8;">No posts yet. Be the first!</p>
-  <% else %>
-    <div data-controller="ooc-filter">
-      <div style="margin-bottom:1rem;">
-        <label style="font-size:0.85rem; cursor:pointer;">
-          <input type="checkbox" data-action="change->ooc-filter#toggle"> Hide OOC posts
-        </label>
-      </div>
+  <!-- Post Thread -->
+  <div id="posts" style="margin-top:1rem; border-top:1px solid #f1f5f9; padding-top:1rem;">
+    <% if @posts.empty? %>
+      <p id="no_posts_message" style="color:#94a3b8; margin:0;">No posts yet. Be the first!</p>
+    <% else %>
       <% @posts.each do |post| %>
         <%= render "posts/post_item", post: post, game: @game, scene: @scene %>
       <% end %>
-    </div>
-  <% end %>
+    <% end %>
+  </div>
 </div>
+
+</div><!-- end ooc-filter -->
 
 <!-- Post Composer -->
 <% if (@is_participant || @is_gm) && !@scene.resolved? && @game.member_for(current_user)&.active? %>

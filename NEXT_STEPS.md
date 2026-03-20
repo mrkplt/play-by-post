@@ -284,7 +284,214 @@ is blank (which it is in test), so no mocking needed for basic routing tests.
 
 ---
 
-## 9. Things not yet built
+## 9. New features not yet built
+
+### a. Add a player to an existing scene
+
+Currently there is no way for a GM to add a player to a scene after it has been created,
+other than through the "Edit Participants" link — which is only visible to users who are
+already participants. A GM viewing a scene they created but didn't add themselves to cannot
+reach the participant editor.
+
+More importantly, there is no self-service flow for a player to request joining a scene,
+or for the GM to add someone directly from the game view without entering the scene first.
+
+**What needs to be built:**
+
+1. **Make "Edit Participants" always visible to the GM** regardless of whether they are a
+   participant. Change the toolbar guard in `app/views/scenes/show.html.erb`:
+   ```erb
+   <%# was: if @is_participant || @is_gm %>
+   <% if @is_gm %>
+     <%= link_to "Edit Participants", edit_game_scene_participants_path(@game, @scene), class: "btn btn--secondary" %>
+   <% end %>
+   ```
+
+2. **Add a "Join Scene" button for non-participant active members.** When a player is an
+   active game member but not a scene participant, show a join button (for non-private
+   scenes, or private scenes the GM has made visible):
+   ```erb
+   <% if !@is_participant && !@is_gm && @game.member_for(current_user)&.active? && !@scene.private? %>
+     <%= button_to "Join Scene", game_scene_participants_path(@game, @scene),
+         method: :post, class: "btn btn--secondary",
+         params: { participant_ids: [@scene.scene_participants.pluck(:user_id) + [current_user.id]] } %>
+   <% end %>
+   ```
+   Or add a dedicated `join` action on `SceneParticipantsController`:
+   ```ruby
+   # routes.rb — inside scenes resources:
+   resource :participants, only: %i[edit update], controller: "scene_participants" do
+     post :join, on: :collection
+   end
+
+   # scene_participants_controller.rb:
+   def join
+     return if @scene.private? && !@game.game_master?(current_user)
+     @scene.scene_participants.find_or_create_by!(user: current_user)
+     redirect_to game_scene_path(@game, @scene), notice: "You have joined this scene."
+   end
+   ```
+
+3. **Show an "Add to scene" affordance on scene cards in the game view** (GM only) — a
+   small button or dropdown on each scene card letting the GM add any active player who
+   isn't already a participant.
+
+**Specs to add** in `spec/system/scenes_spec.rb`:
+```ruby
+it "GM can add a player to an existing scene via Edit Participants" do
+  scene = create(:scene, game: game)
+  create(:scene_participant, scene: scene, user: gm)
+  sign_in_as(gm)
+  visit game_scene_path(game, scene)
+
+  click_on "Edit Participants"
+  check player.display_name
+  click_on "Update Participants"
+
+  expect(page).to have_text(player.display_name)
+end
+
+it "player can join a non-private scene they are not yet in" do
+  scene = create(:scene, game: game)
+  create(:scene_participant, scene: scene, user: gm)
+  sign_in_as(player)
+  visit game_scene_path(game, scene)
+
+  click_on "Join Scene"
+
+  expect(page).to have_css("#post_composer")
+end
+```
+
+---
+
+## 10. Former player behavior needs clarification and enforcement
+
+The `removed` and `banned` statuses exist on `game_members` but their access rules are
+inconsistently applied and the "Former" player experience is not fully implemented.
+
+### Current behavior (as of now)
+
+- **Banned**: hidden from dashboard (`where.not(status: "banned")`), blocked from game/scene access
+- **Removed**: hidden from dashboard (same query — removed players also disappear), but controllers
+  allow full access (`return if membership&.active? || membership&.removed?`) — identical to active
+
+### What was intended (per original plan)
+
+- **Removed**: read-only access to the game — can see scenes and posts but cannot post,
+  create characters, or edit anything. Appears in dashboard with a "Former" badge.
+- **Banned**: no access at all. Blocked everywhere. Does not appear on dashboard.
+
+### What needs to be decided
+
+1. **Should removed players see the game on their dashboard?** Currently they don't (the
+   `where.not(status: "banned")` query drops them). The plan says they should, with a "Former" badge.
+
+2. **Should removed players have read-only access?** If yes, the controllers need to distinguish
+   between removed (read) and active (read+write). Currently removed players can post, edit
+   characters, etc.
+
+### What needs to be built
+
+1. **Dashboard**: change `where.not(status: "banned")` to include removed members, add "Former" badge:
+   ```ruby
+   # games_controller.rb
+   @memberships = current_user.game_members
+     .where.not(status: "banned")  # already correct — just confirm removed shows up
+   ```
+   ```erb
+   <%# games/index.html.erb — in the game card %>
+   <% if membership.removed? %>
+     <span class="badge badge--gray">Former</span>
+   <% end %>
+   ```
+
+2. **Read-only enforcement for removed players**: add a `require_active_member!` before_action
+   on any write action (create post, create character, edit participants, etc.):
+   ```ruby
+   def require_active_member!
+     membership = @game.member_for(current_user)
+     return if membership&.game_master? || membership&.active?
+     redirect_to game_path(@game), alert: "You no longer have posting access to this game."
+   end
+   ```
+
+3. **Composer guard**: already partially in place — `@game.member_for(current_user)&.active?`
+   hides the composer for non-active members. Verify this covers removed players correctly.
+
+### Specs to add
+
+```ruby
+it "removed player sees game on dashboard with Former badge" do
+  membership.update!(status: "removed")
+  sign_in_as(player)
+  visit root_path
+  expect(page).to have_text(game.name)
+  expect(page).to have_text("Former")
+end
+
+it "removed player cannot post in a scene" do
+  membership.update!(status: "removed")
+  sign_in_as(player)
+  visit game_scene_path(game, scene)
+  expect(page).not_to have_css("#post_composer")
+end
+
+it "banned player does not see game on dashboard" do
+  membership.update!(status: "banned")
+  sign_in_as(player)
+  visit root_path
+  expect(page).not_to have_text(game.name)
+end
+
+it "banned player cannot access the game directly" do
+  membership.update!(status: "banned")
+  sign_in_as(player)
+  visit game_path(game)
+  expect(page).to have_current_path(root_path)
+end
+```
+
+---
+
+## 11. Player profile page (`profiles#show`)
+
+There is no public profile page. The profile resource only has `edit` and `update` —
+clicking your name in the navbar takes you straight to the edit form.
+
+**What to build:**
+
+A `profiles#show` page, accessible at `/profile`, showing:
+- Display name
+- Games the user is a member of (with role)
+- Any other preferences worth surfacing (e.g. hide OOC setting)
+
+The navbar link should go to `profile_path` (show) with an "Edit" button on that page,
+rather than dropping the user directly into the form.
+
+**Routes:**
+```ruby
+resource :profile, only: %i[show edit update], controller: "profiles" do
+  post :toggle_hide_ooc, on: :collection
+end
+```
+
+**Controller:**
+```ruby
+def show
+  @profile = current_user.user_profile
+end
+```
+
+**Navbar change** (`layouts/_navbar.html.erb`):
+```erb
+<%# Change edit_profile_path → profile_path %>
+<%= link_to current_user.display_name || current_user.email.split("@").first, profile_path %>
+```
+
+---
+
+## 13. Things not yet built
 
 - **Image attachments on posts and scenes** — the models have `has_one_attached :image`
   but the composer form doesn't include a file upload field yet. Add it to
@@ -293,7 +500,7 @@ is blank (which it is in test), so no mocking needed for basic routing tests.
 - **`aws-sdk-s3` gem** — Active Storage with R2 requires the S3 adapter gem.
   Add `gem "aws-sdk-s3", require: false` to the Gemfile before enabling R2.
 
-## 10. Recommended first thing to test end-to-end
+## 14. Recommended first thing to test end-to-end
 
 1. Start the server locally
 2. Go to `/users/sign_in`, enter your email

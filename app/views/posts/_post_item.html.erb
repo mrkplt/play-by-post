@@ -1,8 +1,9 @@
 <div id="<%= dom_id(post) %>" class="post <%= post.is_ooc? ? 'post--ooc' : '' %>" data-ooc="<%= post.is_ooc? %>">
   <div class="post__meta">
-    <strong><%= post.user.display_name || post.user.email %></strong>
+    <% participant = scene.scene_participants.find { |sp| sp.user_id == post.user_id } %>
+    <strong><%= participant&.display_name || post.user.display_name || post.user.email %></strong>
     &middot;
-    <%= post.created_at.strftime("%b %-d, %Y %-I:%M %p") %>
+    <time data-local-time="<%= post.created_at.iso8601 %>"><%= post.created_at.strftime("%b %-d, %Y %-I:%M %p") %></time>
     <% if post.is_ooc? %>
       <span class="badge badge--gray">OOC</span>
     <% end %>

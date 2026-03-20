@@ -5,7 +5,7 @@ class ScenesController < ApplicationController
 
   def new
     @scene = @game.scenes.new
-    @participants = active_game_users
+    @players_with_characters = active_players_with_characters
   end
 
   def create
@@ -16,7 +16,7 @@ class ScenesController < ApplicationController
       notify_new_scene
       redirect_to game_scene_path(@game, @scene), notice: "Scene created."
     else
-      @participants = active_game_users
+      @players_with_characters = active_players_with_characters
       render :new, status: :unprocessable_entity
     end
   end
@@ -27,9 +27,10 @@ class ScenesController < ApplicationController
     @is_gm = @game.game_master?(current_user)
     @is_participant = @scene.participant?(current_user)
     @is_muted = NotificationPreference.muted?(@scene, current_user)
+    @hide_ooc = current_user.user_profile&.hide_ooc? || false
+    @child_scenes = @scene.child_scenes.visible_to(current_user, @game).order(:created_at)
 
-    # Update last_visited_at
-    if @is_participant
+    if @is_participant || @is_gm
       @scene.scene_participants.find_by(user: current_user)
         &.update(last_visited_at: Time.current)
     end
@@ -84,9 +85,21 @@ class ScenesController < ApplicationController
     redirect_to root_path, alert: "You do not have access to this game."
   end
 
-  def active_game_users
-    @game.users.joins(:game_members)
-      .where(game_members: { game: @game, status: "active" })
+  # Returns an array of [user, characters] pairs for all active players,
+  # including players with no characters (empty array).
+  def active_players_with_characters
+    players = @game.users.joins(:game_members)
+      .where(game_members: { game: @game, role: "player", status: "active" })
+      .order("user_profiles.display_name")
+      .joins("LEFT JOIN user_profiles ON user_profiles.user_id = users.id")
+
+    characters_by_user = @game.characters.active
+      .joins("INNER JOIN game_members ON game_members.user_id = characters.user_id AND game_members.game_id = #{@game.id}")
+      .where(game_members: { role: "player", status: "active" })
+      .order(:name)
+      .group_by(&:user_id)
+
+    players.map { |user| [ user, characters_by_user.fetch(user.id, []) ] }
   end
 
   def notify_new_scene
@@ -105,9 +118,17 @@ class ScenesController < ApplicationController
 
   def add_participants
     gm = @game.game_master
-    user_ids = (Array(params[:participant_ids]) + [ gm.id, current_user.id ]).map(&:to_i).uniq
-    user_ids.each do |uid|
-      @scene.scene_participants.find_or_create_by!(user_id: uid)
+
+    # Always add the GM as a user-only (no character) participant
+    @scene.scene_participants.find_or_create_by!(user_id: gm.id)
+
+    # Add each selected character, deriving user from character.user
+    Array(params[:character_ids]).map(&:to_i).each do |cid|
+      character = @game.characters.find_by(id: cid)
+      next unless character
+      @scene.scene_participants.find_or_create_by!(user_id: character.user_id) do |sp|
+        sp.character = character
+      end
     end
   end
 

@@ -1,3 +1,8 @@
+<nav style="font-size:0.85rem; margin-bottom:1rem; color:#64748b;">
+  <%= link_to "Games", root_path %> &rsaquo;
+  <%= @game.name %>
+</nav>
+
 <div class="section__header">
   <h1><%= @game.name %></h1>
   <% if @is_gm %>
@@ -67,8 +72,13 @@
       <tbody>
         <% @resolved_scenes.each do |scene| %>
           <tr>
-            <td><%= link_to scene.title, game_scene_path(@game, scene) %></td>
-            <td><%= scene.resolved_at.strftime("%b %-d, %Y") %></td>
+            <td>
+              <%= link_to scene.title, game_scene_path(@game, scene) %>
+              <% if scene.parent_scene.present? %>
+                <span style="font-size:0.8rem; color:#94a3b8;">↳ <%= link_to scene.parent_scene.title, game_scene_path(@game, scene.parent_scene) %></span>
+              <% end %>
+            </td>
+            <td><time data-local-time="<%= scene.resolved_at.iso8601 %>"><%= scene.resolved_at.strftime("%b %-d, %Y") %></time></td>
           </tr>
         <% end %>
       </tbody>

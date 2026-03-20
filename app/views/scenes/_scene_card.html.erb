@@ -20,7 +20,7 @@
     <% if scene.parent_scene.present? %>
       <span>↳ <%= link_to scene.parent_scene.title, game_scene_path(game, scene.parent_scene) %></span> &middot;
     <% end %>
-    <span><%= scene.users.where.not(id: game.game_master).map { |u| u.display_name || u.email }.join(", ") %></span>
+    <span><%= scene.scene_participants.includes(:character, :user).reject { |sp| sp.character_id.nil? }.map(&:display_name).join(", ") %></span>
     &middot;
     <span><%= time_ago_in_words(scene.updated_at) %> ago</span>
   </div>

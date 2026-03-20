@@ -55,7 +55,6 @@ sable = Character.find_or_create_by!(game: game, user: alice, name: "Sable Night
     that turned out to be genuine. Now she uses her illusions to run cons for coin
     and, occasionally, for the thrill of it.
   TEXT
-  c.active = true
 end
 
 thornwall = Character.find_or_create_by!(game: game, user: bob, name: "Thornwall Ironback") do |c|
@@ -77,7 +76,6 @@ thornwall = Character.find_or_create_by!(game: game, user: bob, name: "Thornwall
     medals, and a healthy distrust of anyone who gives orders. He's still not sure
     why he joined this group—probably the pay. He pretends it isn't the company.
   TEXT
-  c.active = true
 end
 
 vesper = Character.find_or_create_by!(game: game, user: claire, name: "Vesper Ashcroft") do |c|
@@ -98,7 +96,6 @@ vesper = Character.find_or_create_by!(game: game, user: claire, name: "Vesper As
     a rival faith claims them and erases the old ways entirely. The darkness doesn't
     frighten her. She grew up in it.
   TEXT
-  c.active = true
 end
 
 puts "  Characters: #{game.characters.count}"
@@ -112,18 +109,20 @@ prologue = Scene.find_or_create_by!(game: game, title: "The Broken Bridge at Mir
   s.resolution = "The party crossed using Sable's rope and Thornwall's brute strength. They found a survivor clinging to the underside—a courier with a sealed letter addressed to someone named 'The Architect.' Vesper's divine sense detected undead in the water. They ran."
 end
 
-[gm, alice, bob, claire].each do |u|
-  SceneParticipant.find_or_create_by!(scene: prologue, user: u) { |sp| sp.last_visited_at = 3.days.ago }
-end
+SceneParticipant.find_or_create_by!(scene: prologue, user: gm)    { |sp| sp.last_visited_at = 3.days.ago }
+SceneParticipant.find_or_create_by!(scene: prologue, user: alice)  { |sp| sp.character = sable;     sp.last_visited_at = 3.days.ago }
+SceneParticipant.find_or_create_by!(scene: prologue, user: bob)    { |sp| sp.character = thornwall; sp.last_visited_at = 3.days.ago }
+SceneParticipant.find_or_create_by!(scene: prologue, user: claire) { |sp| sp.character = vesper;    sp.last_visited_at = 3.days.ago }
 
 # Scene 2: Active — main scene
 tavern = Scene.find_or_create_by!(game: game, title: "The Salt & Sorrow Tavern") do |s|
   s.description = "A low-ceilinged tavern in the port town of Ashfen. The party has a contact here—or did. The table where he was supposed to meet them is empty, and the barkeep is pretending not to notice."
 end
 
-[gm, alice, bob, claire].each do |u|
-  SceneParticipant.find_or_create_by!(scene: tavern, user: u) { |sp| sp.last_visited_at = 1.hour.ago }
-end
+SceneParticipant.find_or_create_by!(scene: tavern, user: gm)    { |sp| sp.last_visited_at = 1.hour.ago }
+SceneParticipant.find_or_create_by!(scene: tavern, user: alice)  { |sp| sp.character = sable;     sp.last_visited_at = 1.hour.ago }
+SceneParticipant.find_or_create_by!(scene: tavern, user: bob)    { |sp| sp.character = thornwall; sp.last_visited_at = 1.hour.ago }
+SceneParticipant.find_or_create_by!(scene: tavern, user: claire) { |sp| sp.character = vesper;    sp.last_visited_at = 1.hour.ago }
 
 # Scene 3: Active — private side scene (Sable only)
 side_scene = Scene.find_or_create_by!(game: game, title: "A Quiet Word in the Alley") do |s|
@@ -132,9 +131,8 @@ side_scene = Scene.find_or_create_by!(game: game, title: "A Quiet Word in the Al
   s.parent_scene_id = tavern.id
 end
 
-[gm, alice].each do |u|
-  SceneParticipant.find_or_create_by!(scene: side_scene, user: u) { |sp| sp.last_visited_at = 30.minutes.ago }
-end
+SceneParticipant.find_or_create_by!(scene: side_scene, user: gm)   { |sp| sp.last_visited_at = 30.minutes.ago }
+SceneParticipant.find_or_create_by!(scene: side_scene, user: alice) { |sp| sp.character = sable; sp.last_visited_at = 30.minutes.ago }
 
 puts "  Scenes: #{game.scenes.count} (#{game.scenes.active.count} active, #{game.scenes.resolved.count} resolved)"
 

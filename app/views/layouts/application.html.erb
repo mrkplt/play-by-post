@@ -19,5 +19,18 @@
       <% end %>
       <%= yield %>
     </main>
+  <script>
+    function applyLocalTimes() {
+      document.querySelectorAll("time[data-local-time]").forEach(function(el) {
+        var d = new Date(el.dataset.localTime);
+        el.textContent = d.toLocaleString(undefined, {
+          month: "short", day: "numeric", year: "numeric",
+          hour: "numeric", minute: "2-digit"
+        });
+      });
+    }
+    document.addEventListener("DOMContentLoaded", applyLocalTimes);
+    document.addEventListener("turbo:render", applyLocalTimes);
+  </script>
   </body>
 </html>

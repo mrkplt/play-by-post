@@ -7,7 +7,16 @@ class Character < ApplicationRecord
 
   after_save :snapshot_version
 
-  scope :active, -> { where(active: true) }
+  scope :active, -> { where(archived_at: nil) }
+  scope :archived, -> { where.not(archived_at: nil) }
+
+  def archived?
+    archived_at.present?
+  end
+
+  def archive!
+    update!(archived_at: Time.current)
+  end
   scope :visible_to, ->(viewer, game) {
     return all if game.game_master?(viewer)
 

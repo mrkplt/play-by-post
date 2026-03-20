@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_03_19_015359) do
+ActiveRecord::Schema[8.0].define(version: 2026_03_20_005859) do
   create_table "action_mailbox_inbound_emails", force: :cascade do |t|
     t.integer "status", default: 0, null: false
     t.string "message_id", null: false
@@ -63,10 +63,10 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_19_015359) do
     t.integer "user_id", null: false
     t.string "name", null: false
     t.text "content"
-    t.boolean "active", default: true, null: false
     t.boolean "hidden", default: false, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.datetime "archived_at"
     t.index ["game_id"], name: "index_characters_on_game_id"
     t.index ["user_id"], name: "index_characters_on_user_id"
   end
@@ -143,6 +143,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_19_015359) do
     t.datetime "last_visited_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.integer "character_id"
+    t.index ["character_id"], name: "index_scene_participants_on_character_id"
     t.index ["scene_id", "user_id"], name: "index_scene_participants_on_scene_id_and_user_id", unique: true
     t.index ["scene_id"], name: "index_scene_participants_on_scene_id"
     t.index ["user_id"], name: "index_scene_participants_on_user_id"
@@ -168,6 +170,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_19_015359) do
     t.datetime "last_login_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.boolean "hide_ooc", default: false, null: false
     t.index ["user_id"], name: "index_user_profiles_on_user_id"
   end
 
@@ -197,6 +200,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_19_015359) do
   add_foreign_key "notification_preferences", "users"
   add_foreign_key "posts", "scenes"
   add_foreign_key "posts", "users"
+  add_foreign_key "scene_participants", "characters"
   add_foreign_key "scene_participants", "scenes"
   add_foreign_key "scene_participants", "users"
   add_foreign_key "scenes", "games"

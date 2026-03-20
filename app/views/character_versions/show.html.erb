@@ -1,0 +1,23 @@
+<nav style="font-size:0.85rem; margin-bottom:1rem; color:#64748b;">
+  <%= link_to "Games", root_path %> &rsaquo;
+  <%= link_to @game.name, game_path(@game) %> &rsaquo;
+  <%= link_to @character.name, game_character_path(@game, @character) %> &rsaquo;
+  Version <time data-local-time="<%= @version.created_at.iso8601 %>"><%= @version.created_at.strftime("%b %-d, %Y %-I:%M %p") %></time>
+</nav>
+
+<div class="section__header">
+  <h1><%= @character.name %> <span style="font-weight:normal; color:#64748b;">— <time data-local-time="<%= @version.created_at.iso8601 %>"><%= @version.created_at.strftime("%b %-d, %Y %-I:%M %p") %></time></span></h1>
+  <%= link_to "Back to character", game_character_path(@game, @character), class: "btn btn--secondary" %>
+</div>
+
+<p style="font-size:0.85rem; color:#64748b;">
+  Edited by: <%= @version.edited_by.display_name || @version.edited_by.email %>
+</p>
+
+<div class="card">
+  <% if @version.content.present? %>
+    <div class="character-sheet"><%= @version.content %></div>
+  <% else %>
+    <p style="color:#94a3b8;">No content in this version.</p>
+  <% end %>
+</div>

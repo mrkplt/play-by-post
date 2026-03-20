@@ -11,7 +11,9 @@ Rails.application.routes.draw do
   get "invitations/:token/accept", to: "invitations#accept", as: :accept_invitation
 
   authenticate :user do
-    resource :profile, only: %i[edit update], controller: "profiles"
+    resource :profile, only: %i[edit update], controller: "profiles" do
+      post :toggle_hide_ooc, on: :collection
+    end
     resources :games, only: %i[index new create show] do
       resources :scenes, only: %i[new create show] do
         member do
@@ -26,7 +28,13 @@ Rails.application.routes.draw do
         resources :game_members, only: %i[update]
       end
       resources :game_files, only: %i[index create destroy]
-      resources :characters, only: %i[new create show edit update]
+      resources :characters, only: %i[new create show edit update] do
+        member do
+          patch :archive
+          patch :restore
+        end
+        resources :character_versions, only: %i[show], path: "versions"
+      end
     end
   end
 

@@ -24,18 +24,24 @@
   <% unless quick %>
     <div class="field">
       <label>Participants</label>
-      <p style="font-size:0.85rem; color:#64748b; margin:0.25rem 0 0.5rem;">The GM is always included. You are checked by default and cannot be removed.</p>
-      <% @participants.each do |user| %>
-        <% is_self = user == current_user %>
-        <label style="display:block; font-weight:normal; margin-bottom:0.25rem;">
-          <input type="checkbox" name="participant_ids[]" value="<%= user.id %>"
-            <%= "checked" if is_self || params[:participant_ids]&.include?(user.id.to_s) || @scene.scene_participants.map(&:user_id).include?(user.id) %>
-            <%= "disabled" if is_self %>>
-          <%= user.display_name || user.email %>
-        </label>
-        <% if is_self %>
-          <input type="hidden" name="participant_ids[]" value="<%= user.id %>">
-        <% end %>
+      <p style="font-size:0.85rem; color:#64748b; margin:0.25rem 0 0.5rem;">Select characters to include. The GM is always included automatically.</p>
+      <% @players_with_characters.each do |user, characters| %>
+        <div style="margin-bottom:0.75rem;">
+          <div style="font-size:0.85rem; font-weight:600; color:#475569; margin-bottom:0.25rem;">
+            <%= user.display_name || user.email %>
+          </div>
+          <% if characters.empty? %>
+            <div style="font-size:0.85rem; color:#94a3b8; padding-left:1rem;">No active characters</div>
+          <% else %>
+            <% characters.each do |character| %>
+              <label style="display:block; font-weight:normal; margin-bottom:0.2rem; padding-left:1rem;">
+                <input type="checkbox" name="character_ids[]" value="<%= character.id %>"
+                  <%= "checked" if params[:character_ids]&.include?(character.id.to_s) || @scene.scene_participants.map(&:character_id).include?(character.id) %>>
+                <%= character.name %>
+              </label>
+            <% end %>
+          <% end %>
+        </div>
       <% end %>
     </div>
 
@@ -53,8 +59,8 @@
     </div>
   <% else %>
     <%= f.hidden_field :parent_scene_id, value: params[:parent_scene_id] %>
-    <% Array(params[:participant_ids]).each do |uid| %>
-      <input type="hidden" name="participant_ids[]" value="<%= uid %>">
+    <% Array(params[:character_ids]).each do |cid| %>
+      <input type="hidden" name="character_ids[]" value="<%= cid %>">
     <% end %>
   <% end %>
 

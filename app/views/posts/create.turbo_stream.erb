@@ -1,2 +1,3 @@
+<%= turbo_stream.remove "no_posts_message" %>
 <%= turbo_stream.append "posts", partial: "posts/post_item", locals: { post: @post, game: @game, scene: @scene } %>
 <%= turbo_stream.replace "post_composer", partial: "posts/composer", locals: { post: Post.new, scene: @scene, game: @game } %>

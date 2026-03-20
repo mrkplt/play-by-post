@@ -4,11 +4,11 @@ FactoryBot.define do
     user
     sequence(:name) { |n| "Character #{n}" }
     content { "Character sheet content" }
-    active { true }
+    archived_at { nil }
     hidden { false }
 
-    trait :inactive do
-      active { false }
+    trait :archived do
+      archived_at { Time.current }
     end
 
     trait :hidden do

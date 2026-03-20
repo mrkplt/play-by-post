@@ -97,11 +97,12 @@ RSpec.describe "Posts", type: :feature do
       expect(page).to have_css(".post--ooc")
     end
 
-    it "checking Hide OOC hides OOC posts" do
+    it "Hide OOC posts menu item hides OOC posts" do
       sign_in_as(player)
       visit game_scene_path(game, scene)
 
-      check "Hide OOC posts"
+      find("button[title='Scene actions']").click
+      click_on "Hide OOC posts"
 
       expect(page).to have_text("In character text.")
       expect(page).not_to have_css(".post--ooc", visible: true)

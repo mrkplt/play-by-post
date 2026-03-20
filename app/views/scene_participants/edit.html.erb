@@ -2,12 +2,24 @@
 
 <%= form_with url: game_scene_participants_path(@game, @scene), method: :patch do |f| %>
   <div class="field">
-    <% @all_participants.each do |user| %>
-      <label style="display:block; font-weight:normal; margin-bottom:0.25rem;">
-        <input type="checkbox" name="participant_ids[]" value="<%= user.id %>"
-          <%= "checked" if @current_participant_ids.include?(user.id) %>>
-        <%= user.display_name || user.email %>
-      </label>
+    <p style="font-size:0.85rem; color:#64748b; margin:0 0 0.75rem;">The GM is always included automatically.</p>
+    <% @players_with_characters.each do |user, characters| %>
+      <div style="margin-bottom:0.75rem;">
+        <div style="font-size:0.85rem; font-weight:600; color:#475569; margin-bottom:0.25rem;">
+          <%= user.display_name || user.email %>
+        </div>
+        <% if characters.empty? %>
+          <div style="font-size:0.85rem; color:#94a3b8; padding-left:1rem;">No active characters</div>
+        <% else %>
+          <% characters.each do |character| %>
+            <label style="display:block; font-weight:normal; margin-bottom:0.2rem; padding-left:1rem;">
+              <input type="checkbox" name="character_ids[]" value="<%= character.id %>"
+                <%= "checked" if @current_character_ids.include?(character.id) %>>
+              <%= character.name %>
+            </label>
+          <% end %>
+        <% end %>
+      </div>
     <% end %>
   </div>
 

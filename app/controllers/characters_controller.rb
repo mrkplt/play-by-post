@@ -1,19 +1,26 @@
 class CharactersController < ApplicationController
   before_action :set_game
   before_action :require_game_access!
-  before_action :set_character, only: %i[show edit update]
+  before_action :set_character, only: %i[show edit update archive restore]
   before_action :require_edit_access!, only: %i[edit update]
+  before_action :require_gm!, only: %i[archive restore]
 
   def new
     @character = Character.new
-    @users = @game.active_members.includes(:user).map(&:user)
+    @users = @game.active_members.where(role: "player").includes(:user).map(&:user)
   end
 
   def create
-    owner = if @game.game_master?(current_user) && params[:character][:user_id].present?
-      User.find(params[:character][:user_id])
+    if @game.game_master?(current_user)
+      if params[:character][:user_id].blank?
+        @character = @game.characters.new
+        @users = @game.active_members.where(role: "player").includes(:user).map(&:user)
+        @character.errors.add(:base, "Please select a player")
+        return render :new, status: :unprocessable_entity
+      end
+      owner = User.find(params[:character][:user_id])
     else
-      current_user
+      owner = current_user
     end
 
     @character = @game.characters.new(character_params.except(:user_id))
@@ -22,7 +29,7 @@ class CharactersController < ApplicationController
     if @character.save
       redirect_to game_character_path(@game, @character), notice: "Character created."
     else
-      @users = @game.active_members.includes(:user).map(&:user)
+      @users = @game.active_members.where(role: "player").includes(:user).map(&:user)
       render :new, status: :unprocessable_entity
     end
   end
@@ -32,6 +39,16 @@ class CharactersController < ApplicationController
   end
 
   def edit
+  end
+
+  def archive
+    @character.archive!
+    redirect_to game_character_path(@game, @character), notice: "#{@character.name} archived."
+  end
+
+  def restore
+    @character.update!(archived_at: nil)
+    redirect_to game_character_path(@game, @character), notice: "#{@character.name} restored."
   end
 
   def update
@@ -50,6 +67,9 @@ class CharactersController < ApplicationController
 
   def set_character
     @character = @game.characters.find(params[:id])
+    unless @character.editable_by?(current_user, @game) || !@character.hidden? || @game.game_master?(current_user)
+      redirect_to game_path(@game), alert: "That character sheet is hidden."
+    end
   end
 
   def require_game_access!
@@ -66,7 +86,13 @@ class CharactersController < ApplicationController
     end
   end
 
+  def require_gm!
+    unless @game.game_master?(current_user)
+      redirect_to game_character_path(@game, @character), alert: "Only the GM can archive or restore characters."
+    end
+  end
+
   def character_params
-    params.require(:character).permit(:name, :content, :active, :hidden, :user_id)
+    params.require(:character).permit(:name, :content, :hidden, :user_id)
   end
 end

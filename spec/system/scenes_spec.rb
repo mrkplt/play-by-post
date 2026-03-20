@@ -34,14 +34,15 @@ RSpec.describe "Scenes", type: :feature do
       expect(page).to have_text(gm.display_name)
     end
 
-    it "allows selecting players as participants" do
+    it "allows selecting characters as participants" do
+      character = create(:character, game: game, user: player, name: "Seraphina Vex")
       visit game_path(game)
       click_on "New Scene"
       fill_in "Title", with: "Group Scene"
-      check player.display_name
+      check character.name
       click_on "Create Scene"
 
-      expect(page).to have_text(player.display_name)
+      expect(page).to have_text(character.name)
     end
 
     it "can create a private scene" do
@@ -74,6 +75,7 @@ RSpec.describe "Scenes", type: :feature do
 
     it "creates a quick scene inheriting the parent" do
       visit game_scene_path(game, scene)
+      find("button[title='Scene actions']").click
       click_on "Quick Scene"
 
       fill_in "Title", with: "Continuation"
@@ -141,6 +143,7 @@ RSpec.describe "Scenes", type: :feature do
 
     it "GM can resolve a scene with outcome text" do
       visit game_scene_path(game, scene)
+      find("button[title='Scene actions']").click
       click_on "End Scene"
       fill_in "Outcome (optional)", with: "The party defeated the dragon."
       click_on "Confirm — End Scene"
@@ -175,15 +178,15 @@ RSpec.describe "Scenes", type: :feature do
 
     it "can mute and unmute notifications for a scene" do
       visit game_scene_path(game, scene)
-      click_on "Mute"
+      find("button[title='Scene actions']").click
+      click_on "Mute notifications"
 
       expect(page).to have_text("Notifications muted")
-      expect(page).to have_button("Unmute")
 
-      click_on "Unmute"
+      find("button[title='Scene actions']").click
+      click_on "Unmute notifications"
 
       expect(page).to have_text("Notifications enabled")
-      expect(page).to have_button("Mute")
     end
   end
 end
