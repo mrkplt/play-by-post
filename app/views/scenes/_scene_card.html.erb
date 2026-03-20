@@ -1,4 +1,19 @@
 <div class="card">
+  <% children = scene.child_scenes.select { |c| c.game_id == game.id } %>
+  <% if children.any? %>
+    <div style="display:flex; flex-wrap:wrap; gap:0.4rem; font-size:0.8rem; color:#94a3b8; margin-bottom:0.4rem;">
+      <% children.each do |child| %>
+        <span>⤷ to <%= link_to child.title, game_scene_path(game, child), style: "color:#94a3b8;" %>
+          <% if child.resolved? %>
+            <span class="badge badge--gray" style="font-size:0.65rem;">Resolved</span>
+          <% else %>
+            <span class="badge badge--green" style="font-size:0.65rem;">Active</span>
+          <% end %>
+        </span>
+      <% end %>
+    </div>
+  <% end %>
+
   <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:0.5rem;">
     <h3 style="margin:0; font-size:1rem;">
       <%= link_to scene.title, game_scene_path(game, scene) %>
@@ -17,11 +32,17 @@
   <% end %>
 
   <div style="font-size:0.8rem; color:#94a3b8;">
-    <% if scene.parent_scene.present? %>
-      <span>↳ <%= link_to scene.parent_scene.title, game_scene_path(game, scene.parent_scene) %></span> &middot;
-    <% end %>
     <span><%= scene.scene_participants.includes(:character, :user).reject { |sp| sp.character_id.nil? }.map(&:display_name).join(", ") %></span>
     &middot;
     <span><%= time_ago_in_words(scene.updated_at) %> ago</span>
   </div>
+
+  <% if scene.parent_scene.present? %>
+    <div style="font-size:0.8rem; color:#94a3b8; margin-top:0.4rem;">
+      ↳ from <%= link_to scene.parent_scene.title, game_scene_path(game, scene.parent_scene), style: "color:#94a3b8;" %>
+      <% if scene.parent_scene.resolved? %>
+        <span class="badge badge--gray" style="font-size:0.65rem;">Resolved</span>
+      <% end %>
+    </div>
+  <% end %>
 </div>

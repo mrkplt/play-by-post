@@ -21,6 +21,14 @@ class Scene < ApplicationRecord
     resolved_at.present?
   end
 
+  def last_activity_at
+    if posts.loaded?
+      posts.map(&:created_at).max || created_at
+    else
+      posts.maximum(:created_at) || created_at
+    end
+  end
+
   def participant?(user)
     scene_participants.exists?(user: user)
   end

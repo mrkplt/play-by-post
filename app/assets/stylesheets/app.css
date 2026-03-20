@@ -145,3 +145,35 @@ th { font-weight: 600; font-size: 0.85rem; color: #64748b; }
 /* Scene rows */
 .scene-row { display: flex; gap: 1rem; flex-wrap: wrap; }
 .scene-row .card { flex: 1; min-width: 200px; }
+
+/* Scene tree (DAG view) */
+.scene-tree { font-size: 0.9rem; }
+
+.tree-node { margin-bottom: 0.15rem; }
+
+.tree-node__row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3rem 0.5rem;
+  border-radius: 4px;
+}
+.tree-node__row--active { font-weight: 600; }
+.tree-node__row--resolved { color: #64748b; }
+.tree-node__row--resolved a { color: #64748b; }
+
+.tree-node__connector {
+  color: #94a3b8;
+  font-family: monospace;
+  flex-shrink: 0;
+}
+
+.tree-node__title { white-space: nowrap; }
+
+.tree-node__meta {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  margin-left: auto;
+  white-space: nowrap;
+}
+

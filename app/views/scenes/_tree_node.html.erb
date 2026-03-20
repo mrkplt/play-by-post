@@ -1,0 +1,32 @@
+<%# Recursive tree node for DAG display.
+     Expects: node (hash with :scene, :children), game, depth %>
+
+<% scene = node[:scene] %>
+<% children = node[:children] %>
+<% is_active = !scene.resolved? %>
+
+<div class="tree-node" style="margin-left:<%= depth * 1.5 %>rem;">
+  <div class="tree-node__row <%= is_active ? 'tree-node__row--active' : 'tree-node__row--resolved' %>">
+    <% if depth > 0 %>
+      <span class="tree-node__connector">└─</span>
+    <% end %>
+    <span class="tree-node__title">
+      <%= link_to scene.title, game_scene_path(game, scene) %>
+    </span>
+    <% if is_active %>
+      <span class="badge badge--green">Active</span>
+    <% else %>
+      <span class="badge badge--gray">Resolved</span>
+    <% end %>
+    <% if scene.private? %>
+      <span class="badge badge--yellow">Private</span>
+    <% end %>
+    <span class="tree-node__meta">
+      <%= scene.created_at.strftime("%b %-d, %Y %l:%M%P") %>
+    </span>
+  </div>
+
+  <% children.each do |child_node| %>
+    <%= render "scenes/tree_node", node: child_node, game: game, depth: depth + 1 %>
+  <% end %>
+</div>

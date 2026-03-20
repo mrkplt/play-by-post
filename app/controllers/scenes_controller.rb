@@ -3,6 +3,20 @@ class ScenesController < ApplicationController
   before_action :require_game_access!
   before_action :set_scene, only: %i[show resolve toggle_notification_preference]
 
+  def index
+    all_scenes = @game.scenes
+      .visible_to(current_user, @game)
+      .includes(:parent_scene, :child_scenes, :scene_participants => [:character, :user])
+      .order(created_at: :asc)
+      .to_a
+
+    scene_index = all_scenes.index_by(&:id)
+    roots = all_scenes.select { |s| s.parent_scene_id.nil? || scene_index[s.parent_scene_id].nil? }
+
+    @trees = roots.map { |root| build_tree(root, scene_index, all_scenes) }
+    @is_gm = @game.game_master?(current_user)
+  end
+
   def new
     @scene = @game.scenes.new
     @players_with_characters = active_players_with_characters
@@ -130,6 +144,16 @@ class ScenesController < ApplicationController
         sp.character = character
       end
     end
+  end
+
+  def build_tree(scene, scene_index, all_scenes)
+    children = all_scenes
+      .select { |s| s.parent_scene_id == scene.id }
+      .sort_by(&:created_at)
+    {
+      scene: scene,
+      children: children.map { |c| build_tree(c, scene_index, all_scenes) }
+    }
   end
 
   def scene_params

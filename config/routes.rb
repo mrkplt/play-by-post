@@ -15,7 +15,7 @@ Rails.application.routes.draw do
       post :toggle_hide_ooc, on: :collection
     end
     resources :games, only: %i[index new create show] do
-      resources :scenes, only: %i[new create show] do
+      resources :scenes, only: %i[index new create show] do
         member do
           patch :resolve
           post :toggle_notification_preference

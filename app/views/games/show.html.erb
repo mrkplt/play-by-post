@@ -41,49 +41,17 @@
 <div class="section">
   <div class="section__header">
     <h2>Active Scenes</h2>
-    <%= link_to "New Scene", new_game_scene_path(@game), class: "btn" %>
+    <div style="display:flex; gap:0.5rem;">
+      <%= link_to "All Scenes", game_scenes_path(@game), class: "btn btn--secondary" %>
+      <%= link_to "New Scene", new_game_scene_path(@game), class: "btn" %>
+    </div>
   </div>
-  <% if @scene_groups.empty? %>
-    <p style="color:#94a3b8;">No active scenes yet.</p>
+  <% if @active_scenes.empty? %>
+    <p style="color:#94a3b8;">No active scenes.</p>
   <% else %>
-    <% @scene_groups.each do |group| %>
-      <div class="scene-row">
-        <% group.each do |scene| %>
-          <%= render "scenes/scene_card", scene: scene, game: @game %>
-        <% end %>
-      </div>
+    <% @active_scenes.each do |scene| %>
+      <%= render "scenes/scene_card", scene: scene, game: @game %>
     <% end %>
-  <% end %>
-</div>
-
-<!-- Resolved Scenes -->
-<div class="section">
-  <div class="section__header"><h2>Resolved Scenes</h2></div>
-  <% if @resolved_scenes.empty? %>
-    <p style="color:#94a3b8;">No resolved scenes yet.</p>
-  <% else %>
-    <table>
-      <thead>
-        <tr>
-          <th>Title</th>
-          <th>Resolved</th>
-        </tr>
-      </thead>
-      <tbody>
-        <% @resolved_scenes.each do |scene| %>
-          <tr>
-            <td>
-              <%= link_to scene.title, game_scene_path(@game, scene) %>
-              <% if scene.parent_scene.present? %>
-                <span style="font-size:0.8rem; color:#94a3b8;">↳ <%= link_to scene.parent_scene.title, game_scene_path(@game, scene.parent_scene) %></span>
-              <% end %>
-            </td>
-            <td><time data-local-time="<%= scene.resolved_at.iso8601 %>"><%= scene.resolved_at.strftime("%b %-d, %Y") %></time></td>
-          </tr>
-        <% end %>
-      </tbody>
-    </table>
-    <%= pagy_nav(@pagy_resolved) if @pagy_resolved.pages > 1 %>
   <% end %>
 </div>
 

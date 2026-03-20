@@ -36,21 +36,12 @@ class GamesController < ApplicationController
   end
 
   def show
-    active_scenes = @game.scenes.active
+    @active_scenes = @game.scenes
       .visible_to(current_user, @game)
-      .includes(:scene_participants, :users, :parent_scene)
-      .order(created_at: :desc)
-
-    # Group parallel scenes (same parent) together
-    @scene_groups = active_scenes.group_by(&:parent_scene_id).values
-
-    @pagy_resolved, @resolved_scenes = pagy(
-      @game.scenes.resolved
-        .visible_to(current_user, @game)
-        .includes(:parent_scene)
-        .order(resolved_at: :desc),
-      items: 10
-    )
+      .active
+      .includes(:parent_scene, :child_scenes, :posts, :scene_participants => [:character, :user])
+      .to_a
+      .sort_by { |s| -s.last_activity_at.to_i }
 
     @is_gm = @game.game_master?(current_user)
     @characters = @game.characters.active.visible_to(current_user, @game).includes(:user).order(:name)
@@ -73,4 +64,5 @@ class GamesController < ApplicationController
   def game_params
     params.require(:game).permit(:name, :description)
   end
+
 end

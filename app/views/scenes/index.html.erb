@@ -1,0 +1,20 @@
+<nav style="font-size:0.85rem; margin-bottom:1rem; color:#64748b;">
+  <%= link_to "Games", root_path %> &rsaquo;
+  <%= link_to @game.name, game_path(@game) %> &rsaquo;
+  All Scenes
+</nav>
+
+<div class="section__header">
+  <h1>All Scenes</h1>
+  <%= link_to "New Scene", new_game_scene_path(@game), class: "btn" %>
+</div>
+
+<% if @trees.empty? %>
+  <p style="color:#94a3b8;">No scenes yet.</p>
+<% else %>
+  <div class="scene-tree">
+    <% @trees.each do |tree| %>
+      <%= render "scenes/tree_node", node: tree, game: @game, depth: 0 %>
+    <% end %>
+  </div>
+<% end %>
