@@ -16,7 +16,7 @@
 
 <div class="card">
   <% if @version.content.present? %>
-    <div class="character-sheet"><%= @version.content %></div>
+    <div class="character-sheet"><%= render_markdown(@version.content) %></div>
   <% else %>
     <p style="color:#94a3b8;">No content in this version.</p>
   <% end %>

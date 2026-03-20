@@ -12,13 +12,8 @@
   <% end %>
 
   <div class="field">
-    <%= f.label :title %>
+    <%= f.label :title, "Title (optional — defaults to date/time)" %>
     <%= f.text_field :title, maxlength: 200, autofocus: true %>
-  </div>
-
-  <div class="field">
-    <%= f.label :description, "Description (optional)" %>
-    <%= f.text_area :description, rows: 4 %>
   </div>
 
   <% unless quick %>
@@ -47,8 +42,8 @@
 
     <div class="field">
       <%= f.label :parent_scene_id, "Parent scene (optional)" %>
-      <%= f.select :parent_scene_id,
-          @game.scenes.order(:title).map { |s| [s.title, s.id] },
+      <% parent_options = @parent_scene_options.map { |s| [s.resolved? ? "#{s.title} (Resolved)" : s.title, s.id] } %>
+      <%= f.select :parent_scene_id, parent_options,
           { include_blank: "— none —", selected: params[:parent_scene_id] } %>
     </div>
 

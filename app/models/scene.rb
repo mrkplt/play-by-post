@@ -8,6 +8,8 @@ class Scene < ApplicationRecord
   has_many :users, through: :scene_participants
   has_many :posts, dependent: :destroy
 
+  before_validation :default_title
+
   validates :title, presence: true, length: { maximum: 200 }
 
   scope :active, -> { where(resolved_at: nil) }
@@ -31,5 +33,11 @@ class Scene < ApplicationRecord
 
   def participant?(user)
     scene_participants.exists?(user: user)
+  end
+
+  private
+
+  def default_title
+    self.title = Time.current.strftime("%b %-d, %Y %-I:%M %p") if title.blank?
   end
 end

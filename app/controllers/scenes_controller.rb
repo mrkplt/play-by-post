@@ -1,6 +1,7 @@
 class ScenesController < ApplicationController
   before_action :set_game
   before_action :require_game_access!
+  before_action :require_gm!, only: %i[new create]
   before_action :set_scene, only: %i[show resolve toggle_notification_preference]
 
   def index
@@ -20,6 +21,7 @@ class ScenesController < ApplicationController
   def new
     @scene = @game.scenes.new
     @players_with_characters = active_players_with_characters
+    @parent_scene_options = parent_scene_options
   end
 
   def create
@@ -31,6 +33,7 @@ class ScenesController < ApplicationController
       redirect_to game_scene_path(@game, @scene), notice: "Scene created."
     else
       @players_with_characters = active_players_with_characters
+      @parent_scene_options = parent_scene_options
       render :new, status: :unprocessable_entity
     end
   end
@@ -99,6 +102,12 @@ class ScenesController < ApplicationController
     redirect_to root_path, alert: "You do not have access to this game."
   end
 
+  def require_gm!
+    return if @game.game_master?(current_user)
+
+    redirect_to game_path(@game), alert: "Only the GM can create scenes."
+  end
+
   # Returns an array of [user, characters] pairs for all active players,
   # including players with no characters (empty array).
   def active_players_with_characters
@@ -146,6 +155,12 @@ class ScenesController < ApplicationController
     end
   end
 
+  def parent_scene_options
+    active = @game.scenes.active.order(created_at: :desc).to_a
+    recent_resolved = @game.scenes.resolved.order(resolved_at: :desc).limit(3).to_a
+    (active + recent_resolved)
+  end
+
   def build_tree(scene, scene_index, all_scenes)
     children = all_scenes
       .select { |s| s.parent_scene_id == scene.id }
@@ -157,6 +172,6 @@ class ScenesController < ApplicationController
   end
 
   def scene_params
-    params.require(:scene).permit(:title, :description, :private, :parent_scene_id)
+    params.require(:scene).permit(:title, :private, :parent_scene_id)
   end
 end

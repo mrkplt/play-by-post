@@ -17,7 +17,7 @@ RSpec.describe "Characters", type: :feature do
       click_on "New Character"
 
       fill_in "Name", with: "Sable Nightwhisper"
-      fill_in "Sheet (optional)", with: "Race: Half-Elf\nClass: Rogue"
+      fill_in "Sheet (optional, markdown supported)", with: "Race: Half-Elf\nClass: Rogue"
       click_on "Create Character"
 
       expect(page).to have_text("Sable Nightwhisper")

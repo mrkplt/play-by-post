@@ -102,13 +102,12 @@ RSpec.describe "Games", type: :feature do
       expect(page).to have_text("The Dark Forest")
     end
 
-    it "shows resolved scenes in a separate list" do
+    it "does not show resolved scenes on the game view" do
       create(:scene, :resolved, game: game, title: "Prologue")
 
       visit game_path(game)
 
-      expect(page).to have_text("Prologue")
-      expect(page).to have_text("Resolved Scenes")
+      expect(page).not_to have_text("Prologue")
     end
 
     it "shows the character roster" do
@@ -135,6 +134,40 @@ RSpec.describe "Games", type: :feature do
       visit game_path(game)
 
       expect(page).not_to have_link("Manage Players")
+    end
+
+    it "shows New Scene button for GM" do
+      visit game_path(game)
+
+      expect(page).to have_link("New Scene")
+    end
+
+    it "does not show New Scene button for players" do
+      player = create(:user, :with_profile)
+      create(:game_member, game: game, user: player)
+
+      sign_in_as(player)
+      visit game_path(game)
+
+      expect(page).not_to have_link("New Scene")
+    end
+
+    it "shows All Scenes link" do
+      visit game_path(game)
+
+      expect(page).to have_link("All Scenes")
+    end
+
+    it "shows parent and children links on active scene cards" do
+      parent = create(:scene, :resolved, game: game, title: "The Road")
+      active = create(:scene, game: game, title: "The Bridge", parent_scene: parent)
+      child = create(:scene, game: game, title: "The Castle", parent_scene: active)
+
+      visit game_path(game)
+
+      expect(page).to have_text("The Bridge")
+      expect(page).to have_link("The Road")
+      expect(page).to have_link("The Castle")
     end
   end
 end

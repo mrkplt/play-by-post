@@ -28,21 +28,20 @@
           &#9776;
         </button>
         <div data-menu-target="dropdown" hidden style="position:absolute; right:0; top:calc(100% + 4px); background:#fff; border:1px solid #e2e8f0; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.1); min-width:200px; z-index:100; padding:0.4rem 0;">
-          <%= link_to "Quick Scene", new_game_scene_path(@game, quick: true, parent_scene_id: @scene.id),
-              style: "display:block; padding:0.5rem 1rem; color:#1e293b; text-decoration:none; font-size:0.9rem; white-space:nowrap;" %>
-          <%= link_to "New Scene", new_game_scene_path(@game, parent_scene_id: @scene.id),
-              style: "display:block; padding:0.5rem 1rem; color:#1e293b; text-decoration:none; font-size:0.9rem; white-space:nowrap;" %>
-          <% if @is_participant || @is_gm %>
+          <% if @is_gm %>
+            <%= link_to "Quick Scene", new_game_scene_path(@game, quick: true, parent_scene_id: @scene.id),
+                style: "display:block; padding:0.5rem 1rem; color:#1e293b; text-decoration:none; font-size:0.9rem; white-space:nowrap;" %>
+            <%= link_to "New Scene", new_game_scene_path(@game, parent_scene_id: @scene.id),
+                style: "display:block; padding:0.5rem 1rem; color:#1e293b; text-decoration:none; font-size:0.9rem; white-space:nowrap;" %>
             <%= link_to "Edit Participants", edit_game_scene_participants_path(@game, @scene),
                 style: "display:block; padding:0.5rem 1rem; color:#1e293b; text-decoration:none; font-size:0.9rem; white-space:nowrap;" %>
+            <div style="border-top:1px solid #f1f5f9; margin:0.3rem 0;"></div>
           <% end %>
-          <div style="border-top:1px solid #f1f5f9; margin:0.3rem 0;"></div>
           <button data-action="click->ooc-filter#toggle"
               style="display:flex; justify-content:space-between; align-items:center; width:100%; padding:0.5rem 1rem; background:none; border:none; cursor:pointer; color:#1e293b; font-size:0.9rem; white-space:nowrap;">
             <span>Hide OOC posts</span>
             <span data-ooc-filter-target="indicator" style="color:#94a3b8; font-size:0.8rem;">Off</span>
           </button>
-          <div style="border-top:1px solid #f1f5f9; margin:0.3rem 0;"></div>
           <%= button_to @is_muted ? "Unmute notifications" : "Mute notifications",
               toggle_notification_preference_game_scene_path(@game, @scene),
               method: :post,
@@ -84,12 +83,6 @@
   <p style="font-size:0.85rem; color:#64748b; margin:0.25rem 0 0.75rem;">
     Participants: <%= @scene.scene_participants.includes(:character, :user).map(&:display_name).join(", ") %>
   </p>
-
-  <% if @scene.description.present? %>
-    <div style="border-top:1px solid #f1f5f9; padding-top:0.75rem;">
-      <%= simple_format(@scene.description) %>
-    </div>
-  <% end %>
 
   <% if @scene.resolved? && @scene.resolution.present? %>
     <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:4px; padding:0.75rem; margin-top:0.75rem;">

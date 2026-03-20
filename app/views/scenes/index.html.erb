@@ -6,7 +6,9 @@
 
 <div class="section__header">
   <h1>All Scenes</h1>
-  <%= link_to "New Scene", new_game_scene_path(@game), class: "btn" %>
+  <% if @is_gm %>
+    <%= link_to "New Scene", new_game_scene_path(@game), class: "btn" %>
+  <% end %>
 </div>
 
 <% if @trees.empty? %>

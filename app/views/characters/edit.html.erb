@@ -1,15 +1,18 @@
 <h1>Edit — <%= @character.name %></h1>
 
-<%= form_with model: [@game, @character] do |f| %>
+<%= form_with model: [@game, @character], data: { controller: "markdown-preview" } do |f| %>
   <div class="field">
     <%= f.label :name %>
     <%= f.text_field :name %>
   </div>
 
   <div class="field">
-    <%= f.label :content, "Sheet" %>
-    <%= f.text_area :content, rows: 15, class: "character-sheet" %>
+    <%= f.label :content, "Sheet (markdown supported)" %>
+    <%= f.text_area :content, rows: 15, class: "character-sheet",
+        data: { markdown_preview_target: "input", action: "input->markdown-preview#update" } %>
   </div>
+
+  <div data-markdown-preview-target="preview" class="character-sheet" style="display:none; border:1px solid #e2e8f0; border-radius:4px; padding:0.75rem; margin-bottom:0.75rem; min-height:3rem; background:#fafafa;"></div>
 
   <div class="field">
     <label style="font-weight:normal; cursor:pointer;">
@@ -17,8 +20,13 @@
     </label>
   </div>
 
-  <%= f.submit "Save", class: "btn" %>
-  <%= link_to "Cancel", game_character_path(@game, @character), class: "btn btn--secondary" %>
+  <div style="display:flex; gap:0.5rem; align-items:center;">
+    <button type="button" class="btn btn--secondary" style="font-size:0.85rem;" data-action="click->markdown-preview#togglePreview">
+      Preview
+    </button>
+    <%= f.submit "Save", class: "btn" %>
+    <%= link_to "Cancel", game_character_path(@game, @character), class: "btn btn--secondary" %>
+  </div>
 <% end %>
 
 <% if @game.game_master?(current_user) %>

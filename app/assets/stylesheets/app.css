@@ -137,10 +137,16 @@ th { font-weight: 600; font-size: 0.85rem; color: #64748b; }
 .post:last-child { border-bottom: none; }
 .post__meta { font-size: 0.8rem; color: #64748b; margin-bottom: 0.4rem; }
 .post__content { white-space: pre-wrap; }
-.post--ooc { background: #f8fafc; border-left: 3px solid #94a3b8; padding-left: 0.75rem; }
+.post--ooc { background: #f8fafc; border-left: 3px solid #94a3b8; padding-left: 0.75rem; opacity: 0.6; font-size: 0.9em; }
+.post--ooc:hover { opacity: 0.85; }
 
 /* Character sheet */
-.character-sheet { font-family: monospace; white-space: pre-wrap; }
+.character-sheet { line-height: 1.6; }
+.character-sheet p { margin: 0 0 0.5rem; }
+.character-sheet h1, .character-sheet h2, .character-sheet h3 { margin: 1rem 0 0.5rem; }
+.character-sheet ul, .character-sheet ol { margin: 0.25rem 0 0.5rem; padding-left: 1.5rem; }
+.character-sheet table { margin: 0.5rem 0; }
+textarea.character-sheet { font-family: monospace; white-space: pre-wrap; }
 
 /* Scene rows */
 .scene-row { display: flex; gap: 1rem; flex-wrap: wrap; }

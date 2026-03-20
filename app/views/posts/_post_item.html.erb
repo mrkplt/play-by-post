@@ -14,5 +14,5 @@
       &middot; <%= link_to "Edit", edit_game_scene_post_path(game, scene, post), style: "font-size:0.8rem;" %>
     <% end %>
   </div>
-  <div class="post__content"><%= simple_format(post.content) %></div>
+  <div class="post__content"><%= render_markdown(post.content) %></div>
 </div>

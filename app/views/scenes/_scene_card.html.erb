@@ -25,12 +25,6 @@
     </div>
   </div>
 
-  <% if scene.description.present? %>
-    <p style="font-size:0.85rem; color:#475569; margin:0 0 0.5rem;">
-      <%= truncate(scene.description, length: 120) %>
-    </p>
-  <% end %>
-
   <div style="font-size:0.8rem; color:#94a3b8;">
     <span><%= scene.scene_participants.includes(:character, :user).reject { |sp| sp.character_id.nil? }.map(&:display_name).join(", ") %></span>
     &middot;

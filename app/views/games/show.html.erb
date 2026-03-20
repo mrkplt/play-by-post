@@ -43,7 +43,9 @@
     <h2>Active Scenes</h2>
     <div style="display:flex; gap:0.5rem;">
       <%= link_to "All Scenes", game_scenes_path(@game), class: "btn btn--secondary" %>
-      <%= link_to "New Scene", new_game_scene_path(@game), class: "btn" %>
+      <% if @is_gm %>
+        <%= link_to "New Scene", new_game_scene_path(@game), class: "btn" %>
+      <% end %>
     </div>
   </div>
   <% if @active_scenes.empty? %>

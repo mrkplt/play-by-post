@@ -23,7 +23,7 @@
 
 <div class="card">
   <% if @character.content.present? %>
-    <div class="character-sheet"><%= @character.content %></div>
+    <div class="character-sheet"><%= render_markdown(@character.content) %></div>
   <% else %>
     <p style="color:#94a3b8;">No sheet content yet.</p>
   <% end %>

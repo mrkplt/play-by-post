@@ -1,7 +1,7 @@
 class SceneParticipantsController < ApplicationController
   before_action :set_game
   before_action :set_scene
-  before_action :require_gm_or_creator!
+  before_action :require_gm!
 
   def edit
     players = @game.users.joins(:game_members)
@@ -51,9 +51,9 @@ class SceneParticipantsController < ApplicationController
     @scene = @game.scenes.find(params[:scene_id])
   end
 
-  def require_gm_or_creator!
-    unless @game.game_master?(current_user) || @scene.participant?(current_user)
-      redirect_to game_scene_path(@game, @scene), alert: "Not authorized."
-    end
+  def require_gm!
+    return if @game.game_master?(current_user)
+
+    redirect_to game_scene_path(@game, @scene), alert: "Only the GM can edit participants."
   end
 end

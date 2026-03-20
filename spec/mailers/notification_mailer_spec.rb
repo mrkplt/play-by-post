@@ -1,46 +1,58 @@
 require "rails_helper"
 
 RSpec.describe NotificationMailer, type: :mailer do
+  let(:game) { create(:game) }
+  let(:scene) { create(:scene, game: game, title: "The Dark Forest") }
+  let(:recipient) { create(:user, :with_profile) }
+
   describe "new_scene" do
-    let(:mail) { NotificationMailer.new_scene }
+    let(:mail) { NotificationMailer.new_scene(scene, recipient) }
 
     it "renders the headers" do
-      expect(mail.subject).to eq("New scene")
-      expect(mail.to).to eq(["to@example.org"])
-      expect(mail.from).to eq(["from@example.com"])
+      expect(mail.subject).to include(game.name)
+      expect(mail.subject).to include(scene.title)
+      expect(mail.to).to eq([recipient.email])
     end
 
-    it "renders the body" do
-      expect(mail.body.encoded).to match("Hi")
+    it "sets a scene reply-to address" do
+      expect(mail.reply_to.first).to match(/scene-#{scene.id}@/)
+    end
+
+    it "renders the body with a link" do
+      expect(mail.body.encoded).to include("scene")
     end
   end
 
   describe "scene_resolved" do
-    let(:mail) { NotificationMailer.scene_resolved }
+    let(:mail) { NotificationMailer.scene_resolved(scene, recipient) }
 
     it "renders the headers" do
-      expect(mail.subject).to eq("Scene resolved")
-      expect(mail.to).to eq(["to@example.org"])
-      expect(mail.from).to eq(["from@example.com"])
+      expect(mail.subject).to include(game.name)
+      expect(mail.subject).to include(scene.title)
+      expect(mail.to).to eq([recipient.email])
     end
 
     it "renders the body" do
-      expect(mail.body.encoded).to match("Hi")
+      expect(mail.body.encoded).to include("scene")
     end
   end
 
   describe "post_digest" do
-    let(:mail) { NotificationMailer.post_digest }
+    let(:posts) { create_list(:post, 3, scene: scene) }
+    let(:mail) { NotificationMailer.post_digest(scene, recipient, posts) }
 
     it "renders the headers" do
-      expect(mail.subject).to eq("Post digest")
-      expect(mail.to).to eq(["to@example.org"])
-      expect(mail.from).to eq(["from@example.com"])
+      expect(mail.subject).to include(game.name)
+      expect(mail.subject).to include(scene.title)
+      expect(mail.to).to eq([recipient.email])
     end
 
-    it "renders the body" do
-      expect(mail.body.encoded).to match("Hi")
+    it "sets a scene reply-to address" do
+      expect(mail.reply_to.first).to match(/scene-#{scene.id}@/)
+    end
+
+    it "renders the body with post content" do
+      expect(mail.body.encoded).to include("scene")
     end
   end
-
 end
