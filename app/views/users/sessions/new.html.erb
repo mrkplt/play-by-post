@@ -3,6 +3,9 @@
     <h1>Check your email</h1>
     <p>We sent a sign-in link to your inbox. Click it to continue — no password needed.</p>
     <p style="font-size:0.85rem; color:#64748b; margin-top:1rem;">Didn't get it? Check your spam folder, or <%= link_to "try again", new_user_session_path %>.</p>
+    <% if Rails.env.development? %>
+      <p style="font-size:0.85rem; margin-top:0.5rem;"><%= link_to "Open Letter Opener", "/letter_opener" %></p>
+    <% end %>
   <% else %>
     <h1>Sign in</h1>
     <p style="color:#64748b; margin-bottom:1.5rem;">Enter your email and we'll send you a link to sign in. No password required.</p>
