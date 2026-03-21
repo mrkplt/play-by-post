@@ -2,6 +2,7 @@ class PostsController < ApplicationController
   before_action :set_game
   before_action :set_scene
   before_action :require_participant!
+  before_action :require_active_member_for_write!, only: %i[create]
   before_action :set_post, only: %i[edit update]
 
   def edit
@@ -59,6 +60,10 @@ class PostsController < ApplicationController
     unless @scene.participant?(current_user) || @game.game_master?(current_user)
       redirect_to game_scene_path(@game, @scene), alert: "You are not a participant in this scene."
     end
+  end
+
+  def require_active_member_for_write!
+    require_active_member!(@game)
   end
 
   def post_params

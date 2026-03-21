@@ -22,4 +22,12 @@ class ApplicationController < ActionController::Base
     Current.user = current_user
   end
 
+  def require_active_member!(game)
+    membership = game.member_for(current_user)
+    return if membership&.game_master?
+    return if membership&.active?
+
+    redirect_to game_path(game), alert: "You no longer have write access to this game."
+  end
+
 end
