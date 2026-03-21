@@ -305,6 +305,29 @@ RSpec.describe "Scenes", type: :feature do
 
       expect(page).to have_text("Notifications enabled")
     end
+
+    it "muting via UI suppresses digest emails" do
+      create(:scene_participant, scene: scene, user: player)
+      scene.scene_participants.find_by(user: gm).update!(last_visited_at: 2.days.ago)
+      create(:post, scene: scene, user: player, content: "New activity while GM away")
+
+      visit game_scene_path(game, scene)
+      find("button[title='Scene actions']").click
+      click_on "Mute notifications"
+
+      expect(page).to have_text("Notifications muted")
+      expect(NotificationPreference.muted?(scene, gm)).to be true
+
+      ActiveJob::Base.queue_adapter = :test
+      PostDigestJob.perform_now
+
+      digest_jobs = ActiveJob::Base.queue_adapter.enqueued_jobs.select { |j|
+        j["job_class"] == "ActionMailer::MailDeliveryJob" &&
+        j["arguments"]&.first == "NotificationMailer" &&
+        j["arguments"]&.second == "post_digest"
+      }
+      expect(digest_jobs).to be_empty
+    end
   end
 
   describe "join scene" do

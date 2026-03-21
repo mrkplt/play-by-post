@@ -41,6 +41,21 @@ RSpec.describe "Game Files", type: :feature do
     end
   end
 
+  describe "file upload (GM)" do
+    let(:fixture_file) { Rails.root.join("spec/fixtures/files/test_document.txt") }
+
+    it "GM can upload a file via the form" do
+      sign_in_as(gm)
+      visit game_game_files_path(game)
+
+      attach_file "game_file[file]", fixture_file
+      click_on "Upload"
+
+      expect(page).to have_text("File uploaded.")
+      expect(page).to have_text("test_document.txt")
+    end
+  end
+
   describe "banned user access" do
     it "banned user cannot access the files page" do
       banned_user = create(:user, :with_profile)

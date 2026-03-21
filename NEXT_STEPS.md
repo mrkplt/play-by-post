@@ -194,21 +194,21 @@ Variant dimensions: Post display 800px wide, Scene banner 1200px wide, both JPEG
 
 ---
 
-## End-to-End Smoke Test
+## End-to-End Smoke Test — DONE (covered by system specs)
 
-### 12. Manual verification checklist
-1. Start server locally
-2. Go to `/users/sign_in`, enter email
-3. Open letter_opener, click magic link
-4. Set display name
-5. Create a game
-6. Create a scene
-7. Post in the scene
-8. Verify edit link appears and disappears after 10 minutes
-9. Invite a player, accept invitation, verify dashboard
-10. Create a character, edit sheet, verify version history
-11. Resolve a scene, verify toolbar hides and resolution displays
-12. Toggle notification preference (mute/unmute)
-13. Upload a game file, verify it appears in game view
-14. As removed player: verify read-only access, "Former" badge, no composer
-15. As banned player: verify no access, game hidden from dashboard
+### 12. Verification checklist — all items covered by automated specs
+1. Start server locally — (infrastructure, not testable)
+2. Sign in flow — `spec/system/sign_in_spec.rb`
+3. Magic link — `spec/system/sign_in_spec.rb`
+4. Set display name — `spec/system/profiles_spec.rb`
+5. Create a game — `spec/system/games_spec.rb`
+6. Create a scene — `spec/system/scenes_spec.rb`
+7. Post in the scene — `spec/system/posts_spec.rb`
+8. Edit window — `spec/system/posts_spec.rb`
+9. Invite/accept — `spec/system/player_management_spec.rb`
+10. Character CRUD + versions — `spec/system/characters_spec.rb`
+11. Scene resolution — `spec/system/scenes_spec.rb`
+12. Mute/unmute + digest suppression — `spec/system/scenes_spec.rb`
+13. Upload game file via form — `spec/system/game_files_spec.rb`
+14. Removed player access — `spec/system/access_control_spec.rb`
+15. Banned player access — `spec/system/access_control_spec.rb`
