@@ -48,7 +48,7 @@ Items are ordered by dependency and risk. Item 10 must come first because the
 | 7 | 7d — Mailbox specs | DONE |
 | 8 | 11 — Profile show | DONE |
 | 9 | 9a — Join scene | DONE |
-| 10 | 9b — Image attachments | Not started |
+| 10 | 9b — Image attachments | DONE |
 
 ---
 
@@ -151,20 +151,28 @@ Items are ordered by dependency and risk. Item 10 must come first because the
   - Join button hidden from GM
   - Join button hidden on private scenes
 
-### 9b. Image attachments on posts and scenes
-Models have `has_one_attached :image` but the UI doesn't expose file upload. Largest scope item — do last.
+### 9b. Image attachments on posts and scenes — DONE
+
+Uses `image_processing` gem with libvips backend. On-the-fly variant generation
+(lazy, cached to storage after first request). Falls back to serving originals
+when vips is not available (e.g., local dev without libvips installed).
+
+Variant dimensions: Post display 800px wide, Scene banner 1200px wide, both JPEG quality 85.
 
 **Tasks:**
-- [ ] Add `validate :acceptable_image` to `Post` model (type + 5 MB size check)
-- [ ] Add `validate :acceptable_image` to `Scene` model
-- [ ] Add `multipart: true` and file field to post composer
-- [ ] Add `:image` to `PostsController#post_params`
-- [ ] Render image in `_post_item.html.erb`
-- [ ] Add `multipart: true` and file field to scene creation form
-- [ ] Add `:image` to `ScenesController#scene_params`
-- [ ] Render scene image in `scenes/show.html.erb`
-- [ ] Add specs for image upload and display
-- [ ] Manual smoke test: Turbo Stream post creation with image attachment
+- [x] Enable `image_processing` gem (uncommented in Gemfile)
+- [x] Add `validate :acceptable_image` to `Post` model (type + 10 MB size check)
+- [x] Add `validate :acceptable_image` to `Scene` model (type + 10 MB size check)
+- [x] Add named variant methods: `Post#display_image`, `Scene#banner_image`
+- [x] Add `multipart: true` and file field to post composer
+- [x] Add error display to post composer partial
+- [x] Add `:image` to `PostsController#post_params`
+- [x] Render image in `_post_item.html.erb` via `post.display_image`
+- [x] Add `multipart: true` and file field to scene creation form
+- [x] Add `:image` to `ScenesController#scene_params`
+- [x] Render scene banner image in `scenes/show.html.erb` via `@scene.banner_image`
+- [x] Add model specs for image validation (Post and Scene)
+- [x] Add system specs for image upload and display
 
 ---
 

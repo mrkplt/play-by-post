@@ -67,6 +67,6 @@ class PostsController < ApplicationController
   end
 
   def post_params
-    params.require(:post).permit(:content, :is_ooc)
+    params.require(:post).permit(:content, :is_ooc, :image)
   end
 end

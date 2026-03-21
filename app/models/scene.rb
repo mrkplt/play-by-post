@@ -3,6 +3,10 @@ class Scene < ApplicationRecord
   belongs_to :parent_scene, class_name: "Scene", optional: true
 
   has_one_attached :image
+
+  IMAGE_TYPES = %w[image/jpeg image/png image/gif image/webp].freeze
+  IMAGE_MAX_SIZE = 10.megabytes
+
   has_many :child_scenes, class_name: "Scene", foreign_key: :parent_scene_id, dependent: :nullify
   has_many :scene_participants, dependent: :destroy
   has_many :users, through: :scene_participants
@@ -11,6 +15,7 @@ class Scene < ApplicationRecord
   before_validation :default_title
 
   validates :title, presence: true, length: { maximum: 200 }
+  validate :acceptable_image
 
   scope :active, -> { where(resolved_at: nil) }
   scope :resolved, -> { where.not(resolved_at: nil) }
@@ -31,11 +36,40 @@ class Scene < ApplicationRecord
     end
   end
 
+  def banner_image
+    return image unless Scene.vips_available?
+
+    image.variant(resize_to_limit: [1200, nil], convert: :jpeg, saver: { quality: 85 })
+  end
+
+  def self.vips_available?
+    return @vips_available if defined?(@vips_available)
+
+    @vips_available = begin
+      require "vips"
+      true
+    rescue LoadError
+      false
+    end
+  end
+
   def participant?(user)
     scene_participants.exists?(user: user)
   end
 
   private
+
+  def acceptable_image
+    return unless image.attached?
+
+    unless image.blob.byte_size <= IMAGE_MAX_SIZE
+      errors.add(:image, "must be less than 10MB")
+    end
+
+    unless IMAGE_TYPES.include?(image.blob.content_type)
+      errors.add(:image, "must be a JPEG, PNG, GIF, or WebP image")
+    end
+  end
 
   def default_title
     self.title = Time.current.strftime("%b %-d, %Y %-I:%M %p") if title.blank?
