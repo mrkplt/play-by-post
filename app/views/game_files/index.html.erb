@@ -8,16 +8,18 @@
   <h1>Game Files</h1>
 </div>
 
-<div class="card">
-  <h3 style="margin-top:0;">Upload File</h3>
-  <%= form_with url: game_game_files_path(@game), multipart: true do |f| %>
-    <div class="field">
-      <input type="file" name="game_file[file]" accept=".pdf,.doc,.docx,.txt,.md,.jpg,.jpeg,.png,.gif,.webp">
-      <p style="font-size:0.8rem; color:#94a3b8; margin:0.25rem 0 0;">PDF, Word, text, markdown, or image. Max 25MB.</p>
-    </div>
-    <%= f.submit "Upload", class: "btn" %>
-  <% end %>
-</div>
+<% if @is_gm %>
+  <div class="card">
+    <h3 style="margin-top:0;">Upload File</h3>
+    <%= form_with url: game_game_files_path(@game), multipart: true do |f| %>
+      <div class="field">
+        <input type="file" name="game_file[file]" accept=".pdf,.doc,.docx,.txt,.md,.jpg,.jpeg,.png,.gif,.webp">
+        <p style="font-size:0.8rem; color:#94a3b8; margin:0.25rem 0 0;">PDF, Word, text, markdown, or image. Max 25MB.</p>
+      </div>
+      <%= f.submit "Upload", class: "btn" %>
+    <% end %>
+  </div>
+<% end %>
 
 <% if @game_files.empty? %>
   <p style="color:#94a3b8;">No files uploaded yet.</p>
@@ -29,7 +31,7 @@
         <th>Type</th>
         <th>Size</th>
         <th>Uploaded</th>
-        <th>Actions</th>
+        <% if @is_gm %><th>Actions</th><% end %>
       </tr>
     </thead>
     <tbody>
@@ -45,12 +47,14 @@
           <td><%= gf.file.attached? ? gf.file.content_type : "—" %></td>
           <td><%= gf.file.attached? ? number_to_human_size(gf.file.byte_size) : "—" %></td>
           <td><%= gf.created_at.strftime("%b %-d, %Y") %></td>
-          <td>
-            <%= form_with url: game_game_file_path(@game, gf), method: :delete, style: "display:inline;" do |f| %>
-              <%= f.submit "Delete", class: "btn btn--danger", style: "font-size:0.8rem; padding:0.25rem 0.5rem;",
-                  data: { confirm: "Delete this file?" } %>
-            <% end %>
-          </td>
+          <% if @is_gm %>
+            <td>
+              <%= form_with url: game_game_file_path(@game, gf), method: :delete, style: "display:inline;" do |f| %>
+                <%= f.submit "Delete", class: "btn btn--danger", style: "font-size:0.8rem; padding:0.25rem 0.5rem;",
+                    data: { confirm: "Delete this file?" } %>
+              <% end %>
+            </td>
+          <% end %>
         </tr>
       <% end %>
     </tbody>

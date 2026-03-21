@@ -11,17 +11,22 @@ Rails.application.routes.draw do
   get "invitations/:token/accept", to: "invitations#accept", as: :accept_invitation
 
   authenticate :user do
-    resource :profile, only: %i[edit update], controller: "profiles" do
+    resource :profile, only: %i[show edit update], controller: "profiles" do
       post :toggle_hide_ooc, on: :collection
     end
     resources :games, only: %i[index new create show] do
+      member do
+        patch :toggle_sheets_hidden
+      end
       resources :scenes, only: %i[index new create show] do
         member do
           patch :resolve
           post :toggle_notification_preference
         end
         resources :posts, only: %i[create edit update]
-        resource :participants, only: %i[edit update], controller: "scene_participants"
+        resource :participants, only: %i[edit update], controller: "scene_participants" do
+          post :join, on: :collection
+        end
       end
       resource :player_management, only: %i[show], controller: "player_management" do
         resources :invitations, only: %i[create destroy]

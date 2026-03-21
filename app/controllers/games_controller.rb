@@ -1,6 +1,7 @@
 class GamesController < ApplicationController
-  before_action :set_game, only: %i[show]
+  before_action :set_game, only: %i[show toggle_sheets_hidden]
   before_action :require_game_access!, only: %i[show]
+  before_action :require_gm!, only: %i[toggle_sheets_hidden]
 
   def index
     @memberships = current_user.game_members
@@ -35,6 +36,11 @@ class GamesController < ApplicationController
     end
   end
 
+  def toggle_sheets_hidden
+    @game.update!(sheets_hidden: !@game.sheets_hidden?)
+    redirect_to game_path(@game), notice: @game.sheets_hidden? ? "Character sheets are now hidden." : "Character sheets are now visible."
+  end
+
   def show
     @active_scenes = @game.scenes
       .visible_to(current_user, @game)
@@ -45,6 +51,7 @@ class GamesController < ApplicationController
 
     @is_gm = @game.game_master?(current_user)
     @characters = @game.characters.active.visible_to(current_user, @game).includes(:user).order(:name)
+    @game_files = @game.game_files.includes(file_attachment: :blob).order(created_at: :desc)
   end
 
   private
@@ -59,6 +66,12 @@ class GamesController < ApplicationController
     return if membership&.active? || membership&.removed?
 
     redirect_to root_path, alert: "You do not have access to this game."
+  end
+
+  def require_gm!
+    return if @game.game_master?(current_user)
+
+    redirect_to game_path(@game), alert: "Only the GM can do this."
   end
 
   def game_params

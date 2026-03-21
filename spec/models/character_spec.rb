@@ -24,6 +24,46 @@ RSpec.describe Character, type: :model do
     end
   end
 
+  describe ".visible_to" do
+    let(:game) { create(:game) }
+    let(:owner) { create(:user) }
+    let(:other) { create(:user) }
+    let(:gm_user) { create(:user) }
+
+    before do
+      create(:game_member, :game_master, game: game, user: gm_user)
+      create(:game_member, game: game, user: owner)
+      create(:game_member, game: game, user: other)
+    end
+
+    it "GM sees all characters regardless of sheets_hidden" do
+      game.update!(sheets_hidden: true)
+      create(:character, game: game, user: owner, name: "Visible")
+      create(:character, :hidden, game: game, user: other, name: "Hidden")
+
+      result = Character.visible_to(gm_user, game)
+      expect(result.pluck(:name)).to contain_exactly("Visible", "Hidden")
+    end
+
+    it "when sheets_hidden, non-GM sees only own characters" do
+      game.update!(sheets_hidden: true)
+      own_char = create(:character, game: game, user: owner, name: "Mine")
+      create(:character, game: game, user: other, name: "Theirs")
+
+      result = Character.visible_to(owner, game)
+      expect(result).to contain_exactly(own_char)
+    end
+
+    it "when sheets_hidden is false, normal visibility rules apply" do
+      create(:character, game: game, user: owner, name: "Visible")
+      hidden = create(:character, :hidden, game: game, user: other, name: "Hidden")
+
+      result = Character.visible_to(owner, game)
+      expect(result.pluck(:name)).to eq(["Visible"])
+      expect(result).not_to include(hidden)
+    end
+  end
+
   describe "#editable_by?" do
     let(:game) { create(:game) }
     let(:owner) { create(:user) }

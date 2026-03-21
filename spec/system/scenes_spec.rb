@@ -262,6 +262,13 @@ RSpec.describe "Scenes", type: :feature do
       expect(page).to have_text("The party defeated the dragon.")
     end
 
+    it "hides the scene actions menu after resolution" do
+      scene.update!(resolved_at: Time.current, resolution: "Done.")
+      visit game_scene_path(game, scene)
+
+      expect(page).not_to have_css("button[title='Scene actions']")
+    end
+
     it "resolved scene no longer shows the composer" do
       scene.update!(resolved_at: Time.current, resolution: "Done.")
       visit game_scene_path(game, scene)
@@ -297,6 +304,58 @@ RSpec.describe "Scenes", type: :feature do
       click_on "Unmute notifications"
 
       expect(page).to have_text("Notifications enabled")
+    end
+  end
+
+  describe "join scene" do
+    let(:scene) { create(:scene, game: game, title: "Open Adventure") }
+    let(:joiner) { create(:user, :with_profile) }
+
+    before do
+      create(:scene_participant, scene: scene, user: gm)
+      create(:game_member, game: game, user: joiner)
+    end
+
+    it "active player can join a non-private scene" do
+      sign_in_as(joiner)
+      visit game_scene_path(game, scene)
+
+      click_on "Join Scene"
+
+      expect(page).to have_text("You have joined this scene.")
+      expect(page).to have_text(joiner.display_name)
+    end
+
+    it "does not show Join Scene button to existing participants" do
+      create(:scene_participant, scene: scene, user: player)
+      sign_in_as(player)
+      visit game_scene_path(game, scene)
+
+      expect(page).not_to have_button("Join Scene")
+    end
+
+    it "does not show Join Scene button on resolved scenes" do
+      scene.update!(resolved_at: Time.current, resolution: "Done.")
+      sign_in_as(joiner)
+      visit game_scene_path(game, scene)
+
+      expect(page).not_to have_button("Join Scene")
+    end
+
+    it "does not show Join Scene button to GM" do
+      sign_in_as(gm)
+      visit game_scene_path(game, scene)
+
+      expect(page).not_to have_button("Join Scene")
+    end
+
+    it "does not show Join Scene button on private scenes" do
+      scene.update!(private: true)
+      # Private scenes redirect non-participants, so joiner can't even see it
+      sign_in_as(joiner)
+      visit game_scene_path(game, scene)
+
+      expect(page).not_to have_button("Join Scene")
     end
   end
 

@@ -7,6 +7,8 @@
   <h1><%= @game.name %></h1>
   <% if @is_gm %>
     <%= link_to "Manage Players", game_player_management_path(@game), class: "btn btn--secondary" %>
+    <%= button_to @game.sheets_hidden? ? "Show Character Sheets" : "Hide Character Sheets",
+        toggle_sheets_hidden_game_path(@game), method: :patch, class: "btn btn--secondary" %>
   <% end %>
 </div>
 <% if @game.description.present? %>
@@ -62,8 +64,23 @@
   <div class="section__header">
     <h2>Game Files</h2>
     <% if @is_gm %>
-      <%= link_to "Upload File", game_game_files_path(@game), class: "btn btn--secondary" %>
+      <%= link_to "Manage Files", game_game_files_path(@game), class: "btn btn--secondary" %>
     <% end %>
   </div>
-  <p style="color:#94a3b8; font-size:0.9rem;">Game files coming in Phase 8.</p>
+  <% if @game_files.empty? %>
+    <p style="color:#94a3b8; font-size:0.9rem;">No files uploaded yet.</p>
+  <% else %>
+    <div style="font-size:0.9rem;">
+      <% @game_files.each do |gf| %>
+        <div style="padding:0.4rem 0; border-bottom:1px solid #f1f5f9;">
+          <% if gf.file.attached? %>
+            <%= link_to gf.filename, rails_blob_path(gf.file, disposition: "attachment") %>
+          <% else %>
+            <%= gf.filename %>
+          <% end %>
+          <span style="color:#94a3b8; margin-left:0.5rem;"><%= gf.created_at.strftime("%b %-d") %></span>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
 </div>

@@ -4,7 +4,7 @@
   </div>
   <div class="navbar__actions">
     <% if user_signed_in? %>
-      <%= link_to current_user.display_name || current_user.email.split("@").first, edit_profile_path, style: "text-decoration:none; color:inherit;" %>
+      <%= link_to current_user.display_name || current_user.email.split("@").first, profile_path, style: "text-decoration:none; color:inherit;" %>
       <%= link_to "Sign out", destroy_user_session_path %>
     <% end %>
   </div>
