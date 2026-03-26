@@ -1,0 +1,39 @@
+<div class="section">
+  <div class="section__header">
+    <h1>Profile</h1>
+    <%= link_to "Edit Profile", edit_profile_path, class: "btn btn--secondary" %>
+  </div>
+
+  <div class="card">
+    <div style="margin-bottom:1rem;">
+      <div style="font-size:0.8rem; color:#94a3b8; text-transform:uppercase; letter-spacing:0.05em;">Display Name</div>
+      <div style="font-size:1.1rem; font-weight:600;"><%= @profile.display_name.presence || "Not set" %></div>
+    </div>
+    <div style="margin-bottom:1rem;">
+      <div style="font-size:0.8rem; color:#94a3b8; text-transform:uppercase; letter-spacing:0.05em;">Email</div>
+      <div><%= current_user.email %></div>
+    </div>
+    <div>
+      <div style="font-size:0.8rem; color:#94a3b8; text-transform:uppercase; letter-spacing:0.05em;">Hide OOC Posts</div>
+      <div><%= @profile.hide_ooc? ? "Yes" : "No" %></div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h2>My Games</h2>
+  <% if @memberships.empty? %>
+    <p style="color:#94a3b8;">You're not in any games yet.</p>
+  <% else %>
+    <% @memberships.each do |membership| %>
+      <div class="card" style="margin-bottom:0.5rem;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <%= link_to membership.game.name, game_path(membership.game), style: "font-weight:600; text-decoration:none; color:inherit;" %>
+          <span class="badge <%= membership.game_master? ? 'badge--blue' : membership.removed? ? 'badge--gray' : 'badge--green' %>">
+            <%= membership.game_master? ? "GM" : membership.removed? ? "Former" : "Player" %>
+          </span>
+        </div>
+      </div>
+    <% end %>
+  <% end %>
+</div>

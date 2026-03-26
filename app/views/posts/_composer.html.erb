@@ -1,10 +1,25 @@
-<%= form_with model: [game, scene, post], data: { controller: "markdown-preview" } do |f| %>
+<%= form_with model: [game, scene, post], multipart: true, data: { controller: "markdown-preview" } do |f| %>
+  <% if post.errors.any? %>
+    <div style="background:#fef2f2; border:1px solid #fecaca; border-radius:4px; padding:0.5rem 0.75rem; margin-bottom:0.75rem; font-size:0.9rem; color:#dc2626;">
+      <% post.errors.full_messages.each do |msg| %>
+        <div><%= msg %></div>
+      <% end %>
+    </div>
+  <% end %>
+
   <div class="field">
     <%= f.text_area :content, rows: 5, placeholder: "Write your post...",
         data: { markdown_preview_target: "input", action: "input->markdown-preview#update" } %>
   </div>
 
   <div data-markdown-preview-target="preview" style="display:none; border:1px solid #e2e8f0; border-radius:4px; padding:0.75rem; margin-bottom:0.75rem; min-height:3rem; background:#fafafa;"></div>
+
+  <div class="field" style="margin-bottom:0.5rem;">
+    <%= f.label :image, "Image (optional)", style: "font-size:0.85rem; color:#64748b;" %>
+    <%= f.file_field :image, accept: "image/jpeg,image/png,image/gif,image/webp",
+        style: "font-size:0.85rem;" %>
+    <p style="font-size:0.75rem; color:#94a3b8; margin:0.2rem 0 0;">JPEG, PNG, GIF, or WebP. Max 10MB.</p>
+  </div>
 
   <div class="post-composer-actions" style="display:flex; gap:1rem; align-items:center; flex-wrap:wrap;">
     <label style="font-size:0.9rem; cursor:pointer;">

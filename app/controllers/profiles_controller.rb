@@ -1,4 +1,12 @@
 class ProfilesController < ApplicationController
+  def show
+    @profile = current_user.user_profile || current_user.build_user_profile
+    @memberships = current_user.game_members
+      .where.not(status: "banned")
+      .includes(:game)
+      .order("games.name")
+  end
+
   def edit
     @profile = current_user.user_profile || current_user.build_user_profile
   end

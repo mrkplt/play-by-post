@@ -1,0 +1,30 @@
+#!/bin/bash
+export PATH="/opt/homebrew/opt/ruby/bin:$PATH"
+
+echo "Running CI checks before push..."
+
+echo "==> Lint (rubocop)"
+bin/rubocop || exit 1
+
+echo "==> JS security scan (importmap audit)"
+bin/importmap audit || exit 1
+
+echo "==> Ruby security scan (brakeman)"
+bin/brakeman --no-pager || exit 1
+
+echo "==> Type check (sorbet)"
+bundle exec srb tc || exit 1
+
+echo "==> Tests (rspec + coverage)"
+bundle exec rspec || exit 1
+
+echo "==> Mutation testing (mutant)"
+MUTANT_OUTPUT=$(mktemp)
+bundle exec mutant run --usage opensource 2>&1 | tee "$MUTANT_OUTPUT"
+bin/quality-metrics --record-mutant "$MUTANT_OUTPUT"
+rm -f "$MUTANT_OUTPUT"
+
+echo "==> Quality metrics check"
+bin/quality-metrics --check || exit 1
+
+echo "All CI checks passed."

@@ -10,6 +10,7 @@ Play-by-Post TTRPG is a web application for asynchronous tabletop role-playing g
 
 ## Ruby
 PATH="/opt/homebrew/opt/ruby/bin:$PATH" bundle exec ruby
+
 ## Development
     The software development cycle is:
         1. Create a testing plan for the feature or bug fix as a markdown file in the tests/integration directory.
@@ -26,6 +27,7 @@ PATH="/opt/homebrew/opt/ruby/bin:$PATH" bundle exec ruby
         7. Confirm tests pass
         8. Lint the code
 
+IMPORTANT: YOU MUST ALWAYS ADD TESTS FOR NEW FEATURES
 
 ## CLI Tools
 

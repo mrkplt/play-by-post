@@ -2,7 +2,7 @@
 
 <h1><%= quick ? "Quick Scene" : "New Scene" %></h1>
 
-<%= form_with model: [@game, @scene] do |f| %>
+<%= form_with model: [@game, @scene], multipart: true do |f| %>
   <% if f.object.errors.any? %>
     <div class="flash flash--alert">
       <% f.object.errors.full_messages.each do |msg| %>
@@ -51,6 +51,12 @@
       <label style="font-weight:normal; cursor:pointer;">
         <%= f.check_box :private %> Private scene
       </label>
+    </div>
+
+    <div class="field">
+      <%= f.label :image, "Scene image (optional)" %>
+      <%= f.file_field :image, accept: "image/jpeg,image/png,image/gif,image/webp" %>
+      <p style="font-size:0.8rem; color:#94a3b8; margin:0.25rem 0 0;">JPEG, PNG, GIF, or WebP. Max 10MB.</p>
     </div>
   <% else %>
     <%= f.hidden_field :parent_scene_id, value: params[:parent_scene_id] %>

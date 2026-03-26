@@ -2,6 +2,7 @@ class PostsController < ApplicationController
   before_action :set_game
   before_action :set_scene
   before_action :require_participant!
+  before_action :require_active_member_for_write!, only: %i[create]
   before_action :set_post, only: %i[edit update]
 
   def edit
@@ -61,7 +62,11 @@ class PostsController < ApplicationController
     end
   end
 
+  def require_active_member_for_write!
+    require_active_member!(@game)
+  end
+
   def post_params
-    params.require(:post).permit(:content, :is_ooc)
+    params.require(:post).permit(:content, :is_ooc, :image)
   end
 end

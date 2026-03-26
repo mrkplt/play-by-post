@@ -11,6 +11,31 @@ RSpec.describe Post, type: :model do
     end
   end
 
+  describe "image validation" do
+    it "accepts a valid image" do
+      post = build(:post)
+      post.image.attach(io: File.open(Rails.root.join("spec/fixtures/files/test_image.png")),
+                        filename: "test.png", content_type: "image/png")
+      expect(post).to be_valid
+    end
+
+    it "rejects an image over 10MB" do
+      post = build(:post)
+      post.image.attach(io: StringIO.new("x" * (11 * 1024 * 1024)),
+                        filename: "big.png", content_type: "image/png")
+      expect(post).not_to be_valid
+      expect(post.errors[:image]).to include("must be less than 10MB")
+    end
+
+    it "rejects a non-image content type" do
+      post = build(:post)
+      post.image.attach(io: StringIO.new("test"),
+                        filename: "doc.pdf", content_type: "application/pdf")
+      expect(post).not_to be_valid
+      expect(post.errors[:image]).to include("must be a JPEG, PNG, GIF, or WebP image")
+    end
+  end
+
   describe "#editable_by?" do
     let(:author) { create(:user) }
     let(:other_user) { create(:user) }

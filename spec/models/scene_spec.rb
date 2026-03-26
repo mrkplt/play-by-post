@@ -11,6 +11,31 @@ RSpec.describe Scene, type: :model do
     end
   end
 
+  describe "image validation" do
+    it "accepts a valid image" do
+      scene = build(:scene)
+      scene.image.attach(io: File.open(Rails.root.join("spec/fixtures/files/test_image.png")),
+                         filename: "test.png", content_type: "image/png")
+      expect(scene).to be_valid
+    end
+
+    it "rejects an image over 10MB" do
+      scene = build(:scene)
+      scene.image.attach(io: StringIO.new("x" * (11 * 1024 * 1024)),
+                         filename: "big.png", content_type: "image/png")
+      expect(scene).not_to be_valid
+      expect(scene.errors[:image]).to include("must be less than 10MB")
+    end
+
+    it "rejects a non-image content type" do
+      scene = build(:scene)
+      scene.image.attach(io: StringIO.new("test"),
+                         filename: "doc.pdf", content_type: "application/pdf")
+      expect(scene).not_to be_valid
+      expect(scene.errors[:image]).to include("must be a JPEG, PNG, GIF, or WebP image")
+    end
+  end
+
   describe "default title" do
     it "sets a datetime stamp when title is blank" do
       scene = build(:scene, title: nil)

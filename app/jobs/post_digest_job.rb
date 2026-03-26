@@ -18,7 +18,7 @@ class PostDigestJob < ApplicationJob
 
         next if posts_since_visit.empty?
 
-        NotificationMailer.post_digest(scene, user, posts_since_visit).deliver_later
+        NotificationMailer.post_digest(scene, user, posts_since_visit.to_a).deliver_later
       end
     end
   end
