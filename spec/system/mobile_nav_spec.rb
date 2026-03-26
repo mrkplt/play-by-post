@@ -15,13 +15,13 @@ RSpec.describe "Mobile navigation", type: :feature do
 
   it "hides nav menu by default on mobile" do
     visit root_path
-    expect(page).to have_css(".navbar__menu[hidden]")
+    expect(page).to have_css(".navbar__menu[hidden]", visible: :all)
   end
 
   it "opens the nav menu when hamburger is tapped" do
     visit root_path
     find(".navbar__hamburger").click
-    expect(page).not_to have_css(".navbar__menu[hidden]")
+    expect(page).not_to have_css(".navbar__menu[hidden]", visible: :all)
     expect(find(".navbar__menu")).to be_visible
   end
 
@@ -29,14 +29,14 @@ RSpec.describe "Mobile navigation", type: :feature do
     visit root_path
     find(".navbar__hamburger").click
     find(".navbar__menu").click_link("Sign out")
-    expect(page).to have_css(".navbar__menu[hidden]")
+    expect(page).to have_css(".navbar__menu[hidden]", visible: :all)
   end
 
   it "closes the nav menu when tapping outside" do
     visit root_path
     find(".navbar__hamburger").click
     find("main").click
-    expect(page).to have_css(".navbar__menu[hidden]")
+    expect(page).to have_css(".navbar__menu[hidden]", visible: :all)
   end
 
   it "nav links have a touch target of at least 44px" do

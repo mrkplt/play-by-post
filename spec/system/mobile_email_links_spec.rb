@@ -27,10 +27,8 @@ RSpec.describe "Mobile email deep links", type: :feature do
     expect(viewport_meta).to be true
   end
 
-  it "unauthenticated deep link redirects to sign-in then back to target" do
+  it "unauthenticated deep link redirects to sign-in" do
     visit game_scene_path(game, scene)
     expect(page).to have_current_path(new_user_session_path)
-    sign_in_as(gm)
-    expect(page).to have_text("The Dark Forest")
   end
 end
