@@ -1,4 +1,2 @@
-require "pagy/extras/overflow"
-
-Pagy::DEFAULT[:items] = 10
-Pagy::DEFAULT[:overflow] = :last_page
+Pagy::OPTIONS[:limit] = 10
+Pagy::OPTIONS.freeze
