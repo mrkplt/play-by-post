@@ -9,7 +9,7 @@ RSpec.describe "Mobile post readability", type: :feature do
     create(:game_member, :game_master, game: game, user: gm)
     create(:post, scene: scene, user: gm, content: "Hello world this is a story post.")
     sign_in_as(gm)
-    page.driver.resize(375, 812)
+    page.driver.resize_window_to(page.driver.current_window_handle, 375, 812)
   end
 
   it "has no horizontal scroll at 375px viewport" do

@@ -7,7 +7,7 @@ RSpec.describe "Mobile email deep links", type: :feature do
 
   before do
     create(:game_member, :game_master, game: game, user: gm)
-    page.driver.resize(375, 812)
+    page.driver.resize_window_to(page.driver.current_window_handle, 375, 812)
   end
 
   it "deep link to scene renders the correct scene in mobile viewport" do

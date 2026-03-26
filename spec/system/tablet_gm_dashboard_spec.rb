@@ -7,7 +7,7 @@ RSpec.describe "Tablet GM dashboard", type: :feature do
   before do
     create(:game_member, :game_master, game: game, user: gm)
     sign_in_as(gm)
-    page.driver.resize(768, 1024)
+    page.driver.resize_window_to(page.driver.current_window_handle, 768, 1024)
   end
 
   it "GM dashboard panels are reachable at 768px without horizontal scroll" do

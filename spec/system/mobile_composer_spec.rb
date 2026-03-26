@@ -8,7 +8,7 @@ RSpec.describe "Mobile post composer", type: :feature do
   before do
     create(:game_member, :game_master, game: game, user: gm)
     sign_in_as(gm)
-    page.driver.resize(375, 812)
+    page.driver.resize_window_to(page.driver.current_window_handle, 375, 812)
   end
 
   it "post composition form is visible at 375px" do
