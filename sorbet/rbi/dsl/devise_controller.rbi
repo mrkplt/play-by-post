@@ -22,8 +22,6 @@ class DeviseController
     include ::ActionText::TagHelper
     include ::Importmap::ImportmapTagsHelper
     include ::ActionController::Base::HelperMethods
-    include ::Pagy::UrlHelpers
-    include ::Pagy::Frontend
     include ::ApplicationHelper
     include ::DeviseHelper
     include ::ApplicationController::HelperMethods
