@@ -8,6 +8,12 @@ RSpec.describe "Mobile navigation", type: :feature do
     page.driver.resize_window_to(page.driver.current_window_handle, 375, 812)
   end
 
+  it "hides hamburger when logged out" do
+    visit destroy_user_session_path
+    visit root_path
+    expect(page).not_to have_css(".navbar__hamburger")
+  end
+
   it "shows the hamburger icon on mobile" do
     visit root_path
     expect(page).to have_css(".navbar__hamburger", visible: true)
