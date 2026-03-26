@@ -1,0 +1,34 @@
+---
+environment_variables:
+  RAILS_ENV: test
+  MUTANT: "1"
+
+requires:
+  - ./config/environment
+
+integration:
+  name: rspec
+
+matcher:
+  subjects:
+    - Game
+    - GameMember
+    - GameFile
+    - Character
+    - CharacterVersion
+    - Scene
+    - SceneParticipant
+    - Post
+    - User
+    - UserProfile
+    - Invitation
+    - NotificationPreference
+    - EmailContentExtractor
+
+mutation:
+  timeout: 10.0
+
+coverage_criteria:
+  timeout: false
+  process_abort: false
+  test_result: true
