@@ -124,6 +124,8 @@ jobs:
         with:
           name: coverage-data
           path: coverage/.last_run.json
+          include-hidden-files: true
+          if-no-files-found: error
 
       - name: Keep screenshots from failed system tests
         uses: actions/upload-artifact@v4
