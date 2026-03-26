@@ -8,8 +8,13 @@ development:
 
 test:
   <<: *default
-  adapter: sqlite3
+  adapter: <%= ENV["DATABASE_URL"] ? "postgresql" : "sqlite3" %>
+  <% if ENV["DATABASE_URL"] %>
+  url: <%= ENV["DATABASE_URL"] %>
+  encoding: unicode
+  <% else %>
   database: storage/test.sqlite3
+  <% end %>
 
 production:
   primary: &primary_production

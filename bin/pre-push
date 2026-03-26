@@ -1,0 +1,18 @@
+#!/bin/bash
+export PATH="/opt/homebrew/opt/ruby/bin:$PATH"
+
+echo "Running CI checks before push..."
+
+echo "==> Lint (rubocop)"
+bin/rubocop || exit 1
+
+echo "==> JS security scan (importmap audit)"
+bin/importmap audit || exit 1
+
+echo "==> Ruby security scan (brakeman)"
+bin/brakeman --no-pager || exit 1
+
+echo "==> Tests"
+bin/rails db:test:prepare test test:system || exit 1
+
+echo "All CI checks passed."
