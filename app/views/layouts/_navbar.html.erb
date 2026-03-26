@@ -1,11 +1,28 @@
-<nav class="navbar">
+<nav class="navbar" data-controller="nav" data-action="click@window->nav#closeOnOutside">
   <div class="navbar__brand">
     <%= link_to "Play by Post", root_path %>
   </div>
-  <div class="navbar__actions">
-    <% if user_signed_in? %>
-      <%= link_to current_user.display_name || current_user.email.split("@").first, profile_path, style: "text-decoration:none; color:inherit;" %>
-      <%= link_to "Sign out", destroy_user_session_path %>
-    <% end %>
+
+  <button class="navbar__hamburger"
+          aria-label="Open navigation menu"
+          aria-expanded="false"
+          aria-controls="navbar-menu"
+          data-nav-target="toggle"
+          data-action="click->nav#toggle"
+          hidden>
+    <span class="navbar__hamburger-bar"></span>
+    <span class="navbar__hamburger-bar"></span>
+    <span class="navbar__hamburger-bar"></span>
+  </button>
+
+  <div class="navbar__menu" id="navbar-menu" data-nav-target="menu" hidden>
+    <div class="navbar__actions">
+      <% if user_signed_in? %>
+        <%= link_to current_user.display_name || current_user.email.split("@").first,
+              profile_path,
+              class: "navbar__link" %>
+        <%= link_to "Sign out", destroy_user_session_path, class: "navbar__link" %>
+      <% end %>
+    </div>
   </div>
 </nav>
