@@ -65,6 +65,8 @@
     <h2>Game Files</h2>
     <% if @is_gm %>
       <%= link_to "Manage Files", game_game_files_path(@game), class: "btn btn--secondary" %>
+    <% else %>
+      <%= link_to "View Files", game_game_files_path(@game), class: "btn btn--secondary" %>
     <% end %>
   </div>
   <% if @game_files.empty? %>

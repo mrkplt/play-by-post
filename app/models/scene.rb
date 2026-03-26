@@ -37,20 +37,7 @@ class Scene < ApplicationRecord
   end
 
   def banner_image
-    return image unless Scene.vips_available?
-
-    image.variant(resize_to_limit: [1200, nil], convert: :jpeg, saver: { quality: 85 })
-  end
-
-  def self.vips_available?
-    return @vips_available if defined?(@vips_available)
-
-    @vips_available = begin
-      require "vips"
-      true
-    rescue LoadError
-      false
-    end
+    image.variant(resize_to_limit: [1200, nil], format: :jpeg, quality: 85)
   end
 
   def participant?(user)

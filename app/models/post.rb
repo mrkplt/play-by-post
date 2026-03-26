@@ -13,20 +13,7 @@ class Post < ApplicationRecord
   validate :acceptable_image
 
   def display_image
-    return image unless Post.vips_available?
-
-    image.variant(resize_to_limit: [800, nil], convert: :jpeg, saver: { quality: 85 })
-  end
-
-  def self.vips_available?
-    return @vips_available if defined?(@vips_available)
-
-    @vips_available = begin
-      require "vips"
-      true
-    rescue LoadError
-      false
-    end
+    image.variant(resize_to_limit: [800, nil], format: :jpeg, quality: 85)
   end
 
   def editable_by?(user)

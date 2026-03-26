@@ -9,8 +9,14 @@ class GameFilesController < ApplicationController
   end
 
   def create
-    @game_file = @game.game_files.new(filename: params[:game_file][:file]&.original_filename)
-    @game_file.file.attach(params[:game_file][:file])
+    uploaded_file = params.dig(:game_file, :file)
+    unless uploaded_file
+      redirect_to game_game_files_path(@game), alert: "Please select a file to upload."
+      return
+    end
+
+    @game_file = @game.game_files.new(filename: uploaded_file.original_filename)
+    @game_file.file.attach(uploaded_file)
 
     if @game_file.save
       redirect_to game_game_files_path(@game), notice: "File uploaded."

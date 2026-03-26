@@ -24,39 +24,66 @@
 <% if @game_files.empty? %>
   <p style="color:#94a3b8;">No files uploaded yet.</p>
 <% else %>
-  <table>
-    <thead>
-      <tr>
-        <th>Filename</th>
-        <th>Type</th>
-        <th>Size</th>
-        <th>Uploaded</th>
-        <% if @is_gm %><th>Actions</th><% end %>
-      </tr>
-    </thead>
-    <tbody>
+  <div data-controller="lightbox" data-action="keydown@document->lightbox#closeOnEscape">
+    <div class="gallery-grid">
       <% @game_files.each do |gf| %>
-        <tr>
-          <td>
-            <% if gf.file.attached? %>
-              <%= link_to gf.filename, rails_blob_path(gf.file, disposition: "attachment") %>
+        <%
+          thumb = gf.thumbnail
+          thumb_html = thumb ? image_tag(url_for(thumb), alt: gf.filename, loading: "lazy") : nil
+
+          lightbox_html = if gf.image? && gf.display_image
+            tag.img(src: url_for(gf.display_image), alt: gf.filename)
+          elsif thumb
+            tag.img(src: url_for(thumb), alt: gf.filename, style: "max-width:100%;")
+          else
+            tag.div(class: "lightbox__placeholder") do
+              tag.div(gf.file_extension, class: "lightbox__placeholder-ext") +
+              tag.div(number_to_human_size(gf.file.byte_size), class: "lightbox__placeholder-size")
+            end
+          end
+
+          download_url = gf.file.attached? ? rails_blob_path(gf.file, disposition: "attachment") : "#"
+        %>
+        <div class="gallery-card"
+             data-action="click->lightbox#open"
+             data-lightbox-html="<%= escape_once(lightbox_html.to_s) %>"
+             data-lightbox-filename="<%= gf.filename %>"
+             data-lightbox-download="<%= download_url %>">
+          <div class="gallery-card__thumb">
+            <% if thumb_html %>
+              <%= thumb_html %>
             <% else %>
-              <%= gf.filename %>
+              <div class="gallery-card__placeholder"><%= gf.file_extension %></div>
             <% end %>
-          </td>
-          <td><%= gf.file.attached? ? gf.file.content_type : "—" %></td>
-          <td><%= gf.file.attached? ? number_to_human_size(gf.file.byte_size) : "—" %></td>
-          <td><%= gf.created_at.strftime("%b %-d, %Y") %></td>
-          <% if @is_gm %>
-            <td>
-              <%= form_with url: game_game_file_path(@game, gf), method: :delete, style: "display:inline;" do |f| %>
-                <%= f.submit "Delete", class: "btn btn--danger", style: "font-size:0.8rem; padding:0.25rem 0.5rem;",
-                    data: { confirm: "Delete this file?" } %>
+          </div>
+          <div class="gallery-card__info">
+            <span class="gallery-card__filename" title="<%= gf.filename %>"><%= gf.filename %></span>
+            <div class="gallery-card__actions" data-lightbox-stop>
+              <%= link_to "\u2B73", download_url, class: "gallery-card__action", title: "Download", data: { turbo: false } %>
+              <% if @is_gm %>
+                <%= button_to "\u2715", game_game_file_path(@game, gf), method: :delete,
+                    class: "gallery-card__action gallery-card__action--delete",
+                    title: "Delete",
+                    form: { data: { turbo_confirm: "Delete this file?" }, style: "display:inline;" } %>
               <% end %>
-            </td>
-          <% end %>
-        </tr>
+            </div>
+          </div>
+        </div>
       <% end %>
-    </tbody>
-  </table>
+    </div>
+
+    <div data-lightbox-target="modal" class="lightbox" hidden data-action="click->lightbox#closeOnBackdrop">
+      <div class="lightbox__backdrop" data-lightbox-backdrop></div>
+      <div class="lightbox__content">
+        <div class="lightbox__header">
+          <span class="lightbox__title" data-lightbox-title></span>
+          <div class="lightbox__header-actions">
+            <a href="#" data-lightbox-download class="btn btn--secondary" style="font-size:0.8rem; padding:0.3rem 0.75rem;" data-turbo="false">Download</a>
+            <button class="lightbox__close" data-action="click->lightbox#close" aria-label="Close">&times;</button>
+          </div>
+        </div>
+        <div class="lightbox__body" data-lightbox-image></div>
+      </div>
+    </div>
+  </div>
 <% end %>
