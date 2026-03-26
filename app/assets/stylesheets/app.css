@@ -428,7 +428,7 @@ textarea.character-sheet { font-family: monospace; white-space: pre-wrap; }
 
 /* ─── Mobile breakpoint (<768px) ─────────────────────────── */
 @media (max-width: 767px) {
-  .navbar__hamburger { display: flex; }
+  .navbar__hamburger:not([hidden]) { display: flex; }
 
   .navbar {
     flex-wrap: wrap;
