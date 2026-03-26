@@ -76,7 +76,7 @@ RSpec.describe "Scenes", type: :feature do
         "Active One", "Active Two",
         "Recent Resolved 1 (Resolved)", "Recent Resolved 2 (Resolved)", "Recent Resolved 3 (Resolved)"
       ])
-      expect(page).not_to have_select("Parent scene", with_options: ["Old Resolved (Resolved)"])
+      expect(page).not_to have_select("Parent scene", with_options: [ "Old Resolved (Resolved)" ])
     end
   end
 

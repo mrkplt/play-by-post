@@ -45,7 +45,7 @@ class GamesController < ApplicationController
     @active_scenes = @game.scenes
       .visible_to(current_user, @game)
       .active
-      .includes(:parent_scene, :child_scenes, :posts, :scene_participants => [:character, :user])
+      .includes(:parent_scene, :child_scenes, :posts, scene_participants: [ :character, :user ])
       .to_a
       .sort_by { |s| -s.last_activity_at.to_i }
 
@@ -77,5 +77,4 @@ class GamesController < ApplicationController
   def game_params
     params.require(:game).permit(:name, :description)
   end
-
 end

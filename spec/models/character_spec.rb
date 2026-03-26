@@ -59,7 +59,7 @@ RSpec.describe Character, type: :model do
       hidden = create(:character, :hidden, game: game, user: other, name: "Hidden")
 
       result = Character.visible_to(owner, game)
-      expect(result.pluck(:name)).to eq(["Visible"])
+      expect(result.pluck(:name)).to eq([ "Visible" ])
       expect(result).not_to include(hidden)
     end
   end

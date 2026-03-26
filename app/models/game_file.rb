@@ -38,16 +38,16 @@ class GameFile < ApplicationRecord
     return unless file.attached?
 
     if image?
-      file.variant(resize_to_limit: [240, 240], format: :jpeg, quality: 80)
+      file.variant(resize_to_limit: [ 240, 240 ], format: :jpeg, quality: 80)
     elsif pdf? && file.previewable?
-      file.preview(resize_to_limit: [240, 240], format: :jpeg, quality: 80)
+      file.preview(resize_to_limit: [ 240, 240 ], format: :jpeg, quality: 80)
     end
   end
 
   def display_image
     return unless file.attached? && image?
 
-    file.variant(resize_to_limit: [800, nil], format: :jpeg, quality: 85)
+    file.variant(resize_to_limit: [ 800, nil ], format: :jpeg, quality: 85)
   end
 
   def file_extension

@@ -7,7 +7,7 @@ class ScenesController < ApplicationController
   def index
     all_scenes = @game.scenes
       .visible_to(current_user, @game)
-      .includes(:parent_scene, :child_scenes, :scene_participants => [:character, :user])
+      .includes(:parent_scene, :child_scenes, scene_participants: [ :character, :user ])
       .order(created_at: :asc)
       .to_a
 

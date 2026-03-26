@@ -29,5 +29,4 @@ class ApplicationController < ActionController::Base
 
     redirect_to game_path(game), alert: "You no longer have write access to this game."
   end
-
 end

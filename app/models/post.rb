@@ -13,7 +13,7 @@ class Post < ApplicationRecord
   validate :acceptable_image
 
   def display_image
-    image.variant(resize_to_limit: [800, nil], format: :jpeg, quality: 85)
+    image.variant(resize_to_limit: [ 800, nil ], format: :jpeg, quality: 85)
   end
 
   def editable_by?(user)

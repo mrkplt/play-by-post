@@ -37,7 +37,7 @@ class Scene < ApplicationRecord
   end
 
   def banner_image
-    image.variant(resize_to_limit: [1200, nil], format: :jpeg, quality: 85)
+    image.variant(resize_to_limit: [ 1200, nil ], format: :jpeg, quality: 85)
   end
 
   def participant?(user)
