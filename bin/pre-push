@@ -13,6 +13,6 @@ echo "==> Ruby security scan (brakeman)"
 bin/brakeman --no-pager || exit 1
 
 echo "==> Tests"
-bin/rails db:test:prepare test test:system || exit 1
+bundle exec rspec || exit 1
 
 echo "All CI checks passed."
