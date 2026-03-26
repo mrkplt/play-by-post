@@ -53,6 +53,40 @@ jobs:
       - name: Lint code for consistent style
         run: bin/rubocop -f github
 
+  typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: .ruby-version
+          bundler-cache: true
+
+      - name: Type check with Sorbet
+        run: bundle exec srb tc
+
+      - name: Compute Sorbet coverage
+        run: |
+          mkdir -p tmp
+          bundle exec ruby -rjson -rspoom -e '
+            context = Spoom::Context.new(".")
+            snapshot = Spoom::Coverage.snapshot(context)
+            sigils = snapshot.sigils_excluding_rbis
+            total = sigils.values.sum
+            typed = (sigils["true"] || 0) + (sigils["strict"] || 0) + (sigils["strong"] || 0)
+            pct = total > 0 ? (typed.to_f / total * 100).round(2) : 0.0
+            File.write("tmp/sorbet_coverage.json", JSON.pretty_generate({ sorbet_typed_pct: pct }))
+          '
+
+      - name: Upload Sorbet coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: sorbet-data
+          path: tmp/sorbet_coverage.json
+
   test:
     runs-on: ubuntu-latest
 
@@ -85,6 +119,12 @@ jobs:
           PLAYWRIGHT_CLI_EXECUTABLE_PATH: ./node_modules/.bin/playwright
         run: bundle exec rspec
 
+      - name: Upload coverage data
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-data
+          path: coverage/.last_run.json
+
       - name: Keep screenshots from failed system tests
         uses: actions/upload-artifact@v4
         if: failure()
@@ -92,3 +132,103 @@ jobs:
           name: screenshots
           path: ${{ github.workspace }}/tmp/screenshots
           if-no-files-found: ignore
+
+  mutation:
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - name: Install packages
+        run: sudo apt-get update && sudo apt-get install --no-install-recommends -y build-essential git libyaml-dev pkg-config
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: .ruby-version
+          bundler-cache: true
+
+      - name: Run mutation testing
+        env:
+          RAILS_ENV: test
+        run: |
+          bundle exec mutant run --usage opensource 2>&1 | tee tmp/mutant_output.txt || true
+          bin/quality-metrics --record-mutant tmp/mutant_output.txt
+
+      - name: Upload mutant results
+        uses: actions/upload-artifact@v4
+        with:
+          name: mutant-data
+          path: tmp/mutant_result.json
+
+  quality_gate:
+    runs-on: ubuntu-latest
+    needs: [test, mutation, typecheck]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download coverage data
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-data
+          path: artifacts/
+
+      - name: Download mutant results
+        uses: actions/download-artifact@v4
+        with:
+          name: mutant-data
+          path: artifacts/
+
+      - name: Download Sorbet coverage
+        uses: actions/download-artifact@v4
+        with:
+          name: sorbet-data
+          path: artifacts/
+
+      - name: Check quality metrics against baseline
+        run: |
+          cat <<'SCRIPT' > /tmp/quality_check.rb
+          require "json"
+
+          baseline = JSON.parse(File.read("quality_baseline.json"))
+          coverage = JSON.parse(File.read("artifacts/.last_run.json"))
+          mutant = JSON.parse(File.read("artifacts/mutant_result.json"))
+          sorbet = JSON.parse(File.read("artifacts/sorbet_coverage.json"))
+
+          current = {
+            "line_coverage"     => coverage.dig("result", "line"),
+            "branch_coverage"   => coverage.dig("result", "branch"),
+            "mutation_coverage" => mutant["coverage"],
+            "sorbet_typed_pct"  => sorbet["sorbet_typed_pct"]
+          }
+
+          threshold = 5.0
+          failures = []
+
+          puts "=== Quality Gate (max regression: #{threshold} points) ==="
+          current.each do |key, value|
+            prev = baseline[key]
+            next if value.nil? || prev.nil?
+            delta = value - prev
+            regression = prev - value
+            failed = regression > threshold
+            status = failed ? "FAIL" : "OK"
+            sign = delta >= 0 ? "+" : ""
+            puts "  [#{status}] #{key}: #{prev.round(2)}% -> #{value.round(2)}% (#{sign}#{delta.round(2)})"
+            failures << key if failed
+          end
+
+          if failures.any?
+            puts "\nFAILED: #{failures.join(', ')} regressed beyond #{threshold} point threshold"
+            exit 1
+          else
+            puts "\nAll metrics within acceptable range."
+          end
+          SCRIPT
+          ruby /tmp/quality_check.rb

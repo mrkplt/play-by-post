@@ -49,6 +49,7 @@
 
 # Test coverage
 /coverage
+/spoom_data
 
 # Claude local config
 /.claude/config.json

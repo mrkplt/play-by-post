@@ -1,0 +1,182 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Collects code quality metrics (coverage, typing, mutation) and optionally
+# checks them against a stored baseline. Exits non-zero if any metric
+# regresses more than the allowed threshold.
+#
+# This script reads from artifacts produced by other tools — it does NOT
+# re-run tests, type checks, or mutation testing. Run those first:
+#   1. bundle exec rspec          -> produces coverage/.last_run.json
+#   2. bundle exec srb tc         -> type check (pass/fail only)
+#   3. bundle exec mutant run ... -> produces tmp/mutant_result.json (via --save flag below)
+#
+# Usage:
+#   bin/quality-metrics                      # collect and display current metrics
+#   bin/quality-metrics --save               # save current metrics as the new baseline
+#   bin/quality-metrics --check              # compare against baseline, fail on regression
+#   bin/quality-metrics --record-mutant FILE # extract mutation score from mutant output file
+
+require "json"
+
+BASELINE_PATH = File.expand_path("../quality_baseline.json", __dir__)
+MUTANT_RESULT_PATH = File.expand_path("../tmp/mutant_result.json", __dir__)
+THRESHOLD = 5.0 # max allowed regression in percentage points
+
+METRIC_KEYS = %w[line_coverage branch_coverage sorbet_typed_pct mutation_coverage].freeze
+
+def collect_metrics
+  metrics = {}
+
+  # --- SimpleCov (line + branch coverage) ---
+  simplecov_path = File.expand_path("../coverage/.last_run.json", __dir__)
+  if File.exist?(simplecov_path)
+    data = JSON.parse(File.read(simplecov_path))
+    result = data["result"]
+    metrics["line_coverage"] = result["line"]
+    metrics["branch_coverage"] = result["branch"]
+  else
+    warn "WARNING: No SimpleCov data found. Run `bundle exec rspec` first."
+  end
+
+  # --- Sorbet (sigils excluding RBIs) ---
+  spoom_output = `bundle exec spoom srb coverage 2>&1`
+  total_files = spoom_output[/files excluding rbis:\s*(\d+)/, 1]&.to_i || 0
+
+  # Parse sigils breakdown from spoom output — look for the excluding-RBIs section
+  # Spoom doesn't break this down in CLI, so we use the JSON snapshot
+  spoom_json_output = `bundle exec ruby -rjson -rspoom -e '
+    context = Spoom::Context.new(".")
+    snapshot = Spoom::Coverage.snapshot(context)
+    puts JSON.generate(snapshot.sigils_excluding_rbis)
+  ' 2>/dev/null`
+
+  begin
+    sigils = JSON.parse(spoom_json_output)
+    typed_files = (sigils["true"] || 0) + (sigils["strict"] || 0) + (sigils["strong"] || 0)
+    metrics["sorbet_typed_pct"] = total_files > 0 ? (typed_files.to_f / total_files * 100).round(2) : 0.0
+  rescue JSON::ParserError
+    warn "WARNING: Could not parse Sorbet coverage data."
+  end
+
+  # --- Mutant (mutation coverage) ---
+  if File.exist?(MUTANT_RESULT_PATH)
+    mutant_data = JSON.parse(File.read(MUTANT_RESULT_PATH))
+    metrics["mutation_coverage"] = mutant_data["coverage"]
+  else
+    warn "WARNING: No mutant results found at #{MUTANT_RESULT_PATH}."
+    warn "         Run mutant and pipe output through: bin/quality-metrics --record-mutant"
+  end
+
+  metrics
+end
+
+def record_mutant(output_file)
+  content = File.read(output_file)
+  coverage_match = content[/Coverage:\s*([\d.]+)%/, 1]
+  mutations_match = content[/Mutations:\s*(\d+)/, 1]
+  kills_match = content[/Kills:\s*(\d+)/, 1]
+  alive_match = content[/Alive:\s*(\d+)/, 1]
+
+  result = {
+    "coverage" => coverage_match&.to_f,
+    "mutations" => mutations_match&.to_i,
+    "kills" => kills_match&.to_i,
+    "alive" => alive_match&.to_i,
+    "recorded_at" => Time.now.iso8601
+  }
+
+  FileUtils.mkdir_p(File.dirname(MUTANT_RESULT_PATH))
+  File.write(MUTANT_RESULT_PATH, JSON.pretty_generate(result))
+  puts "Mutant results saved: coverage=#{result['coverage']}% (#{result['kills']}/#{result['mutations']} killed, #{result['alive']} alive)"
+end
+
+def load_baseline
+  return nil unless File.exist?(BASELINE_PATH)
+  JSON.parse(File.read(BASELINE_PATH))
+end
+
+def save_baseline(metrics)
+  File.write(BASELINE_PATH, JSON.pretty_generate(metrics.merge("saved_at" => Time.now.iso8601)))
+  puts "Baseline saved to #{BASELINE_PATH}"
+end
+
+def display_metrics(metrics)
+  puts "=== Code Quality Metrics ==="
+  puts "  Line coverage:      #{fmt(metrics['line_coverage'])}" if metrics["line_coverage"]
+  puts "  Branch coverage:    #{fmt(metrics['branch_coverage'])}" if metrics["branch_coverage"]
+  puts "  Sorbet typed files: #{fmt(metrics['sorbet_typed_pct'])}" if metrics["sorbet_typed_pct"]
+  puts "  Mutation coverage:  #{fmt(metrics['mutation_coverage'])}" if metrics["mutation_coverage"]
+end
+
+def fmt(value)
+  "#{value&.round(2)}%"
+end
+
+def check_against_baseline(metrics, baseline)
+  puts "\n=== Baseline Comparison (max regression: #{THRESHOLD} points) ==="
+  failures = []
+
+  METRIC_KEYS.each do |key|
+    current = metrics[key]
+    previous = baseline[key]
+    next if current.nil? || previous.nil?
+
+    regression = previous - current
+    delta = current - previous
+    symbol = delta >= 0 ? "+" : ""
+    failed = regression > THRESHOLD
+    status = failed ? "FAIL" : "OK"
+    puts "  [#{status}] #{key}: #{previous.round(2)}% -> #{current.round(2)}% (#{symbol}#{delta.round(2)})"
+
+    if failed
+      failures << "#{key}: #{previous.round(2)}% -> #{current.round(2)}% (regressed #{regression.round(2)} points, max allowed: #{THRESHOLD})"
+    end
+  end
+
+  failures
+end
+
+# --- Main ---
+require "fileutils"
+
+mode = ARGV[0]
+
+case mode
+when "--save"
+  metrics = collect_metrics
+  display_metrics(metrics)
+  save_baseline(metrics)
+when "--check"
+  baseline = load_baseline
+  if baseline.nil?
+    warn "No baseline found at #{BASELINE_PATH}. Run `bin/quality-metrics --save` first."
+    exit 1
+  end
+
+  metrics = collect_metrics
+  display_metrics(metrics)
+  failures = check_against_baseline(metrics, baseline)
+
+  if failures.any?
+    puts "\nFAILED: Quality metrics regressed beyond #{THRESHOLD}% threshold:"
+    failures.each { |f| puts "  - #{f}" }
+    exit 1
+  else
+    puts "\nAll metrics within acceptable range."
+  end
+when "--record-mutant"
+  file = ARGV[1]
+  if file.nil? || !File.exist?(file)
+    warn "Usage: bin/quality-metrics --record-mutant <mutant-output-file>"
+    exit 1
+  end
+  record_mutant(file)
+else
+  metrics = collect_metrics
+  display_metrics(metrics)
+  puts "\nCommands:"
+  puts "  bin/quality-metrics --save               # save current metrics as baseline"
+  puts "  bin/quality-metrics --check              # check against baseline (fails on >#{THRESHOLD}% regression)"
+  puts "  bin/quality-metrics --record-mutant FILE # record mutant output for metrics"
+end

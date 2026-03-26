@@ -58,14 +58,20 @@ group :development, :test do
   gem "rubocop-rails-omakase", require: false
   gem "rspec-rails"
   gem "factory_bot_rails"
+  gem "mutant-rspec", require: false
 end
 
 group :development do
   gem "web-console"
   gem "letter_opener_web"
+  gem "sorbet", require: false
+  gem "tapioca", require: false
 end
 
 group :test do
   gem "capybara"
   gem "capybara-playwright-driver"
+  gem "simplecov", require: false
 end
+
+gem "sorbet-runtime"
