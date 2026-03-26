@@ -58,6 +58,12 @@
     <% end %>
   </div>
 
+  <% if @scene.image.attached? %>
+    <div style="margin-top:0.75rem;">
+      <%= image_tag @scene.banner_image, style: "max-width:100%; border-radius:4px;" %>
+    </div>
+  <% end %>
+
   <% if @scene.parent_scene.present? %>
     <p style="font-size:0.85rem; color:#64748b; margin:0.5rem 0 0.25rem;">
       ↳ Continues from <%= link_to @scene.parent_scene.title, game_scene_path(@game, @scene.parent_scene) %>
@@ -118,6 +124,12 @@
     <% end %>
   </div>
 </div>
+
+<% if !@is_participant && !@is_gm && !@scene.private? && !@scene.resolved? && @current_membership&.active? %>
+  <div style="margin-top:1rem; text-align:center;">
+    <%= button_to "Join Scene", join_game_scene_participants_path(@game, @scene), method: :post, class: "btn" %>
+  </div>
+<% end %>
 
 </div><!-- end ooc-filter -->
 

@@ -76,7 +76,7 @@ RSpec.describe "Scenes", type: :feature do
         "Active One", "Active Two",
         "Recent Resolved 1 (Resolved)", "Recent Resolved 2 (Resolved)", "Recent Resolved 3 (Resolved)"
       ])
-      expect(page).not_to have_select("Parent scene", with_options: ["Old Resolved (Resolved)"])
+      expect(page).not_to have_select("Parent scene", with_options: [ "Old Resolved (Resolved)" ])
     end
   end
 
@@ -262,6 +262,13 @@ RSpec.describe "Scenes", type: :feature do
       expect(page).to have_text("The party defeated the dragon.")
     end
 
+    it "hides the scene actions menu after resolution" do
+      scene.update!(resolved_at: Time.current, resolution: "Done.")
+      visit game_scene_path(game, scene)
+
+      expect(page).not_to have_css("button[title='Scene actions']")
+    end
+
     it "resolved scene no longer shows the composer" do
       scene.update!(resolved_at: Time.current, resolution: "Done.")
       visit game_scene_path(game, scene)
@@ -297,6 +304,81 @@ RSpec.describe "Scenes", type: :feature do
       click_on "Unmute notifications"
 
       expect(page).to have_text("Notifications enabled")
+    end
+
+    it "muting via UI suppresses digest emails" do
+      create(:scene_participant, scene: scene, user: player)
+      scene.scene_participants.find_by(user: gm).update!(last_visited_at: 2.days.ago)
+      create(:post, scene: scene, user: player, content: "New activity while GM away")
+
+      visit game_scene_path(game, scene)
+      find("button[title='Scene actions']").click
+      click_on "Mute notifications"
+
+      expect(page).to have_text("Notifications muted")
+      expect(NotificationPreference.muted?(scene, gm)).to be true
+
+      ActiveJob::Base.queue_adapter = :test
+      PostDigestJob.perform_now
+
+      digest_jobs = ActiveJob::Base.queue_adapter.enqueued_jobs.select { |j|
+        j["job_class"] == "ActionMailer::MailDeliveryJob" &&
+        j["arguments"]&.first == "NotificationMailer" &&
+        j["arguments"]&.second == "post_digest"
+      }
+      expect(digest_jobs).to be_empty
+    end
+  end
+
+  describe "join scene" do
+    let(:scene) { create(:scene, game: game, title: "Open Adventure") }
+    let(:joiner) { create(:user, :with_profile) }
+
+    before do
+      create(:scene_participant, scene: scene, user: gm)
+      create(:game_member, game: game, user: joiner)
+    end
+
+    it "active player can join a non-private scene" do
+      sign_in_as(joiner)
+      visit game_scene_path(game, scene)
+
+      click_on "Join Scene"
+
+      expect(page).to have_text("You have joined this scene.")
+      expect(page).to have_text(joiner.display_name)
+    end
+
+    it "does not show Join Scene button to existing participants" do
+      create(:scene_participant, scene: scene, user: player)
+      sign_in_as(player)
+      visit game_scene_path(game, scene)
+
+      expect(page).not_to have_button("Join Scene")
+    end
+
+    it "does not show Join Scene button on resolved scenes" do
+      scene.update!(resolved_at: Time.current, resolution: "Done.")
+      sign_in_as(joiner)
+      visit game_scene_path(game, scene)
+
+      expect(page).not_to have_button("Join Scene")
+    end
+
+    it "does not show Join Scene button to GM" do
+      sign_in_as(gm)
+      visit game_scene_path(game, scene)
+
+      expect(page).not_to have_button("Join Scene")
+    end
+
+    it "does not show Join Scene button on private scenes" do
+      scene.update!(private: true)
+      # Private scenes redirect non-participants, so joiner can't even see it
+      sign_in_as(joiner)
+      visit game_scene_path(game, scene)
+
+      expect(page).not_to have_button("Join Scene")
     end
   end
 

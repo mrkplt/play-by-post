@@ -32,7 +32,7 @@ RSpec.describe "SceneParticipants", type: :request do
     it "GM can update participants" do
       character = create(:character, game: game, user: player)
       sign_in(gm)
-      patch game_scene_participants_path(game, scene), params: { character_ids: [character.id] }
+      patch game_scene_participants_path(game, scene), params: { character_ids: [ character.id ] }
       expect(response).to redirect_to(game_scene_path(game, scene))
     end
 

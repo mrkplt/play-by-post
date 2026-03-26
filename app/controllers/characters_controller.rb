@@ -1,6 +1,7 @@
 class CharactersController < ApplicationController
   before_action :set_game
   before_action :require_game_access!
+  before_action :require_active_member_for_write!, only: %i[new create edit update]
   before_action :set_character, only: %i[show edit update archive restore]
   before_action :require_edit_access!, only: %i[edit update]
   before_action :require_gm!, only: %i[archive restore]
@@ -90,6 +91,10 @@ class CharactersController < ApplicationController
     unless @game.game_master?(current_user)
       redirect_to game_character_path(@game, @character), alert: "Only the GM can archive or restore characters."
     end
+  end
+
+  def require_active_member_for_write!
+    require_active_member!(@game)
   end
 
   def character_params

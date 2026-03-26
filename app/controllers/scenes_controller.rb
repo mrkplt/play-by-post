@@ -7,7 +7,7 @@ class ScenesController < ApplicationController
   def index
     all_scenes = @game.scenes
       .visible_to(current_user, @game)
-      .includes(:parent_scene, :child_scenes, :scene_participants => [:character, :user])
+      .includes(:parent_scene, :child_scenes, scene_participants: [ :character, :user ])
       .order(created_at: :asc)
       .to_a
 
@@ -43,6 +43,7 @@ class ScenesController < ApplicationController
     @post = Post.new
     @is_gm = @game.game_master?(current_user)
     @is_participant = @scene.participant?(current_user)
+    @current_membership = @game.member_for(current_user)
     @is_muted = NotificationPreference.muted?(@scene, current_user)
     @hide_ooc = current_user.user_profile&.hide_ooc? || false
     @child_scenes = @scene.child_scenes.visible_to(current_user, @game).order(:created_at)
@@ -172,6 +173,6 @@ class ScenesController < ApplicationController
   end
 
   def scene_params
-    params.require(:scene).permit(:title, :private, :parent_scene_id)
+    params.require(:scene).permit(:title, :private, :parent_scene_id, :image)
   end
 end

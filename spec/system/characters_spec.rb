@@ -107,6 +107,43 @@ RSpec.describe "Characters", type: :feature do
     end
   end
 
+  describe "sheets_hidden" do
+    it "hides all character sheets from non-GM players when sheets_hidden is true" do
+      game.update!(sheets_hidden: true)
+      create(:character, game: game, user: player, name: "Player Char")
+
+      sign_in_as(player)
+      visit game_path(game)
+
+      expect(page).to have_text("Player Char")
+    end
+
+    it "hides other players' characters when sheets_hidden is true" do
+      other_player = create(:user, :with_profile)
+      create(:game_member, game: game, user: other_player)
+      game.update!(sheets_hidden: true)
+      create(:character, game: game, user: other_player, name: "Other Char")
+      create(:character, game: game, user: player, name: "My Char")
+
+      sign_in_as(player)
+      visit game_path(game)
+
+      expect(page).to have_text("My Char")
+      expect(page).not_to have_text("Other Char")
+    end
+
+    it "GM can toggle sheets_hidden" do
+      sign_in_as(gm)
+      visit game_path(game)
+
+      click_on "Hide Character Sheets"
+      expect(page).to have_text("Character sheets are now hidden")
+
+      click_on "Show Character Sheets"
+      expect(page).to have_text("Character sheets are now visible")
+    end
+  end
+
   describe "character visibility" do
     let(:other_player) { create(:user, :with_profile) }
 

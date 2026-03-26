@@ -1,7 +1,8 @@
 class SceneParticipantsController < ApplicationController
   before_action :set_game
   before_action :set_scene
-  before_action :require_gm!
+  before_action :require_gm!, only: %i[edit update]
+  before_action :require_active_member_for_write!, only: %i[join]
 
   def edit
     players = @game.users.joins(:game_members)
@@ -41,6 +42,21 @@ class SceneParticipantsController < ApplicationController
     redirect_to game_scene_path(@game, @scene), notice: "Participants updated."
   end
 
+  def join
+    if @scene.private? && !@game.game_master?(current_user)
+      redirect_to game_scene_path(@game, @scene), alert: "Cannot join a private scene."
+      return
+    end
+
+    if @scene.resolved?
+      redirect_to game_scene_path(@game, @scene), alert: "Cannot join a resolved scene."
+      return
+    end
+
+    @scene.scene_participants.find_or_create_by!(user: current_user)
+    redirect_to game_scene_path(@game, @scene), notice: "You have joined this scene."
+  end
+
   private
 
   def set_game
@@ -55,5 +71,9 @@ class SceneParticipantsController < ApplicationController
     return if @game.game_master?(current_user)
 
     redirect_to game_scene_path(@game, @scene), alert: "Only the GM can edit participants."
+  end
+
+  def require_active_member_for_write!
+    require_active_member!(@game)
   end
 end

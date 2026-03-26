@@ -56,25 +56,9 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
-    services:
-      postgres:
-        image: postgres
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-        ports:
-          - 5432:5432
-        options: --health-cmd="pg_isready" --health-interval=10s --health-timeout=5s --health-retries=3
-
-      # redis:
-      #   image: redis
-      #   ports:
-      #     - 6379:6379
-      #   options: --health-cmd "redis-cli ping" --health-interval 10s --health-timeout 5s --health-retries 5
-
     steps:
       - name: Install packages
-        run: sudo apt-get update && sudo apt-get install --no-install-recommends -y build-essential git libpq-dev libyaml-dev pkg-config google-chrome-stable
+        run: sudo apt-get update && sudo apt-get install --no-install-recommends -y build-essential git libyaml-dev pkg-config imagemagick
 
       - name: Checkout code
         uses: actions/checkout@v4
@@ -85,12 +69,21 @@ jobs:
           ruby-version: .ruby-version
           bundler-cache: true
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+
+      - name: Install Playwright browsers
+        run: |
+          export PLAYWRIGHT_CLI_VERSION=$(bundle exec ruby -e 'require "playwright"; puts Playwright::COMPATIBLE_PLAYWRIGHT_VERSION.strip')
+          npm install playwright@${PLAYWRIGHT_CLI_VERSION} || npm install playwright@next
+          ./node_modules/.bin/playwright install --with-deps chromium
+
       - name: Run tests
         env:
           RAILS_ENV: test
-          DATABASE_URL: postgres://postgres:postgres@localhost:5432
-          # REDIS_URL: redis://localhost:6379/0
-        run: bin/rails db:test:prepare test test:system
+          PLAYWRIGHT_CLI_EXECUTABLE_PATH: ./node_modules/.bin/playwright
+        run: bundle exec rspec
 
       - name: Keep screenshots from failed system tests
         uses: actions/upload-artifact@v4

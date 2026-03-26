@@ -1,6 +1,5 @@
 # Preview all emails at http://localhost:3000/rails/mailers/notification_mailer_mailer
 class NotificationMailerPreview < ActionMailer::Preview
-
   # Preview this email at http://localhost:3000/rails/mailers/notification_mailer_mailer/new_scene
   def new_scene
     NotificationMailer.new_scene
@@ -15,5 +14,4 @@ class NotificationMailerPreview < ActionMailer::Preview
   def post_digest
     NotificationMailer.post_digest
   end
-
 end

@@ -11,7 +11,7 @@ RSpec.describe NotificationMailer, type: :mailer do
     it "renders the headers" do
       expect(mail.subject).to include(game.name)
       expect(mail.subject).to include(scene.title)
-      expect(mail.to).to eq([recipient.email])
+      expect(mail.to).to eq([ recipient.email ])
     end
 
     it "sets a scene reply-to address" do
@@ -29,7 +29,7 @@ RSpec.describe NotificationMailer, type: :mailer do
     it "renders the headers" do
       expect(mail.subject).to include(game.name)
       expect(mail.subject).to include(scene.title)
-      expect(mail.to).to eq([recipient.email])
+      expect(mail.to).to eq([ recipient.email ])
     end
 
     it "renders the body" do
@@ -44,7 +44,7 @@ RSpec.describe NotificationMailer, type: :mailer do
     it "renders the headers" do
       expect(mail.subject).to include(game.name)
       expect(mail.subject).to include(scene.title)
-      expect(mail.to).to eq([recipient.email])
+      expect(mail.to).to eq([ recipient.email ])
     end
 
     it "sets a scene reply-to address" do
