@@ -1,6 +1,4 @@
 module ApplicationHelper
-  include Pagy::Frontend
-
   def render_markdown(text)
     return "" if text.blank?
 
