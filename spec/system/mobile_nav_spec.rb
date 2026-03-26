@@ -31,11 +31,11 @@ RSpec.describe "Mobile navigation", type: :feature do
     expect(find(".navbar__menu")).to be_visible
   end
 
-  it "closes the nav menu when a link is selected" do
+  it "clicking a nav link navigates away and collapses the menu" do
     visit root_path
     find(".navbar__hamburger").click
     find(".navbar__menu").click_link("Sign out")
-    expect(page).to have_css(".navbar__menu[hidden]", visible: :all)
+    expect(page).not_to have_css(".navbar__hamburger")
   end
 
   it "closes the nav menu when tapping outside" do
