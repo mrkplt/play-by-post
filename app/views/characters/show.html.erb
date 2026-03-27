@@ -32,20 +32,22 @@
 <!-- Version History -->
 <details style="margin-top:1.5rem;">
   <summary style="cursor:pointer; font-weight:600; margin-bottom:0.75rem;">Version History (<%= @versions.count %>)</summary>
-  <table>
-    <thead>
-      <tr>
-        <th>Date</th>
-        <th>Edited by</th>
-      </tr>
-    </thead>
-    <tbody>
-      <% @versions.each do |version| %>
+  <div class="table-responsive">
+    <table>
+      <thead>
         <tr>
-          <td><%= link_to game_character_character_version_path(@game, @character, version) do %><time data-local-time="<%= version.created_at.iso8601 %>"><%= version.created_at.strftime("%b %-d, %Y %-I:%M %p") %></time><% end %></td>
-          <td><%= version.edited_by.display_name || version.edited_by.email %></td>
+          <th>Date</th>
+          <th>Edited by</th>
         </tr>
-      <% end %>
-    </tbody>
-  </table>
+      </thead>
+      <tbody>
+        <% @versions.each do |version| %>
+          <tr>
+            <td><%= link_to game_character_character_version_path(@game, @character, version) do %><time data-local-time="<%= version.created_at.iso8601 %>"><%= version.created_at.strftime("%b %-d, %Y %-I:%M %p") %></time><% end %></td>
+            <td><%= version.edited_by.display_name || version.edited_by.email %></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
 </details>
