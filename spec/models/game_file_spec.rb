@@ -132,11 +132,13 @@ RSpec.describe GameFile, type: :model do
       game_file = build(:game_file)
       game_file.file.attach(io: StringIO.new("test"), filename: "doc.pdf", content_type: "application/pdf")
       allow(game_file.file).to receive(:previewable?).and_return(true)
+      expected_transformations = { resize_to_limit: [ 240, 240 ], format: :jpeg, quality: 80 }
+      fake_preview = ActiveStorage::Preview.allocate
+      allow(fake_preview).to receive(:variation).and_return(ActiveStorage::Variation.new(expected_transformations))
+      allow(game_file.file).to receive(:preview).with(expected_transformations).and_return(fake_preview)
       result = game_file.thumbnail
       expect(result).to be_a(ActiveStorage::Preview)
-      expect(result.variation.transformations).to eq(
-        resize_to_limit: [ 240, 240 ], format: :jpeg, quality: 80
-      )
+      expect(result.variation.transformations).to eq(expected_transformations)
     end
 
     it "returns nil for a PDF that is not previewable" do
