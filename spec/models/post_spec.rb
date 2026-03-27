@@ -51,7 +51,7 @@ RSpec.describe Post, type: :model do
       result = post.display_image
       expect(result).to be_a(ActiveStorage::VariantWithRecord)
       expect(result.variation.transformations).to eq(
-        resize_to_limit: [800, nil], format: :jpeg, quality: 85
+        resize_to_limit: [ 800, nil ], format: :jpeg, quality: 85
       )
     end
   end

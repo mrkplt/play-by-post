@@ -101,7 +101,7 @@ RSpec.describe Scene, type: :model do
       result = scene.banner_image
       expect(result).to be_a(ActiveStorage::VariantWithRecord)
       expect(result.variation.transformations).to eq(
-        resize_to_limit: [1200, nil], format: :jpeg, quality: 85
+        resize_to_limit: [ 1200, nil ], format: :jpeg, quality: 85
       )
     end
   end

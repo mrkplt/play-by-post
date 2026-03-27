@@ -42,7 +42,7 @@ RSpec.describe EmailContentExtractor do
       it "returns extracted content from the API response" do
         allow(Net::HTTP).to receive(:new).and_return(http_double)
         allow(response_double).to receive(:body).and_return(
-          { "choices" => [{ "message" => { "content" => "Hello, this is my reply." } }] }.to_json
+          { "choices" => [ { "message" => { "content" => "Hello, this is my reply." } } ] }.to_json
         )
 
         expect(described_class.new(raw_body).extract).to eq("Hello, this is my reply.")
@@ -50,7 +50,7 @@ RSpec.describe EmailContentExtractor do
 
       it "connects to the correct host and port" do
         allow(response_double).to receive(:body).and_return(
-          { "choices" => [{ "message" => { "content" => "reply" } }] }.to_json
+          { "choices" => [ { "message" => { "content" => "reply" } } ] }.to_json
         )
 
         uri = URI(EmailContentExtractor::OPENROUTER_API_URL)
@@ -62,7 +62,7 @@ RSpec.describe EmailContentExtractor do
       it "sends the correct authorization header" do
         allow(Net::HTTP).to receive(:new).and_return(http_double)
         allow(response_double).to receive(:body).and_return(
-          { "choices" => [{ "message" => { "content" => "reply" } }] }.to_json
+          { "choices" => [ { "message" => { "content" => "reply" } } ] }.to_json
         )
 
         described_class.new(raw_body).extract
@@ -75,7 +75,7 @@ RSpec.describe EmailContentExtractor do
       it "sends the correct content type header" do
         allow(Net::HTTP).to receive(:new).and_return(http_double)
         allow(response_double).to receive(:body).and_return(
-          { "choices" => [{ "message" => { "content" => "reply" } }] }.to_json
+          { "choices" => [ { "message" => { "content" => "reply" } } ] }.to_json
         )
 
         described_class.new(raw_body).extract
@@ -88,7 +88,7 @@ RSpec.describe EmailContentExtractor do
       it "sends the system prompt and raw body as messages" do
         allow(Net::HTTP).to receive(:new).and_return(http_double)
         allow(response_double).to receive(:body).and_return(
-          { "choices" => [{ "message" => { "content" => "reply" } }] }.to_json
+          { "choices" => [ { "message" => { "content" => "reply" } } ] }.to_json
         )
 
         described_class.new(raw_body).extract
@@ -106,7 +106,7 @@ RSpec.describe EmailContentExtractor do
       it "falls back to raw body when API response has no content" do
         allow(Net::HTTP).to receive(:new).and_return(http_double)
         allow(response_double).to receive(:body).and_return(
-          { "choices" => [{ "message" => { "content" => nil } }] }.to_json
+          { "choices" => [ { "message" => { "content" => nil } } ] }.to_json
         )
 
         expect(described_class.new(raw_body).extract).to eq(raw_body)
@@ -115,7 +115,7 @@ RSpec.describe EmailContentExtractor do
       it "falls back to raw body when API response has empty content" do
         allow(Net::HTTP).to receive(:new).and_return(http_double)
         allow(response_double).to receive(:body).and_return(
-          { "choices" => [{ "message" => { "content" => "" } }] }.to_json
+          { "choices" => [ { "message" => { "content" => "" } } ] }.to_json
         )
 
         expect(described_class.new(raw_body).extract).to eq(raw_body)
@@ -154,7 +154,7 @@ RSpec.describe EmailContentExtractor do
       it "uses SSL for the request" do
         allow(Net::HTTP).to receive(:new).and_return(http_double)
         allow(response_double).to receive(:body).and_return(
-          { "choices" => [{ "message" => { "content" => "reply" } }] }.to_json
+          { "choices" => [ { "message" => { "content" => "reply" } } ] }.to_json
         )
 
         described_class.new(raw_body).extract
@@ -165,7 +165,7 @@ RSpec.describe EmailContentExtractor do
       it "sets open_timeout to 10 seconds" do
         allow(Net::HTTP).to receive(:new).and_return(http_double)
         allow(response_double).to receive(:body).and_return(
-          { "choices" => [{ "message" => { "content" => "reply" } }] }.to_json
+          { "choices" => [ { "message" => { "content" => "reply" } } ] }.to_json
         )
 
         described_class.new(raw_body).extract
@@ -176,7 +176,7 @@ RSpec.describe EmailContentExtractor do
       it "sets read_timeout to 15 seconds" do
         allow(Net::HTTP).to receive(:new).and_return(http_double)
         allow(response_double).to receive(:body).and_return(
-          { "choices" => [{ "message" => { "content" => "reply" } }] }.to_json
+          { "choices" => [ { "message" => { "content" => "reply" } } ] }.to_json
         )
 
         described_class.new(raw_body).extract

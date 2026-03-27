@@ -124,7 +124,7 @@ RSpec.describe GameFile, type: :model do
       result = game_file.thumbnail
       expect(result).to be_a(ActiveStorage::VariantWithRecord)
       expect(result.variation.transformations).to eq(
-        resize_to_limit: [240, 240], format: :jpeg, quality: 80
+        resize_to_limit: [ 240, 240 ], format: :jpeg, quality: 80
       )
     end
 
@@ -135,7 +135,7 @@ RSpec.describe GameFile, type: :model do
       result = game_file.thumbnail
       expect(result).to be_a(ActiveStorage::Preview)
       expect(result.variation.transformations).to eq(
-        resize_to_limit: [240, 240], format: :jpeg, quality: 80
+        resize_to_limit: [ 240, 240 ], format: :jpeg, quality: 80
       )
     end
 
@@ -173,7 +173,7 @@ RSpec.describe GameFile, type: :model do
       result = game_file.display_image
       expect(result).to be_a(ActiveStorage::VariantWithRecord)
       expect(result.variation.transformations).to eq(
-        resize_to_limit: [800, nil], format: :jpeg, quality: 85
+        resize_to_limit: [ 800, nil ], format: :jpeg, quality: 85
       )
     end
   end
