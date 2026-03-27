@@ -1,0 +1,69 @@
+{
+  "title": "Mobile Friendly Layout",
+  "description": "As a User, I want to be able to comfortably use all features so that I can play in my games from my iPhone 13, Samsung Galaxy, or tablet.",
+  "version": "1.0.0",
+  "created_at": "2026-03-25",
+  "notes": "Tests written in spec/system/mobile_nav_spec.rb, mobile_posts_spec.rb, mobile_composer_spec.rb, tablet_gm_dashboard_spec.rb, mobile_email_links_spec.rb. Ruby runtime unavailable in this container — test execution must be verified in a full dev environment.",
+  "stories": [
+    {
+      "id": "mobile-01",
+      "title": "Responsive navigation menu on mobile devices",
+      "description": "As a mobile user, I want the navigation menu to collapse into a hamburger menu on small screens so that I can access all site sections without horizontal scrolling or overlapping elements on my iPhone 13 or Samsung Galaxy.",
+      "acceptance_criteria": [
+        "Navigation links collapse into a hamburger icon on screens narrower than 768px",
+        "Tapping the hamburger icon opens a full-width dropdown or slide-out menu",
+        "All navigation links are reachable and tappable with a minimum touch target of 44x44px",
+        "Menu closes when a link is selected or when tapping outside the menu"
+      ],
+      "status": "done"
+    },
+    {
+      "id": "mobile-02",
+      "title": "Readable and scrollable game scene posts on mobile",
+      "description": "As a mobile user, I want to read and scroll through game scene posts comfortably so that I can follow the story and player contributions on my phone without zooming or horizontal scrolling.",
+      "acceptance_criteria": [
+        "Post content reflows to fit within the viewport width on screens 375px and wider",
+        "Text is legible at default zoom (minimum 16px font size for body text)",
+        "Images within posts scale proportionally and do not overflow the container",
+        "Threaded reply indentation collapses or truncates gracefully on narrow screens"
+      ],
+      "status": "done"
+    },
+    {
+      "id": "mobile-03",
+      "title": "Compose and submit posts from a mobile device",
+      "description": "As a mobile user, I want to write and submit new posts or replies using my phone's keyboard so that I can participate in games without needing a desktop computer.",
+      "acceptance_criteria": [
+        "The post composition form is fully usable on screens 375px and wider",
+        "The text area expands as content is typed and does not hide behind the virtual keyboard",
+        "Submit and Cancel buttons are reachable and have touch targets of at least 44x44px",
+        "Rich-text controls (bold, italic, etc.) are accessible and usable on touch screens"
+      ],
+      "status": "done"
+    },
+    {
+      "id": "mobile-04",
+      "title": "Game master tools accessible on tablet screens",
+      "description": "As a game master using a tablet, I want to access scene management, character management, and game settings so that I can run my game without switching to a desktop browser.",
+      "acceptance_criteria": [
+        "All GM dashboard panels are reachable on screens 768px and wider (tablet portrait)",
+        "Action buttons (create scene, edit character, manage players) are tappable with no overlap",
+        "Forms for creating/editing scenes and characters are fully operable on tablet touch screens",
+        "No functionality is hidden or disabled based solely on screen size for tablet viewports"
+      ],
+      "status": "done"
+    },
+    {
+      "id": "mobile-05",
+      "title": "Email notification links open correctly on mobile browsers",
+      "description": "As a mobile user, I want email notification links to open the correct in-game content in my mobile browser so that I can jump directly to new posts or scenes from my phone's email app.",
+      "acceptance_criteria": [
+        "Clicking a notification link from a mobile email client opens the target post or scene page",
+        "The linked page renders correctly in mobile viewport without requiring zoom",
+        "The user remains authenticated (or is prompted to log in) when following an email link on mobile",
+        "Deep-linked pages display the correct post or scene, not just the home page"
+      ],
+      "status": "done"
+    }
+  ]
+}
