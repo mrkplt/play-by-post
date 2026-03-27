@@ -82,7 +82,7 @@ jobs:
           '
 
       - name: Upload Sorbet coverage
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: sorbet-data
           path: tmp/sorbet_coverage.json
@@ -120,7 +120,7 @@ jobs:
         run: bundle exec rspec
 
       - name: Upload coverage data
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: coverage-data
           path: coverage/.last_run.json
@@ -128,7 +128,7 @@ jobs:
           if-no-files-found: error
 
       - name: Keep screenshots from failed system tests
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: screenshots
@@ -162,7 +162,7 @@ jobs:
           bin/quality-metrics --record-mutant tmp/mutant_output.txt
 
       - name: Upload mutant results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: mutant-data
           path: tmp/mutant_result.json
@@ -176,19 +176,19 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Download coverage data
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: coverage-data
           path: artifacts/
 
       - name: Download mutant results
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: mutant-data
           path: artifacts/
 
       - name: Download Sorbet coverage
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: sorbet-data
           path: artifacts/
