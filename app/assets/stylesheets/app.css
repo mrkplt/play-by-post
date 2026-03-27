@@ -222,6 +222,39 @@ textarea.character-sheet { font-family: monospace; white-space: pre-wrap; }
   gap: 1rem;
 }
 
+.gallery-grid--compact {
+  grid-template-columns: repeat(auto-fill, minmax(100px, 120px));
+  gap: 0.5rem;
+}
+
+.gallery-grid--compact .gallery-card__thumb {
+  aspect-ratio: 1;
+}
+
+.gallery-grid--compact .gallery-card__info {
+  padding: 0.25rem 0.4rem;
+}
+
+.gallery-grid--compact .gallery-card__filename {
+  font-size: 0.7rem;
+}
+
+.btn--small {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+}
+
+.btn--danger {
+  background: white;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.btn--danger:hover {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
 .gallery-card {
   background: white;
   border: 1px solid #e2e8f0;
@@ -281,41 +314,6 @@ textarea.character-sheet { font-family: monospace; white-space: pre-wrap; }
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.gallery-card__actions {
-  display: flex;
-  gap: 0.25rem;
-  flex-shrink: 0;
-}
-
-.gallery-card__action {
-  padding: 0.2rem 0.4rem;
-  font-size: 0.75rem;
-  border-radius: 3px;
-  border: 1px solid #e2e8f0;
-  background: white;
-  color: #64748b;
-  cursor: pointer;
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  line-height: 1;
-}
-
-.gallery-card__action:hover {
-  background: #f1f5f9;
-  color: #1a1a1a;
-}
-
-.gallery-card__action--delete {
-  color: #dc2626;
-  border-color: #fecaca;
-}
-
-.gallery-card__action--delete:hover {
-  background: #fef2f2;
-  color: #b91c1c;
 }
 
 /* Lightbox modal */

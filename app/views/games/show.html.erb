@@ -72,17 +72,6 @@
   <% if @game_files.empty? %>
     <p style="color:#94a3b8; font-size:0.9rem;">No files uploaded yet.</p>
   <% else %>
-    <div style="font-size:0.9rem;">
-      <% @game_files.each do |gf| %>
-        <div style="padding:0.4rem 0; border-bottom:1px solid #f1f5f9;">
-          <% if gf.file.attached? %>
-            <%= link_to gf.filename, rails_blob_path(gf.file, disposition: "attachment") %>
-          <% else %>
-            <%= gf.filename %>
-          <% end %>
-          <span style="color:#94a3b8; margin-left:0.5rem;"><%= gf.created_at.strftime("%b %-d") %></span>
-        </div>
-      <% end %>
-    </div>
+    <%= render "game_files/gallery", game_files: @game_files, game: @game, is_gm: @is_gm %>
   <% end %>
 </div>
