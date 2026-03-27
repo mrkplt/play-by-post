@@ -183,23 +183,43 @@ textarea.character-sheet { font-family: monospace; white-space: pre-wrap; }
   white-space: nowrap;
 }
 
+/* ─── Global Image Safety ───────────────────────────────── */
+.post__content img { max-width: 100%; height: auto; display: block; }
+
+/* ─── Mobile Nav ─────────────────────────────────────────── */
+.navbar__hamburger {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  width: 44px;
+  height: 44px;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: #f8fafc;
+}
+
+.navbar__hamburger-bar {
+  display: block;
+  width: 22px;
+  height: 2px;
+  background: currentColor;
+  border-radius: 2px;
+}
+
+.navbar__link { color: #f8fafc; text-decoration: none; }
+
+/* ─── Textarea auto-expand ───────────────────────────────── */
+.field textarea { resize: vertical; min-height: 6rem; }
+
 /* Gallery grid */
 .gallery-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   gap: 1rem;
-}
-
-@media (max-width: 480px) {
-  .gallery-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (max-width: 300px) {
-  .gallery-grid {
-    grid-template-columns: 1fr;
-  }
 }
 
 .gallery-card {
@@ -404,5 +424,116 @@ textarea.character-sheet { font-family: monospace; white-space: pre-wrap; }
 .lightbox__placeholder-size {
   font-size: 0.85rem;
   color: #94a3b8;
+}
+
+/* ─── Mobile breakpoint (<768px) ─────────────────────────── */
+@media (max-width: 767px) {
+  .navbar__hamburger:not([hidden]) { display: flex; }
+
+  .navbar {
+    flex-wrap: wrap;
+    padding: 0.5rem 1rem;
+    position: relative;
+  }
+
+  .navbar__menu {
+    width: 100%;
+    flex-direction: column;
+    background: #1e293b;
+  }
+
+  .navbar__menu:not([hidden]) { display: flex; }
+
+  .navbar__actions {
+    flex-direction: column;
+    gap: 0;
+    width: 100%;
+  }
+
+  .navbar__menu a,
+  .navbar__actions a {
+    display: block;
+    width: 100%;
+    min-height: 44px;
+    line-height: 44px;
+    padding: 0 1rem;
+    border-top: 1px solid #334155;
+    color: #f8fafc;
+    text-decoration: none;
+  }
+
+  main { padding: 1rem 0.75rem; }
+
+  .post__content {
+    font-size: 1rem;
+    word-break: break-word;
+  }
+
+  .post--reply { margin-left: 0.75rem; }
+
+  .post-composer-actions {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .post-composer-actions input[type="submit"],
+  .post-composer-actions button,
+  .post-composer-actions .btn {
+    width: 100%;
+    min-height: 44px;
+  }
+
+  .btn,
+  input[type="submit"],
+  button { min-height: 44px; }
+
+  .section__header { flex-wrap: wrap; gap: 0.5rem; }
+
+  .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .table-responsive table { min-width: 500px; }
+
+  .auth-card {
+    margin: 1.5rem auto;
+    padding: 1.25rem;
+    width: calc(100% - 2rem);
+    max-width: 100%;
+  }
+
+  .scene-row .card { min-width: unset; max-width: 100%; width: 100%; }
+
+  .tree-node__title { white-space: normal; }
+  .tree-node__meta { white-space: normal; }
+
+  .field textarea { font-size: 1rem; }
+
+  .gallery-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 300px) {
+  .gallery-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ─── Tablet breakpoint (768px–1023px) ───────────────────── */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .navbar__menu { display: flex !important; }
+  .navbar__hamburger { display: none !important; }
+
+  main { padding: 1.25rem 1.5rem; }
+
+  .section__header { flex-wrap: wrap; gap: 0.5rem; }
+
+  .btn,
+  input[type="submit"],
+  button { min-height: 44px; }
+}
+
+/* ─── Desktop override (≥768px) ──────────────────────────── */
+@media (min-width: 768px) {
+  .navbar__menu { display: flex !important; }
+  .navbar__hamburger { display: none !important; }
 }
 
