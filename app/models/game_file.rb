@@ -88,7 +88,7 @@ class GameFile < ApplicationRecord
   def acceptable_file
     return unless file.attached?
 
-    unless file.byte_size <= MAX_SIZE
+    unless T.must(file.byte_size) <= MAX_SIZE
       errors.add(:file, "must be less than 25MB")
     end
 
