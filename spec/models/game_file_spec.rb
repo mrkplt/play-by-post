@@ -20,10 +20,17 @@ RSpec.describe GameFile, type: :model do
       expect(game_file.errors[:file]).to include("must be less than 25MB")
     end
 
+    it "allows a file exactly 25MB" do
+      game_file = build(:game_file)
+      game_file.file.attach(io: StringIO.new("x" * 25.megabytes), filename: "exact.pdf", content_type: "application/pdf")
+      expect(game_file).to be_valid
+    end
+
     it "rejects disallowed content types" do
       game_file = build(:game_file)
       game_file.file.attach(io: StringIO.new("test"), filename: "archive.zip", content_type: "application/zip")
       expect(game_file).not_to be_valid
+      expect(game_file.errors[:file]).to include("must be a PDF, Word doc, text, markdown, or image file")
     end
 
     it "allows PDF content type" do
@@ -37,13 +44,25 @@ RSpec.describe GameFile, type: :model do
       game_file.file.attach(io: StringIO.new("test"), filename: "photo.png", content_type: "image/png")
       expect(game_file).to be_valid
     end
+
+    it "does not validate file when not attached" do
+      game_file = build(:game_file)
+      expect(game_file.errors[:file]).to be_empty
+    end
   end
 
   describe "#image?" do
-    it "returns true for image content types" do
+    it "returns false when no file is attached" do
       game_file = build(:game_file)
-      game_file.file.attach(io: StringIO.new("test"), filename: "photo.png", content_type: "image/png")
-      expect(game_file.image?).to be true
+      expect(game_file.image?).to be false
+    end
+
+    it "returns true for each image content type" do
+      %w[image/jpeg image/png image/gif image/webp].each do |content_type|
+        game_file = build(:game_file)
+        game_file.file.attach(io: StringIO.new("test"), filename: "photo", content_type: content_type)
+        expect(game_file.image?).to be(true), "expected true for #{content_type}"
+      end
     end
 
     it "returns false for non-image content types" do
@@ -54,6 +73,11 @@ RSpec.describe GameFile, type: :model do
   end
 
   describe "#pdf?" do
+    it "returns false when no file is attached" do
+      game_file = build(:game_file)
+      expect(game_file.pdf?).to be false
+    end
+
     it "returns true for PDF content type" do
       game_file = build(:game_file)
       game_file.file.attach(io: StringIO.new("test"), filename: "doc.pdf", content_type: "application/pdf")
@@ -87,6 +111,73 @@ RSpec.describe GameFile, type: :model do
     end
   end
 
+  describe "#thumbnail" do
+    it "returns nil when no file is attached" do
+      game_file = build(:game_file)
+      expect(game_file.thumbnail).to be_nil
+    end
+
+    it "returns a variant with correct transformations for an image" do
+      game_file = build(:game_file)
+      game_file.file.attach(io: File.open(Rails.root.join("spec/fixtures/files/test_image.png")),
+                            filename: "photo.png", content_type: "image/png")
+      result = game_file.thumbnail
+      expect(result).to be_a(ActiveStorage::VariantWithRecord)
+      expect(result.variation.transformations).to eq(
+        resize_to_limit: [240, 240], format: :jpeg, quality: 80
+      )
+    end
+
+    it "returns a preview with correct transformations for a previewable PDF" do
+      game_file = build(:game_file)
+      game_file.file.attach(io: StringIO.new("test"), filename: "doc.pdf", content_type: "application/pdf")
+      allow(game_file.file).to receive(:previewable?).and_return(true)
+      result = game_file.thumbnail
+      expect(result).to be_a(ActiveStorage::Preview)
+      expect(result.variation.transformations).to eq(
+        resize_to_limit: [240, 240], format: :jpeg, quality: 80
+      )
+    end
+
+    it "returns nil for a PDF that is not previewable" do
+      game_file = build(:game_file)
+      game_file.file.attach(io: StringIO.new("test"), filename: "doc.pdf", content_type: "application/pdf")
+      allow(game_file.file).to receive(:previewable?).and_return(false)
+      expect(game_file.thumbnail).to be_nil
+    end
+
+    it "returns nil for a non-image non-PDF file even if previewable" do
+      game_file = build(:game_file)
+      game_file.file.attach(io: StringIO.new("test"), filename: "notes.txt", content_type: "text/plain")
+      allow(game_file.file).to receive(:previewable?).and_return(true)
+      expect(game_file.thumbnail).to be_nil
+    end
+  end
+
+  describe "#display_image" do
+    it "returns nil when no file is attached" do
+      game_file = build(:game_file)
+      expect(game_file.display_image).to be_nil
+    end
+
+    it "returns nil for a non-image file" do
+      game_file = build(:game_file)
+      game_file.file.attach(io: StringIO.new("test"), filename: "doc.pdf", content_type: "application/pdf")
+      expect(game_file.display_image).to be_nil
+    end
+
+    it "returns a variant with correct transformations for an image" do
+      game_file = build(:game_file)
+      game_file.file.attach(io: File.open(Rails.root.join("spec/fixtures/files/test_image.png")),
+                            filename: "photo.png", content_type: "image/png")
+      result = game_file.display_image
+      expect(result).to be_a(ActiveStorage::VariantWithRecord)
+      expect(result.variation.transformations).to eq(
+        resize_to_limit: [800, nil], format: :jpeg, quality: 85
+      )
+    end
+  end
+
   describe "#file_extension" do
     it "returns uppercase extension from filename" do
       game_file = build(:game_file, filename: "document.pdf")
@@ -98,6 +189,42 @@ RSpec.describe GameFile, type: :model do
       game_file = build(:game_file, filename: "document")
       game_file.file.attach(io: StringIO.new("test"), filename: "document", content_type: "text/plain")
       expect(game_file.file_extension).to eq("TXT")
+    end
+
+    it "returns DOC for msword content type" do
+      game_file = build(:game_file, filename: "document")
+      game_file.file.attach(io: StringIO.new("test"), filename: "document", content_type: "application/msword")
+      expect(game_file.file_extension).to eq("DOC")
+    end
+
+    it "returns DOCX for openxml word content type" do
+      game_file = build(:game_file, filename: "document")
+      game_file.file.attach(io: StringIO.new("test"), filename: "document",
+                            content_type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+      expect(game_file.file_extension).to eq("DOCX")
+    end
+
+    it "returns MD for markdown content type" do
+      game_file = build(:game_file, filename: "notes")
+      game_file.file.attach(io: StringIO.new("test"), filename: "notes", content_type: "text/markdown")
+      expect(game_file.file_extension).to eq("MD")
+    end
+
+    it "returns PDF for pdf content type" do
+      game_file = build(:game_file, filename: "document")
+      game_file.file.attach(io: StringIO.new("test"), filename: "document", content_type: "application/pdf")
+      expect(game_file.file_extension).to eq("PDF")
+    end
+
+    it "returns FILE for unknown content type when filename has no extension" do
+      game_file = build(:game_file, filename: "data")
+      game_file.file.attach(io: StringIO.new("test"), filename: "data", content_type: "application/octet-stream")
+      expect(game_file.file_extension).to eq("FILE")
+    end
+
+    it "returns empty string when no file attached and filename has no extension" do
+      game_file = build(:game_file, filename: "document")
+      expect(game_file.file_extension).to eq("")
     end
   end
 end
