@@ -17,7 +17,7 @@ class Game < ApplicationRecord
     game_members.find_by(role: "game_master")&.user
   end
 
-  sig { returns(GameMember::PrivateAssociationRelation) }
+  sig { returns(T.untyped) }
   def active_members
     game_members.where(status: "active")
   end
