@@ -22,6 +22,20 @@ RSpec.describe Character, type: :model do
       character.update!(content: "Updated content")
       expect(character.character_versions.count).to eq(2)
     end
+
+    it "records Current.user as edited_by when set" do
+      gm = create(:user)
+      Current.user = gm
+      character = create(:character)
+      expect(character.character_versions.last.edited_by_id).to eq(gm.id)
+      Current.user = nil
+    end
+
+    it "falls back to character owner when Current.user is nil" do
+      Current.user = nil
+      character = create(:character)
+      expect(character.character_versions.last.edited_by_id).to eq(character.user_id)
+    end
   end
 
   describe ".visible_to" do

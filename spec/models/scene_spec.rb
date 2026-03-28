@@ -27,6 +27,13 @@ RSpec.describe Scene, type: :model do
       expect(scene.errors[:image]).to include("must be less than 10MB")
     end
 
+    it "allows an image exactly 10MB" do
+      scene = build(:scene)
+      scene.image.attach(io: StringIO.new("x" * 10.megabytes),
+                         filename: "exact.png", content_type: "image/png")
+      expect(scene).to be_valid
+    end
+
     it "rejects a non-image content type" do
       scene = build(:scene)
       scene.image.attach(io: StringIO.new("test"),
@@ -86,6 +93,19 @@ RSpec.describe Scene, type: :model do
     end
   end
 
+  describe "#banner_image" do
+    it "returns a variant with correct transformations" do
+      scene = build(:scene)
+      scene.image.attach(io: File.open(Rails.root.join("spec/fixtures/files/test_image.png")),
+                         filename: "banner.png", content_type: "image/png")
+      result = scene.banner_image
+      expect(result).to be_a(ActiveStorage::VariantWithRecord)
+      expect(result.variation.transformations).to eq(
+        resize_to_limit: [ 1200, nil ], format: :jpeg, quality: 85
+      )
+    end
+  end
+
   describe "#participant?" do
     let(:scene) { create(:scene) }
     let(:user) { create(:user) }
@@ -95,7 +115,9 @@ RSpec.describe Scene, type: :model do
       expect(scene.participant?(user)).to be true
     end
 
-    it "returns false when user is not a participant" do
+    it "returns false when user is not a participant but others are" do
+      other_user = create(:user)
+      scene.scene_participants.create!(user: other_user)
       expect(scene.participant?(user)).to be false
     end
   end

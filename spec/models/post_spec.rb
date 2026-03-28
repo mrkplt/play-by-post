@@ -27,12 +27,32 @@ RSpec.describe Post, type: :model do
       expect(post.errors[:image]).to include("must be less than 10MB")
     end
 
+    it "allows an image exactly 10MB" do
+      post = build(:post)
+      post.image.attach(io: StringIO.new("x" * 10.megabytes),
+                        filename: "exact.png", content_type: "image/png")
+      expect(post).to be_valid
+    end
+
     it "rejects a non-image content type" do
       post = build(:post)
       post.image.attach(io: StringIO.new("test"),
                         filename: "doc.pdf", content_type: "application/pdf")
       expect(post).not_to be_valid
       expect(post.errors[:image]).to include("must be a JPEG, PNG, GIF, or WebP image")
+    end
+  end
+
+  describe "#display_image" do
+    it "returns a variant with correct transformations" do
+      post = build(:post)
+      post.image.attach(io: File.open(Rails.root.join("spec/fixtures/files/test_image.png")),
+                        filename: "photo.png", content_type: "image/png")
+      result = post.display_image
+      expect(result).to be_a(ActiveStorage::VariantWithRecord)
+      expect(result.variation.transformations).to eq(
+        resize_to_limit: [ 800, nil ], format: :jpeg, quality: 85
+      )
     end
   end
 

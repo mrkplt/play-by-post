@@ -1,4 +1,6 @@
 ---
+usage: opensource
+
 environment_variables:
   RAILS_ENV: test
   MUTANT: "1"
@@ -11,6 +13,7 @@ integration:
 
 matcher:
   subjects:
+    # Models
     - Game
     - GameMember
     - GameFile
@@ -23,7 +26,30 @@ matcher:
     - UserProfile
     - Invitation
     - NotificationPreference
+    # Services
     - EmailContentExtractor
+    # Controllers
+    - ScenesController
+    - CharactersController
+    - GamesController
+    - SceneParticipantsController
+    - PostsController
+    - GameFilesController
+    - InvitationsController
+    - GameMembersController
+    - CharacterVersionsController
+    - ProfilesController
+    - PlayerManagementController
+    - Users::SessionsController
+    # Jobs
+    - PostDigestJob
+    # Mailers
+    - NotificationMailer
+    - InvitationMailer
+    # Mailboxes
+    - SceneMailbox
+    # Helpers
+    - ApplicationHelper
 
 mutation:
   timeout: 10.0
