@@ -158,7 +158,7 @@ jobs:
         env:
           RAILS_ENV: test
         run: |
-          bundle exec mutant run --usage opensource 2>&1 | tee tmp/mutant_output.txt || true
+          bundle exec mutant run --usage opensource --jobs 8 --since origin/master 2>&1 | tee tmp/mutant_output.txt || true
           bin/quality-metrics --record-mutant tmp/mutant_output.txt
 
       - name: Upload mutant results
@@ -213,21 +213,36 @@ jobs:
           threshold = 5.0
           failures = []
 
-          puts "=== Quality Gate (max regression: #{threshold} points) ==="
+          puts "=== Quality Gate ==="
           current.each do |key, value|
             prev = baseline[key]
             next if value.nil? || prev.nil?
-            delta = value - prev
-            regression = prev - value
-            failed = regression > threshold
-            status = failed ? "FAIL" : "OK"
-            sign = delta >= 0 ? "+" : ""
-            puts "  [#{status}] #{key}: #{prev.round(2)}% -> #{value.round(2)}% (#{sign}#{delta.round(2)})"
-            failures << key if failed
+
+            if key == "mutation_coverage"
+              # Incremental: --since only tests changed code. Baseline value
+              # is a minimum floor. Skip when no mutations were generated.
+              mutations = mutant["mutations"] || 0
+              if mutations.zero?
+                puts "  [SKIP] #{key}: no mutations in changed code"
+                next
+              end
+              failed = value < prev
+              status = failed ? "FAIL" : "OK"
+              puts "  [#{status}] #{key}: #{value.round(2)}% (floor: #{prev.round(2)}%)"
+              failures << key if failed
+            else
+              delta = value - prev
+              regression = prev - value
+              failed = regression > threshold
+              status = failed ? "FAIL" : "OK"
+              sign = delta >= 0 ? "+" : ""
+              puts "  [#{status}] #{key}: #{prev.round(2)}% -> #{value.round(2)}% (#{sign}#{delta.round(2)})"
+              failures << key if failed
+            end
           end
 
           if failures.any?
-            puts "\nFAILED: #{failures.join(', ')} regressed beyond #{threshold} point threshold"
+            puts "\nFAILED: #{failures.join(', ')} below threshold"
             exit 1
           else
             puts "\nAll metrics within acceptable range."

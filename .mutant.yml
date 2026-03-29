@@ -5,6 +5,9 @@ environment_variables:
   RAILS_ENV: test
   MUTANT: "1"
 
+hooks:
+  - .mutant/hooks.rb
+
 requires:
   - ./config/environment
 

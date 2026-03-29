@@ -18,6 +18,7 @@
 #   bin/quality-metrics --record-mutant FILE # extract mutation score from mutant output file
 
 require "json"
+require "time"
 
 BASELINE_PATH = File.expand_path("../quality_baseline.json", __dir__)
 MUTANT_RESULT_PATH = File.expand_path("../tmp/mutant_result.json", __dir__)
@@ -122,15 +123,36 @@ def check_against_baseline(metrics, baseline)
     previous = baseline[key]
     next if current.nil? || previous.nil?
 
-    regression = previous - current
-    delta = current - previous
-    symbol = delta >= 0 ? "+" : ""
-    failed = regression > THRESHOLD
-    status = failed ? "FAIL" : "OK"
-    puts "  [#{status}] #{key}: #{previous.round(2)}% -> #{current.round(2)}% (#{symbol}#{delta.round(2)})"
+    if key == "mutation_coverage"
+      # Mutation coverage uses --since (incremental). The baseline value is a
+      # minimum floor, not a regression target. Changed code must meet or
+      # exceed the floor. Skip when --since found no mutations to test.
+      mutant_data = File.exist?(MUTANT_RESULT_PATH) ? JSON.parse(File.read(MUTANT_RESULT_PATH)) : {}
+      mutations = mutant_data["mutations"] || 0
 
-    if failed
-      failures << "#{key}: #{previous.round(2)}% -> #{current.round(2)}% (regressed #{regression.round(2)} points, max allowed: #{THRESHOLD})"
+      if mutations.zero?
+        puts "  [SKIP] #{key}: no mutations in changed code"
+        next
+      end
+
+      failed = current < previous
+      status = failed ? "FAIL" : "OK"
+      puts "  [#{status}] #{key}: #{current.round(2)}% (floor: #{previous.round(2)}%)"
+
+      if failed
+        failures << "#{key}: #{current.round(2)}% is below floor of #{previous.round(2)}%"
+      end
+    else
+      regression = previous - current
+      delta = current - previous
+      symbol = delta >= 0 ? "+" : ""
+      failed = regression > THRESHOLD
+      status = failed ? "FAIL" : "OK"
+      puts "  [#{status}] #{key}: #{previous.round(2)}% -> #{current.round(2)}% (#{symbol}#{delta.round(2)})"
+
+      if failed
+        failures << "#{key}: #{previous.round(2)}% -> #{current.round(2)}% (regressed #{regression.round(2)} points, max allowed: #{THRESHOLD})"
+      end
     end
   end
 
