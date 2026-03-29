@@ -23,6 +23,7 @@ MUTANT_OUTPUT=$(mktemp)
 bundle exec mutant run --usage opensource 2>&1 | tee "$MUTANT_OUTPUT"
 bin/quality-metrics --record-mutant "$MUTANT_OUTPUT"
 rm -f "$MUTANT_OUTPUT"
+rm -f storage/test_worker_*.sqlite3
 
 echo "==> Quality metrics check"
 bin/quality-metrics --check || exit 1
