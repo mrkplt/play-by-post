@@ -158,7 +158,7 @@ jobs:
         env:
           RAILS_ENV: test
         run: |
-          bundle exec mutant run --usage opensource 2>&1 | tee tmp/mutant_output.txt || true
+          bundle exec mutant run --usage opensource --jobs 8 2>&1 | tee tmp/mutant_output.txt || true
           bin/quality-metrics --record-mutant tmp/mutant_output.txt
 
       - name: Upload mutant results
