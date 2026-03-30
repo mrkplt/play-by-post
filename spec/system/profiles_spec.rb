@@ -6,7 +6,7 @@ RSpec.describe "Profiles", type: :feature do
   before { sign_in_as(user) }
 
   it "user can update their display name" do
-    click_on user.display_name
+    visit profile_path
     click_on "Edit Profile"
 
     fill_in "Display name", with: "Aldric the Bold"
@@ -15,11 +15,11 @@ RSpec.describe "Profiles", type: :feature do
     expect(page).to have_text("Aldric the Bold")
   end
 
-  it "display name is shown in the navbar" do
+  it "display name is shown in the sidebar" do
     expect(page).to have_text(user.display_name)
   end
 
-  it "navbar links to profile show" do
+  it "sidebar user name links to profile show" do
     click_on user.display_name
     expect(page).to have_current_path(profile_path)
   end

@@ -22,6 +22,9 @@ module GeneratedPathHelpersModule
   def edit_game_character_path(*args); end
 
   sig { params(args: T.untyped).returns(String) }
+  def edit_game_path(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
   def edit_game_scene_participants_path(*args); end
 
   sig { params(args: T.untyped).returns(String) }
@@ -197,6 +200,9 @@ module GeneratedPathHelpersModule
 
   sig { params(args: T.untyped).returns(String) }
   def toggle_hide_ooc_profile_path(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def toggle_images_disabled_game_path(*args); end
 
   sig { params(args: T.untyped).returns(String) }
   def toggle_notification_preference_game_scene_path(*args); end

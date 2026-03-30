@@ -13,7 +13,7 @@ RSpec.describe "Player Management", type: :feature do
 
   describe "player management page" do
     it "GM can access player management" do
-      visit game_path(game)
+      visit edit_game_path(game)
       click_on "Manage Players"
 
       expect(page).to have_text(player.display_name)

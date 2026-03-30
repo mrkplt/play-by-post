@@ -2,7 +2,7 @@
 
 <%= form_with model: [@game, @character], data: { controller: "markdown-preview" } do |f| %>
   <% if @character.errors.any? %>
-    <div class="flash flash--alert">
+    <div class="bg-red-50 border border-red-200 rounded p-4 mb-4">
       <% @character.errors.full_messages.each do |msg| %>
         <div><%= msg %></div>
       <% end %>
@@ -10,30 +10,27 @@
   <% end %>
 
   <% if @game.game_master?(current_user) %>
-    <div class="field">
-      <label>Player</label>
-      <%= f.select :user_id, @users.map { |u| [u.display_name || u.email, u.id] }, { prompt: "Select a player" } %>
+    <div class="mb-4">
+      <label class="block font-medium mb-1 text-sm">Player</label>
+      <%= f.select :user_id, @users.map { |u| [u.display_name || u.email, u.id] }, { prompt: "Select a player" }, class: "w-full px-3 py-2 border border-slate-300 rounded text-base" %>
     </div>
   <% end %>
 
-  <div class="field">
-    <%= f.label :name %>
-    <%= f.text_field :name, autofocus: true %>
+  <div class="mb-4">
+    <%= f.label :name, class: "block font-medium mb-1 text-sm" %>
+    <%= f.text_field :name, autofocus: true, class: "w-full px-3 py-2 border border-slate-300 rounded text-base" %>
   </div>
 
-  <div class="field">
-    <%= f.label :content, "Sheet (optional, markdown supported)" %>
-    <%= f.text_area :content, rows: 10, class: "character-sheet",
+  <div class="mb-4">
+    <%= f.label :content, "Sheet (optional, markdown supported)", class: "block font-medium mb-1 text-sm" %>
+    <%= f.text_area :content, rows: 10, class: "character-sheet w-full px-3 py-2 border border-slate-300 rounded text-base",
         data: { markdown_preview_target: "input", action: "input->markdown-preview#update" } %>
   </div>
 
-  <div data-markdown-preview-target="preview" class="character-sheet" style="display:none; border:1px solid #e2e8f0; border-radius:4px; padding:0.75rem; margin-bottom:0.75rem; min-height:3rem; background:#fafafa;"></div>
+  <div data-markdown-preview-target="preview" class="markdown-base character-sheet-content border border-slate-200 rounded-lg px-3 py-3 mb-3 min-h-12 bg-slate-50"></div>
 
-  <div style="display:flex; gap:0.5rem; align-items:center;">
-    <button type="button" class="btn btn--secondary" style="font-size:0.85rem;" data-action="click->markdown-preview#togglePreview">
-      Preview
-    </button>
-    <%= f.submit "Create Character", class: "btn" %>
-    <%= link_to "Cancel", game_path(@game), class: "btn btn--secondary" %>
+  <div class="flex gap-2 items-center">
+    <%= f.submit "Create Character", class: "px-5 py-2 bg-slate-500 text-white rounded text-base cursor-pointer hover:bg-slate-600 inline-block no-underline" %>
+    <%= link_to "Cancel", game_path(@game), class: "px-5 py-2 bg-slate-500 text-white rounded text-base cursor-pointer hover:bg-slate-600 inline-block no-underline" %>
   </div>
 <% end %>

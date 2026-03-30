@@ -9,6 +9,14 @@ Play-by-Post TTRPG is a web application for asynchronous tabletop role-playing g
 - [product requirements](../context/pbp_ttrpg_requirements.md)
 
 ## Ruby
+Mutation Testing: Mutant
+Coverage: SimpleCov
+Testing: Rspec - integration and unit tests 
+Linting: Rubocop 
+Typing: Sorbet
+
+bin/pre-push -> Quality Testing
+
 PATH="/opt/homebrew/opt/ruby/bin:$PATH" bundle exec ruby
 
 ## Development

@@ -28,6 +28,9 @@ module GeneratedUrlHelpersModule
   def edit_game_scene_post_url(*args); end
 
   sig { params(args: T.untyped).returns(String) }
+  def edit_game_url(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
   def edit_profile_url(*args); end
 
   sig { params(args: T.untyped).returns(String) }
@@ -197,6 +200,9 @@ module GeneratedUrlHelpersModule
 
   sig { params(args: T.untyped).returns(String) }
   def toggle_hide_ooc_profile_url(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def toggle_images_disabled_game_url(*args); end
 
   sig { params(args: T.untyped).returns(String) }
   def toggle_notification_preference_game_scene_url(*args); end

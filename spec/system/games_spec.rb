@@ -78,7 +78,7 @@ RSpec.describe "Games", type: :feature do
       fill_in "Name", with: "New Campaign"
       click_on "Create game"
 
-      expect(page).to have_link("Manage Players")
+      expect(page).to have_link(href: edit_game_path(Game.last))
     end
 
     it "requires a name" do
@@ -120,20 +120,20 @@ RSpec.describe "Games", type: :feature do
       expect(page).to have_text("Thornwall")
     end
 
-    it "shows manage players link for GM" do
+    it "shows edit settings link for GM" do
       visit game_path(game)
 
-      expect(page).to have_link("Manage Players")
+      expect(page).to have_link(href: edit_game_path(game))
     end
 
-    it "does not show manage players link for non-GM" do
+    it "does not show edit settings link for non-GM" do
       player = create(:user, :with_profile)
       create(:game_member, game: game, user: player)
 
       sign_in_as(player)
       visit game_path(game)
 
-      expect(page).not_to have_link("Manage Players")
+      expect(page).not_to have_link(href: edit_game_path(game))
     end
 
     it "shows New Scene button for GM" do
@@ -168,6 +168,57 @@ RSpec.describe "Games", type: :feature do
       expect(page).to have_text("The Bridge")
       expect(page).to have_link("The Road")
       expect(page).to have_link("The Castle")
+    end
+  end
+
+  describe "game edit" do
+    let(:game) { create(:game, name: "Test Campaign", description: "A test game") }
+
+    before { create(:game_member, :game_master, game: game, user: gm) }
+
+    it "GM can access the edit page" do
+      visit game_path(game)
+      find("a[href='#{edit_game_path(game)}']").click
+
+      expect(page).to have_current_path(edit_game_path(game))
+      expect(page).to have_field("Name", with: "Test Campaign")
+    end
+
+    it "GM can update game details" do
+      visit edit_game_path(game)
+      fill_in "Name", with: "Updated Campaign"
+      fill_in "Description", with: "An updated description"
+      click_on "Save Changes"
+
+      expect(page).to have_current_path(game_path(game))
+      expect(page).to have_text("Updated Campaign")
+      expect(page).to have_text("An updated description")
+    end
+
+    it "GM can access manage players from edit page" do
+      visit edit_game_path(game)
+
+      expect(page).to have_link("Manage Players")
+    end
+
+    it "GM can toggle character sheet visibility from edit page" do
+      expect(game.sheets_hidden?).to be false
+
+      visit edit_game_path(game)
+      click_on "Hide Character Sheets"
+
+      expect(page).to have_current_path(game_path(game))
+      expect(game.reload.sheets_hidden?).to be true
+    end
+
+    it "non-GM cannot access the edit page" do
+      player = create(:user, :with_profile)
+      create(:game_member, game: game, user: player)
+
+      sign_in_as(player)
+      visit edit_game_path(game)
+
+      expect(page).to have_current_path(game_path(game))
     end
   end
 end

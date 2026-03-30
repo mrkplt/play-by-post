@@ -1,42 +1,39 @@
 <h1>Edit — <%= @character.name %></h1>
 
 <%= form_with model: [@game, @character], data: { controller: "markdown-preview" } do |f| %>
-  <div class="field">
-    <%= f.label :name %>
-    <%= f.text_field :name %>
+  <div class="mb-4">
+    <%= f.label :name, class: "block font-medium mb-1 text-sm" %>
+    <%= f.text_field :name, class: "w-full px-3 py-2 border border-slate-300 rounded text-base" %>
   </div>
 
-  <div class="field">
-    <%= f.label :content, "Sheet (markdown supported)" %>
-    <%= f.text_area :content, rows: 15, class: "character-sheet",
+  <div class="mb-4">
+    <%= f.label :content, "Sheet (markdown supported)", class: "block font-medium mb-1 text-sm" %>
+    <%= f.text_area :content, rows: 15, class: "character-sheet w-full px-3 py-2 border border-slate-300 rounded text-base",
         data: { markdown_preview_target: "input", action: "input->markdown-preview#update" } %>
   </div>
 
-  <div data-markdown-preview-target="preview" class="character-sheet" style="display:none; border:1px solid #e2e8f0; border-radius:4px; padding:0.75rem; margin-bottom:0.75rem; min-height:3rem; background:#fafafa;"></div>
+  <div data-markdown-preview-target="preview" class="markdown-base character-sheet-content border border-slate-200 rounded-lg px-3 py-3 mb-3 min-h-12 bg-slate-50"></div>
 
-  <div class="field">
+  <div class="mb-4">
     <label style="font-weight:normal; cursor:pointer;">
       <%= f.check_box :hidden %> Hide from other players
     </label>
   </div>
 
-  <div style="display:flex; gap:0.5rem; align-items:center;">
-    <button type="button" class="btn btn--secondary" style="font-size:0.85rem;" data-action="click->markdown-preview#togglePreview">
-      Preview
-    </button>
-    <%= f.submit "Save", class: "btn" %>
-    <%= link_to "Cancel", game_character_path(@game, @character), class: "btn btn--secondary" %>
+  <div class="flex gap-2 items-center">
+    <%= f.submit "Save", class: "px-5 py-2 bg-slate-500 text-white rounded text-base cursor-pointer hover:bg-slate-600 inline-block no-underline" %>
+    <%= link_to "Cancel", game_character_path(@game, @character), class: "px-5 py-2 bg-slate-500 text-white rounded text-base cursor-pointer hover:bg-slate-600 inline-block no-underline" %>
   </div>
 <% end %>
 
 <% if @game.game_master?(current_user) %>
-  <div style="margin-top:1.5rem; padding-top:1rem; border-top:1px solid #f1f5f9;">
+  <div class="mt-6 pt-4 border-t border-slate-100">
     <% if @character.archived? %>
       <%= button_to "Restore character", restore_game_character_path(@game, @character),
-          method: :patch, class: "btn btn--secondary" %>
+          method: :patch, class: "px-5 py-2 bg-slate-500 text-white rounded text-base cursor-pointer hover:bg-slate-600 inline-block no-underline" %>
     <% else %>
       <%= button_to "Archive character", archive_game_character_path(@game, @character),
-          method: :patch, class: "btn btn--secondary" %>
+          method: :patch, class: "px-5 py-2 bg-slate-500 text-white rounded text-base cursor-pointer hover:bg-slate-600 inline-block no-underline" %>
     <% end %>
   </div>
 <% end %>

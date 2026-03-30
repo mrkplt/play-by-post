@@ -776,6 +776,51 @@ class Game
     sig { void }
     def id_will_change!; end
 
+    sig { returns(T::Boolean) }
+    def images_disabled; end
+
+    sig { params(value: T::Boolean).returns(T::Boolean) }
+    def images_disabled=(value); end
+
+    sig { returns(T::Boolean) }
+    def images_disabled?; end
+
+    sig { returns(T.nilable(T::Boolean)) }
+    def images_disabled_before_last_save; end
+
+    sig { returns(T.untyped) }
+    def images_disabled_before_type_cast; end
+
+    sig { returns(T::Boolean) }
+    def images_disabled_came_from_user?; end
+
+    sig { returns(T.nilable([T::Boolean, T::Boolean])) }
+    def images_disabled_change; end
+
+    sig { returns(T.nilable([T::Boolean, T::Boolean])) }
+    def images_disabled_change_to_be_saved; end
+
+    sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
+    def images_disabled_changed?(from: T.unsafe(nil), to: T.unsafe(nil)); end
+
+    sig { returns(T.nilable(T::Boolean)) }
+    def images_disabled_in_database; end
+
+    sig { returns(T.nilable([T::Boolean, T::Boolean])) }
+    def images_disabled_previous_change; end
+
+    sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
+    def images_disabled_previously_changed?(from: T.unsafe(nil), to: T.unsafe(nil)); end
+
+    sig { returns(T.nilable(T::Boolean)) }
+    def images_disabled_previously_was; end
+
+    sig { returns(T.nilable(T::Boolean)) }
+    def images_disabled_was; end
+
+    sig { void }
+    def images_disabled_will_change!; end
+
     sig { returns(::String) }
     def name; end
 
@@ -834,6 +879,9 @@ class Game
     def restore_id_value!; end
 
     sig { void }
+    def restore_images_disabled!; end
+
+    sig { void }
     def restore_name!; end
 
     sig { void }
@@ -865,6 +913,12 @@ class Game
 
     sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
     def saved_change_to_id_value?(from: T.unsafe(nil), to: T.unsafe(nil)); end
+
+    sig { returns(T.nilable([T::Boolean, T::Boolean])) }
+    def saved_change_to_images_disabled; end
+
+    sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
+    def saved_change_to_images_disabled?(from: T.unsafe(nil), to: T.unsafe(nil)); end
 
     sig { returns(T.nilable([::String, ::String])) }
     def saved_change_to_name; end
@@ -985,6 +1039,9 @@ class Game
 
     sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
     def will_save_change_to_id_value?(from: T.unsafe(nil), to: T.unsafe(nil)); end
+
+    sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
+    def will_save_change_to_images_disabled?(from: T.unsafe(nil), to: T.unsafe(nil)); end
 
     sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
     def will_save_change_to_name?(from: T.unsafe(nil), to: T.unsafe(nil)); end

@@ -1,6 +1,17 @@
 # typed: true
 
+class ActiveStorage::Blob
+  sig { returns(T.nilable(String)) }
+  def content_type; end
+
+  sig { returns(Integer) }
+  def byte_size; end
+end
+
 class ActiveStorage::Attached::One
+  sig { returns(ActiveStorage::Blob) }
+  def blob; end
+
   sig { returns(T.nilable(String)) }
   def content_type; end
 

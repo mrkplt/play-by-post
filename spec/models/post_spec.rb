@@ -43,6 +43,34 @@ RSpec.describe Post, type: :model do
     end
   end
 
+  describe "images_allowed_for_game validation" do
+    it "rejects image when game has images disabled" do
+      game = create(:game, images_disabled: true)
+      scene = create(:scene, game: game)
+      post = build(:post, scene: scene)
+      post.image.attach(io: File.open(Rails.root.join("spec/fixtures/files/test_image.png")),
+                        filename: "test.png", content_type: "image/png")
+      expect(post).not_to be_valid
+      expect(post.errors[:image]).to include("attachments are disabled for this game")
+    end
+
+    it "allows image when game has images enabled" do
+      game = create(:game, images_disabled: false)
+      scene = create(:scene, game: game)
+      post = build(:post, scene: scene)
+      post.image.attach(io: File.open(Rails.root.join("spec/fixtures/files/test_image.png")),
+                        filename: "test.png", content_type: "image/png")
+      expect(post).to be_valid
+    end
+
+    it "allows post without image when game has images disabled" do
+      game = create(:game, images_disabled: true)
+      scene = create(:scene, game: game)
+      post = build(:post, scene: scene)
+      expect(post).to be_valid
+    end
+  end
+
   describe "#display_image" do
     it "returns a variant with correct transformations" do
       post = build(:post)

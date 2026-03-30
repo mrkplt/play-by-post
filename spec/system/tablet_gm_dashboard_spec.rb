@@ -20,7 +20,7 @@ RSpec.describe "Tablet GM dashboard", type: :feature do
     visit game_path(game)
     result = page.evaluate_script(<<~JS)
       (function() {
-        var btns = Array.from(document.querySelectorAll('.btn'));
+        var btns = Array.from(document.querySelectorAll('button'));
         for (var i = 0; i < btns.length; i++) {
           for (var j = i + 1; j < btns.length; j++) {
             var a = btns[i].getBoundingClientRect();
@@ -36,22 +36,18 @@ RSpec.describe "Tablet GM dashboard", type: :feature do
     expect(result).to be true
   end
 
-  it "navbar menu is fully visible (no hamburger) at 768px" do
+  it "sidebar is always visible at 768px (no hamburger animation)" do
     visit game_path(game)
-    hamburger_display = page.evaluate_script(
-      "window.getComputedStyle(document.querySelector('.navbar__hamburger')).display"
+    sidebar_transform = page.evaluate_script(
+      "window.getComputedStyle(document.querySelector('aside.sidebar')).transform"
     )
-    expect(hamburger_display).to eq("none")
-
-    menu_display = page.evaluate_script(
-      "window.getComputedStyle(document.querySelector('.navbar__menu')).display"
-    )
-    expect(menu_display).not_to eq("none")
+    # At 768px (md breakpoint), sidebar should be visible (not translated)
+    expect(sidebar_transform).to eq("none")
   end
 
   it "no functionality is hidden based solely on screen size" do
     visit game_path(game)
-    expect(page).to have_link("Manage Players")
+    expect(page).to have_link(href: edit_game_path(game))
     expect(page).to have_link("New Scene")
   end
 end

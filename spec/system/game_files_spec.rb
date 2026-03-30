@@ -27,24 +27,24 @@ RSpec.describe "Game Files", type: :feature do
       sign_in_as(player)
       visit game_game_files_path(game)
 
-      expect(page).to have_css(".gallery-grid")
+      expect(page).to have_css('[data-testid="gallery-grid"]')
       expect(page).not_to have_css("table")
-      expect(page).to have_css(".gallery-card", count: 2)
+      expect(page).to have_css('[data-testid="gallery-card"]', count: 2)
     end
 
     it "shows filename on each card with title attribute" do
       sign_in_as(player)
       visit game_game_files_path(game)
 
-      expect(page).to have_css(".gallery-card__filename", text: "map.png")
-      expect(page).to have_css(".gallery-card__filename[title='map.png']")
+      expect(page).to have_css('[data-testid="gallery-card-filename"]', text: "map.png")
+      expect(page).to have_css('[data-testid="gallery-card-filename"][title="map.png"]')
     end
 
     it "shows file-type placeholder for non-thumbnailable files" do
       sign_in_as(player)
       visit game_game_files_path(game)
 
-      expect(page).to have_css(".gallery-card__placeholder", text: "TXT")
+      expect(page).to have_css('[data-testid="gallery-card-placeholder"]', text: "TXT")
     end
   end
 
@@ -65,9 +65,9 @@ RSpec.describe "Game Files", type: :feature do
       sign_in_as(player)
       visit game_game_files_path(game)
 
-      expect(page).to have_css(".lightbox[hidden]", visible: :all)
-      find(".gallery-card", text: "map.png").click
-      expect(page).not_to have_css(".lightbox[hidden]", visible: :all)
+      expect(page).to have_css('[data-testid="lightbox"][hidden]', visible: :all)
+      find('[data-testid="gallery-card"]', text: "map.png").click
+      expect(page).not_to have_css('[data-testid="lightbox"][hidden]', visible: :all)
       expect(page).to have_css("[data-lightbox-title]", text: "map.png")
     end
 
@@ -75,8 +75,8 @@ RSpec.describe "Game Files", type: :feature do
       sign_in_as(player)
       visit game_game_files_path(game)
 
-      find(".gallery-card", text: "map.png").click
-      within ".lightbox__body" do
+      find('[data-testid="gallery-card"]', text: "map.png").click
+      within "[data-lightbox-image]" do
         expect(page).to have_css("img[alt='map.png']")
       end
     end
@@ -85,9 +85,9 @@ RSpec.describe "Game Files", type: :feature do
       sign_in_as(player)
       visit game_game_files_path(game)
 
-      find(".gallery-card", text: "notes.txt").click
-      within ".lightbox__body" do
-        expect(page).to have_css(".lightbox__placeholder-ext", text: "TXT")
+      find('[data-testid="gallery-card"]', text: "notes.txt").click
+      within "[data-lightbox-image]" do
+        expect(page).to have_css('[data-testid="lightbox-placeholder-ext"]', text: "TXT")
       end
     end
 
@@ -95,11 +95,11 @@ RSpec.describe "Game Files", type: :feature do
       sign_in_as(player)
       visit game_game_files_path(game)
 
-      find(".gallery-card", text: "map.png").click
+      find('[data-testid="gallery-card"]', text: "map.png").click
       expect(page).to have_css("[data-lightbox-title]", text: "map.png")
-      find(".lightbox__close").click
+      find('[aria-label="Close"]').click
 
-      find(".gallery-card", text: "notes.txt").click
+      find('[data-testid="gallery-card"]', text: "notes.txt").click
       expect(page).to have_css("[data-lightbox-title]", text: "notes.txt")
     end
 
@@ -107,38 +107,38 @@ RSpec.describe "Game Files", type: :feature do
       sign_in_as(player)
       visit game_game_files_path(game)
 
-      find(".gallery-card", text: "map.png").click
-      expect(page).not_to have_css(".lightbox[hidden]", visible: :all)
-      find(".lightbox__close").click
-      expect(page).to have_css(".lightbox[hidden]", visible: :all)
+      find('[data-testid="gallery-card"]', text: "map.png").click
+      expect(page).not_to have_css('[data-testid="lightbox"][hidden]', visible: :all)
+      find('[aria-label="Close"]').click
+      expect(page).to have_css('[data-testid="lightbox"][hidden]', visible: :all)
     end
 
     it "closes lightbox when pressing escape" do
       sign_in_as(player)
       visit game_game_files_path(game)
 
-      find(".gallery-card", text: "map.png").click
-      expect(page).not_to have_css(".lightbox[hidden]", visible: :all)
+      find('[data-testid="gallery-card"]', text: "map.png").click
+      expect(page).not_to have_css('[data-testid="lightbox"][hidden]', visible: :all)
       find("body").send_keys(:escape)
-      expect(page).to have_css(".lightbox[hidden]", visible: :all)
+      expect(page).to have_css('[data-testid="lightbox"][hidden]', visible: :all)
     end
 
     it "closes lightbox when clicking backdrop" do
       sign_in_as(player)
       visit game_game_files_path(game)
 
-      find(".gallery-card", text: "map.png").click
-      expect(page).not_to have_css(".lightbox[hidden]", visible: :all)
-      page.execute_script("document.querySelector('.lightbox__backdrop').click()")
-      expect(page).to have_css(".lightbox[hidden]", visible: :all)
+      find('[data-testid="gallery-card"]', text: "map.png").click
+      expect(page).not_to have_css('[data-testid="lightbox"][hidden]', visible: :all)
+      page.execute_script("document.querySelector('[data-lightbox-backdrop]').click()")
+      expect(page).to have_css('[data-testid="lightbox"][hidden]', visible: :all)
     end
 
     it "lightbox has a download link with valid href" do
       sign_in_as(player)
       visit game_game_files_path(game)
 
-      find(".gallery-card", text: "map.png").click
-      within ".lightbox" do
+      find('[data-testid="gallery-card"]', text: "map.png").click
+      within '[data-testid="lightbox"]' do
         download_link = find_link("Download")
         expect(download_link[:href]).to include("/rails/active_storage/blobs/")
       end
@@ -148,8 +148,8 @@ RSpec.describe "Game Files", type: :feature do
       sign_in_as(gm)
       visit game_game_files_path(game)
 
-      find(".gallery-card", text: "map.png").click
-      within ".lightbox" do
+      find('[data-testid="gallery-card"]', text: "map.png").click
+      within '[data-testid="lightbox"]' do
         expect(page).to have_button("Delete")
       end
     end
@@ -158,8 +158,8 @@ RSpec.describe "Game Files", type: :feature do
       sign_in_as(player)
       visit game_game_files_path(game)
 
-      find(".gallery-card", text: "map.png").click
-      within ".lightbox" do
+      find('[data-testid="gallery-card"]', text: "map.png").click
+      within '[data-testid="lightbox"]' do
         expect(page).not_to have_button("Delete")
       end
     end
@@ -168,14 +168,14 @@ RSpec.describe "Game Files", type: :feature do
       sign_in_as(gm)
       visit game_game_files_path(game)
 
-      expect(page).to have_css(".gallery-card", count: 2)
-      find(".gallery-card", text: "notes.txt").click
+      expect(page).to have_css('[data-testid="gallery-card"]', count: 2)
+      find('[data-testid="gallery-card"]', text: "notes.txt").click
 
       accept_confirm("Delete this file?") do
-        within(".lightbox") { click_button "Delete" }
+        within('[data-testid="lightbox"]') { click_button "Delete" }
       end
 
-      expect(page).to have_css(".gallery-card", count: 1)
+      expect(page).to have_css('[data-testid="gallery-card"]', count: 1)
       expect(page).not_to have_text("notes.txt")
     end
   end
@@ -250,31 +250,31 @@ RSpec.describe "Game Files", type: :feature do
       sign_in_as(player)
       visit game_path(game)
 
-      expect(page).to have_css(".gallery-grid")
-      expect(page).to have_css(".gallery-card", count: 2)
+      expect(page).to have_css('[data-testid="gallery-grid"]')
+      expect(page).to have_css('[data-testid="gallery-card"]', count: 2)
     end
 
     it "shows filename on each card" do
       sign_in_as(player)
       visit game_path(game)
 
-      expect(page).to have_css(".gallery-card__filename", text: "map.png")
-      expect(page).to have_css(".gallery-card__filename", text: "notes.txt")
+      expect(page).to have_css('[data-testid="gallery-card-filename"]', text: "map.png")
+      expect(page).to have_css('[data-testid="gallery-card-filename"]', text: "notes.txt")
     end
 
     it "shows placeholder for non-thumbnailable files" do
       sign_in_as(player)
       visit game_path(game)
 
-      expect(page).to have_css(".gallery-card__placeholder", text: "TXT")
+      expect(page).to have_css('[data-testid="gallery-card-placeholder"]', text: "TXT")
     end
 
     it "opens lightbox with download button when clicking a card" do
       sign_in_as(player)
       visit game_path(game)
 
-      find(".gallery-card", match: :first).click
-      within ".lightbox" do
+      find('[data-testid="gallery-card"]', match: :first).click
+      within '[data-testid="lightbox"]' do
         expect(page).to have_link("Download")
       end
     end

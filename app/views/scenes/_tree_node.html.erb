@@ -5,13 +5,13 @@
 <% children = node[:children] %>
 <% is_active = !scene.resolved? %>
 
-<div class="tree-node" style="margin-left:<%= depth * 1.5 %>rem;">
-  <div class="tree-node__row <%= is_active ? 'tree-node__row--active' : 'tree-node__row--resolved' %>">
+<div class="mb-0.5" style="margin-left:<%= depth * 1.5 %>rem;">
+  <div class="flex items-center gap-2 px-2 py-1 rounded <%= is_active ? 'font-semibold' : 'text-slate-500' %>">
     <% if depth > 0 %>
-      <span class="tree-node__connector">└─</span>
+      <span class="text-slate-400 font-mono shrink-0">└─</span>
     <% end %>
-    <span class="tree-node__title">
-      <%= link_to scene.title, game_scene_path(game, scene) %>
+    <span class="whitespace-nowrap">
+      <%= link_to scene.title, game_scene_path(game, scene), class: is_active ? '' : 'text-slate-500' %>
     </span>
     <% if is_active %>
       <span class="badge badge--green">Active</span>
@@ -21,7 +21,7 @@
     <% if scene.private? %>
       <span class="badge badge--yellow">Private</span>
     <% end %>
-    <span class="tree-node__meta">
+    <span class="text-xs text-slate-400 ml-auto whitespace-nowrap">
       <%= scene.created_at.strftime("%b %-d, %Y %l:%M%P") %>
     </span>
   </div>

@@ -4,6 +4,10 @@ source "https://rubygems.org"
 gem "rails", "~> 8.1.3"
 # The modern asset pipeline for Rails [https://github.com/rails/propshaft]
 gem "propshaft"
+# Tailwind CSS for styling [https://github.com/rails/tailwindcss-rails]
+gem "tailwindcss-rails"
+# Icon library [https://github.com/Rails-Designer/icons]
+gem "icons"
 # Use postgresql in production (Railway)
 gem "pg", "~> 1.1", group: :production
 

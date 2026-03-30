@@ -1,13 +1,13 @@
-<nav style="font-size:0.85rem; margin-bottom:1rem; color:#64748b;">
+<nav class="breadcrumb">
   <%= link_to "Games", root_path %> &rsaquo;
   <%= link_to @game.name, game_path(@game) %> &rsaquo;
   <%= @character.name %>
 </nav>
 
-<div class="section__header">
-  <h1><%= @character.name %></h1>
+<div class="flex items-center justify-between mb-4">
+  <h1 class="m-0 text-xl font-semibold"><%= @character.name %></h1>
   <% if @character.editable_by?(current_user, @game) %>
-    <%= link_to "Edit", edit_game_character_path(@game, @character), class: "btn btn--secondary" %>
+    <%= link_to "Edit", edit_game_character_path(@game, @character), class: "px-5 py-2 bg-slate-500 text-white rounded text-base cursor-pointer hover:bg-slate-600 inline-block no-underline" %>
   <% end %>
 </div>
 
@@ -21,9 +21,9 @@
   <% end %>
 </p>
 
-<div class="card">
+<div class="bg-white border border-slate-200 rounded-lg p-5 mb-4">
   <% if @character.content.present? %>
-    <div class="character-sheet"><%= render_markdown(@character.content) %></div>
+    <div class="markdown-base character-sheet-content"><%= render_markdown(@character.content) %></div>
   <% else %>
     <p style="color:#94a3b8;">No sheet content yet.</p>
   <% end %>
@@ -32,7 +32,7 @@
 <!-- Version History -->
 <details style="margin-top:1.5rem;">
   <summary style="cursor:pointer; font-weight:600; margin-bottom:0.75rem;">Version History (<%= @versions.count %>)</summary>
-  <div class="table-responsive">
+  <div class="overflow-x-auto">
     <table>
       <thead>
         <tr>

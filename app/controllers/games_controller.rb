@@ -1,7 +1,9 @@
+# typed: true
+
 class GamesController < ApplicationController
-  before_action :set_game, only: %i[show toggle_sheets_hidden]
+  before_action :set_game, only: %i[show edit update toggle_sheets_hidden toggle_images_disabled]
   before_action :require_game_access!, only: %i[show]
-  before_action :require_gm!, only: %i[toggle_sheets_hidden]
+  before_action :require_gm!, only: %i[edit update toggle_sheets_hidden toggle_images_disabled]
 
   def index
     @memberships = current_user.game_members
@@ -10,7 +12,7 @@ class GamesController < ApplicationController
       .order("games.name")
 
     @dashboard_items = @memberships.map do |membership|
-      game = membership.game
+      game = T.must(membership.game)
       active_scenes = game.scenes.where(resolved_at: nil).count
       primary_character = game.characters.active.find_by(user: current_user)
       {
@@ -41,6 +43,11 @@ class GamesController < ApplicationController
     redirect_to game_path(@game), notice: @game.sheets_hidden? ? "Character sheets are now hidden." : "Character sheets are now visible."
   end
 
+  def toggle_images_disabled
+    @game.update!(images_disabled: !@game.images_disabled?)
+    redirect_to edit_game_path(@game), notice: @game.images_disabled? ? "Image attachments are now disabled." : "Image attachments are now enabled."
+  end
+
   def show
     @active_scenes = @game.scenes
       .visible_to(current_user, @game)
@@ -52,6 +59,17 @@ class GamesController < ApplicationController
     @is_gm = @game.game_master?(current_user)
     @characters = @game.characters.active.visible_to(current_user, @game).includes(:user).order(:name)
     @game_files = @game.game_files.includes(file_attachment: :blob).order(created_at: :desc)
+  end
+
+  def edit
+  end
+
+  def update
+    if @game.update(game_params)
+      redirect_to @game, notice: "Game updated."
+    else
+      render :edit, status: :unprocessable_entity
+    end
   end
 
   private
