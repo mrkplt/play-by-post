@@ -1,0 +1,12 @@
+# typed: true
+
+class BasePresenter < SimpleDelegator
+  extend T::Sig
+  extend T::Helpers
+  abstract!
+
+  sig { params(model: T.untyped).void }
+  def initialize(model)
+    super
+  end
+end
