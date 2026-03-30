@@ -44,7 +44,7 @@ RSpec.describe ApplicationHelper, type: :helper do
       expect(Icons::Icon).to receive(:new).with(
         name: "crown-03",
         library: :hugeicons,
-        arguments: {class: "w-4", style: "color: red"}
+        arguments: { class: "w-4", style: "color: red" }
       ).and_return(icon_double)
 
       helper.icon("crown-03", class: "w-4", style: "color: red")

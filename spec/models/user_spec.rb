@@ -66,7 +66,7 @@ RSpec.describe User, type: :model do
       create(:scene, game: new_game, updated_at: 1.hour.ago)
 
       result = user.games_by_recent_activity
-      expect(result.map(&:id)).to eq([new_game.id, old_game.id])
+      expect(result.map(&:id)).to eq([ new_game.id, old_game.id ])
     end
 
     it "falls back to game created_at when no scenes exist" do
@@ -77,7 +77,7 @@ RSpec.describe User, type: :model do
       create(:game_member, user: user, game: newer_game)
 
       result = user.games_by_recent_activity
-      expect(result.map(&:id)).to eq([newer_game.id, older_game.id])
+      expect(result.map(&:id)).to eq([ newer_game.id, older_game.id ])
     end
 
     it "limits results when limit is provided" do
