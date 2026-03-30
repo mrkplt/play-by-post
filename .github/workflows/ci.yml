@@ -68,25 +68,6 @@ jobs:
       - name: Type check with Sorbet
         run: bundle exec srb tc
 
-      - name: Compute Sorbet coverage
-        run: |
-          mkdir -p tmp
-          bundle exec ruby -rjson -rspoom -e '
-            context = Spoom::Context.new(".")
-            snapshot = Spoom::Coverage.snapshot(context)
-            sigils = snapshot.sigils_excluding_rbis
-            total = sigils.values.sum
-            typed = (sigils["true"] || 0) + (sigils["strict"] || 0) + (sigils["strong"] || 0)
-            pct = total > 0 ? (typed.to_f / total * 100).round(2) : 0.0
-            File.write("tmp/sorbet_coverage.json", JSON.pretty_generate({ sorbet_typed_pct: pct }))
-          '
-
-      - name: Upload Sorbet coverage
-        uses: actions/upload-artifact@v7
-        with:
-          name: sorbet-data
-          path: tmp/sorbet_coverage.json
-
   test:
     runs-on: ubuntu-latest
 
@@ -123,7 +104,9 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: coverage-data
-          path: coverage/.last_run.json
+          path: |
+            coverage/.last_run.json
+            coverage/.resultset.json
           include-hidden-files: true
           if-no-files-found: error
 
@@ -174,78 +157,26 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: .ruby-version
+          bundler-cache: true
 
       - name: Download coverage data
         uses: actions/download-artifact@v8
         with:
           name: coverage-data
-          path: artifacts/
+          path: coverage/
 
       - name: Download mutant results
         uses: actions/download-artifact@v8
         with:
           name: mutant-data
-          path: artifacts/
+          path: tmp/
 
-      - name: Download Sorbet coverage
-        uses: actions/download-artifact@v8
-        with:
-          name: sorbet-data
-          path: artifacts/
-
-      - name: Check quality metrics against baseline
-        run: |
-          cat <<'SCRIPT' > /tmp/quality_check.rb
-          require "json"
-
-          baseline = JSON.parse(File.read("quality_baseline.json"))
-          coverage = JSON.parse(File.read("artifacts/.last_run.json"))
-          mutant = JSON.parse(File.read("artifacts/mutant_result.json"))
-          sorbet = JSON.parse(File.read("artifacts/sorbet_coverage.json"))
-
-          current = {
-            "line_coverage"     => coverage.dig("result", "line"),
-            "branch_coverage"   => coverage.dig("result", "branch"),
-            "mutation_coverage" => mutant["coverage"],
-            "sorbet_typed_pct"  => sorbet["sorbet_typed_pct"]
-          }
-
-          threshold = 5.0
-          failures = []
-
-          puts "=== Quality Gate ==="
-          current.each do |key, value|
-            prev = baseline[key]
-            next if value.nil? || prev.nil?
-
-            if key == "mutation_coverage"
-              # Incremental: --since only tests changed code. Baseline value
-              # is a minimum floor. Skip when no mutations were generated.
-              mutations = mutant["mutations"] || 0
-              if mutations.zero?
-                puts "  [SKIP] #{key}: no mutations in changed code"
-                next
-              end
-              failed = value < prev
-              status = failed ? "FAIL" : "OK"
-              puts "  [#{status}] #{key}: #{value.round(2)}% (floor: #{prev.round(2)}%)"
-              failures << key if failed
-            else
-              delta = value - prev
-              regression = prev - value
-              failed = regression > threshold
-              status = failed ? "FAIL" : "OK"
-              sign = delta >= 0 ? "+" : ""
-              puts "  [#{status}] #{key}: #{prev.round(2)}% -> #{value.round(2)}% (#{sign}#{delta.round(2)})"
-              failures << key if failed
-            end
-          end
-
-          if failures.any?
-            puts "\nFAILED: #{failures.join(', ')} below threshold"
-            exit 1
-          else
-            puts "\nAll metrics within acceptable range."
-          end
-          SCRIPT
-          ruby /tmp/quality_check.rb
+      - name: Run quality gate
+        run: bin/quality-metrics --check
