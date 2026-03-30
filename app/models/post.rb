@@ -1,3 +1,5 @@
+# typed: true
+
 class Post < ApplicationRecord
   EDIT_WINDOW = 10.minutes
 

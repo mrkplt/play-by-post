@@ -1,3 +1,5 @@
+# typed: true
+
 class GamesController < ApplicationController
   before_action :set_game, only: %i[show edit update toggle_sheets_hidden toggle_images_disabled]
   before_action :require_game_access!, only: %i[show]
@@ -10,7 +12,7 @@ class GamesController < ApplicationController
       .order("games.name")
 
     @dashboard_items = @memberships.map do |membership|
-      game = membership.game
+      game = T.must(membership.game)
       active_scenes = game.scenes.where(resolved_at: nil).count
       primary_character = game.characters.active.find_by(user: current_user)
       {

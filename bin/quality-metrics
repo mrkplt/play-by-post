@@ -6,11 +6,12 @@
 # regresses more than the allowed threshold or if changed files have
 # insufficient test coverage.
 #
-# This script reads from artifacts produced by other tools — it does NOT
-# re-run tests, type checks, or mutation testing. Run those first:
+# This script reads from artifacts produced by other tools and runs Sorbet
+# type checking directly. Run test/mutation tools first:
 #   1. bundle exec rspec          -> produces coverage/.last_run.json
-#   2. bundle exec srb tc         -> type check (pass/fail only)
-#   3. bundle exec mutant run ... -> produces tmp/mutant_result.json (via --save flag below)
+#   2. bundle exec mutant run ... -> produces tmp/mutant_result.json (via --save flag below)
+#
+# The --check flag also runs `bundle exec srb tc` to verify type correctness.
 #
 # Usage:
 #   bin/quality-metrics                      # collect and display current metrics
@@ -224,6 +225,22 @@ def check_changed_file_sigils
   failures
 end
 
+def check_sorbet_tc
+  puts "\n=== Sorbet Type Check ==="
+  output = `bundle exec srb tc 2>&1`
+  status = $?.success?
+
+  if status
+    puts "  [OK] srb tc passed with no errors"
+    []
+  else
+    error_count = output[/Errors:\s*(\d+)/, 1] || "unknown"
+    puts "  [FAIL] srb tc found #{error_count} error(s)"
+    output.each_line { |line| puts "    #{line}" unless line.strip.empty? }
+    ["srb tc failed with #{error_count} error(s)"]
+  end
+end
+
 def check_against_baseline(metrics, baseline)
   puts "\n=== Baseline Comparison (max regression: #{THRESHOLD} points) ==="
   failures = []
@@ -292,7 +309,9 @@ when "--check"
   changed_file_failures = check_changed_file_coverage
   changed_file_sigil_failures = check_changed_file_sigils
 
-  failures = baseline_failures + changed_file_failures + changed_file_sigil_failures
+  sorbet_tc_failures = check_sorbet_tc
+
+  failures = baseline_failures + changed_file_failures + changed_file_sigil_failures + sorbet_tc_failures
 
   if failures.any?
     puts "\nFAILED: Quality checks did not pass:"

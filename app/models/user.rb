@@ -1,3 +1,5 @@
+# typed: true
+
 class User < ApplicationRecord
   devise :magic_link_authenticatable, :rememberable
 

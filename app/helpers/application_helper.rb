@@ -1,3 +1,5 @@
+# typed: true
+
 module ApplicationHelper
   def icon(name, library: Icons.config.default_library, **html_options)
     icon = Icons::Icon.new(name: name, library: library, arguments: html_options)
