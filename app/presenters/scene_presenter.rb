@@ -26,4 +26,14 @@ class ScenePresenter < BasePresenter
   def formatted_created_at
     created_at.strftime("%b %-d, %Y %l:%M%P")
   end
+
+  sig { returns(String) }
+  def tree_row_css_class
+    resolved? ? "text-slate-500" : "font-semibold"
+  end
+
+  sig { returns(String) }
+  def tree_link_css_class
+    resolved? ? "text-slate-500" : ""
+  end
 end
