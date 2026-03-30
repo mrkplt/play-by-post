@@ -3,7 +3,8 @@
 
 # Collects code quality metrics (coverage, typing, mutation) and optionally
 # checks them against a stored baseline. Exits non-zero if any metric
-# regresses more than the allowed threshold.
+# regresses more than the allowed threshold or if changed files have
+# insufficient test coverage.
 #
 # This script reads from artifacts produced by other tools — it does NOT
 # re-run tests, type checks, or mutation testing. Run those first:
@@ -22,7 +23,12 @@ require "time"
 
 BASELINE_PATH = File.expand_path("../quality_baseline.json", __dir__)
 MUTANT_RESULT_PATH = File.expand_path("../tmp/mutant_result.json", __dir__)
+SIMPLECOV_RESULTSET_PATH = File.expand_path("../coverage/.resultset.json", __dir__)
+PROJECT_ROOT = File.expand_path("..", __dir__)
 THRESHOLD = 5.0 # max allowed regression in percentage points
+CHANGED_FILE_LINE_THRESHOLD = 80.0 # minimum line coverage for changed files
+CHANGED_FILE_BRANCH_THRESHOLD = 70.0 # minimum branch coverage for changed files
+REQUIRED_SORBET_SIGILS = %w[true strict strong].freeze
 
 METRIC_KEYS = %w[line_coverage branch_coverage sorbet_typed_pct mutation_coverage].freeze
 
@@ -114,6 +120,110 @@ def fmt(value)
   "#{value&.round(2)}%"
 end
 
+def changed_app_files
+  `git diff --name-only origin/master -- app/ lib/`.strip.split("\n")
+    .select { |f| f.end_with?(".rb") }
+    .select { |f| File.exist?(File.join(PROJECT_ROOT, f)) }
+end
+
+def file_coverage(lines)
+  relevant = lines.compact
+  return nil if relevant.empty?
+
+  covered = relevant.count { |hits| hits > 0 }
+  (covered.to_f / relevant.size * 100).round(2)
+end
+
+def branch_coverage_for_file(branches)
+  return nil if branches.nil? || branches.empty?
+
+  conditions = branches.values.flat_map(&:values)
+  return nil if conditions.empty?
+
+  covered = conditions.count { |hits| hits > 0 }
+  (covered.to_f / conditions.size * 100).round(2)
+end
+
+def check_changed_file_coverage
+  unless File.exist?(SIMPLECOV_RESULTSET_PATH)
+    warn "WARNING: No SimpleCov resultset found. Cannot check per-file coverage."
+    return []
+  end
+
+  resultset = JSON.parse(File.read(SIMPLECOV_RESULTSET_PATH))
+  file_data = resultset.dig("RSpec", "coverage") || {}
+
+  changed = changed_app_files
+  return [] if changed.empty?
+
+  puts "\n=== Changed File Coverage (line >= #{CHANGED_FILE_LINE_THRESHOLD}%, branch >= #{CHANGED_FILE_BRANCH_THRESHOLD}%) ==="
+  failures = []
+
+  changed.each do |relative_path|
+    absolute_path = File.join(PROJECT_ROOT, relative_path)
+    coverage = file_data[absolute_path]
+
+    if coverage.nil?
+      puts "  [FAIL] #{relative_path}: no coverage data (untested)"
+      failures << "#{relative_path}: no coverage data — file is untested"
+      next
+    end
+
+    line_cov = file_coverage(coverage["lines"])
+    branch_cov = branch_coverage_for_file(coverage["branches"])
+
+    line_ok = line_cov.nil? || line_cov >= CHANGED_FILE_LINE_THRESHOLD
+    branch_ok = branch_cov.nil? || branch_cov >= CHANGED_FILE_BRANCH_THRESHOLD
+
+    status = (line_ok && branch_ok) ? "OK" : "FAIL"
+    parts = []
+    parts << "line: #{line_cov}%" if line_cov
+    parts << "branch: #{branch_cov}%" if branch_cov
+    puts "  [#{status}] #{relative_path}: #{parts.join(', ')}"
+
+    unless line_ok
+      failures << "#{relative_path}: line coverage #{line_cov}% < #{CHANGED_FILE_LINE_THRESHOLD}%"
+    end
+    unless branch_ok
+      failures << "#{relative_path}: branch coverage #{branch_cov}% < #{CHANGED_FILE_BRANCH_THRESHOLD}%"
+    end
+  end
+
+  failures
+end
+
+def file_sorbet_sigil(absolute_path)
+  first_line = File.foreach(absolute_path).first
+  return nil unless first_line
+
+  match = first_line[/^#\s*typed:\s*(\w+)/, 1]
+  match&.downcase
+end
+
+def check_changed_file_sigils
+  changed = changed_app_files
+  return [] if changed.empty?
+
+  puts "\n=== Changed File Sorbet Sigils (required: #{REQUIRED_SORBET_SIGILS.join('/')}) ==="
+  failures = []
+
+  changed.each do |relative_path|
+    absolute_path = File.join(PROJECT_ROOT, relative_path)
+    sigil = file_sorbet_sigil(absolute_path)
+    ok = REQUIRED_SORBET_SIGILS.include?(sigil)
+
+    status = ok ? "OK" : "FAIL"
+    label = sigil || "none"
+    puts "  [#{status}] #{relative_path}: typed: #{label}"
+
+    unless ok
+      failures << "#{relative_path}: Sorbet sigil is '#{label}', must be #{REQUIRED_SORBET_SIGILS.join('/')}"
+    end
+  end
+
+  failures
+end
+
 def check_against_baseline(metrics, baseline)
   puts "\n=== Baseline Comparison (max regression: #{THRESHOLD} points) ==="
   failures = []
@@ -178,10 +288,14 @@ when "--check"
 
   metrics = collect_metrics
   display_metrics(metrics)
-  failures = check_against_baseline(metrics, baseline)
+  baseline_failures = check_against_baseline(metrics, baseline)
+  changed_file_failures = check_changed_file_coverage
+  changed_file_sigil_failures = check_changed_file_sigils
+
+  failures = baseline_failures + changed_file_failures + changed_file_sigil_failures
 
   if failures.any?
-    puts "\nFAILED: Quality metrics regressed beyond #{THRESHOLD}% threshold:"
+    puts "\nFAILED: Quality checks did not pass:"
     failures.each { |f| puts "  - #{f}" }
     exit 1
   else
