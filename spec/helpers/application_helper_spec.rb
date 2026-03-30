@@ -1,6 +1,79 @@
 require "rails_helper"
 
 RSpec.describe ApplicationHelper, type: :helper do
+  describe "#icon" do
+    it "returns an SVG element" do
+      result = helper.icon("crown-03")
+      expect(result).to include("<svg")
+      expect(result).to include("</svg>")
+    end
+
+    it "replaces hardcoded stroke colors with currentColor" do
+      result = helper.icon("crown-03")
+      expect(result).not_to include('stroke="#141B34"')
+      expect(result).to include('stroke="currentColor"')
+    end
+
+    it "replaces hardcoded fill colors with currentColor" do
+      svg_with_fill = '<svg><path fill="#FF0000"></path></svg>'
+      allow_any_instance_of(Icons::Icon).to receive(:svg).and_return(svg_with_fill)
+
+      result = helper.icon("crown-03")
+      expect(result).not_to include('fill="#FF0000"')
+      expect(result).to include('fill="currentColor"')
+    end
+
+    it "preserves fill='none'" do
+      result = helper.icon("crown-03")
+      expect(result).to include('fill="none"')
+    end
+
+    it "adds a class attribute to the SVG when class is provided" do
+      result = helper.icon("crown-03", class: "w-4 h-4")
+      expect(result).to include('class="w-4 h-4"')
+    end
+
+    it "does not add a class attribute when class is not provided" do
+      result = helper.icon("crown-03")
+      # The gem adds its own class="size-6", but we should not add a duplicate
+      expect(result.scan('class="').length).to eq(1)
+    end
+
+    it "passes additional HTML options as arguments to the icon" do
+      icon_double = instance_double(Icons::Icon, svg: "<svg></svg>")
+      expect(Icons::Icon).to receive(:new).with(
+        name: "crown-03",
+        library: :hugeicons,
+        arguments: {class: "w-4", style: "color: red"}
+      ).and_return(icon_double)
+
+      helper.icon("crown-03", class: "w-4", style: "color: red")
+    end
+
+    it "uses the default library from configuration" do
+      icon_double = instance_double(Icons::Icon, svg: "<svg></svg>")
+      expect(Icons::Icon).to receive(:new).with(
+        hash_including(library: :hugeicons)
+      ).and_return(icon_double)
+
+      helper.icon("crown-03")
+    end
+
+    it "allows overriding the library" do
+      icon_double = instance_double(Icons::Icon, svg: "<svg></svg>")
+      expect(Icons::Icon).to receive(:new).with(
+        hash_including(library: "heroicons")
+      ).and_return(icon_double)
+
+      helper.icon("check", library: "heroicons")
+    end
+
+    it "returns an html_safe string" do
+      result = helper.icon("crown-03")
+      expect(result).to be_html_safe
+    end
+  end
+
   describe "#render_markdown" do
     it "returns empty string for blank input" do
       expect(helper.render_markdown(nil)).to eq("")

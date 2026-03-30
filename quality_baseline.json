@@ -2,6 +2,6 @@
   "line_coverage": 89.32,
   "branch_coverage": 77.83,
   "sorbet_typed_pct": 2.36,
-  "mutation_coverage": 31.2,
+  "mutation_coverage": 60.0,
   "saved_at": "2026-03-26T23:30:03-04:00"
 }
