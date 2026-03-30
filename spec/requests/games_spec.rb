@@ -48,7 +48,7 @@ RSpec.describe "Games", type: :request do
     it "renders edit on invalid params" do
       sign_in(gm)
       patch game_path(game), params: { game: { name: "" } }
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
     end
 
     it "player cannot update the game" do
