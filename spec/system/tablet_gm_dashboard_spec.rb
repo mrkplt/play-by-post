@@ -47,7 +47,7 @@ RSpec.describe "Tablet GM dashboard", type: :feature do
 
   it "no functionality is hidden based solely on screen size" do
     visit game_path(game)
-    expect(page).to have_link("Manage Players")
+    expect(page).to have_link(href: edit_game_path(game))
     expect(page).to have_link("New Scene")
   end
 end

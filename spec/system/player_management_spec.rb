@@ -13,9 +13,8 @@ RSpec.describe "Player Management", type: :feature do
 
   describe "player management page" do
     it "GM can access player management" do
-      visit game_path(game)
-      # Click the sidebar link specifically (not the page button)
-      find('aside.sidebar a', text: "Manage Players").click
+      visit edit_game_path(game)
+      click_on "Manage Players"
 
       expect(page).to have_text(player.display_name)
     end

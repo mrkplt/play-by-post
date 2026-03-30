@@ -14,7 +14,7 @@ Rails.application.routes.draw do
     resource :profile, only: %i[show edit update], controller: "profiles" do
       post :toggle_hide_ooc, on: :collection
     end
-    resources :games, only: %i[index new create show] do
+    resources :games, only: %i[index new create show edit update] do
       member do
         patch :toggle_sheets_hidden
       end

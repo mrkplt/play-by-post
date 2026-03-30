@@ -7,7 +7,13 @@
 
   <% if user_signed_in? && current_user.games.any? %>
     <% current_user.games_by_recent_activity(limit: 8).each do |game| %>
-      <%= link_to game.name, game_path(game), class: "sidebar-link text-xs" %>
+      <% is_gm = game.member_for(current_user)&.game_master? %>
+      <%= link_to game_path(game), class: "sidebar-link flex items-center justify-between" do %>
+        <span><%= game.name %></span>
+        <% if is_gm %>
+          <%= icon "crown-03", class: "w-4 h-4", style: "color: var(--color-accent)" %>
+        <% end %>
+      <% end %>
     <% end %>
   <% end %>
 </nav>
@@ -17,7 +23,7 @@
     <div class="mb-2 flex items-center justify-between">
       <%= link_to profile_path, class: "flex items-center gap-2 text-sm hover:opacity-75" do %>
         <span><%= current_user.display_name || current_user.email.split("@").first %></span>
-        <span class="text-xs">⚙️</span>
+        <%= icon "settings-01", class: "w-4 h-4" %>
       <% end %>
     </div>
     <%= link_to "Sign out", destroy_user_session_path, class: "sidebar-link", style: "margin:0; padding: 0.25rem 0;" %>

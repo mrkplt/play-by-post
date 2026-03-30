@@ -1,7 +1,7 @@
 class GamesController < ApplicationController
-  before_action :set_game, only: %i[show toggle_sheets_hidden]
+  before_action :set_game, only: %i[show edit update toggle_sheets_hidden]
   before_action :require_game_access!, only: %i[show]
-  before_action :require_gm!, only: %i[toggle_sheets_hidden]
+  before_action :require_gm!, only: %i[edit update toggle_sheets_hidden]
 
   def index
     @memberships = current_user.game_members
@@ -52,6 +52,17 @@ class GamesController < ApplicationController
     @is_gm = @game.game_master?(current_user)
     @characters = @game.characters.active.visible_to(current_user, @game).includes(:user).order(:name)
     @game_files = @game.game_files.includes(file_attachment: :blob).order(created_at: :desc)
+  end
+
+  def edit
+  end
+
+  def update
+    if @game.update(game_params)
+      redirect_to @game, notice: "Game updated."
+    else
+      render :edit, status: :unprocessable_entity
+    end
   end
 
   private

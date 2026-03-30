@@ -147,6 +147,8 @@ GEM
       activesupport (>= 6.1)
     i18n (1.14.8)
       concurrent-ruby (~> 1.0)
+    icons (0.8.1)
+      nokogiri (~> 1.16, >= 1.16.4)
     image_processing (1.14.0)
       mini_magick (>= 4.9.5, < 6)
       ruby-vips (>= 2.0.17, < 3)
@@ -532,6 +534,7 @@ DEPENDENCIES
   devise
   devise-passwordless
   factory_bot_rails
+  icons
   image_processing (~> 1.2)
   importmap-rails
   jbuilder

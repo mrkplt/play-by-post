@@ -134,11 +134,12 @@ RSpec.describe "Characters", type: :feature do
 
     it "GM can toggle sheets_hidden" do
       sign_in_as(gm)
-      visit game_path(game)
+      visit edit_game_path(game)
 
       click_on "Hide Character Sheets"
       expect(page).to have_text("Character sheets are now hidden")
 
+      visit edit_game_path(game)
       click_on "Show Character Sheets"
       expect(page).to have_text("Character sheets are now visible")
     end
