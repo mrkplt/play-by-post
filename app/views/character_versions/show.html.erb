@@ -16,7 +16,7 @@
 
 <div class="bg-white border border-slate-200 rounded-lg p-5 mb-4">
   <% if @version.content.present? %>
-    <div class="character-sheet"><%= render_markdown(@version.content) %></div>
+    <div class="markdown-base character-sheet-content"><%= render_markdown(@version.content) %></div>
   <% else %>
     <p style="color:#94a3b8;">No content in this version.</p>
   <% end %>

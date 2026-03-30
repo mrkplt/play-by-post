@@ -17,6 +17,7 @@ Rails.application.routes.draw do
     resources :games, only: %i[index new create show edit update] do
       member do
         patch :toggle_sheets_hidden
+        patch :toggle_images_disabled
       end
       resources :scenes, only: %i[index new create show] do
         member do

@@ -1,7 +1,7 @@
 class GamesController < ApplicationController
-  before_action :set_game, only: %i[show edit update toggle_sheets_hidden]
+  before_action :set_game, only: %i[show edit update toggle_sheets_hidden toggle_images_disabled]
   before_action :require_game_access!, only: %i[show]
-  before_action :require_gm!, only: %i[edit update toggle_sheets_hidden]
+  before_action :require_gm!, only: %i[edit update toggle_sheets_hidden toggle_images_disabled]
 
   def index
     @memberships = current_user.game_members
@@ -39,6 +39,11 @@ class GamesController < ApplicationController
   def toggle_sheets_hidden
     @game.update!(sheets_hidden: !@game.sheets_hidden?)
     redirect_to game_path(@game), notice: @game.sheets_hidden? ? "Character sheets are now hidden." : "Character sheets are now visible."
+  end
+
+  def toggle_images_disabled
+    @game.update!(images_disabled: !@game.images_disabled?)
+    redirect_to edit_game_path(@game), notice: @game.images_disabled? ? "Image attachments are now disabled." : "Image attachments are now enabled."
   end
 
   def show

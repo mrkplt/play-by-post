@@ -23,7 +23,7 @@
 
 <div class="bg-white border border-slate-200 rounded-lg p-5 mb-4">
   <% if @character.content.present? %>
-    <div class="character-sheet"><%= render_markdown(@character.content) %></div>
+    <div class="markdown-base character-sheet-content"><%= render_markdown(@character.content) %></div>
   <% else %>
     <p style="color:#94a3b8;">No sheet content yet.</p>
   <% end %>

@@ -11,6 +11,7 @@ class Post < ApplicationRecord
 
   validates :content, presence: true
   validate :acceptable_image
+  validate :images_allowed_for_game
 
   def display_image
     image.variant(resize_to_limit: [ 800, nil ], format: :jpeg, quality: 85)
@@ -36,5 +37,12 @@ class Post < ApplicationRecord
     unless IMAGE_TYPES.include?(image.blob.content_type)
       errors.add(:image, "must be a JPEG, PNG, GIF, or WebP image")
     end
+  end
+
+  def images_allowed_for_game
+    return unless image.attached?
+    return unless scene&.game&.images_disabled?
+
+    errors.add(:image, "attachments are disabled for this game")
   end
 end

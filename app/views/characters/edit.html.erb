@@ -12,7 +12,7 @@
         data: { markdown_preview_target: "input", action: "input->markdown-preview#update" } %>
   </div>
 
-  <div data-markdown-preview-target="preview" class="character-sheet" style="display:none; border:1px solid #e2e8f0; border-radius:4px; padding:0.75rem; margin-bottom:0.75rem; min-height:3rem; background:#fafafa;"></div>
+  <div data-markdown-preview-target="preview" class="markdown-base character-sheet-content border border-slate-200 rounded-lg px-3 py-3 mb-3 min-h-12 bg-slate-50"></div>
 
   <div class="mb-4">
     <label style="font-weight:normal; cursor:pointer;">
@@ -21,9 +21,6 @@
   </div>
 
   <div class="flex gap-2 items-center">
-    <button type="button" class="text-xs px-5 py-2 bg-slate-500 text-white rounded cursor-pointer hover:bg-slate-600 inline-block" data-action="click->markdown-preview#togglePreview">
-      Preview
-    </button>
     <%= f.submit "Save", class: "px-5 py-2 bg-slate-500 text-white rounded text-base cursor-pointer hover:bg-slate-600 inline-block no-underline" %>
     <%= link_to "Cancel", game_character_path(@game, @character), class: "px-5 py-2 bg-slate-500 text-white rounded text-base cursor-pointer hover:bg-slate-600 inline-block no-underline" %>
   </div>

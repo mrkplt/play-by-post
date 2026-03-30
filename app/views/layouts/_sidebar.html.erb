@@ -1,5 +1,8 @@
-<div class="sidebar-brand">
+<div class="sidebar-brand flex items-center justify-between">
   <%= link_to "Play by Post", root_path %>
+  <button data-action="click->sidebar#close" class="md:hidden text-sidebar-text hover:opacity-75 cursor-pointer" aria-label="Close navigation">
+    <%= icon "cancel-01", class: "w-5 h-5" %>
+  </button>
 </div>
 
 <nav class="flex-1">

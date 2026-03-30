@@ -21,15 +21,36 @@
 }
 
 @layer components {
-  /* Markdown-rendered content — can't inject Tailwind classes into server-rendered HTML */
-  .character-sheet { @apply leading-relaxed; }
-  .character-sheet p { @apply m-0 mb-2; }
-  .character-sheet h1,
-  .character-sheet h2,
-  .character-sheet h3 { @apply mt-4 mb-2; }
-  .character-sheet ul,
-  .character-sheet ol { @apply my-1 mb-2 pl-6; }
-  .character-sheet table { @apply my-2; }
+  /* Markdown base — shared styles for all rendered markdown */
+  .markdown-base { @apply leading-relaxed; }
+  .markdown-base p { @apply m-0 mb-2; }
+  .markdown-base h1 { @apply text-2xl font-bold mt-4 mb-2; }
+  .markdown-base h2 { @apply text-xl font-bold mt-4 mb-2; }
+  .markdown-base h3 { @apply text-lg font-semibold mt-4 mb-2; }
+  .markdown-base h4 { @apply text-base font-semibold mt-3 mb-1; }
+  .markdown-base h5,
+  .markdown-base h6 { @apply text-sm font-semibold mt-3 mb-1; }
+  .markdown-base ul { @apply my-1 mb-2 pl-6 list-disc; }
+  .markdown-base ol { @apply my-1 mb-2 pl-6 list-decimal; }
+  .markdown-base li { @apply mb-0.5; }
+  .markdown-base blockquote { @apply border-l-4 border-slate-300 pl-3 my-2 text-slate-600 italic; }
+  .markdown-base code { @apply bg-slate-100 px-1 py-0.5 rounded text-sm; }
+  .markdown-base pre { @apply bg-slate-100 rounded p-3 my-2 overflow-x-auto; }
+  .markdown-base pre code { @apply bg-transparent p-0; }
+  .markdown-base table { @apply my-2; }
+  .markdown-base hr { @apply my-4 border-slate-200; }
+  .markdown-base strong { @apply font-bold; }
+  .markdown-base em { @apply italic; }
+  .markdown-base del { @apply line-through; }
+  .markdown-base a { color: var(--color-accent); }
+
+  /* Post content — overrides for posts */
+  /* .post-content { } */
+
+  /* Character sheet — overrides for character sheets */
+  /* .character-sheet-content { } */
+
+  /* Character sheet textarea */
   textarea.character-sheet { @apply font-mono whitespace-pre-wrap; }
 
   /* Post content image safety */
@@ -117,5 +138,5 @@
   }
 
   .main-with-sidebar { @apply md:ml-[17.5rem]; }
-  .content-area { @apply px-6 py-6 max-w-4xl mx-auto; }
+  .content-area { @apply px-6 py-6 pt-16 md:pt-6 max-w-4xl mx-auto; }
 }

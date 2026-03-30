@@ -63,4 +63,30 @@ RSpec.describe "Games", type: :request do
       expect(response).to have_http_status(:redirect)
     end
   end
+
+  describe "PATCH /games/:id/toggle_images_disabled" do
+    it "GM can disable image attachments" do
+      sign_in(gm)
+      patch toggle_images_disabled_game_path(game)
+      expect(game.reload.images_disabled?).to be true
+      expect(response).to redirect_to(edit_game_path(game))
+      expect(flash[:notice]).to match(/disabled/i)
+    end
+
+    it "GM can re-enable image attachments" do
+      game.update!(images_disabled: true)
+      sign_in(gm)
+      patch toggle_images_disabled_game_path(game)
+      expect(game.reload.images_disabled?).to be false
+      expect(response).to redirect_to(edit_game_path(game))
+      expect(flash[:notice]).to match(/enabled/i)
+    end
+
+    it "player cannot toggle image attachments" do
+      sign_in(player)
+      patch toggle_images_disabled_game_path(game)
+      expect(response).to redirect_to(game_path(game))
+      expect(game.reload.images_disabled?).to be false
+    end
+  end
 end

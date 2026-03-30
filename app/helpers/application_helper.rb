@@ -28,8 +28,11 @@ module ApplicationHelper
       autolink: true,
       tables: true,
       strikethrough: true,
-      fenced_code_blocks: true
+      fenced_code_blocks: true,
+      no_intra_emphasis: true
     )
-    sanitize(markdown.render(text))
+    sanitize(markdown.render(text),
+      tags: %w[p br strong em del a ul ol li h1 h2 h3 h4 h5 h6 blockquote pre code hr table thead tbody tr th td],
+      attributes: %w[href])
   end
 end

@@ -1,9 +1,14 @@
 <nav class="breadcrumb">
   <%= link_to "Games", root_path %> &rsaquo;
   <%= @game.name %>
+  <% if @is_gm %>
+    <%= link_to edit_game_path(@game), class: "md:hidden hover:opacity-75 inline-flex align-middle ml-1" do %>
+      <%= icon "settings-01", class: "w-3.5 h-3.5 text-ink" %>
+    <% end %>
+  <% end %>
 </nav>
 
-<div class="flex items-center gap-3 mb-6">
+<div class="hidden md:flex items-center gap-3 mb-6">
   <h1 class="text-3xl font-bold m-0 leading-none"><%= @game.name %></h1>
   <% if @is_gm %>
     <%= link_to edit_game_path(@game), class: "hover:opacity-75" do %>
