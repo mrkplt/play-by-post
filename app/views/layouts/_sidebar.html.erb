@@ -1,0 +1,25 @@
+<div class="sidebar-brand">
+  <%= link_to "Play by Post", root_path %>
+</div>
+
+<nav class="flex-1">
+  <%= link_to "My Games", root_path, class: "sidebar-section-label" %>
+
+  <% if user_signed_in? && current_user.games.any? %>
+    <% current_user.games_by_recent_activity(limit: 8).each do |game| %>
+      <%= link_to game.name, game_path(game), class: "sidebar-link text-xs" %>
+    <% end %>
+  <% end %>
+</nav>
+
+<% if user_signed_in? %>
+  <div class="sidebar-user">
+    <div class="mb-2 flex items-center justify-between">
+      <%= link_to profile_path, class: "flex items-center gap-2 text-sm hover:opacity-75" do %>
+        <span><%= current_user.display_name || current_user.email.split("@").first %></span>
+        <span class="text-xs">⚙️</span>
+      <% end %>
+    </div>
+    <%= link_to "Sign out", destroy_user_session_path, class: "sidebar-link", style: "margin:0; padding: 0.25rem 0;" %>
+  </div>
+<% end %>

@@ -16,12 +16,12 @@
     <div class="bg-white border border-slate-200 rounded-lg p-5 mb-4">
       <div class="flex justify-between items-start">
         <div>
-          <%= link_to game.name, game_path(game), style: "font-size:1.1rem; font-weight:bold; text-decoration:none; color:inherit;" %>
+          <%= link_to game.name, game_path(game), class: "text-base font-bold no-underline" %>
           <% if membership.removed? %>
-            <span class="inline-block px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600">Former</span>
+            <span class="badge badge--gray">Former</span>
           <% end %>
         </div>
-        <span class="inline-block px-2 py-0.5 rounded-full text-xs font-semibold <%= membership.game_master? ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-800' %>">
+        <span class="<%= membership.game_master? ? 'badge badge--blue' : 'badge badge--green' %>">
           <%= membership.game_master? ? "GM" : "Player" %>
         </span>
       </div>

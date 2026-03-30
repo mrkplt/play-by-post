@@ -9,16 +9,38 @@
     <%= javascript_importmap_tags %>
   </head>
   <body>
-    <%= render "layouts/navbar" %>
-    <main class="px-6 py-4 max-w-7xl mx-auto">
-      <% if notice.present? %>
-        <p class="px-4 py-3 rounded mb-4 text-sm bg-green-100 text-green-800"><%= notice %></p>
-      <% end %>
-      <% if alert.present? %>
-        <p class="px-4 py-3 rounded mb-4 text-sm bg-red-50 text-red-800"><%= alert %></p>
-      <% end %>
-      <%= yield %>
-    </main>
+    <div data-controller="sidebar">
+      <!-- Mobile hamburger -->
+      <button data-action="click->sidebar#open"
+              class="md:hidden fixed top-4 left-4 z-50 bg-[#2b2d31] text-[#cdd1d9] border border-[#3d3f45] rounded px-3 py-2 text-lg cursor-pointer"
+              aria-label="Open navigation">
+        &#9776;
+      </button>
+
+      <!-- Backdrop -->
+      <div class="sidebar-backdrop md:hidden"
+           hidden
+           data-sidebar-target="backdrop"
+           data-action="click->sidebar#close"></div>
+
+      <!-- Sidebar -->
+      <aside class="sidebar" data-sidebar-target="sidebar">
+        <%= render "layouts/sidebar" %>
+      </aside>
+
+      <!-- Main -->
+      <div class="main-with-sidebar">
+        <main class="content-area">
+          <% if notice.present? %>
+            <p class="px-4 py-3 rounded mb-4 text-sm bg-green-100 text-green-800"><%= notice %></p>
+          <% end %>
+          <% if alert.present? %>
+            <p class="px-4 py-3 rounded mb-4 text-sm bg-red-50 text-red-800"><%= alert %></p>
+          <% end %>
+          <%= yield %>
+        </main>
+      </div>
+    </div>
   <script>
     function applyLocalTimes() {
       document.querySelectorAll("time[data-local-time]").forEach(function(el) {
