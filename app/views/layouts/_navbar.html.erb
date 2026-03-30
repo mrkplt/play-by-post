@@ -16,13 +16,13 @@
     <span class="block w-[22px] h-0.5 bg-current rounded-sm"></span>
   </button>
 
-  <div class="w-full flex-col bg-slate-800 md:flex md:flex-row md:w-auto" id="navbar-menu" data-nav-target="menu" data-testid="mobile-menu" hidden>
+  <div class="w-full flex-col bg-slate-800 md:flex md:flex-row md:w-auto" id="navbar-menu" data-nav-target="menu" data-testid="mobile-menu">
     <div class="flex items-center gap-4 text-sm">
       <% if user_signed_in? %>
         <%= link_to current_user.display_name || current_user.email.split("@").first,
               profile_path,
-              class: "text-slate-50 no-underline" %>
-        <%= link_to "Sign out", destroy_user_session_path, class: "text-slate-50 no-underline" %>
+              class: "text-slate-50 no-underline flex items-center", style: "min-height: 44px;" %>
+        <%= link_to "Sign out", destroy_user_session_path, class: "text-slate-50 no-underline flex items-center", style: "min-height: 44px;" %>
       <% end %>
     </div>
   </div>

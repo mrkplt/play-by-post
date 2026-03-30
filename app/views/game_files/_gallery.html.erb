@@ -1,7 +1,7 @@
 <% is_gm = local_assigns.fetch(:is_gm, false) %>
 
 <div data-controller="lightbox" data-action="keydown@document->lightbox#closeOnEscape">
-  <div class="grid grid-cols-[repeat(auto-fill,minmax(100px,120px))] gap-2">
+  <div class="grid grid-cols-[repeat(auto-fill,minmax(100px,120px))] gap-2" data-testid="gallery-grid">
     <% game_files.each do |gf| %>
       <%
         thumb = gf.thumbnail
@@ -14,13 +14,14 @@
         elsif thumb
           tag.img(src: url_for(thumb), alt: gf.filename, style: "max-width:100%;")
         else
-          tag.div(class: "flex flex-col items-center justify-center gap-3 p-8 text-slate-500") do
-            tag.div(gf.file_extension, class: "text-5xl font-bold text-slate-400") +
+          tag.div(class: "flex flex-col items-center justify-center gap-3 p-8 text-slate-500", data: { testid: "lightbox-placeholder" }) do
+            tag.div(gf.file_extension, class: "text-5xl font-bold text-slate-400", data: { testid: "lightbox-placeholder-ext" }) +
             tag.div(number_to_human_size(gf.file.byte_size), class: "text-sm text-slate-400")
           end
         end
       %>
       <div class="bg-white border border-slate-200 rounded-lg overflow-hidden cursor-pointer relative hover:shadow-md transition-shadow"
+           data-testid="gallery-card"
            data-action="click->lightbox#open"
            data-lightbox-html="<%= escape_once(lightbox_html.to_s) %>"
            data-lightbox-filename="<%= gf.filename %>"
@@ -30,17 +31,17 @@
           <% if thumb_html %>
             <%= thumb_html %>
           <% else %>
-            <div class="text-2xl font-bold text-slate-500 uppercase tracking-wide bg-slate-100 w-full h-full flex items-center justify-center"><%= gf.file_extension %></div>
+            <div class="text-2xl font-bold text-slate-500 uppercase tracking-wide bg-slate-100 w-full h-full flex items-center justify-center" data-testid="gallery-card-placeholder"><%= gf.file_extension %></div>
           <% end %>
         </div>
         <div class="p-2 flex items-center gap-1">
-          <span class="flex-1 min-w-0 text-xs text-ink whitespace-nowrap overflow-hidden text-ellipsis" title="<%= gf.filename %>"><%= gf.filename %></span>
+          <span class="flex-1 min-w-0 text-xs text-ink whitespace-nowrap overflow-hidden text-ellipsis" title="<%= gf.filename %>" data-testid="gallery-card-filename"><%= gf.filename %></span>
         </div>
       </div>
     <% end %>
   </div>
 
-  <div data-lightbox-target="modal" class="fixed inset-0 z-[1000] flex items-center justify-center p-4" hidden data-action="click->lightbox#closeOnBackdrop">
+  <div data-lightbox-target="modal" class="fixed inset-0 z-[1000] flex items-center justify-center p-4" hidden data-testid="lightbox" data-action="click->lightbox#closeOnBackdrop">
     <div class="absolute inset-0 bg-black/60" data-lightbox-backdrop></div>
     <div class="relative bg-white rounded-lg max-w-[90vw] max-h-[90vh] flex flex-col overflow-hidden">
       <div class="flex items-center justify-between px-4 py-3 border-b border-slate-200 gap-4">

@@ -27,7 +27,7 @@ RSpec.describe "Mobile post composer", type: :feature do
   it "Submit button has a minimum height of 44px" do
     visit game_scene_path(game, scene)
     height = page.evaluate_script(
-      "parseFloat(window.getComputedStyle(document.querySelector('input[type=\"submit\"]')).minHeight)"
+      "parseFloat(window.getComputedStyle(document.querySelector('#post_composer input[type=\"submit\"]')).minHeight)"
     )
     expect(height).to be >= 44
   end
