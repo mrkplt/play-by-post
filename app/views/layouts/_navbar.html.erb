@@ -1,27 +1,28 @@
-<nav class="navbar" data-controller="nav" data-action="click@window->nav#closeOnOutside">
-  <div class="navbar__brand">
+<nav class="flex items-center justify-between px-6 py-3 bg-slate-800 text-slate-50 flex-wrap" data-controller="nav" data-action="click@window->nav#closeOnOutside">
+  <div class="font-bold text-lg text-slate-50 no-underline">
     <%= link_to "Play by Post", root_path %>
   </div>
 
-  <button class="navbar__hamburger"
+  <button class="md:hidden flex flex-col justify-center items-center gap-[5px] w-11 h-11 bg-transparent border-none p-0 cursor-pointer text-slate-50"
           aria-label="Open navigation menu"
           aria-expanded="false"
           aria-controls="navbar-menu"
           data-nav-target="toggle"
           data-action="click->nav#toggle"
+          data-testid="hamburger"
           hidden>
-    <span class="navbar__hamburger-bar"></span>
-    <span class="navbar__hamburger-bar"></span>
-    <span class="navbar__hamburger-bar"></span>
+    <span class="block w-[22px] h-0.5 bg-current rounded-sm"></span>
+    <span class="block w-[22px] h-0.5 bg-current rounded-sm"></span>
+    <span class="block w-[22px] h-0.5 bg-current rounded-sm"></span>
   </button>
 
-  <div class="navbar__menu" id="navbar-menu" data-nav-target="menu" hidden>
-    <div class="navbar__actions">
+  <div class="w-full flex-col bg-slate-800 md:flex md:flex-row md:w-auto" id="navbar-menu" data-nav-target="menu" data-testid="mobile-menu" hidden>
+    <div class="flex items-center gap-4 text-sm">
       <% if user_signed_in? %>
         <%= link_to current_user.display_name || current_user.email.split("@").first,
               profile_path,
-              class: "navbar__link" %>
-        <%= link_to "Sign out", destroy_user_session_path, class: "navbar__link" %>
+              class: "text-slate-50 no-underline" %>
+        <%= link_to "Sign out", destroy_user_session_path, class: "text-slate-50 no-underline" %>
       <% end %>
     </div>
   </div>

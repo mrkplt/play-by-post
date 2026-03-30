@@ -1,41 +1,41 @@
-<div class="card">
+<div class="bg-white border border-slate-200 rounded-lg p-5 mb-4">
   <% children = scene.child_scenes.select { |c| c.game_id == game.id } %>
   <% if children.any? %>
-    <div style="display:flex; flex-wrap:wrap; gap:0.4rem; font-size:0.8rem; color:#94a3b8; margin-bottom:0.4rem;">
+    <div class="flex flex-wrap gap-1 text-xs text-slate-400 mb-1">
       <% children.each do |child| %>
-        <span>⤷ to <%= link_to child.title, game_scene_path(game, child), style: "color:#94a3b8;" %>
+        <span>⤷ to <%= link_to child.title, game_scene_path(game, child), class: "text-slate-400" %>
           <% if child.resolved? %>
-            <span class="badge badge--gray" style="font-size:0.65rem;">Resolved</span>
+            <span class="inline-block px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 text-xs">Resolved</span>
           <% else %>
-            <span class="badge badge--green" style="font-size:0.65rem;">Active</span>
+            <span class="inline-block px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800">Active</span>
           <% end %>
         </span>
       <% end %>
     </div>
   <% end %>
 
-  <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:0.5rem;">
+  <div class="flex justify-between items-start mb-2">
     <h3 style="margin:0; font-size:1rem;">
       <%= link_to scene.title, game_scene_path(game, scene) %>
     </h3>
-    <div style="display:flex; gap:0.4rem; flex-shrink:0; margin-left:0.5rem;">
+    <div class="flex gap-1 flex-shrink-0 ml-2">
       <% if scene.private? %>
-        <span class="badge badge--yellow">Private</span>
+        <span class="inline-block px-2 py-0.5 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800">Private</span>
       <% end %>
     </div>
   </div>
 
-  <div style="font-size:0.8rem; color:#94a3b8;">
+  <div class="text-xs text-slate-400">
     <span><%= scene.scene_participants.includes(:character, :user).reject { |sp| sp.character_id.nil? }.map(&:display_name).join(", ") %></span>
     &middot;
     <span><%= time_ago_in_words(scene.updated_at) %> ago</span>
   </div>
 
   <% if scene.parent_scene.present? %>
-    <div style="font-size:0.8rem; color:#94a3b8; margin-top:0.4rem;">
-      ↳ from <%= link_to scene.parent_scene.title, game_scene_path(game, scene.parent_scene), style: "color:#94a3b8;" %>
+    <div class="text-xs text-slate-400 mt-1">
+      ↳ from <%= link_to scene.parent_scene.title, game_scene_path(game, scene.parent_scene), class: "text-slate-400" %>
       <% if scene.parent_scene.resolved? %>
-        <span class="badge badge--gray" style="font-size:0.65rem;">Resolved</span>
+        <span class="inline-block px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 text-xs">Resolved</span>
       <% end %>
     </div>
   <% end %>

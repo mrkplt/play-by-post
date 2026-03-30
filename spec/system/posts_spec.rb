@@ -94,7 +94,7 @@ RSpec.describe "Posts", type: :feature do
 
       expect(page).to have_text("In character text.")
       expect(page).to have_text("OOC: brb 5 mins")
-      expect(page).to have_css(".post--ooc")
+      expect(page).to have_css('[data-testid="ooc-post"]')
     end
 
     it "Hide OOC posts menu item hides OOC posts" do
@@ -105,7 +105,7 @@ RSpec.describe "Posts", type: :feature do
       click_on "Hide OOC posts"
 
       expect(page).to have_text("In character text.")
-      expect(page).not_to have_css(".post--ooc", visible: true)
+      expect(page).not_to have_css('[data-testid="ooc-post"]', visible: true)
     end
   end
 end

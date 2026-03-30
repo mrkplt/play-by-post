@@ -19,7 +19,7 @@ export default class extends Controller {
 
   _applyFilter() {
     this.element.querySelectorAll("[data-ooc='true']").forEach(el => {
-      el.style.display = this.hiding ? "none" : ""
+      el.hidden = this.hiding
     })
   }
 

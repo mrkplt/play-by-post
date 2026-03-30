@@ -1,18 +1,18 @@
 <h2>Edit Participants — <%= @scene.title %></h2>
 
 <%= form_with url: game_scene_participants_path(@game, @scene), method: :patch do |f| %>
-  <div class="field">
-    <p style="font-size:0.85rem; color:#64748b; margin:0 0 0.75rem;">The GM is always included automatically.</p>
+  <div class="mb-4">
+    <p class="text-sm text-slate-500 mb-3">The GM is always included automatically.</p>
     <% @players_with_characters.each do |user, characters| %>
-      <div style="margin-bottom:0.75rem;">
-        <div style="font-size:0.85rem; font-weight:600; color:#475569; margin-bottom:0.25rem;">
+      <div class="mb-3">
+        <div class="text-sm font-semibold text-slate-700 mb-1">
           <%= user.display_name || user.email %>
         </div>
         <% if characters.empty? %>
-          <div style="font-size:0.85rem; color:#94a3b8; padding-left:1rem;">No active characters</div>
+          <div class="text-sm text-slate-400 pl-4">No active characters</div>
         <% else %>
           <% characters.each do |character| %>
-            <label style="display:block; font-weight:normal; margin-bottom:0.2rem; padding-left:1rem;">
+            <label class="block font-normal mb-0.5 pl-4">
               <input type="checkbox" name="character_ids[]" value="<%= character.id %>"
                 <%= "checked" if @current_character_ids.include?(character.id) %>>
               <%= character.name %>
@@ -23,6 +23,6 @@
     <% end %>
   </div>
 
-  <%= f.submit "Update Participants", class: "btn" %>
-  <%= link_to "Cancel", game_scene_path(@game, @scene), class: "btn btn--secondary" %>
+  <%= f.submit "Update Participants", class: "px-5 py-2 bg-blue-600 text-white rounded text-base cursor-pointer hover:bg-blue-700 inline-block no-underline" %>
+  <%= link_to "Cancel", game_scene_path(@game, @scene), class: "px-5 py-2 bg-slate-500 text-white rounded text-base cursor-pointer hover:bg-slate-600 inline-block no-underline" %>
 <% end %>

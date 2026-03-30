@@ -1,33 +1,32 @@
 <%= form_with model: [game, scene, post], multipart: true, data: { controller: "markdown-preview" } do |f| %>
   <% if post.errors.any? %>
-    <div style="background:#fef2f2; border:1px solid #fecaca; border-radius:4px; padding:0.5rem 0.75rem; margin-bottom:0.75rem; font-size:0.9rem; color:#dc2626;">
+    <div class="bg-red-50 border border-red-300 rounded-lg px-3 py-2 mb-3 text-sm text-red-600">
       <% post.errors.full_messages.each do |msg| %>
         <div><%= msg %></div>
       <% end %>
     </div>
   <% end %>
 
-  <div class="field">
-    <%= f.text_area :content, rows: 5, placeholder: "Write your post...",
+  <div class="mb-4">
+    <%= f.text_area :content, rows: 5, placeholder: "Write your post...", class: "w-full px-3 py-2 border border-slate-300 rounded text-base",
         data: { markdown_preview_target: "input", action: "input->markdown-preview#update" } %>
   </div>
 
-  <div data-markdown-preview-target="preview" style="display:none; border:1px solid #e2e8f0; border-radius:4px; padding:0.75rem; margin-bottom:0.75rem; min-height:3rem; background:#fafafa;"></div>
+  <div data-markdown-preview-target="preview" class="hidden border border-slate-200 rounded-lg px-3 py-3 mb-3 min-h-12 bg-slate-50"></div>
 
-  <div class="field" style="margin-bottom:0.5rem;">
-    <%= f.label :image, "Image (optional)", style: "font-size:0.85rem; color:#64748b;" %>
-    <%= f.file_field :image, accept: "image/jpeg,image/png,image/gif,image/webp",
-        style: "font-size:0.85rem;" %>
-    <p style="font-size:0.75rem; color:#94a3b8; margin:0.2rem 0 0;">JPEG, PNG, GIF, or WebP. Max 10MB.</p>
+  <div class="mb-2">
+    <%= f.label :image, "Image (optional)", class: "block font-medium mb-1 text-sm text-slate-600" %>
+    <%= f.file_field :image, accept: "image/jpeg,image/png,image/gif,image/webp", class: "text-sm" %>
+    <p class="text-xs text-slate-400 mt-0.5">JPEG, PNG, GIF, or WebP. Max 10MB.</p>
   </div>
 
-  <div class="post-composer-actions" style="display:flex; gap:1rem; align-items:center; flex-wrap:wrap;">
-    <label style="font-size:0.9rem; cursor:pointer;">
+  <div class="flex gap-2 flex-wrap" data-testid="composer-actions">
+    <label class="text-sm cursor-pointer">
       <%= f.check_box :is_ooc %> Out of character
     </label>
-    <button type="button" class="btn btn--secondary" style="font-size:0.85rem;" data-action="click->markdown-preview#togglePreview">
+    <button type="button" class="px-5 py-2 bg-slate-500 text-white rounded text-base cursor-pointer hover:bg-slate-600 inline-block no-underline text-sm" data-action="click->markdown-preview#togglePreview">
       Preview
     </button>
-    <%= f.submit "Post", class: "btn" %>
+    <%= f.submit "Post", class: "px-5 py-2 bg-blue-600 text-white rounded text-base cursor-pointer hover:bg-blue-700 inline-block no-underline" %>
   </div>
 <% end %>

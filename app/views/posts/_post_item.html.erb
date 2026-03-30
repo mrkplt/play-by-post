@@ -1,11 +1,11 @@
-<div id="<%= dom_id(post) %>" class="post <%= post.is_ooc? ? 'post--ooc' : '' %>" data-ooc="<%= post.is_ooc? %>">
-  <div class="post__meta">
+<div id="<%= dom_id(post) %>" class="<%= post.is_ooc? ? 'bg-slate-50 border-l-[3px] border-slate-400 pl-3 opacity-60 hover:opacity-85 text-[0.9em]' : 'border-b border-slate-100' %> py-4 last:border-b-0" data-ooc="<%= post.is_ooc? %>"<% if post.is_ooc? %> data-testid="ooc-post"<% end %>>
+  <div class="text-xs text-slate-500 mb-1">
     <% participant = scene.scene_participants.find { |sp| sp.user_id == post.user_id } %>
     <strong><%= participant&.display_name || post.user.display_name || post.user.email %></strong>
     &middot;
     <time data-local-time="<%= post.created_at.iso8601 %>"><%= post.created_at.strftime("%b %-d, %Y %-I:%M %p") %></time>
     <% if post.is_ooc? %>
-      <span class="badge badge--gray">OOC</span>
+      <span class="inline-block px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600">OOC</span>
     <% end %>
     <% if post.last_edited_at.present? %>
       <span style="font-style:italic;">(edited)</span>
@@ -14,7 +14,7 @@
       &middot; <%= link_to "Edit", edit_game_scene_post_path(game, scene, post), style: "font-size:0.8rem;" %>
     <% end %>
   </div>
-  <div class="post__content"><%= render_markdown(post.content) %></div>
+  <div class="whitespace-pre-wrap post-content" data-testid="post-content"><%= render_markdown(post.content) %></div>
   <% if post.image.attached? %>
     <div style="margin-top:0.5rem;">
       <%= image_tag post.display_image, style: "max-width:100%; border-radius:4px;" %>

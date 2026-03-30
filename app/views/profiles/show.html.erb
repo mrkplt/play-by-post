@@ -1,35 +1,35 @@
-<div class="section">
-  <div class="section__header">
-    <h1>Profile</h1>
-    <%= link_to "Edit Profile", edit_profile_path, class: "btn btn--secondary" %>
+<div class="mb-10">
+  <div class="flex items-center justify-between mb-4">
+    <h1 class="m-0 text-xl font-semibold">Profile</h1>
+    <%= link_to "Edit Profile", edit_profile_path, class: "px-5 py-2 bg-slate-500 text-white rounded text-base cursor-pointer hover:bg-slate-600 inline-block no-underline" %>
   </div>
 
-  <div class="card">
-    <div style="margin-bottom:1rem;">
-      <div style="font-size:0.8rem; color:#94a3b8; text-transform:uppercase; letter-spacing:0.05em;">Display Name</div>
-      <div style="font-size:1.1rem; font-weight:600;"><%= @profile.display_name.presence || "Not set" %></div>
+  <div class="bg-white border border-slate-200 rounded-lg p-5 mb-4">
+    <div class="mb-4">
+      <div class="text-xs text-slate-400 uppercase tracking-wide">Display Name</div>
+      <div class="text-lg font-semibold"><%= @profile.display_name.presence || "Not set" %></div>
     </div>
-    <div style="margin-bottom:1rem;">
-      <div style="font-size:0.8rem; color:#94a3b8; text-transform:uppercase; letter-spacing:0.05em;">Email</div>
+    <div class="mb-4">
+      <div class="text-xs text-slate-400 uppercase tracking-wide">Email</div>
       <div><%= current_user.email %></div>
     </div>
     <div>
-      <div style="font-size:0.8rem; color:#94a3b8; text-transform:uppercase; letter-spacing:0.05em;">Hide OOC Posts</div>
+      <div class="text-xs text-slate-400 uppercase tracking-wide">Hide OOC Posts</div>
       <div><%= @profile.hide_ooc? ? "Yes" : "No" %></div>
     </div>
   </div>
 </div>
 
-<div class="section">
+<div class="mb-10">
   <h2>My Games</h2>
   <% if @memberships.empty? %>
-    <p style="color:#94a3b8;">You're not in any games yet.</p>
+    <p class="text-slate-400">You're not in any games yet.</p>
   <% else %>
     <% @memberships.each do |membership| %>
-      <div class="card" style="margin-bottom:0.5rem;">
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-          <%= link_to membership.game.name, game_path(membership.game), style: "font-weight:600; text-decoration:none; color:inherit;" %>
-          <span class="badge <%= membership.game_master? ? 'badge--blue' : membership.removed? ? 'badge--gray' : 'badge--green' %>">
+      <div class="bg-white border border-slate-200 rounded-lg p-5 mb-2">
+        <div class="flex justify-between items-center">
+          <%= link_to membership.game.name, game_path(membership.game), class: "font-semibold no-underline text-inherit" %>
+          <span class="<%= membership.game_master? ? 'bg-blue-100 text-blue-700' : membership.removed? ? 'bg-slate-100 text-slate-600' : 'bg-green-100 text-green-800' %> inline-block px-2 py-0.5 rounded-full text-xs font-semibold">
             <%= membership.game_master? ? "GM" : membership.removed? ? "Former" : "Player" %>
           </span>
         </div>

@@ -35,7 +35,7 @@ RSpec.describe "Mobile post composer", type: :feature do
   it "action buttons are stacked vertically on narrow screen" do
     visit game_scene_path(game, scene)
     flex_direction = page.evaluate_script(
-      "window.getComputedStyle(document.querySelector('.post-composer-actions')).flexDirection"
+      "window.getComputedStyle(document.querySelector('[data-testid=\"composer-actions\"]')).flexDirection"
     )
     expect(flex_direction).to eq("column")
   end

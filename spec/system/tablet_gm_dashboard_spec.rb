@@ -20,7 +20,7 @@ RSpec.describe "Tablet GM dashboard", type: :feature do
     visit game_path(game)
     result = page.evaluate_script(<<~JS)
       (function() {
-        var btns = Array.from(document.querySelectorAll('.btn'));
+        var btns = Array.from(document.querySelectorAll('button'));
         for (var i = 0; i < btns.length; i++) {
           for (var j = i + 1; j < btns.length; j++) {
             var a = btns[i].getBoundingClientRect();
@@ -39,12 +39,12 @@ RSpec.describe "Tablet GM dashboard", type: :feature do
   it "navbar menu is fully visible (no hamburger) at 768px" do
     visit game_path(game)
     hamburger_display = page.evaluate_script(
-      "window.getComputedStyle(document.querySelector('.navbar__hamburger')).display"
+      "window.getComputedStyle(document.querySelector('[data-testid=\"hamburger\"]')).display"
     )
     expect(hamburger_display).to eq("none")
 
     menu_display = page.evaluate_script(
-      "window.getComputedStyle(document.querySelector('.navbar__menu')).display"
+      "window.getComputedStyle(document.querySelector('[data-testid=\"mobile-menu\"]')).display"
     )
     expect(menu_display).not_to eq("none")
   end

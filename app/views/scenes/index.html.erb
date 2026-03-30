@@ -4,17 +4,17 @@
   All Scenes
 </nav>
 
-<div class="section__header">
-  <h1>All Scenes</h1>
+<div class="flex items-center justify-between mb-4">
+  <h1 style="margin:0; font-size:1.25rem; font-weight:600;">All Scenes</h1>
   <% if @is_gm %>
-    <%= link_to "New Scene", new_game_scene_path(@game), class: "btn" %>
+    <%= link_to "New Scene", new_game_scene_path(@game), class: "px-5 py-2 bg-blue-600 text-white rounded text-base cursor-pointer hover:bg-blue-700 inline-block no-underline" %>
   <% end %>
 </div>
 
 <% if @trees.empty? %>
   <p style="color:#94a3b8;">No scenes yet.</p>
 <% else %>
-  <div class="scene-tree">
+  <div class="text-sm">
     <% @trees.each do |tree| %>
       <%= render "scenes/tree_node", node: tree, game: @game, depth: 0 %>
     <% end %>

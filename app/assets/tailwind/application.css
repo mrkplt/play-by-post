@@ -1,0 +1,31 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ink: #1a1a1a;
+  --color-canvas: #fafafa;
+}
+
+@layer base {
+  body { @apply font-sans text-base leading-relaxed text-ink bg-canvas; }
+  a { @apply text-blue-600; }
+  a:hover { @apply no-underline; }
+  table { @apply w-full border-collapse; }
+  th, td { @apply text-left px-3 py-2 border-b border-slate-200; }
+  th { @apply font-semibold text-sm text-slate-500; }
+}
+
+@layer components {
+  /* Markdown-rendered content — can't inject Tailwind classes into server-rendered HTML */
+  .character-sheet { @apply leading-relaxed; }
+  .character-sheet p { @apply m-0 mb-2; }
+  .character-sheet h1,
+  .character-sheet h2,
+  .character-sheet h3 { @apply mt-4 mb-2; }
+  .character-sheet ul,
+  .character-sheet ol { @apply my-1 mb-2 pl-6; }
+  .character-sheet table { @apply my-2; }
+  textarea.character-sheet { @apply font-mono whitespace-pre-wrap; }
+
+  /* Post content image safety */
+  .post-content img { @apply max-w-full h-auto block; }
+}

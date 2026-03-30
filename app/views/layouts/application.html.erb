@@ -5,17 +5,17 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
-    <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
+    <%= stylesheet_link_tag "tailwind", "data-turbo-track": "reload" %>
     <%= javascript_importmap_tags %>
   </head>
   <body>
     <%= render "layouts/navbar" %>
-    <main>
+    <main class="px-6 py-4 max-w-7xl mx-auto">
       <% if notice.present? %>
-        <p class="flash flash--notice"><%= notice %></p>
+        <p class="px-4 py-3 rounded mb-4 text-sm bg-green-100 text-green-800"><%= notice %></p>
       <% end %>
       <% if alert.present? %>
-        <p class="flash flash--alert"><%= alert %></p>
+        <p class="px-4 py-3 rounded mb-4 text-sm bg-red-50 text-red-800"><%= alert %></p>
       <% end %>
       <%= yield %>
     </main>

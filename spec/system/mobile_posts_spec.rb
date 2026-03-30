@@ -21,7 +21,7 @@ RSpec.describe "Mobile post readability", type: :feature do
   it "body text font-size is at least 16px on post content" do
     visit game_scene_path(game, scene)
     font_size = page.evaluate_script(
-      "parseFloat(window.getComputedStyle(document.querySelector('.post__content')).fontSize)"
+      "parseFloat(window.getComputedStyle(document.querySelector('[data-testid=\"post-content\"]')).fontSize)"
     )
     expect(font_size).to be >= 16
   end
@@ -31,7 +31,7 @@ RSpec.describe "Mobile post readability", type: :feature do
     visit game_scene_path(game, scene)
     result = page.evaluate_script(<<~JS)
       (function() {
-        var imgs = document.querySelectorAll('.post__content img');
+        var imgs = document.querySelectorAll('[data-testid="post-content"] img');
         for (var i = 0; i < imgs.length; i++) {
           if (imgs[i].offsetWidth > imgs[i].parentElement.offsetWidth) return false;
         }
@@ -46,7 +46,7 @@ RSpec.describe "Mobile post readability", type: :feature do
     visit game_scene_path(game, scene)
     overflow = page.evaluate_script(<<~JS)
       (function() {
-        var replies = document.querySelectorAll('.post--reply');
+        var replies = document.querySelectorAll('[data-testid="reply-post"]');
         for (var i = 0; i < replies.length; i++) {
           if (replies[i].scrollWidth > 375) return true;
         }

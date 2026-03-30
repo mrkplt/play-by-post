@@ -1,16 +1,16 @@
-<div class="auth-card">
+<div class="max-w-sm mx-auto mt-16 p-8 bg-white border border-slate-200 rounded-lg">
   <h1>Set your display name</h1>
   <p>Choose a name that other players will see.</p>
 
   <%= form_with model: @profile, url: profile_path, method: :patch do |f| %>
-    <div class="field">
-      <%= f.label :display_name, "Display name" %>
-      <%= f.text_field :display_name, autofocus: true, maxlength: 100 %>
+    <div class="mb-4">
+      <%= f.label :display_name, "Display name", class: "block font-medium mb-1 text-sm" %>
+      <%= f.text_field :display_name, autofocus: true, maxlength: 100, class: "w-full px-3 py-2 border border-slate-300 rounded text-base" %>
       <% if @profile.errors[:display_name].any? %>
-        <span class="field-error"><%= @profile.errors[:display_name].first %></span>
+        <span class="text-red-600 text-sm"><%= @profile.errors[:display_name].first %></span>
       <% end %>
     </div>
-    <%= f.submit "Save" %>
-    <%= link_to "Cancel", profile_path, style: "margin-left:0.75rem; color:#64748b;" %>
+    <%= f.submit "Save", class: "px-5 py-2 bg-blue-600 text-white rounded text-base cursor-pointer hover:bg-blue-700 inline-block no-underline" %>
+    <%= link_to "Cancel", profile_path, class: "ml-3 text-slate-500" %>
   <% end %>
 </div>

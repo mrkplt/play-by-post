@@ -1,20 +1,20 @@
-<div class="auth-card">
+<div class="max-w-sm mx-auto mt-16 p-8 bg-white border border-slate-200 rounded-lg">
   <% if @email_sent %>
     <h1>Check your email</h1>
     <p>We sent a sign-in link to your inbox. Click it to continue — no password needed.</p>
-    <p style="font-size:0.85rem; color:#64748b; margin-top:1rem;">Didn't get it? Check your spam folder, or <%= link_to "try again", new_user_session_path %>.</p>
+    <p class="text-xs text-slate-500 mt-4">Didn't get it? Check your spam folder, or <%= link_to "try again", new_user_session_path %>.</p>
     <% if Rails.env.development? %>
-      <p style="font-size:0.85rem; margin-top:0.5rem;"><%= link_to "Open Letter Opener", "/letter_opener" %></p>
+      <p class="text-xs mt-2"><%= link_to "Open Letter Opener", "/letter_opener" %></p>
     <% end %>
   <% else %>
     <h1>Sign in</h1>
-    <p style="color:#64748b; margin-bottom:1.5rem;">Enter your email and we'll send you a link to sign in. No password required.</p>
+    <p class="text-slate-500 mb-6">Enter your email and we'll send you a link to sign in. No password required.</p>
     <%= form_with url: user_session_path, method: :post do |f| %>
-      <div class="field">
-        <%= f.label :email, "Email address" %>
-        <%= f.email_field :email, autofocus: true, autocomplete: "email", placeholder: "you@example.com", name: "user[email]" %>
+      <div class="mb-4">
+        <%= f.label :email, "Email address", class: "block font-medium mb-1 text-sm" %>
+        <%= f.email_field :email, autofocus: true, autocomplete: "email", placeholder: "you@example.com", name: "user[email]", class: "w-full px-3 py-2 border border-slate-300 rounded text-base" %>
       </div>
-      <%= f.submit "Send sign-in link" %>
+      <%= f.submit "Send sign-in link", class: "px-5 py-2 bg-blue-600 text-white rounded text-base cursor-pointer hover:bg-blue-700 inline-block no-underline" %>
     <% end %>
   <% end %>
 </div>
