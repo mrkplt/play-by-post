@@ -206,5 +206,10 @@ RSpec.describe ApplicationHelper, type: :helper do
       # Ensure only href is allowed through sanitize
       expect(result).not_to include("onclick")
     end
+
+    it "returns html_safe string so rendered HTML is not escaped in views" do
+      result = helper.render_markdown("**bold**")
+      expect(result).to be_html_safe
+    end
   end
 end

@@ -1,0 +1,21 @@
+<div class="mb-0.5" style="margin-left:<%= @depth * 1.5 %>rem;">
+  <div class="flex items-center gap-2 px-2 py-1 rounded <%= @scene.tree_row_css_class %>">
+    <% if @depth > 0 %>
+      <span class="text-slate-400 font-mono shrink-0">└─</span>
+    <% end %>
+    <span class="whitespace-nowrap">
+      <%= link_to @scene.title, game_scene_path(@game, @scene), class: @scene.tree_link_css_class %>
+    </span>
+    <span class="<%= @scene.status_badge_css_class %>"><%= @scene.status_label %></span>
+    <% if @scene.private? %>
+      <span class="badge badge--yellow">Private</span>
+    <% end %>
+    <span class="text-xs text-slate-400 ml-auto whitespace-nowrap">
+      <%= @scene.formatted_created_at %>
+    </span>
+  </div>
+
+  <% @children.each do |child_node| %>
+    <%= render(Shared::TreeNodeComponent.new(node: child_node, game: @game, depth: @depth + 1)) %>
+  <% end %>
+</div>
