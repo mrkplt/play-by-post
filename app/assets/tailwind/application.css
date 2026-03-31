@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "../../components/shared/sidebar_component.css";
+@import "../../components/shared/post_item_component.css";
 
 @theme {
   --color-ink: #1a1a1a;
@@ -47,7 +48,4 @@
 
   /* Character sheet textarea */
   textarea.character-sheet { @apply font-mono whitespace-pre-wrap; }
-
-  /* Post content image safety */
-  .post-content img { @apply max-w-full h-auto block; }
 }
