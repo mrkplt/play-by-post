@@ -34,7 +34,7 @@ RSpec.describe Shared::SceneCardComponent, type: :component do
   end
 
   it "does not show private badge for public scene" do
-    expect(rendered_component).not_to have_css(".badge--yellow")
+    expect(rendered_component).not_to have_css("[data-variant=yellow]")
   end
 
   context "when private" do
@@ -49,7 +49,7 @@ RSpec.describe Shared::SceneCardComponent, type: :component do
     end
 
     it "shows the private badge" do
-      expect(rendered_component).to have_css(".badge--yellow", text: "Private")
+      expect(rendered_component).to have_css("[data-variant=yellow]", text: "Private")
     end
   end
 

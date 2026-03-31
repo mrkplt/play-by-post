@@ -13,13 +13,9 @@
     <span class="whitespace-nowrap">
       <%= link_to scene.title, game_scene_path(game, scene), class: is_active ? '' : 'text-slate-500' %>
     </span>
-    <% if is_active %>
-      <span class="badge badge--green">Active</span>
-    <% else %>
-      <span class="badge badge--gray">Resolved</span>
-    <% end %>
+    <%= render(Ui::BadgeComponent.new(variant: is_active ? :green : :gray)) { is_active ? "Active" : "Resolved" } %>
     <% if scene.private? %>
-      <span class="badge badge--yellow">Private</span>
+      <%= render(Ui::BadgeComponent.new(variant: :yellow)) { "Private" } %>
     <% end %>
     <span class="text-xs text-slate-400 ml-auto whitespace-nowrap">
       <%= scene.created_at.strftime("%b %-d, %Y %l:%M%P") %>

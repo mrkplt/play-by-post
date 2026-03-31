@@ -10,7 +10,7 @@
         lightbox_html = if gf.image? && gf.display_image
           tag.img(src: url_for(gf.display_image), alt: gf.filename)
         elsif thumb
-          tag.img(src: url_for(thumb), alt: gf.filename, style: "max-width:100%;")
+          tag.img(src: url_for(thumb), alt: gf.filename, class: "max-w-full")
         else
           tag.div(class: "flex flex-col items-center justify-center gap-3 p-8 text-slate-500", data: { testid: "lightbox-placeholder" }) do
             tag.div(gf.file_extension, class: "text-5xl font-bold text-slate-400", data: { testid: "lightbox-placeholder-ext" }) +
@@ -45,9 +45,9 @@
       <div class="flex items-center justify-between px-4 py-3 border-b border-slate-200 gap-4">
         <span class="font-semibold text-sm min-w-0 whitespace-nowrap overflow-hidden text-ellipsis" data-lightbox-title></span>
         <div class="flex items-center gap-2 shrink-0">
-          <a href="#" data-lightbox-download class="px-5 py-2 bg-slate-500 text-white rounded text-base cursor-pointer hover:bg-slate-600 inline-block no-underline" style="font-size:0.8rem; padding:0.3rem 0.75rem;" data-turbo="false">Download</a>
+          <a href="#" data-lightbox-download class="text-[0.8rem] py-[0.3rem] px-3 bg-slate-500 text-white rounded cursor-pointer hover:bg-slate-600 inline-block no-underline" data-turbo="false">Download</a>
           <% if @is_gm %>
-            <button data-lightbox-delete-btn class="px-5 py-2 bg-white text-red-600 border border-red-200 rounded text-base cursor-pointer hover:bg-red-50 inline-block no-underline" style="font-size:0.8rem; padding:0.3rem 0.75rem;" data-action="click->lightbox#confirmDelete" hidden>Delete</button>
+            <button data-lightbox-delete-btn class="text-[0.8rem] py-[0.3rem] px-3 bg-white text-red-600 border border-red-200 rounded cursor-pointer hover:bg-red-50" data-action="click->lightbox#confirmDelete" hidden>Delete</button>
           <% end %>
           <button class="bg-transparent border-none text-xl cursor-pointer text-slate-500 p-1 leading-none hover:text-ink" data-action="click->lightbox#close" aria-label="Close">&times;</button>
         </div>

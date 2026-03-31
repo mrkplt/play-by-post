@@ -1,8 +1,8 @@
-<nav class="breadcrumb">
+<%= render(Ui::BreadcrumbComponent.new) do %>
   <%= link_to "Games", root_path %> &rsaquo;
   <%= link_to @game.name, game_path(@game) %> &rsaquo;
   <%= @character.name %>
-</nav>
+<% end %>
 
 <div class="flex items-center justify-between mb-4">
   <h1 class="m-0 text-xl font-semibold"><%= @character.name %></h1>
@@ -14,10 +14,10 @@
 <p style="font-size:0.85rem; color:#64748b;">
   Player: <%= @character.user.display_name || @character.user.email %>
   <% if @character.archived? %>
-    <span class="badge badge--gray">Archived</span>
+    <%= render(Ui::BadgeComponent.new(variant: :gray)) { "Archived" } %>
   <% end %>
   <% if @character.hidden? %>
-    <span class="badge badge--yellow">Hidden</span>
+    <%= render(Ui::BadgeComponent.new(variant: :yellow)) { "Hidden" } %>
   <% end %>
 </p>
 

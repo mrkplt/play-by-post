@@ -5,9 +5,9 @@
       <% children.each do |child| %>
         <span>⤷ to <%= link_to child.title, game_scene_path(game, child), class: "text-slate-400" %>
           <% if child.resolved? %>
-            <span class="badge badge--gray">Resolved</span>
+            <%= render(Ui::BadgeComponent.new(variant: :gray)) { "Resolved" } %>
           <% else %>
-            <span class="badge badge--green">Active</span>
+            <%= render(Ui::BadgeComponent.new(variant: :green)) { "Active" } %>
           <% end %>
         </span>
       <% end %>
@@ -15,12 +15,12 @@
   <% end %>
 
   <div class="flex justify-between items-start mb-2">
-    <h3 style="margin:0; font-size:1rem;">
+    <h3 class="m-0 text-base">
       <%= link_to scene.title, game_scene_path(game, scene) %>
     </h3>
     <div class="flex gap-1 flex-shrink-0 ml-2">
       <% if scene.private? %>
-        <span class="badge badge--yellow">Private</span>
+        <%= render(Ui::BadgeComponent.new(variant: :yellow)) { "Private" } %>
       <% end %>
     </div>
   </div>
@@ -35,7 +35,7 @@
     <div class="text-xs text-slate-400 mt-1">
       ↳ from <%= link_to scene.parent_scene.title, game_scene_path(game, scene.parent_scene), class: "text-slate-400" %>
       <% if scene.parent_scene.resolved? %>
-        <span class="badge badge--gray">Resolved</span>
+        <%= render(Ui::BadgeComponent.new(variant: :gray)) { "Resolved" } %>
       <% end %>
     </div>
   <% end %>
