@@ -11,6 +11,56 @@ Play-by-Post TTRPG is a Rails 8 web application for asynchronous tabletop role-p
 
 ---
 
+## Architecture
+
+This codebase applies hexagonal architecture (ports and adapters) to isolate business logic from delivery mechanisms and external systems.
+
+### Hexagonal Architecture
+
+**Core (domain):** Business rules live in models and service objects. They must not depend on Rails controllers, mailers, jobs, or external APIs directly. A service object orchestrating a game action should be callable from a controller, a background job, or a test with equal ease.
+
+**Ports:** Defined as Ruby interfaces (duck-typed or Sorbet interfaces) that the core depends on. Examples: a notifier port the domain calls to emit notifications, a storage port for file persistence.
+
+**Adapters:** Concrete implementations of ports that connect to external systems — ActionMailer, Active Storage, Solid Queue. Adapters live in controllers, mailers, mailboxes, and jobs, not in models or service objects.
+
+```
+Controllers / Mailers / Mailboxes / Jobs   ← adapters (interfaces)
+        │  call into
+Service Objects / Models                   ← core (business logic)
+        │  call through ports
+ActionMailer / Active Storage / DB         ← adapters (infrastructure)
+```
+
+### Idempotency
+
+Interface calls (controller actions, job executions, mailbox ingestion) must be safe to retry without producing duplicate side-effects. Design database writes and external calls so that repeating them with the same inputs yields the same result. Use database unique constraints, token-based deduplication, or find-or-create patterns rather than blind inserts.
+
+### Dependency Injection
+
+Inject collaborators rather than hard-coding them. Service objects accept dependencies (mailers, storage adapters, time sources) as constructor arguments or keyword parameters with sensible defaults. This makes units testable in isolation without global mocking.
+
+```ruby
+# Preferred
+class CreatePost
+  def initialize(notifier: NotificationMailer)
+    @notifier = notifier
+  end
+end
+
+# Avoid
+class CreatePost
+  def call
+    NotificationMailer.with(...).deliver_later  # hard-coded dependency
+  end
+end
+```
+
+### Pure Functions
+
+Prefer pure functions (output determined solely by input, no side-effects) for computation, transformation, and validation logic. Place these as private methods on service objects or as module-level functions. Side-effecting operations (DB writes, email sends, file uploads) should be pushed to the edges of a call chain, not interleaved with business logic.
+
+---
+
 ## Technology Stack
 
 | Layer | Technology |
