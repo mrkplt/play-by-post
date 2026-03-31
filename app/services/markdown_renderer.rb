@@ -20,11 +20,11 @@ class MarkdownRenderer
   def render(text)
     return "" if text.blank?
 
-    sanitize(
+    T.must(sanitize(
       markdown_parser.render(text),
       tags: ALLOWED_TAGS,
       attributes: ALLOWED_ATTRIBUTES
-    )
+    ))
   end
 
   private

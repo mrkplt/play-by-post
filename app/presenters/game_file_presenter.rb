@@ -6,8 +6,8 @@ class GameFilePresenter < BasePresenter
 
   sig { returns(String) }
   def human_file_size
-    return "" unless file.attached?
+    return "" unless @model.file.attached?
 
-    number_to_human_size(file.byte_size)
+    T.must(number_to_human_size(@model.file.byte_size))
   end
 end

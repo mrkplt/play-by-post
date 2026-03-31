@@ -11,17 +11,17 @@ class PostPresenter < BasePresenter
 
   sig { returns(String) }
   def author_display_name
-    participant = @scene_participants.find { |sp| sp.user_id == user_id }
-    participant&.display_name || user.display_name || user.email
+    participant = @scene_participants.find { |sp| sp.user_id == @model.user_id }
+    participant&.display_name || @model.user.display_name || @model.user.email
   end
 
   sig { returns(String) }
   def rendered_content
-    MarkdownRenderer.render(content)
+    MarkdownRenderer.render(@model.content)
   end
 
   sig { returns(String) }
   def formatted_created_at
-    created_at.strftime("%b %-d, %Y %-I:%M %p")
+    @model.created_at.strftime("%b %-d, %Y %-I:%M %p")
   end
 end

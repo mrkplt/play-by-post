@@ -5,6 +5,6 @@ class UserPresenter < BasePresenter
 
   sig { returns(String) }
   def display_name_or_email
-    display_name || email.split("@").first
+    @model.display_name || @model.email.split("@").first
   end
 end

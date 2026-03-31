@@ -5,17 +5,17 @@ class ScenePresenter < BasePresenter
 
   sig { returns(String) }
   def status_badge_css_class
-    resolved? ? "badge badge--gray" : "badge badge--green"
+    @model.resolved? ? "badge badge--gray" : "badge badge--green"
   end
 
   sig { returns(String) }
   def status_label
-    resolved? ? "Resolved" : "Active"
+    @model.resolved? ? "Resolved" : "Active"
   end
 
   sig { returns(String) }
   def participant_names
-    scene_participants
+    @model.scene_participants
       .includes(:character, :user)
       .reject { |sp| sp.character_id.nil? }
       .map(&:display_name)
@@ -24,16 +24,16 @@ class ScenePresenter < BasePresenter
 
   sig { returns(String) }
   def formatted_created_at
-    created_at.strftime("%b %-d, %Y %l:%M%P")
+    @model.created_at.strftime("%b %-d, %Y %l:%M%P")
   end
 
   sig { returns(String) }
   def tree_row_css_class
-    resolved? ? "text-slate-500" : "font-semibold"
+    @model.resolved? ? "text-slate-500" : "font-semibold"
   end
 
   sig { returns(String) }
   def tree_link_css_class
-    resolved? ? "text-slate-500" : ""
+    @model.resolved? ? "text-slate-500" : ""
   end
 end
