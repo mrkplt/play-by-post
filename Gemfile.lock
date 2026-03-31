@@ -1,7 +1,7 @@
 GEM
   remote: https://rubygems.org/
   specs:
-    action_text-trix (2.1.17)
+    action_text-trix (2.1.18)
       railties
     actioncable (8.1.3)
       actionpack (= 8.1.3)
@@ -86,7 +86,7 @@ GEM
     bcrypt (3.1.22)
     bcrypt_pbkdf (1.1.2)
     benchmark (0.5.0)
-    bigdecimal (4.0.1)
+    bigdecimal (4.1.0)
     bindex (0.8.1)
     bootsnap (1.23.0)
       msgpack (~> 1.2)
@@ -147,12 +147,12 @@ GEM
     factory_bot_rails (6.5.1)
       factory_bot (~> 6.5)
       railties (>= 6.1.0)
-    ffi (1.17.3-aarch64-linux-gnu)
-    ffi (1.17.3-aarch64-linux-musl)
-    ffi (1.17.3-arm64-darwin)
-    ffi (1.17.3-x86_64-darwin)
-    ffi (1.17.3-x86_64-linux-gnu)
-    ffi (1.17.3-x86_64-linux-musl)
+    ffi (1.17.4-aarch64-linux-gnu)
+    ffi (1.17.4-aarch64-linux-musl)
+    ffi (1.17.4-arm64-darwin)
+    ffi (1.17.4-x86_64-darwin)
+    ffi (1.17.4-x86_64-linux-gnu)
+    ffi (1.17.4-x86_64-linux-musl)
     fugit (1.12.1)
       et-orbi (~> 1.4)
       raabro (~> 1.4)
@@ -180,10 +180,7 @@ GEM
     jbuilder (2.14.1)
       actionview (>= 7.0.0)
       activesupport (>= 7.0.0)
-    json (2.19.2)
-    json-schema (6.2.0)
-      addressable (~> 2.8)
-      bigdecimal (>= 3.1, < 5)
+    json (2.19.3)
     kamal (2.11.0)
       activesupport (>= 7.0)
       base64 (~> 0.2)
@@ -232,12 +229,10 @@ GEM
       net-smtp
     marcel (1.1.0)
     matrix (0.4.3)
-    mcp (0.8.0)
-      json-schema (>= 4.1)
     mime-types (3.7.0)
       logger
       mime-types-data (~> 3.2025, >= 3.2025.0507)
-    mime-types-data (3.2026.0317)
+    mime-types-data (3.2026.0331)
     mini_magick (5.3.1)
       logger
     mini_mime (1.1.5)
@@ -268,7 +263,7 @@ GEM
       net-ssh (>= 5.0.0, < 8.0.0)
     net-smtp (0.5.1)
       net-protocol
-    net-ssh (7.3.1)
+    net-ssh (7.3.2)
     netrc (0.11.0)
     nio4r (2.7.5)
     nokogiri (1.19.2-aarch64-linux-gnu)
@@ -285,12 +280,12 @@ GEM
       racc (~> 1.4)
     orm_adapter (0.5.0)
     ostruct (0.6.3)
-    pagy (43.4.3)
+    pagy (43.4.4)
       json
       uri
       yaml
     parallel (1.27.0)
-    parser (3.3.10.2)
+    parser (3.3.11.1)
       ast (~> 2.4.1)
       racc
     pg (1.6.3)
@@ -360,9 +355,9 @@ GEM
       zeitwerk (~> 2.6)
     rainbow (3.1.1)
     rake (13.3.1)
-    rbi (0.3.9)
+    rbi (0.3.10)
       prism (~> 1.0)
-      rbs (>= 3.4.4)
+      rbs (>= 4.0.1)
     rbs (4.0.2)
       logger
       prism (>= 1.6.0)
@@ -400,11 +395,10 @@ GEM
       rspec-mocks (>= 3.13.0, < 5.0.0)
       rspec-support (>= 3.13.0, < 5.0.0)
     rspec-support (3.13.7)
-    rubocop (1.85.1)
+    rubocop (1.86.0)
       json (~> 2.3)
       language_server-protocol (~> 3.17.0.2)
       lint_roller (~> 1.1.0)
-      mcp (~> 0.6)
       parallel (~> 1.10)
       parser (>= 3.3.0.2)
       rainbow (>= 2.2.2, < 4.0)
@@ -452,15 +446,15 @@ GEM
       fugit (~> 1.11)
       railties (>= 7.1)
       thor (>= 1.3.1)
-    sorbet (0.6.13067)
-      sorbet-static (= 0.6.13067)
-    sorbet-runtime (0.6.13067)
-    sorbet-static (0.6.13067-aarch64-linux)
-    sorbet-static (0.6.13067-universal-darwin)
-    sorbet-static (0.6.13067-x86_64-linux)
-    sorbet-static-and-runtime (0.6.13067)
-      sorbet (= 0.6.13067)
-      sorbet-runtime (= 0.6.13067)
+    sorbet (0.6.13071)
+      sorbet-static (= 0.6.13071)
+    sorbet-runtime (0.6.13071)
+    sorbet-static (0.6.13071-aarch64-linux)
+    sorbet-static (0.6.13071-universal-darwin)
+    sorbet-static (0.6.13071-x86_64-linux)
+    sorbet-static-and-runtime (0.6.13071)
+      sorbet (= 0.6.13071)
+      sorbet-runtime (= 0.6.13071)
     spoom (1.7.11)
       erubi (>= 1.10.0)
       prism (>= 0.28.0)
@@ -527,7 +521,7 @@ GEM
       prism (>= 1.5.1)
     uri (1.1.1)
     useragent (0.16.11)
-    view_component (4.5.0)
+    view_component (4.6.0)
       actionview (>= 7.1.0)
       activesupport (>= 7.1.0)
       concurrent-ruby (~> 1)
@@ -585,6 +579,7 @@ DEPENDENCIES
   rails (~> 8.1.3)
   redcarpet
   rspec-rails
+  rubocop (>= 1.86)
   rubocop-rails-omakase
   simplecov
   solid_cache
