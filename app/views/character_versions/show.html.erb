@@ -1,9 +1,9 @@
-<nav style="font-size:0.85rem; margin-bottom:1rem; color:#64748b;">
+<%= render(Ui::BreadcrumbComponent.new) do %>
   <%= link_to "Games", root_path %> &rsaquo;
   <%= link_to @game.name, game_path(@game) %> &rsaquo;
   <%= link_to @character.name, game_character_path(@game, @character) %> &rsaquo;
   Version <time data-local-time="<%= @version.created_at.iso8601 %>"><%= @version.created_at.strftime("%b %-d, %Y %-I:%M %p") %></time>
-</nav>
+<% end %>
 
 <div class="flex items-center justify-between mb-4">
   <h1 class="m-0 text-xl font-semibold"><%= @character.name %> <span style="font-weight:normal; color:#64748b;">— <time data-local-time="<%= @version.created_at.iso8601 %>"><%= @version.created_at.strftime("%b %-d, %Y %-I:%M %p") %></time></span></h1>

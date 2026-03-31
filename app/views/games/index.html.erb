@@ -18,12 +18,10 @@
         <div>
           <%= link_to game.name, game_path(game), class: "text-base font-bold no-underline" %>
           <% if membership.removed? %>
-            <span class="badge badge--gray">Former</span>
+            <%= render(Ui::BadgeComponent.new(variant: :gray)) { "Former" } %>
           <% end %>
         </div>
-        <span class="<%= membership.game_master? ? 'badge badge--blue' : 'badge badge--green' %>">
-          <%= membership.game_master? ? "GM" : "Player" %>
-        </span>
+        <%= render(Ui::BadgeComponent.new(variant: membership.game_master? ? :blue : :green)) { membership.game_master? ? "GM" : "Player" } %>
       </div>
       <div class="text-xs text-slate-500 mt-2">
         <% if item[:primary_character] %>

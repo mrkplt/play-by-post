@@ -17,7 +17,7 @@ RSpec.describe Shared::TreeNodeComponent, type: :component do
   end
 
   it "renders the active badge for an active scene" do
-    expect(rendered_component).to have_css(".badge--green", text: "Active")
+    expect(rendered_component).to have_css("[data-variant=green]", text: "Active")
   end
 
   it "does not render the connector at depth 0" do
@@ -32,7 +32,7 @@ RSpec.describe Shared::TreeNodeComponent, type: :component do
     let(:scene) { build_stubbed(:scene, :resolved, game: game, title: "The Keep", created_at: Time.current) }
 
     it "renders the resolved badge" do
-      expect(rendered_component).to have_css(".badge--gray", text: "Resolved")
+      expect(rendered_component).to have_css("[data-variant=gray]", text: "Resolved")
     end
   end
 
@@ -40,7 +40,7 @@ RSpec.describe Shared::TreeNodeComponent, type: :component do
     let(:scene) { build_stubbed(:scene, :private, game: game, title: "The Keep", created_at: Time.current) }
 
     it "renders the private badge" do
-      expect(rendered_component).to have_css(".badge--yellow", text: "Private")
+      expect(rendered_component).to have_css("[data-variant=yellow]", text: "Private")
     end
   end
 

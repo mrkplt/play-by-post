@@ -4,11 +4,6 @@ class ScenePresenter < BasePresenter
   extend T::Sig
 
   sig { returns(String) }
-  def status_badge_css_class
-    @model.resolved? ? "badge badge--gray" : "badge badge--green"
-  end
-
-  sig { returns(String) }
   def status_label
     @model.resolved? ? "Resolved" : "Active"
   end

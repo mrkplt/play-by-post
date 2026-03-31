@@ -1,0 +1,4 @@
+@layer components {
+  /* Prevent oversized images in post content */
+  .post-content img { @apply max-w-full h-auto block; }
+}
