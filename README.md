@@ -2,6 +2,53 @@
 
 A web application for asynchronous tabletop role-playing games. Game masters and players collaborate on scenes through threaded posts, with email notifications and email-to-post functionality.
 
+## Features
+
+- Magic link authentication (no passwords)
+- Games with scenes organized in a parent/child hierarchy
+- Threaded posts with Markdown support and image attachments
+- Character sheets with full version history
+- Out-of-character post filtering
+- Player invitations and GM-controlled member management
+- Email notifications (new scenes, post digests, scene resolution)
+- Reply-by-email (post to a scene by replying to a notification)
+
+## Running Locally
+
+**Requirements:** Ruby 4.0.2, Bundler, Node.js (for Playwright)
+
+```sh
+bin/setup        # install dependencies, install git hooks, prepare database, start server
+```
+
+`bin/setup` is idempotent — safe to re-run. It starts the server automatically when done. To set up without starting the server:
+
+```sh
+bin/setup --skip-server
+bin/dev          # starts Rails (port 3000) + Tailwind CSS watcher
+```
+
+Email previews are available at `http://localhost:3000/letter_opener` in development.
+
+## Deployment
+
+Hosted on [Railway](https://railway.app). Deployments are triggered automatically on push to `master`.
+
+**Production stack:**
+- Build: Nixpacks
+- Database: PostgreSQL (`DATABASE_URL` env var)
+- File storage: Cloudflare R2 (via Active Storage)
+- Email: Mailgun (inbound + outbound)
+- Jobs: Solid Queue (in-process, no Redis)
+- Cache: Solid Cache (database-backed)
+
+**On each deploy Railway runs:**
+```sh
+bundle exec rails db:migrate && bundle exec rails server -p $PORT -e production
+```
+
+Health check endpoint: `GET /up`
+
 ## Quality
 
 All checks run automatically via `bin/pre-push` before code is pushed. The pipeline exits on the first failure.
