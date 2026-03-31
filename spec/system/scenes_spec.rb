@@ -395,8 +395,8 @@ RSpec.describe "Scenes", type: :feature do
       expect(page).to have_link("The Beginning")
       expect(page).to have_link("The Middle")
       expect(page).to have_link("The End")
-      expect(page).to have_text("Active").or have_css(".badge--green")
-      expect(page).to have_text("Resolved").or have_css(".badge--gray")
+      expect(page).to have_text("Active").or have_css("[data-variant=green]")
+      expect(page).to have_text("Resolved").or have_css("[data-variant=gray]")
     end
 
     it "shows New Scene button for GM only" do

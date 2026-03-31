@@ -1,8 +1,8 @@
-<nav class="breadcrumb">
+<%= render(Ui::BreadcrumbComponent.new) do %>
   <%= link_to "Games", root_path %> &rsaquo;
   <%= link_to @game.name, game_path(@game) %> &rsaquo;
   <%= @scene.title %>
-</nav>
+<% end %>
 
 <div data-controller="ooc-filter"
      data-ooc-filter-hide-ooc-value="<%= @hide_ooc %>"
@@ -14,10 +14,10 @@
       <h1 style="margin:0 0 0.5rem; font-size:1.4rem;"><%= @scene.title %></h1>
       <div class="flex gap-1 flex-wrap">
         <% if @scene.private? %>
-          <span class="badge badge--yellow">Private</span>
+          <%= render(Ui::BadgeComponent.new(variant: :yellow)) { "Private" } %>
         <% end %>
         <% if @scene.resolved? %>
-          <span class="badge badge--gray">Resolved</span>
+          <%= render(Ui::BadgeComponent.new(variant: :gray)) { "Resolved" } %>
         <% end %>
       </div>
     </div>
@@ -68,7 +68,7 @@
     <p style="font-size:0.85rem; color:#64748b; margin:0.5rem 0 0.25rem;">
       ↳ Continues from <%= link_to @scene.parent_scene.title, game_scene_path(@game, @scene.parent_scene) %>
       <% if @scene.parent_scene.resolved? %>
-        <span class="badge badge--gray">Resolved</span>
+        <%= render(Ui::BadgeComponent.new(variant: :gray)) { "Resolved" } %>
       <% end %>
     </p>
   <% end %>
@@ -78,9 +78,9 @@
       <% @child_scenes.each do |child| %>
         ⤷ <%= link_to child.title, game_scene_path(@game, child) %>
         <% if child.resolved? %>
-          <span class="badge badge--gray">Resolved</span>
+          <%= render(Ui::BadgeComponent.new(variant: :gray)) { "Resolved" } %>
         <% else %>
-          <span class="badge badge--green">Active</span>
+          <%= render(Ui::BadgeComponent.new(variant: :green)) { "Active" } %>
         <% end %>
       <% end %>
     </p>

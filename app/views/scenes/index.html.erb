@@ -1,8 +1,8 @@
-<nav class="breadcrumb">
+<%= render(Ui::BreadcrumbComponent.new) do %>
   <%= link_to "Games", root_path %> &rsaquo;
   <%= link_to @game.name, game_path(@game) %> &rsaquo;
   All Scenes
-</nav>
+<% end %>
 
 <div class="flex items-center justify-between mb-4">
   <h1 style="margin:0; font-size:1.25rem; font-weight:600;">All Scenes</h1>

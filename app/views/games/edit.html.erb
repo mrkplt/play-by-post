@@ -1,8 +1,8 @@
-<nav class="breadcrumb">
+<%= render(Ui::BreadcrumbComponent.new) do %>
   <%= link_to "Games", root_path %> &rsaquo;
   <%= link_to @game.name, game_path(@game) %> &rsaquo;
   Edit
-</nav>
+<% end %>
 
 <div class="max-w-2xl">
   <h1 class="mb-6">Game Settings</h1>

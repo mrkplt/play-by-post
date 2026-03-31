@@ -5,18 +5,6 @@ RSpec.describe ScenePresenter do
 
   subject(:presenter) { described_class.new(scene) }
 
-  describe "#status_badge_css_class" do
-    context "when active" do
-      it { expect(presenter.status_badge_css_class).to eq("badge badge--green") }
-    end
-
-    context "when resolved" do
-      let(:scene) { build(:scene, :resolved) }
-
-      it { expect(presenter.status_badge_css_class).to eq("badge badge--gray") }
-    end
-  end
-
   describe "#status_label" do
     context "when active" do
       it { expect(presenter.status_label).to eq("Active") }

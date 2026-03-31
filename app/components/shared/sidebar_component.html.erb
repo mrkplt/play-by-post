@@ -14,7 +14,7 @@
       <%= link_to game_path(game), class: "sidebar-link flex items-center justify-between" do %>
         <span><%= game.name %></span>
         <% if is_gm %>
-          <%= helpers.icon "crown-03", class: "w-4 h-4", style: "color: var(--color-accent)" %>
+          <%= helpers.icon "crown-03", class: "w-4 h-4 text-accent" %>
         <% end %>
       <% end %>
     <% end %>
@@ -29,6 +29,6 @@
         <%= helpers.icon "settings-01", class: "w-4 h-4" %>
       <% end %>
     </div>
-    <%= link_to "Sign out", destroy_user_session_path, class: "sidebar-link", style: "margin:0; padding: 0.25rem 0;" %>
+    <%= link_to "Sign out", destroy_user_session_path, class: "sidebar-link py-1 m-0" %>
   </div>
 <% end %>

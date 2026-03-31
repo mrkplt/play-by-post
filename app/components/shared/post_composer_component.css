@@ -1,0 +1,4 @@
+@layer components {
+  /* Monospace, whitespace-preserving style for all markdown editing textareas */
+  textarea.markdown-editor { @apply font-mono whitespace-pre-wrap; }
+}
