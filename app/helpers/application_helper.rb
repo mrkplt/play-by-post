@@ -18,6 +18,6 @@ module ApplicationHelper
   end
 
   def render_markdown(text)
-    MarkdownRenderer.render(text).html_safe
+    MarkdownRenderer.render(text)
   end
 end
