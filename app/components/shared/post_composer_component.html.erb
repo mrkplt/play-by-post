@@ -1,0 +1,32 @@
+<%= form_with model: [ @game, @scene, @post ], multipart: true, data: { controller: "markdown-preview" } do |f| %>
+  <% if @post.errors.any? %>
+    <div class="bg-red-50 border border-red-300 rounded-lg px-3 py-2 mb-3 text-sm text-red-600">
+      <% @post.errors.full_messages.each do |msg| %>
+        <div><%= msg %></div>
+      <% end %>
+    </div>
+  <% end %>
+
+  <div class="mb-4">
+    <%= f.text_area :content, rows: 5, placeholder: "Write your post...", class: "w-full px-3 py-2 border border-slate-300 rounded text-base",
+        data: { markdown_preview_target: "input", action: "input->markdown-preview#update" } %>
+  </div>
+
+  <div data-markdown-preview-target="preview" class="markdown-base post-content border border-slate-200 rounded-lg px-3 py-3 mb-3 min-h-12 bg-slate-50"></div>
+
+  <% unless @game.images_disabled? %>
+    <div class="mb-2">
+      <%= f.label :image, "Image (optional)", class: "block font-medium mb-1 text-sm text-slate-600" %>
+      <%= f.file_field :image, accept: "image/jpeg,image/png,image/gif,image/webp",
+          class: "block max-w-md text-sm text-slate-700 border border-slate-300 rounded px-3 py-2 cursor-pointer bg-white file:mr-3 file:py-1 file:px-3 file:rounded file:border-0 file:text-sm file:font-medium file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200" %>
+      <p class="text-xs text-slate-400 mt-0.5">JPEG, PNG, GIF, or WebP. Max 10MB.</p>
+    </div>
+  <% end %>
+
+  <div class="flex items-center gap-4" data-testid="composer-actions">
+    <%= f.submit "Post", class: "flex-1 px-5 py-2 bg-slate-500 text-white rounded text-base cursor-pointer hover:bg-slate-600 no-underline", style: "min-height: 44px;" %>
+    <label class="text-sm cursor-pointer shrink-0">
+      <%= f.check_box :is_ooc %> Out of character
+    </label>
+  </div>
+<% end %>
