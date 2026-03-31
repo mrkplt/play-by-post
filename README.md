@@ -51,6 +51,16 @@ Health check endpoint: `GET /up`
 
 ## Quality
 
+Guard rails enforced on every push:
+
+- **RuboCop** — style and static analysis
+- **Brakeman** — Rails security vulnerabilities
+- **importmap audit** — JavaScript dependency vulnerabilities
+- **Sorbet** — gradual type checking
+- **RSpec + SimpleCov** — tests with line and branch coverage thresholds
+- **Mutant** — mutation testing on changed files
+- **`bin/quality-metrics`** — per-file and aggregate quality gates
+
 All checks run automatically via `bin/pre-push` before code is pushed. The pipeline exits on the first failure.
 
 ### Pre-push pipeline
