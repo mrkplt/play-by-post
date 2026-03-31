@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @import "../../components/shared/sidebar_component.css";
 @import "../../components/shared/post_item_component.css";
+@import "../../components/shared/post_composer_component.css";
 
 @theme {
   --color-ink: #1a1a1a;
@@ -45,7 +46,4 @@
   .markdown-base em { @apply italic; }
   .markdown-base del { @apply line-through; }
   .markdown-base a { color: var(--color-accent); }
-
-  /* Character sheet textarea */
-  textarea.character-sheet { @apply font-mono whitespace-pre-wrap; }
 }

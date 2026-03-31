@@ -23,7 +23,7 @@
 
   <div class="mb-4">
     <%= f.label :content, "Sheet (optional, markdown supported)", class: "block font-medium mb-1 text-sm" %>
-    <%= f.text_area :content, rows: 10, class: "character-sheet w-full px-3 py-2 border border-slate-300 rounded text-base",
+    <%= f.text_area :content, rows: 10, class: "markdown-editor w-full px-3 py-2 border border-slate-300 rounded text-base",
         data: { markdown_preview_target: "input", action: "input->markdown-preview#update" } %>
   </div>
 

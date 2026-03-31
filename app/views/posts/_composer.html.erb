@@ -8,7 +8,7 @@
   <% end %>
 
   <div class="mb-4">
-    <%= f.text_area :content, rows: 5, placeholder: "Write your post...", class: "w-full px-3 py-2 border border-slate-300 rounded text-base",
+    <%= f.text_area :content, rows: 5, placeholder: "Write your post...", class: "markdown-editor w-full px-3 py-2 border border-slate-300 rounded text-base",
         data: { markdown_preview_target: "input", action: "input->markdown-preview#update" } %>
   </div>
 
