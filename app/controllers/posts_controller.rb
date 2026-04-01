@@ -1,3 +1,5 @@
+# typed: true
+
 class PostsController < ApplicationController
   before_action :set_game
   before_action :set_scene
@@ -24,7 +26,11 @@ class PostsController < ApplicationController
 
   def save_draft
     draft = @scene.posts.drafts.find_or_initialize_by(user: current_user)
-    draft.assign_attributes(content: params.dig(:post, :content), is_ooc: params.dig(:post, :is_ooc) || false, draft: true)
+    draft.assign_attributes(
+      content: params.dig(:post, :content),
+      is_ooc: params.dig(:post, :is_ooc) || false,
+      draft: true
+    )
 
     if draft.save
       render json: { id: draft.id }, status: :ok
