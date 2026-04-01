@@ -39,7 +39,8 @@ class ScenesController < ApplicationController
   end
 
   def show
-    @posts = @scene.posts.includes(:user).order(:created_at)
+    @posts = @scene.posts.published.includes(:user).order(:created_at)
+    @draft = @scene.posts.drafts.find_by(user: current_user)
     @post = Post.new
     @is_gm = @game.game_master?(current_user)
     @is_participant = @scene.participant?(current_user)
@@ -48,9 +49,16 @@ class ScenesController < ApplicationController
     @hide_ooc = current_user.user_profile&.hide_ooc? || false
     @child_scenes = @scene.child_scenes.visible_to(current_user, @game).order(:created_at)
 
-    if @is_participant || @is_gm
-      @scene.scene_participants.find_by(user: current_user)
-        &.update(last_visited_at: Time.current)
+    participant = @scene.scene_participants.find_by(user: current_user)
+    if participant
+      participant.update(last_visited_at: Time.current)
+    end
+
+    if !@scene.resolved?
+      eligible_ids = @posts.select { |p| p.created_at > 72.hours.ago }.map(&:id)
+      @read_post_ids = PostRead.where(user: current_user, post_id: eligible_ids).pluck(:post_id).to_set
+    else
+      @read_post_ids = Set.new
     end
   end
 

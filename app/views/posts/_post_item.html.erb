@@ -1,4 +1,13 @@
-<div id="<%= dom_id(post) %>" class="<%= post.is_ooc? ? 'bg-slate-50 border-l-[3px] border-slate-400 pl-3 opacity-60 hover:opacity-85 text-[0.9em]' : 'border-b border-slate-100' %> py-4 last:border-b-0" data-ooc="<%= post.is_ooc? %>"<% if post.is_ooc? %> data-testid="ooc-post"<% end %>>
+<% is_unread = local_assigns[:read_post_ids].present? &&
+               !scene.resolved? &&
+               post.created_at > 72.hours.ago &&
+               !read_post_ids.include?(post.id) %>
+<div id="<%= dom_id(post) %>"
+     class="<%= post.is_ooc? ? 'bg-slate-50 border-l-[3px] border-slate-400 pl-3 opacity-60 hover:opacity-85 text-[0.9em]' : 'border-b border-slate-100' %> py-4 last:border-b-0"
+     data-ooc="<%= post.is_ooc? %>"
+     data-unread="<%= is_unread %>"
+     <% if is_unread %>data-mark-read-url="<%= mark_read_game_scene_post_path(game, scene, post) %>"<% end %>
+     <% if post.is_ooc? %>data-testid="ooc-post"<% end %>>
   <div class="text-xs text-slate-500 mb-1">
     <% participant = scene.scene_participants.find { |sp| sp.user_id == post.user_id } %>
     <strong><%= participant&.display_name || post.user.display_name || post.user.email %></strong>

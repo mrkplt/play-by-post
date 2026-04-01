@@ -93,6 +93,6 @@ class GamesController < ApplicationController
   end
 
   def game_params
-    params.require(:game).permit(:name, :description)
+    params.require(:game).permit(:name, :description, :post_edit_window_minutes)
   end
 end

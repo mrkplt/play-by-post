@@ -114,12 +114,12 @@
   <% end %>
 
   <!-- Post Thread -->
-  <div id="posts" class="mt-4 border-t border-slate-100 pt-4">
+  <div id="posts" class="mt-4 border-t border-slate-100 pt-4" data-controller="unread-aura">
     <% if @posts.empty? %>
       <p id="no_posts_message" class="text-slate-400 m-0">No posts yet. Be the first!</p>
     <% else %>
       <% @posts.each do |post| %>
-        <%= render "posts/post_item", post: post, game: @game, scene: @scene %>
+        <%= render "posts/post_item", post: post, game: @game, scene: @scene, read_post_ids: @read_post_ids %>
       <% end %>
     <% end %>
   </div>
@@ -133,9 +133,22 @@
 
 </div><!-- end ooc-filter -->
 
+<!-- Draft recovery notice for resolved scenes -->
+<% if @scene.resolved? && @draft %>
+  <div class="bg-amber-50 border border-amber-200 rounded-lg p-4 mt-4">
+    <p class="text-sm font-medium text-amber-800 mb-2">You have an unsaved draft from this scene.</p>
+    <div class="markdown-base post-content text-sm text-slate-700 mb-3 border border-amber-100 rounded p-3 bg-white"><%= render_markdown(@draft.content.to_s) %></div>
+    <%= button_to "Discard Draft",
+        discard_draft_game_scene_posts_path(@game, @scene),
+        method: :delete,
+        data: { turbo_confirm: "Discard this draft permanently?" },
+        class: "px-3 py-1.5 bg-transparent border border-amber-300 text-amber-700 rounded text-sm cursor-pointer hover:bg-amber-100" %>
+  </div>
+<% end %>
+
 <!-- Post Composer -->
 <% if (@is_participant || @is_gm) && !@scene.resolved? && @game.member_for(current_user)&.active? %>
   <div id="post_composer" class="bg-white border border-slate-200 rounded-lg p-5 mb-4 mt-6">
-    <%= render "posts/composer", post: @post, scene: @scene, game: @game %>
+    <%= render "posts/composer", post: @post, scene: @scene, game: @game, draft: @draft %>
   </div>
 <% end %>

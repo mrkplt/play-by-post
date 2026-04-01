@@ -1,17 +1,20 @@
 # typed: true
 
 class Post < ApplicationRecord
-  EDIT_WINDOW = 10.minutes
-
   belongs_to :scene
   belongs_to :user
+  has_one :game, through: :scene
 
   has_one_attached :image
 
   IMAGE_TYPES = %w[image/jpeg image/png image/gif image/webp].freeze
   IMAGE_MAX_SIZE = 10.megabytes
 
-  validates :content, presence: true
+  scope :published, -> { where(draft: false) }
+  scope :drafts, -> { where(draft: true) }
+
+  validates :content, presence: true, unless: :draft?
+  validates :user_id, uniqueness: { scope: :scene_id, message: "already has a draft for this scene" }, if: :draft?
   validate :acceptable_image
   validate :images_allowed_for_game
 
@@ -20,11 +23,15 @@ class Post < ApplicationRecord
   end
 
   def editable_by?(user)
-    self.user == user && created_at > EDIT_WINDOW.ago
+    return false unless self.user == user
+
+    window = game.edit_window_duration
+    window.nil? || created_at > window.ago
   end
 
   def within_edit_window?
-    created_at > EDIT_WINDOW.ago
+    window = game.edit_window_duration
+    window.nil? || created_at > window.ago
   end
 
   private
