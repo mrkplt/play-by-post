@@ -109,7 +109,7 @@ RSpec.describe Shared::PostItemComponent, type: :component do
           game: game,
           current_user: user,
           scene: scene,
-          read_post_ids: Set.new([recent_post.id])
+          read_post_ids: Set.new([ recent_post.id ])
         )
       end
 
