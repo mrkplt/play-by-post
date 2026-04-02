@@ -118,8 +118,15 @@
     <% if @posts.empty? %>
       <p id="no_posts_message" class="text-slate-400 m-0">No posts yet. Be the first!</p>
     <% else %>
+      <% participants = @scene.scene_participants.to_a %>
       <% @posts.each do |post| %>
-        <%= render "posts/post_item", post: post, game: @game, scene: @scene, read_post_ids: @read_post_ids %>
+        <%= render Shared::PostItemComponent.new(
+              post: PostPresenter.new(post, scene_participants: participants),
+              game: @game,
+              current_user: current_user,
+              scene: @scene,
+              read_post_ids: @read_post_ids
+            ) %>
       <% end %>
     <% end %>
   </div>
@@ -148,6 +155,6 @@
 <!-- Post Composer -->
 <% if (@is_participant || @is_gm) && !@scene.resolved? && @game.member_for(current_user)&.active? %>
   <div id="post_composer" class="bg-white border border-slate-200 rounded-lg p-5 mb-4 mt-6">
-    <%= render "posts/composer", post: @post, scene: @scene, game: @game, draft: @draft %>
+    <%= render Shared::PostComposerComponent.new(post: @post, game: @game, scene: @scene, draft: @draft) %>
   </div>
 <% end %>

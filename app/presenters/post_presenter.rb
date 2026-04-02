@@ -24,4 +24,14 @@ class PostPresenter < BasePresenter
   def formatted_created_at
     @model.created_at.strftime("%b %-d, %Y %-I:%M %p")
   end
+
+  sig { returns(ActiveSupport::TimeWithZone) }
+  def created_at
+    @model.created_at
+  end
+
+  sig { returns(Integer) }
+  def id
+    @model.id
+  end
 end
