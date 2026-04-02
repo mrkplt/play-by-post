@@ -1,6 +1,6 @@
 require "rails_helper"
 
-RSpec.describe "Draft posts", type: :system do
+RSpec.describe "Draft posts", type: :feature do
   let(:gm) { create(:user) }
   let(:player) { create(:user) }
   let(:game) { create(:game) }
@@ -63,7 +63,7 @@ RSpec.describe "Draft posts", type: :system do
     sign_in_as(player)
     visit game_scene_path(game, scene)
 
-    accept_confirm { click_button "Discard Draft" }
+    click_button "Discard Draft"
 
     expect(page).not_to have_text("You have an unsaved draft from this scene.")
     expect(Post.drafts.count).to eq(0)

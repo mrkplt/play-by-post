@@ -62,6 +62,7 @@ RSpec.describe "Posts", type: :feature do
     end
 
     it "edit link disappears after the edit window" do
+      game.update!(post_edit_window_minutes: 10)
       post = create(:post, scene: scene, user: player, created_at: 11.minutes.ago)
       sign_in_as(player)
       visit game_scene_path(game, scene)

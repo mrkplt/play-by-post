@@ -1,4 +1,4 @@
-<% is_unread = local_assigns[:read_post_ids].present? &&
+<% is_unread = local_assigns.key?(:read_post_ids) &&
                !scene.resolved? &&
                post.created_at > 72.hours.ago &&
                !read_post_ids.include?(post.id) %>

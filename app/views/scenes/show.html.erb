@@ -141,7 +141,6 @@
     <%= button_to "Discard Draft",
         discard_draft_game_scene_posts_path(@game, @scene),
         method: :delete,
-        data: { turbo_confirm: "Discard this draft permanently?" },
         class: "px-3 py-1.5 bg-transparent border border-amber-300 text-amber-700 rounded text-sm cursor-pointer hover:bg-amber-100" %>
   </div>
 <% end %>

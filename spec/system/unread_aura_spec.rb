@@ -1,6 +1,7 @@
 require "rails_helper"
 
-RSpec.describe "Unread post aura", type: :system do
+RSpec.describe "Unread post aura", type: :feature do
+  include ActionView::RecordIdentifier
   let(:gm) { create(:user) }
   let(:player) { create(:user) }
   let(:game) { create(:game) }
