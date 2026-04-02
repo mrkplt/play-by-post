@@ -48,8 +48,9 @@ class Game < ApplicationRecord
 
   sig { returns(T.nilable(ActiveSupport::Duration)) }
   def edit_window_duration
-    return nil if post_edit_window_minutes.nil?
+    minutes = post_edit_window_minutes
+    return nil if minutes.nil?
 
-    post_edit_window_minutes.minutes
+    minutes.minutes
   end
 end

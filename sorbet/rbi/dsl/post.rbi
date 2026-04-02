@@ -367,6 +367,9 @@ class Post
   end
 
   module GeneratedAssociationMethods
+    sig { params(args: T.untyped, blk: T.untyped).returns(::Game) }
+    def build_game(*args, &blk); end
+
     sig { params(args: T.untyped, blk: T.untyped).returns(::ActiveStorage::Attachment) }
     def build_image_attachment(*args, &blk); end
 
@@ -378,6 +381,12 @@ class Post
 
     sig { params(args: T.untyped, blk: T.untyped).returns(::User) }
     def build_user(*args, &blk); end
+
+    sig { params(args: T.untyped, blk: T.untyped).returns(::Game) }
+    def create_game(*args, &blk); end
+
+    sig { params(args: T.untyped, blk: T.untyped).returns(::Game) }
+    def create_game!(*args, &blk); end
 
     sig { params(args: T.untyped, blk: T.untyped).returns(::ActiveStorage::Attachment) }
     def create_image_attachment(*args, &blk); end
@@ -403,6 +412,12 @@ class Post
     sig { params(args: T.untyped, blk: T.untyped).returns(::User) }
     def create_user!(*args, &blk); end
 
+    sig { returns(T.nilable(::Game)) }
+    def game; end
+
+    sig { params(value: T.nilable(::Game)).void }
+    def game=(value); end
+
     sig { returns(T.nilable(::ActiveStorage::Attachment)) }
     def image_attachment; end
 
@@ -415,6 +430,9 @@ class Post
     sig { params(value: T.nilable(::ActiveStorage::Blob)).void }
     def image_blob=(value); end
 
+    sig { returns(T.nilable(::Game)) }
+    def reload_game; end
+
     sig { returns(T.nilable(::ActiveStorage::Attachment)) }
     def reload_image_attachment; end
 
@@ -426,6 +444,9 @@ class Post
 
     sig { returns(T.nilable(::User)) }
     def reload_user; end
+
+    sig { void }
+    def reset_game; end
 
     sig { void }
     def reset_image_attachment; end
@@ -482,6 +503,9 @@ class Post
 
     sig { params(value: T::Boolean).returns(PrivateAssociationRelation) }
     def distinct(value = true); end
+
+    sig { params(args: T.untyped, blk: T.untyped).returns(PrivateAssociationRelation) }
+    def drafts(*args, &blk); end
 
     sig { params(args: T.untyped, blk: T.untyped).returns(PrivateAssociationRelation) }
     def eager_load(*args, &blk); end
@@ -559,6 +583,9 @@ class Post
     def preload(*args, &blk); end
 
     sig { params(args: T.untyped, blk: T.untyped).returns(PrivateAssociationRelation) }
+    def published(*args, &blk); end
+
+    sig { params(args: T.untyped, blk: T.untyped).returns(PrivateAssociationRelation) }
     def readonly(*args, &blk); end
 
     sig { params(args: T.untyped, blk: T.untyped).returns(PrivateAssociationRelation) }
@@ -617,10 +644,10 @@ class Post
   end
 
   module GeneratedAttributeMethods
-    sig { returns(::String) }
+    sig { returns(T.nilable(::String)) }
     def content; end
 
-    sig { params(value: ::String).returns(::String) }
+    sig { params(value: T.nilable(::String)).returns(T.nilable(::String)) }
     def content=(value); end
 
     sig { returns(T::Boolean) }
@@ -635,10 +662,10 @@ class Post
     sig { returns(T::Boolean) }
     def content_came_from_user?; end
 
-    sig { returns(T.nilable([::String, ::String])) }
+    sig { returns(T.nilable([T.nilable(::String), T.nilable(::String)])) }
     def content_change; end
 
-    sig { returns(T.nilable([::String, ::String])) }
+    sig { returns(T.nilable([T.nilable(::String), T.nilable(::String)])) }
     def content_change_to_be_saved; end
 
     sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
@@ -647,7 +674,7 @@ class Post
     sig { returns(T.nilable(::String)) }
     def content_in_database; end
 
-    sig { returns(T.nilable([::String, ::String])) }
+    sig { returns(T.nilable([T.nilable(::String), T.nilable(::String)])) }
     def content_previous_change; end
 
     sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
@@ -706,6 +733,51 @@ class Post
 
     sig { void }
     def created_at_will_change!; end
+
+    sig { returns(T::Boolean) }
+    def draft; end
+
+    sig { params(value: T::Boolean).returns(T::Boolean) }
+    def draft=(value); end
+
+    sig { returns(T::Boolean) }
+    def draft?; end
+
+    sig { returns(T.nilable(T::Boolean)) }
+    def draft_before_last_save; end
+
+    sig { returns(T.untyped) }
+    def draft_before_type_cast; end
+
+    sig { returns(T::Boolean) }
+    def draft_came_from_user?; end
+
+    sig { returns(T.nilable([T::Boolean, T::Boolean])) }
+    def draft_change; end
+
+    sig { returns(T.nilable([T::Boolean, T::Boolean])) }
+    def draft_change_to_be_saved; end
+
+    sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
+    def draft_changed?(from: T.unsafe(nil), to: T.unsafe(nil)); end
+
+    sig { returns(T.nilable(T::Boolean)) }
+    def draft_in_database; end
+
+    sig { returns(T.nilable([T::Boolean, T::Boolean])) }
+    def draft_previous_change; end
+
+    sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
+    def draft_previously_changed?(from: T.unsafe(nil), to: T.unsafe(nil)); end
+
+    sig { returns(T.nilable(T::Boolean)) }
+    def draft_previously_was; end
+
+    sig { returns(T.nilable(T::Boolean)) }
+    def draft_was; end
+
+    sig { void }
+    def draft_will_change!; end
 
     sig { returns(::Integer) }
     def id; end
@@ -894,6 +966,9 @@ class Post
     def restore_created_at!; end
 
     sig { void }
+    def restore_draft!; end
+
+    sig { void }
     def restore_id!; end
 
     sig { void }
@@ -914,7 +989,7 @@ class Post
     sig { void }
     def restore_user_id!; end
 
-    sig { returns(T.nilable([::String, ::String])) }
+    sig { returns(T.nilable([T.nilable(::String), T.nilable(::String)])) }
     def saved_change_to_content; end
 
     sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
@@ -925,6 +1000,12 @@ class Post
 
     sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
     def saved_change_to_created_at?(from: T.unsafe(nil), to: T.unsafe(nil)); end
+
+    sig { returns(T.nilable([T::Boolean, T::Boolean])) }
+    def saved_change_to_draft; end
+
+    sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
+    def saved_change_to_draft?(from: T.unsafe(nil), to: T.unsafe(nil)); end
 
     sig { returns(T.nilable([::Integer, ::Integer])) }
     def saved_change_to_id; end
@@ -1110,6 +1191,9 @@ class Post
     def will_save_change_to_created_at?(from: T.unsafe(nil), to: T.unsafe(nil)); end
 
     sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
+    def will_save_change_to_draft?(from: T.unsafe(nil), to: T.unsafe(nil)); end
+
+    sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
     def will_save_change_to_id?(from: T.unsafe(nil), to: T.unsafe(nil)); end
 
     sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
@@ -1149,6 +1233,9 @@ class Post
 
     sig { params(value: T::Boolean).returns(PrivateRelation) }
     def distinct(value = true); end
+
+    sig { params(args: T.untyped, blk: T.untyped).returns(PrivateRelation) }
+    def drafts(*args, &blk); end
 
     sig { params(args: T.untyped, blk: T.untyped).returns(PrivateRelation) }
     def eager_load(*args, &blk); end
@@ -1224,6 +1311,9 @@ class Post
 
     sig { params(args: T.untyped, blk: T.untyped).returns(PrivateRelation) }
     def preload(*args, &blk); end
+
+    sig { params(args: T.untyped, blk: T.untyped).returns(PrivateRelation) }
+    def published(*args, &blk); end
 
     sig { params(args: T.untyped, blk: T.untyped).returns(PrivateRelation) }
     def readonly(*args, &blk); end

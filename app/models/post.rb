@@ -25,12 +25,12 @@ class Post < ApplicationRecord
   def editable_by?(user)
     return false unless self.user == user
 
-    window = game.edit_window_duration
+    window = T.must(game).edit_window_duration
     window.nil? || created_at > window.ago
   end
 
   def within_edit_window?
-    window = game.edit_window_duration
+    window = T.must(game).edit_window_duration
     window.nil? || created_at > window.ago
   end
 
