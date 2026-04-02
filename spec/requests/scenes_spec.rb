@@ -1,6 +1,6 @@
 require "rails_helper"
 
-RSpec.describe "Scenes", type: :request do
+RSpec.describe ScenesController, type: :request do
   let(:gm) { create(:user, :with_profile) }
   let(:player) { create(:user, :with_profile) }
   let(:game) { create(:game) }
