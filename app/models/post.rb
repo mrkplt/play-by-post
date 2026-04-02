@@ -1,6 +1,8 @@
 # typed: true
 
 class Post < ApplicationRecord
+  extend T::Sig
+
   belongs_to :scene
   belongs_to :user
   has_one :game, through: :scene
@@ -22,6 +24,7 @@ class Post < ApplicationRecord
     image.variant(resize_to_limit: [ 800, nil ], format: :jpeg, quality: 85)
   end
 
+  sig { params(user: User).returns(T::Boolean) }
   def editable_by?(user)
     return false unless self.user == user
 
@@ -29,6 +32,7 @@ class Post < ApplicationRecord
     window.nil? || created_at > window.ago
   end
 
+  sig { returns(T::Boolean) }
   def within_edit_window?
     window = T.must(game).edit_window_duration
     window.nil? || created_at > window.ago
