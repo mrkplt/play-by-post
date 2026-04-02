@@ -11,7 +11,9 @@ RSpec.describe Shared::PostItemComponent, type: :component do
       content: "Hello **world**",
       is_ooc: false,
       last_edited_at: nil,
-      created_at: Time.zone.parse("2024-06-15 14:30:00"))
+      created_at: Time.zone.parse("2024-06-15 14:30:00")).tap do |p|
+      allow(p).to receive(:game).and_return(game)
+    end
   end
   let(:presenter) { PostPresenter.new(post) }
 
@@ -41,7 +43,11 @@ RSpec.describe Shared::PostItemComponent, type: :component do
   end
 
   context "when OOC" do
-    let(:post) { build_stubbed(:post, :ooc, user: user, scene: scene, content: "OOC note", created_at: Time.current) }
+    let(:post) do
+      build_stubbed(:post, :ooc, user: user, scene: scene, content: "OOC note", created_at: Time.current).tap do |p|
+        allow(p).to receive(:game).and_return(game)
+      end
+    end
     let(:presenter) { PostPresenter.new(post) }
     subject(:component) { described_class.new(post: presenter, game: game, current_user: user) }
 
@@ -52,7 +58,11 @@ RSpec.describe Shared::PostItemComponent, type: :component do
   end
 
   context "when edited" do
-    let(:post) { build_stubbed(:post, :edited, user: user, scene: scene, content: "Updated", created_at: Time.current) }
+    let(:post) do
+      build_stubbed(:post, :edited, user: user, scene: scene, content: "Updated", created_at: Time.current).tap do |p|
+        allow(p).to receive(:game).and_return(game)
+      end
+    end
     let(:presenter) { PostPresenter.new(post) }
     subject(:component) { described_class.new(post: presenter, game: game, current_user: user) }
 
