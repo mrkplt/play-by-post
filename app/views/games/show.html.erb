@@ -59,7 +59,7 @@
     <p class="text-slate-400">No active scenes.</p>
   <% else %>
     <% @active_scenes.each do |scene| %>
-      <%= render "scenes/scene_card", scene: scene, game: @game %>
+      <%= render Shared::SceneCardComponent.new(scene: ScenePresenter.new(scene), game: @game) %>
     <% end %>
   <% end %>
 </div>
@@ -77,6 +77,6 @@
   <% if @game_files.empty? %>
     <p class="text-slate-400 text-sm">No files uploaded yet.</p>
   <% else %>
-    <%= render "game_files/gallery", game_files: @game_files, game: @game, is_gm: @is_gm %>
+    <%= render Shared::GalleryComponent.new(game_files: @game_files.to_a, game: @game, is_gm: @is_gm) %>
   <% end %>
 </div>
