@@ -55,6 +55,7 @@ RSpec.describe Users::SessionsController, type: :request do
     end
 
     it "calls upsert_user_profile and updates last_login_at" do
+      user.user_profile.update!(last_login_at: 1.hour.ago)
       token = Devise::Passwordless::SignedGlobalIDTokenizer.encode(user)
       expect {
         get user_magic_link_path, params: { user: { email: user.email, token: token } }
