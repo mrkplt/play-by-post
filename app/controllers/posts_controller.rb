@@ -57,7 +57,7 @@ class PostsController < ApplicationController
       end
     else
       respond_to do |format|
-        format.turbo_stream { render turbo_stream: turbo_stream.replace("post_composer", partial: "posts/composer", locals: { post: @post, scene: @scene, game: @game }) }
+        format.turbo_stream { render turbo_stream: turbo_stream.replace("post_composer", Shared::PostComposerComponent.new(post: @post, game: @game, scene: @scene)) }
         format.html { redirect_to game_scene_path(@game, @scene), alert: "Could not create post." }
       end
     end

@@ -34,4 +34,29 @@ class PostPresenter < BasePresenter
   def id
     @model.id
   end
+
+  sig { returns(T::Boolean) }
+  def is_ooc?
+    @model.is_ooc?
+  end
+
+  sig { returns(T.nilable(ActiveSupport::TimeWithZone)) }
+  def last_edited_at
+    @model.last_edited_at
+  end
+
+  sig { params(user: User).returns(T::Boolean) }
+  def editable_by?(user)
+    @model.editable_by?(user)
+  end
+
+  sig { returns(T.untyped) }
+  def image
+    @model.image
+  end
+
+  sig { returns(T.untyped) }
+  def display_image
+    @model.display_image
+  end
 end
