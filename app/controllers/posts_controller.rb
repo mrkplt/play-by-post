@@ -35,7 +35,7 @@ class PostsController < ApplicationController
     if draft.save
       render json: { id: draft.id }, status: :ok
     else
-      render json: { errors: draft.errors.full_messages }, status: :unprocessable_entity
+      render json: { errors: draft.errors.full_messages }, status: :unprocessable_content
     end
   end
 

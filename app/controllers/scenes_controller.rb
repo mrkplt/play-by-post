@@ -36,7 +36,7 @@ class ScenesController < ApplicationController
     else
       @players_with_characters = active_players_with_characters
       @parent_scene_options = parent_scene_options
-      render :new, status: :unprocessable_entity
+      render :new, status: :unprocessable_content
     end
   end
 

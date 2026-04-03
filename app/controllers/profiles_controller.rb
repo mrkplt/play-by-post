@@ -18,7 +18,7 @@ class ProfilesController < ApplicationController
     if @profile.save
       redirect_to root_path, notice: "Display name saved."
     else
-      render :edit, status: :unprocessable_entity
+      render :edit, status: :unprocessable_content
     end
   end
 

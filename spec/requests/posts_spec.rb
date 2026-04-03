@@ -147,7 +147,7 @@ RSpec.describe PostsController, type: :request do
       expect(draft.reload.content).to eq("Updated draft")
     end
 
-    it "returns unprocessable_entity on validation failure" do
+    it "returns unprocessable_content on validation failure" do
       sign_in(player)
       # Create a duplicate draft scenario to trigger validation error
       other_player = create(:user, :with_profile)
@@ -159,7 +159,7 @@ RSpec.describe PostsController, type: :request do
       patch save_draft_game_scene_posts_path(game, scene),
         params: { post: { content: "x", is_ooc: false } },
         as: :json
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
     end
   end
 

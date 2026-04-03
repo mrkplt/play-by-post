@@ -5,7 +5,7 @@ class Users::SessionsController < Devise::Passwordless::SessionsController
     if email.blank?
       flash.now[:alert] = "Please enter an email address."
       self.resource = User.new
-      return render :new, status: :unprocessable_entity
+      return render :new, status: :unprocessable_content
     end
 
     self.resource = User.find_or_create_by!(email: email)

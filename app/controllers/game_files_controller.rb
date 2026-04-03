@@ -23,7 +23,7 @@ class GameFilesController < ApplicationController
     else
       @game_files = @game.game_files.includes(file_attachment: :blob).order(created_at: :desc)
       @is_gm = @game.game_master?(current_user)
-      render :index, status: :unprocessable_entity
+      render :index, status: :unprocessable_content
     end
   end
 
