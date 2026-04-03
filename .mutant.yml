@@ -29,6 +29,13 @@ matcher:
     - UserProfile
     - Invitation
     - NotificationPreference
+    - PostRead
+    # Presenters
+    - PostPresenter
+    # Components
+    - Shared::PostItemComponent
+    - Shared::PostComposerComponent
+    - Shared::SidebarComponent
     # Services
     - EmailContentExtractor
     # Controllers
