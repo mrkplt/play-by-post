@@ -2,166 +2,82 @@
 
 ## Project Overview
 
-Play-by-Post TTRPG is a Rails 8 web application for asynchronous tabletop role-playing games. Game masters and players collaborate on scenes through threaded posts, with email notifications and reply-by-email functionality.
+Play-by-Post TTRPG — Rails 8 app for asynchronous tabletop RPGs. GMs and players collaborate on scenes through threaded posts, with email notifications and reply-by-email.
 
-## Documentation
+- [Product requirements](../context/REQUIREMENTS.md)
 
-- [Domain](../context/domain.md) — concepts, data model relationships, business rules
-- [Product Requirements](../context/pbp_ttrpg_requirements.md)
-
----
-
-## Architecture
-
-This codebase applies hexagonal architecture (ports and adapters) to isolate business logic from delivery mechanisms and external systems.
-
-### Hexagonal Architecture
-
-**Core (domain):** Business rules live in models and service objects. They must not depend on Rails controllers, mailers, jobs, or external APIs directly. A service object orchestrating a game action should be callable from a controller, a background job, or a test with equal ease.
-
-**Ports:** Defined as Ruby interfaces (duck-typed or Sorbet interfaces) that the core depends on. Examples: a notifier port the domain calls to emit notifications, a storage port for file persistence.
-
-**Adapters:** Concrete implementations of ports that connect to external systems — ActionMailer, Active Storage, Solid Queue. Adapters live in controllers, mailers, mailboxes, and jobs, not in models or service objects.
-
-```
-Controllers / Mailers / Mailboxes / Jobs   ← adapters (interfaces)
-        │  call into
-Service Objects / Models                   ← core (business logic)
-        │  call through ports
-ActionMailer / Active Storage / DB         ← adapters (infrastructure)
-```
-
-### Idempotency
-
-Interface calls (controller actions, job executions, mailbox ingestion) must be safe to retry without producing duplicate side-effects. Design database writes and external calls so that repeating them with the same inputs yields the same result. Use database unique constraints, token-based deduplication, or find-or-create patterns rather than blind inserts.
-
-### Dependency Injection
-
-Inject collaborators rather than hard-coding them. Service objects accept dependencies (mailers, storage adapters, time sources) as constructor arguments or keyword parameters with sensible defaults. This makes units testable in isolation without global mocking.
-
-```ruby
-# Preferred
-class CreatePost
-  def initialize(notifier: NotificationMailer)
-    @notifier = notifier
-  end
-end
-
-# Avoid
-class CreatePost
-  def call
-    NotificationMailer.with(...).deliver_later  # hard-coded dependency
-  end
-end
-```
-
-### Pure Functions
-
-Prefer pure functions (output determined solely by input, no side-effects) for computation, transformation, and validation logic. Place these as private methods on service objects or as module-level functions. Side-effecting operations (DB writes, email sends, file uploads) should be pushed to the edges of a call chain, not interleaved with business logic.
+**IMPORTANT:** When implementing or modifying any feature, `context/REQUIREMENTS.md` must be updated to reflect the new or changed behaviour before the work is considered complete.
 
 ---
 
 ## Technology Stack
 
-| Layer | Technology |
-|-------|-----------|
-| Framework | Rails 8.1.3 |
-| Language | Ruby 4.0.2 |
-| Database | PostgreSQL (production), SQLite3 (dev/test) |
-| Asset Pipeline | Propshaft |
-| CSS | Tailwind CSS (migration from vanilla CSS in progress) |
-| Icons | HugeIcons via `icons` gem (Rails Designer) |
-| Frontend JS | Hotwire (Turbo + Stimulus) + Importmap (ESM, no bundler) |
-| UI Components | ViewComponent + Draper decorators |
-| Markdown | Redcarpet rendering + Stimulus live preview |
-| Auth | Devise + devise-passwordless (magic link) |
-| File Storage | Active Storage + Cloudflare R2 (production) |
-| Background Jobs | Solid Queue (database-backed, no Redis) |
-| Caching | Solid Cache (database-backed) |
-| Email (outbound) | ActionMailer + Mailgun |
-| Email (inbound) | ActionMailbox (reply-by-email → posts) |
+| Concern | Technology |
+|---------|-----------|
+| Framework | Rails 8.1 · Ruby 3.3 |
+| Database | SQLite (dev/test) · PostgreSQL (prod) |
+| Frontend | Hotwire (Turbo + Stimulus) · Importmap (no bundler) · Tailwind CSS |
+| UI | ViewComponent · Draper (presenters) · HugeIcons (`icons` gem) |
+| Auth | Devise + devise-passwordless (magic link, no passwords) |
+| Storage | Active Storage · Cloudflare R2 (prod) · image_processing |
+| Jobs | Solid Queue (in-process, no Redis) |
+| Cache | Solid Cache (DB-backed) |
+| Email out | ActionMailer · Mailgun |
+| Email in | ActionMailbox (reply-by-email → posts) |
+| Markdown | Redcarpet · Stimulus live preview |
 | Pagination | Pagy |
-| Testing | RSpec + FactoryBot + Capybara + Playwright |
-| Type Checking | Sorbet (gradual typing) |
-| Linting | RuboCop (Omakase style) |
-| Security | Brakeman (static analysis) |
+| Types | Sorbet (gradual) · sorbet-runtime |
+| Linting | RuboCop (rubocop-rails-omakase) |
+| Testing | RSpec · FactoryBot · Capybara · capybara-playwright-driver |
 | Coverage | SimpleCov (line + branch) |
-| Mutation Testing | Mutant |
-| Deployment | Railway.app + Docker |
+| Mutation | mutant-rspec |
+| Security | Brakeman · importmap audit |
+| Dev tools | Lookbook (component previews) · letter_opener_web |
+| Deployment | Railway.app · Docker · Kamal |
 
 ---
 
 ## Codebase Structure
 
+Standard Rails layout plus these non-standard additions:
+
 ```
 app/
-  controllers/       # REST controllers, one per resource
-  models/            # 13 ActiveRecord models
-  views/             # ERB templates
-  components/        # ViewComponent library (UI components)
-  presenters/        # Presenter objects wrapping models for display logic
-  services/          # Service objects (email parsing, markdown rendering)
-  mailers/           # ActionMailer (outbound email)
-  mailboxes/         # ActionMailbox (inbound email → posts)
-  jobs/              # ActiveJob (post digest, notifications)
-  javascript/
-    controllers/     # Stimulus controllers
-  assets/
-    stylesheets/     # application.css (legacy vanilla CSS, ~537 lines)
-    tailwind/        # application.css (new Tailwind config)
-    builds/          # generated CSS output (do not edit)
-    icons/           # HugeIcons SVGs
+  components/          # ViewComponent — two namespaces:
+    ui/                #   Ui::* — primitive, reusable (Badge, Button, Breadcrumb)
+    shared/            #   Shared::* — domain-specific (PostItem, PostComposer, Sidebar, SceneCard)
+  presenters/          # Draper — BasePresenter < SimpleDelegator, one per model
+    base_presenter.rb
+    post_presenter.rb  # (+ game_file, scene, user)
 
 config/
-  routes.rb          # All routes (see Routes section below)
-  database.yml       # SQLite dev/test, PostgreSQL production
+  initializers/
+    warden_hooks.rb    # Warden::Manager.after_set_user — updates last_login_at on every auth
 
-db/
-  schema.rb          # Authoritative schema (never edit migrations after merge)
+sorbet/
+  rbi/                 # Generated RBI files (tapioca + shims)
+  config/              # sorbet/config
 
 spec/
-  system/            # End-to-end tests (Capybara + Playwright)
-  models/            # Model unit tests
-  controllers/       # Request specs
-  components/        # ViewComponent specs
-  presenters/        # Presenter unit tests
-  services/          # Service object specs
-  mailers/           # Email generation specs
-  mailboxes/         # Inbound email specs
-  jobs/              # Background job specs
-  factories/         # FactoryBot factories (11 files)
-  support/           # Test helpers (auth, Capybara config)
+  requests/            # Request specs — one file per controller
+  components/          # ViewComponent specs
+  presenters/          # Presenter unit specs
+  support/
+    sign_in_helper.rb          # system spec auth (Capybara)
+    request_sign_in_helper.rb  # request spec auth (Warden)
 
-tests/integration/   # Manual testing plans (markdown files, not RSpec)
+tests/
+  integration/         # Manual testing plans (markdown, not RSpec)
 
+.mutant.yml            # Mutation testing config — all tested classes must be listed here
 bin/
-  pre-push           # Full quality pipeline (lint → security → types → tests → mutation → metrics)
-  quality-metrics    # Coverage/mutation/typing metric collector and baseline checker
-
-sorbet/              # Sorbet RBI files and configuration
-.github/workflows/   # CI/CD (ci.yml)
+  pre-push             # Full local quality pipeline (run before pushing)
+  quality-metrics      # Coverage/mutation/typing metric collector and gate checker
 ```
 
 ---
 
 ## Domain Model
-
-### Core Entities
-
-- **User** — Magic link auth (no passwords). Has many games (through game_members), posts, characters.
-- **UserProfile** — display_name, hide_ooc preference, last_login_at.
-- **Game** — Container for a campaign. name (max 200 chars), description.
-- **GameMember** — Joins users to games. `role` enum: `game_master` | `player`. `status` enum: `active` | `removed` | `banned`.
-- **Scene** — Narrative unit within a game. Supports hierarchical parent/child structure. Has optional image attachment. `resolved_at`, `private` flag.
-- **SceneParticipant** — Tracks which users are in which scenes (`last_visited_at`).
-- **Post** — Content in a scene. Markdown body. Optional image attachment. Editable within 10-minute window (`editable_by?`).
-- **Character** — Game character with name, markdown content, `archived_at`, `hidden` flag.
-- **CharacterVersion** — Snapshot of character content at a point in time.
-- **GameFile** — File attachment (PDF/image) attached to a game via Active Storage.
-- **Invitation** — Email invitation to join a game. Has token, `accepted_at`.
-- **NotificationPreference** — Per-user, per-scene email notification setting.
-
-### Key Relationships
 
 ```
 User → GameMember → Game → Scene → Post
@@ -170,206 +86,105 @@ User → GameMember → Game → Scene → Post
                          → Invitation
 User → SceneParticipant → Scene
 User → NotificationPreference → Scene
+User → UserProfile
+Post → PostRead
 ```
+
+Key model notes:
+- `GameMember` role: `game_master` | `player`; status: `active` | `removed` | `banned`
+- `Post` — markdown body, editable within 10-min window (`editable_by?`), draft support — see REQUIREMENTS.md
+- `UserProfile` — display_name, hide_ooc, last_login_at (updated by Warden hook on every sign-in) — see REQUIREMENTS.md
+- `Invitation` — email + token + accepted_at
 
 ---
 
 ## Routes
 
-All authenticated routes require `authenticate :user`. Root is `games#index`.
+Run `rails routes` for the full list. Root → `games#index`. All routes require authentication except `invitations#accept`.
 
-```
-GET  /                            games#index
-GET  /games/new                   games#new
-POST /games                       games#create
-GET  /games/:id                   games#show
-GET  /games/:id/edit              games#edit
-PATCH/PUT /games/:id              games#update
-PATCH /games/:id/toggle_sheets_hidden
-PATCH /games/:id/toggle_images_disabled
+Key named helpers: `game_path`, `game_scene_path`, `game_scene_post_path`, `game_player_management_path`, `game_game_files_path`, `game_character_path`, `profile_path`, `accept_invitation_path`, `user_magic_link_path`.
 
-GET  /games/:game_id/scenes       scenes#index
-POST /games/:game_id/scenes       scenes#create
-GET  /games/:game_id/scenes/:id   scenes#show
-PATCH /games/:game_id/scenes/:id/resolve
-POST /games/:game_id/scenes/:id/toggle_notification_preference
-
-POST /games/:game_id/scenes/:scene_id/posts      posts#create
-GET  /games/:game_id/scenes/:scene_id/posts/:id/edit
-PATCH/PUT /games/:game_id/scenes/:scene_id/posts/:id
-
-GET  /games/:game_id/player_management            player_management#show
-POST /games/:game_id/player_management/invitations
-DELETE /games/:game_id/player_management/invitations/:id
-PATCH /games/:game_id/player_management/game_members/:id
-
-GET  /games/:game_id/game_files   game_files#index
-POST /games/:game_id/game_files   game_files#create
-DELETE /games/:game_id/game_files/:id
-
-GET  /games/:game_id/characters/:id          characters#show
-GET  /games/:game_id/characters/:id/versions/:version_id
-
-GET    /profile                   profiles#show
-GET    /profile/edit              profiles#edit
-PATCH  /profile                   profiles#update
-POST   /profile/toggle_hide_ooc
-
-GET  /invitations/:token/accept   invitations#accept
-
-# Dev only
-GET /letter_opener  (LetterOpenerWeb — preview emails)
-```
+Dev only: `/letter_opener` (email preview) · Lookbook (component previews).
 
 ---
 
 ## Development Workflow
 
-### Cycle
+1. Write a testing plan in `tests/integration/` (markdown)
+2. Write failing RSpec tests
+3. Implement until tests pass
+4. Verify in browser against the testing plan
+5. Run `bin/pre-push` before pushing
 
-1. Create a testing plan as a markdown file in `tests/integration/`
-2. Write failing RSpec tests that describe desired behavior
-3. Implement code until tests pass
-   - Seek requirements clarification from product owner if unclear
-4. Validate changes match requirements
-5. Run local dev server and verify in Chrome using the testing plan
-6. Confirm all tests pass
-7. Run linter
+**ALL new features must have tests.**
 
-**IMPORTANT: ALL new features must have tests.**
+### Sorbet checklist (every PR)
+- Add `# typed: true` sigil to every new or touched file in `app/`, `lib/`, `config/initializers/`
+- Declare explicit `sig` on every method called from a ViewComponent template — `SimpleDelegator` passthrough is invisible to Sorbet
+- Use `T.must(value)` for nilable associations known to be present at runtime
+- Run `bundle exec srb tc` to confirm zero type errors before pushing
+- If new RBI files are needed: `bundle exec tapioca`
 
-### Running the App Locally
+---
 
-```bash
-bin/setup                          # First-time setup
-./bin/dev                          # Start web server + Tailwind CSS watcher (Procfile.dev)
-# or
-bundle exec rails server
-```
+## Quality Pipeline
 
-Email previews available at `/letter_opener` in development.
-
-Component previews available via Lookbook (dev only).
-
-### Running Tests
+`bin/pre-push` runs the full pipeline and is the gate before every push:
 
 ```bash
-bundle exec rspec                            # Full test suite
-bundle exec rspec spec/system/               # System tests only
-bundle exec rspec spec/models/user_spec.rb   # Single file
+bin/rubocop                              # 1. Lint (Omakase style)
+bin/importmap audit                      # 2. JS security
+bin/brakeman --no-pager                  # 3. Ruby security
+bundle exec srb tc                       # 4. Sorbet type check
+bundle exec rspec                        # 5. Tests + SimpleCov coverage
+bundle exec mutant run --usage opensource --since origin/master  # 6. Mutation
+bin/quality-metrics --check              # 7. Gate — fails build if metrics regress
 ```
 
-System tests use the Playwright driver via `capybara-playwright-driver`. Playwright must be installed.
+The same pipeline runs in CI (`.github/workflows/ci.yml`) on every PR and push to `master`, as parallel jobs. Mutation runs after tests (`--jobs 8`) and passes its output to `bin/quality-metrics --record-mutant` before the gate.
 
-Mobile/responsive tests run at specific viewport sizes (375px, 768px).
+### Quality Gates
 
-### Quality Pipeline
+Enforced by `bin/quality-metrics --check` against `quality_baseline.json`:
 
-The pre-push hook (`bin/pre-push`) runs the full pipeline:
+| Check | Threshold |
+|-------|-----------|
+| Global line/branch/sorbet/mutation coverage | ≤ 5% regression from baseline |
+| Each changed `app/` or `lib/` file — line coverage | ≥ 80% |
+| Each changed `app/` or `lib/` file — branch coverage | ≥ 70% |
+| Each changed file — Sorbet sigil | `true`, `strict`, or `strong` |
 
-```bash
-bin/rubocop                        # Lint
-bin/importmap audit                # JS security
-bin/brakeman --no-pager            # Ruby security scan
-bundle exec srb tc                 # Sorbet type check
-bundle exec rspec                  # Tests + SimpleCov coverage
-bundle exec mutant run --usage opensource --since origin/master  # Mutation testing
-bin/quality-metrics --check        # Validate against baseline
-```
+**Blast radius:** The gate checks every file touched by the branch vs `origin/master`, not just files you intended to change. Any edit to a file that lacks a sigil or has insufficient coverage will fail the gate. Fix both immediately when touching such a file.
 
-### Quality Gates (enforced by `bin/quality-metrics --check`)
+**Mutation registration:** Every new class must be added to `.mutant.yml` under `matcher.subjects` using its exact Ruby constant (e.g. `Shared::PostItemComponent`, `PostPresenter`, `PostRead`). Omitted classes are silently unmeasured.
 
-- Line coverage ≥ baseline (max 5% regression)
-- Branch coverage ≥ baseline (max 5% regression)
-- Sorbet typed file percentage ≥ baseline (max 5% regression)
-- Mutation coverage ≥ baseline (max 5% regression)
-- Changed `app/` and `lib/` files: line coverage ≥ 80%, branch coverage ≥ 70%
-- Changed files must have a Sorbet sigil of `true`, `strict`, or `strong`
+**Updating the baseline:** After an intentional quality improvement run `bin/quality-metrics --save`.
 
 ---
 
 ## Conventions
 
-### Models
-
-- Enums defined with `enum` (Rails 8 style)
-- Sorbet type signatures required on all new methods
-- Business logic in models or service objects, not controllers
-
 ### Controllers
+- Thin — delegate logic to models/services
+- Sorbet sigil required; per-action `sig` blocks not needed
 
-- Thin controllers — delegate logic to models/services
-- All actions inside `authenticate :user` block
-- Authorization checked in controller (game_master vs player roles)
-
-### Views / Components
-
-- Use ViewComponent (`app/components/`) for reusable UI
-- Use Draper presenters (`app/presenters/`) for display-only logic
-- ERB templates in `app/views/`
-- Markdown rendered via `MarkdownRenderer` service (Redcarpet, HTML sanitized)
+### Presenters & ViewComponents
+- `BasePresenter < SimpleDelegator` — silently exposes all model methods, but **Sorbet cannot see them**. Every method a ViewComponent template calls on a presenter must be explicitly declared on the presenter with a Sorbet `sig`. Do not rely on `SimpleDelegator` passthrough.
+- Happy path and error path in the same controller action must render the same component. Never mix a ViewComponent in one branch and a partial in the other. Delete old partials once fully replaced.
+- Component namespaces: `Ui::*` for primitives, `Shared::*` for domain components.
 
 ### CSS
-
-- **New work:** Use Tailwind utility classes
-- **Existing code:** Large vanilla CSS in `app/assets/stylesheets/application.css` — migration in progress
-- Do not add new styles to the vanilla CSS file; use Tailwind instead
-- Generated CSS goes to `app/assets/builds/` — never edit this directory
-
-### JavaScript
-
-- Stimulus controllers in `app/javascript/controllers/`
-- No bundler — ESM via importmap
-- Keep JS minimal; prefer Turbo for page updates
+- New work: Tailwind only. Do not add to `app/assets/stylesheets/application.css` (legacy, migration in progress).
+- Never edit `app/assets/builds/` (generated).
 
 ### Sorbet
-
-- All new `app/` and `lib/` files need a Sorbet sigil (`# typed: true` minimum)
-- Run `bundle exec srb tc` to type-check
-- RBI files live in `sorbet/rbi/`; regenerate with `bundle exec tapioca`
+- `# typed: true` minimum on all new/touched files in `app/`, `lib/`, and `config/initializers/`
+- Controllers need the sigil; per-action `sig` blocks not required
+- Use `T.must(value)` for nilable associations known to be present at runtime
+- Regenerate RBIs: `bundle exec tapioca`
 
 ### Testing
-
-- **System specs** (`spec/system/`) — full browser tests via Capybara + Playwright
-- **Unit specs** — models, services, presenters, components in their respective `spec/` subdirs
-- **Factories** in `spec/factories/` — one file per model
-- Authentication in specs: use `sign_in_helper.rb` (system) or `request_sign_in_helper.rb` (request specs)
-- Transactional fixtures enabled; database cleaned between tests
-
----
-
-## CI/CD (GitHub Actions)
-
-Defined in `.github/workflows/ci.yml`. Jobs on PR and push to `master`:
-
-| Job | Tool | Notes |
-|-----|------|-------|
-| `scan_ruby` | Brakeman | Security scan |
-| `scan_js` | importmap audit | JS security |
-| `lint` | RuboCop | Style enforcement |
-| `typecheck` | Sorbet (`srb tc`) | Type correctness |
-| `test` | RSpec + SimpleCov + Playwright | Full suite |
-| `mutation` | Mutant (`--since origin/master`) | Mutation score |
-| `quality_gate` | `bin/quality-metrics --check` | Final quality gate |
-
----
-
-## Deployment
-
-- **Platform:** Railway.app
-- **Container:** Docker (see `Dockerfile`, `railway.toml`)
-- **Database:** PostgreSQL (managed by Railway)
-- **File storage:** Cloudflare R2 via Active Storage
-- **Email inbound:** Mailgun → ActionMailbox
-- **Jobs:** Solid Queue (runs in-process via Puma)
-- **Cache:** Solid Cache (database-backed)
-
----
-
-## CLI Tools
-
-- `git` — version control
-- `gh` — GitHub PRs and issues (not available in all environments; use MCP GitHub tools if unavailable)
-- `rails` — Rails CLI commands
-- `bin/pre-push` — Full quality pipeline
-- `bin/quality-metrics` — Collect/check quality metrics
+- Request specs: `spec/requests/`, one file per controller
+- Auth in request specs: `sign_in(user)` — bypasses all controller code, goes directly through Warden
+- Magic link flow in specs: `Devise::Passwordless::SignedGlobalIDTokenizer.encode(user)` → `GET user_magic_link_path, params: { user: { email: user.email, token: token } }`
+- Cross-authentication callbacks (e.g. updating `last_login_at`) belong in `config/initializers/warden_hooks.rb` via `Warden::Manager.after_set_user` — not in `Users::SessionsController`, which is not in the call path for magic link sign-ins.
