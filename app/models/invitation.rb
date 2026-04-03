@@ -26,6 +26,6 @@ class Invitation < ApplicationRecord
   private
 
   def generate_token
-    self.token ||= SecureRandom.urlsafe_base64(32)
+    self.token = SecureRandom.urlsafe_base64(32) if token.blank?
   end
 end
