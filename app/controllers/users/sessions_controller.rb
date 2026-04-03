@@ -16,5 +16,4 @@ class Users::SessionsController < Devise::Passwordless::SessionsController
     @email_sent = true
     render :new
   end
-
 end
