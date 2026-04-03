@@ -29,13 +29,17 @@ class Post < ApplicationRecord
     return false unless self.user == user
 
     window = T.must(game).edit_window_duration
-    window.nil? || created_at > window.ago
+    return true if window.nil?
+
+    created_at > window.ago
   end
 
   sig { returns(T::Boolean) }
   def within_edit_window?
     window = T.must(game).edit_window_duration
-    window.nil? || created_at > window.ago
+    return true if window.nil?
+
+    created_at > window.ago
   end
 
   private
