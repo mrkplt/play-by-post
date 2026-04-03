@@ -1,3 +1,5 @@
+# typed: true
+
 class ProfilesController < ApplicationController
   def show
     @profile = current_user.user_profile || current_user.build_user_profile

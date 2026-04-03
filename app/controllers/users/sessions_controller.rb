@@ -1,3 +1,5 @@
+# typed: true
+
 class Users::SessionsController < Devise::Passwordless::SessionsController
   def create
     email = (params.dig(:user, :email) || params[:email]).to_s.strip.downcase

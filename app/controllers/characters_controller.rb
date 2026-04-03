@@ -1,3 +1,5 @@
+# typed: true
+
 class CharactersController < ApplicationController
   before_action :set_game
   before_action :require_game_access!

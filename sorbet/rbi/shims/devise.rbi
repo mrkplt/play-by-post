@@ -27,3 +27,26 @@ end
 class ApplicationController
   include Devise::Controllers::Helpers
 end
+
+class Devise::Passwordless::SessionsController
+  sig { returns(T.untyped) }
+  def resource; end
+
+  sig { params(value: T.untyped).returns(T.untyped) }
+  def resource=(value); end
+
+  sig { params(resource: T.untyped, opts: T.untyped).void }
+  def send_magic_link(resource, **opts); end
+
+  sig { returns(T.untyped) }
+  def params; end
+
+  sig { returns(T.untyped) }
+  def flash; end
+
+  sig { params(args: T.untyped, kwargs: T.untyped, blk: T.untyped).returns(T.untyped) }
+  def render(*args, **kwargs, &blk); end
+
+  sig { returns(String) }
+  def root_path; end
+end
