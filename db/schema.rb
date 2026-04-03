@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_03_30_024327) do
+ActiveRecord::Schema[8.1].define(version: 2026_04_01_000003) do
   create_table "action_mailbox_inbound_emails", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "message_checksum", null: false
@@ -98,6 +98,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_30_024327) do
     t.text "description"
     t.boolean "images_disabled", default: false, null: false
     t.string "name", null: false
+    t.integer "post_edit_window_minutes"
     t.boolean "sheets_hidden", default: false, null: false
     t.datetime "updated_at", null: false
   end
@@ -126,9 +127,21 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_30_024327) do
     t.index ["user_id"], name: "index_notification_preferences_on_user_id"
   end
 
-  create_table "posts", force: :cascade do |t|
-    t.text "content", null: false
+  create_table "post_reads", force: :cascade do |t|
     t.datetime "created_at", null: false
+    t.integer "post_id", null: false
+    t.datetime "read_at", null: false
+    t.datetime "updated_at", null: false
+    t.integer "user_id", null: false
+    t.index ["post_id", "user_id"], name: "index_post_reads_on_post_id_and_user_id", unique: true
+    t.index ["post_id"], name: "index_post_reads_on_post_id"
+    t.index ["user_id"], name: "index_post_reads_on_user_id"
+  end
+
+  create_table "posts", force: :cascade do |t|
+    t.text "content"
+    t.datetime "created_at", null: false
+    t.boolean "draft", default: false, null: false
     t.boolean "is_ooc", default: false, null: false
     t.datetime "last_edited_at"
     t.integer "scene_id", null: false
@@ -199,6 +212,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_30_024327) do
   add_foreign_key "invitations", "users", column: "invited_by_id"
   add_foreign_key "notification_preferences", "scenes"
   add_foreign_key "notification_preferences", "users"
+  add_foreign_key "post_reads", "posts"
+  add_foreign_key "post_reads", "users"
   add_foreign_key "posts", "scenes"
   add_foreign_key "posts", "users"
   add_foreign_key "scene_participants", "characters"

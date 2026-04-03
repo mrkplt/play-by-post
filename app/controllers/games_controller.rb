@@ -34,7 +34,7 @@ class GamesController < ApplicationController
       @game.game_members.create!(user: current_user, role: "game_master", status: "active")
       redirect_to @game, notice: "Game created."
     else
-      render :new, status: :unprocessable_entity
+      render :new, status: :unprocessable_content
     end
   end
 
@@ -68,7 +68,7 @@ class GamesController < ApplicationController
     if @game.update(game_params)
       redirect_to @game, notice: "Game updated."
     else
-      render :edit, status: :unprocessable_entity
+      render :edit, status: :unprocessable_content
     end
   end
 
@@ -93,6 +93,6 @@ class GamesController < ApplicationController
   end
 
   def game_params
-    params.require(:game).permit(:name, :description)
+    params.require(:game).permit(:name, :description, :post_edit_window_minutes)
   end
 end

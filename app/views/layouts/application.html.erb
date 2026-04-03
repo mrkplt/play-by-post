@@ -26,7 +26,7 @@
 
       <!-- Sidebar -->
       <aside class="sidebar" data-sidebar-target="sidebar">
-        <%= render "layouts/sidebar" %>
+        <%= render Shared::SidebarComponent.new(current_user: (current_user if user_signed_in?)) %>
       </aside>
 
       <!-- Main -->

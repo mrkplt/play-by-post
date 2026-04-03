@@ -26,5 +26,5 @@
 <% if @game_files.empty? %>
   <p class="text-slate-400">No files uploaded yet.</p>
 <% else %>
-  <%= render "game_files/gallery", game_files: @game_files, game: @game, is_gm: @is_gm %>
+  <%= render Shared::GalleryComponent.new(game_files: @game_files.to_a, game: @game, is_gm: @is_gm) %>
 <% end %>

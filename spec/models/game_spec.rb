@@ -37,6 +37,16 @@ RSpec.describe Game, type: :model do
     end
   end
 
+  describe "#edit_window_duration" do
+    it "returns nil when post_edit_window_minutes is nil" do
+      expect(build(:game, post_edit_window_minutes: nil).edit_window_duration).to be_nil
+    end
+
+    it "returns an ActiveSupport::Duration matching the minutes" do
+      expect(build(:game, post_edit_window_minutes: 60).edit_window_duration).to eq(60.minutes)
+    end
+  end
+
   describe "#active_member?" do
     let(:game) { create(:game) }
     let(:user) { create(:user) }

@@ -16,7 +16,7 @@
 <% else %>
   <div class="text-sm">
     <% @trees.each do |tree| %>
-      <%= render "scenes/tree_node", node: tree, game: @game, depth: 0 %>
+      <%= render Shared::TreeNodeComponent.new(node: tree, game: @game) %>
     <% end %>
   </div>
 <% end %>

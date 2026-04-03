@@ -1,9 +1,16 @@
+# typed: true
+
 class PostsController < ApplicationController
   before_action :set_game
   before_action :set_scene
   before_action :require_participant!
-  before_action :require_active_member_for_write!, only: %i[create]
-  before_action :set_post, only: %i[edit update]
+  before_action :require_active_member_for_write!, only: %i[create save_draft]
+  before_action :set_post, only: %i[edit update mark_read]
+
+  def mark_read
+    PostRead.mark!(@post, current_user)
+    head :no_content
+  end
 
   def edit
     unless @post.editable_by?(current_user)
@@ -11,9 +18,37 @@ class PostsController < ApplicationController
     end
   end
 
+  def discard_draft
+    draft = @scene.posts.drafts.find_by(user: current_user)
+    draft&.destroy
+    redirect_to game_scene_path(@game, @scene), notice: "Draft discarded."
+  end
+
+  def save_draft
+    draft = @scene.posts.drafts.find_or_initialize_by(user: current_user)
+    draft.assign_attributes(
+      content: params.dig(:post, :content),
+      is_ooc: params.dig(:post, :is_ooc) || false,
+      draft: true
+    )
+
+    if draft.save
+      render json: { id: draft.id }, status: :ok
+    else
+      render json: { errors: draft.errors.full_messages }, status: :unprocessable_content
+    end
+  end
+
   def create
-    @post = @scene.posts.new(post_params)
-    @post.user = current_user
+    draft = @scene.posts.drafts.find_by(user: current_user)
+
+    if draft
+      draft.assign_attributes(post_params.merge(draft: false, last_edited_at: nil))
+      @post = draft
+    else
+      @post = @scene.posts.new(post_params)
+      @post.user = current_user
+    end
 
     if @post.save
       respond_to do |format|
@@ -22,7 +57,7 @@ class PostsController < ApplicationController
       end
     else
       respond_to do |format|
-        format.turbo_stream { render turbo_stream: turbo_stream.replace("post_composer", partial: "posts/composer", locals: { post: @post, scene: @scene, game: @game }) }
+        format.turbo_stream { render turbo_stream: turbo_stream.replace("post_composer", Shared::PostComposerComponent.new(post: @post, game: @game, scene: @scene)) }
         format.html { redirect_to game_scene_path(@game, @scene), alert: "Could not create post." }
       end
     end

@@ -1,3 +1,5 @@
+# typed: true
+
 class CharactersController < ApplicationController
   before_action :set_game
   before_action :require_game_access!
@@ -17,7 +19,7 @@ class CharactersController < ApplicationController
         @character = @game.characters.new
         @users = @game.active_members.where(role: "player").includes(:user).map(&:user)
         @character.errors.add(:base, "Please select a player")
-        return render :new, status: :unprocessable_entity
+        return render :new, status: :unprocessable_content
       end
       owner = User.find(params[:character][:user_id])
     else
@@ -31,7 +33,7 @@ class CharactersController < ApplicationController
       redirect_to game_character_path(@game, @character), notice: "Character created."
     else
       @users = @game.active_members.where(role: "player").includes(:user).map(&:user)
-      render :new, status: :unprocessable_entity
+      render :new, status: :unprocessable_content
     end
   end
 
@@ -56,7 +58,7 @@ class CharactersController < ApplicationController
     if @character.update(character_params.except(:user_id))
       redirect_to game_character_path(@game, @character), notice: "Character updated."
     else
-      render :edit, status: :unprocessable_entity
+      render :edit, status: :unprocessable_content
     end
   end
 

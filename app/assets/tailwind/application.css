@@ -22,6 +22,7 @@
   th { @apply font-semibold text-sm text-slate-500; }
 }
 
+
 @layer components {
   /* Markdown base — shared styles for all rendered markdown */
   .markdown-base { @apply leading-relaxed; }

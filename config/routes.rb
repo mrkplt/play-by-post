@@ -24,7 +24,15 @@ Rails.application.routes.draw do
           patch :resolve
           post :toggle_notification_preference
         end
-        resources :posts, only: %i[create edit update]
+        resources :posts, only: %i[create edit update] do
+          member do
+            post :mark_read
+          end
+          collection do
+            patch :save_draft
+            delete :discard_draft
+          end
+        end
         resource :participants, only: %i[edit update], controller: "scene_participants" do
           post :join, on: :collection
         end

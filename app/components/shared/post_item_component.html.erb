@@ -1,4 +1,9 @@
-<div id="<%= dom_id(@post) %>" class="<%= @post.is_ooc? ? 'bg-slate-50 border-l-[3px] border-slate-400 pl-3 opacity-60 hover:opacity-85 text-[0.9em]' : 'border-b border-slate-100' %> py-4 last:border-b-0" data-ooc="<%= @post.is_ooc? %>"<% if @post.is_ooc? %> data-testid="ooc-post"<% end %>>
+<div id="<%= dom_id(@post) %>"
+     class="<%= @post.is_ooc? ? 'bg-slate-50 border-l-[3px] border-slate-400 pl-3 opacity-60 hover:opacity-85 text-[0.9em]' : 'border-b border-slate-100' %> py-4 last:border-b-0"
+     data-ooc="<%= @post.is_ooc? %>"
+     data-unread="<%= unread? %>"
+     <% if unread? %>data-mark-read-url="<%= mark_read_game_scene_post_path(@game, (@scene || @post.scene), @post) %>"<% end %>
+     <% if @post.is_ooc? %>data-testid="ooc-post"<% end %>>
   <div class="text-xs text-slate-500 mb-1">
     <strong><%= @post.author_display_name %></strong>
     &middot;
@@ -10,7 +15,7 @@
       <span class="italic">(edited)</span>
     <% end %>
     <% if @post.editable_by?(@current_user) %>
-      &middot; <%= link_to "Edit", edit_game_scene_post_path(@game, @post.scene, @post), class: "text-[0.8rem]" %>
+      &middot; <%= link_to "Edit", edit_game_scene_post_path(@game, (@scene || @post.scene), @post), class: "text-[0.8rem]" %>
     <% end %>
   </div>
   <div class="markdown-base post-content" data-testid="post-content"><%= @post.rendered_content.html_safe %></div>

@@ -1,3 +1,5 @@
+# typed: true
+
 class ScenesController < ApplicationController
   before_action :set_game
   before_action :require_game_access!
@@ -34,12 +36,13 @@ class ScenesController < ApplicationController
     else
       @players_with_characters = active_players_with_characters
       @parent_scene_options = parent_scene_options
-      render :new, status: :unprocessable_entity
+      render :new, status: :unprocessable_content
     end
   end
 
   def show
-    @posts = @scene.posts.includes(:user).order(:created_at)
+    @posts = @scene.posts.published.includes(:user).order(:created_at)
+    @draft = @scene.posts.drafts.find_by(user: current_user)
     @post = Post.new
     @is_gm = @game.game_master?(current_user)
     @is_participant = @scene.participant?(current_user)
@@ -48,9 +51,13 @@ class ScenesController < ApplicationController
     @hide_ooc = current_user.user_profile&.hide_ooc? || false
     @child_scenes = @scene.child_scenes.visible_to(current_user, @game).order(:created_at)
 
-    if @is_participant || @is_gm
-      @scene.scene_participants.find_by(user: current_user)
-        &.update(last_visited_at: Time.current)
+    @scene.scene_participants.find_by(user: current_user)&.update(last_visited_at: Time.current)
+
+    if @scene.resolved?
+      @read_post_ids = Set.new
+    else
+      eligible_ids = @posts.select { |p| p.created_at > 72.hours.ago }.map(&:id)
+      @read_post_ids = PostRead.where(user: current_user, post_id: eligible_ids).pluck(:post_id).to_set
     end
   end
 

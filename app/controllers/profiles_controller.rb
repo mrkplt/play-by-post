@@ -1,3 +1,5 @@
+# typed: true
+
 class ProfilesController < ApplicationController
   def show
     @profile = current_user.user_profile || current_user.build_user_profile
@@ -18,7 +20,7 @@ class ProfilesController < ApplicationController
     if @profile.save
       redirect_to root_path, notice: "Display name saved."
     else
-      render :edit, status: :unprocessable_entity
+      render :edit, status: :unprocessable_content
     end
   end
 

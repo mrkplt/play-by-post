@@ -10,7 +10,7 @@
 
   <% if signed_in? && @current_user.games.any? %>
     <% @current_user.games_by_recent_activity(limit: 8).each do |game| %>
-      <% is_gm = game.member_for(@current_user)&.game_master? %>
+      <% is_gm = game_master_in?(game) %>
       <%= link_to game_path(game), class: "sidebar-link flex items-center justify-between" do %>
         <span><%= game.name %></span>
         <% if is_gm %>

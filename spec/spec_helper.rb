@@ -6,6 +6,16 @@ unless ENV["MUTANT"]
     add_group "Services", "app/services"
     add_group "Mailboxes", "app/mailboxes"
     add_group "Jobs", "app/jobs"
+    # Always write coverage results even when test-server errors are raised
+    # (e.g. MiniMagick failures propagated via Capybara raise_server_errors).
+    # SimpleCov's default at_exit skips write_last_run when a previous error
+    # caused a non-zero exit status. We call process_result explicitly so
+    # .last_run.json is always written before the process exits.
+    at_exit do
+      result = SimpleCov.result
+      result.format!
+      SimpleCov.process_result(result)
+    end
   end
 end
 
