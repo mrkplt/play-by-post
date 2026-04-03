@@ -17,18 +17,4 @@ class Users::SessionsController < Devise::Passwordless::SessionsController
     render :new
   end
 
-  protected
-
-  def after_sign_in_path_for(resource)
-    upsert_user_profile(resource)
-    root_path
-  end
-
-  private
-
-  def upsert_user_profile(user)
-    profile = user.user_profile || user.build_user_profile
-    profile.last_login_at = Time.current
-    profile.save!
-  end
 end
