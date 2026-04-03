@@ -50,14 +50,14 @@ RSpec.describe Users::SessionsController, type: :request do
 
     it "signs in the user via magic link token and redirects to root" do
       token = Devise::Passwordless::SignedGlobalIDTokenizer.encode(user)
-      get user_magic_link_path(token: token)
+      get user_magic_link_path, params: { user: { email: user.email, token: token } }
       expect(response).to redirect_to(root_path)
     end
 
     it "calls upsert_user_profile and updates last_login_at" do
       token = Devise::Passwordless::SignedGlobalIDTokenizer.encode(user)
       expect {
-        get user_magic_link_path(token: token)
+        get user_magic_link_path, params: { user: { email: user.email, token: token } }
       }.to change { user.user_profile.reload.last_login_at }
     end
   end
