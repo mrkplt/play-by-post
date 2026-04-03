@@ -1,4 +1,8 @@
+# typed: true
+
 class Scene < ApplicationRecord
+  extend T::Sig
+
   belongs_to :game
   belongs_to :parent_scene, class_name: "Scene", optional: true
 
@@ -24,10 +28,12 @@ class Scene < ApplicationRecord
     gm ? all : where(private: false).or(where(id: joins(:scene_participants).where(scene_participants: { user_id: user.id })))
   }
 
+  sig { returns(T::Boolean) }
   def resolved?
     resolved_at.present?
   end
 
+  sig { returns(T.nilable(ActiveSupport::TimeWithZone)) }
   def last_activity_at
     if posts.loaded?
       posts.map(&:created_at).max || created_at
@@ -36,10 +42,12 @@ class Scene < ApplicationRecord
     end
   end
 
+  sig { returns(ActiveStorage::VariantWithRecord) }
   def banner_image
     image.variant(resize_to_limit: [ 1200, nil ], format: :jpeg, quality: 85)
   end
 
+  sig { params(user: User).returns(T::Boolean) }
   def participant?(user)
     scene_participants.exists?(user: user)
   end
