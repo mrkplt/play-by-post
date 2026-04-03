@@ -31,12 +31,13 @@ class InvitationsController < ApplicationController
       return
     end
 
+    game = T.must(@invitation.game)
     user = User.find_or_create_by!(email: @invitation.email)
-    @invitation.game.game_members.find_or_create_by!(user: user, role: "player", status: "active")
+    game.game_members.find_or_create_by!(user: user, role: "player", status: "active")
     @invitation.accept!
 
     sign_in(user)
-    redirect_to game_path(@invitation.game), notice: "Welcome! You've joined #{@invitation.game.name}."
+    redirect_to game_path(game), notice: "Welcome! You've joined #{game.name}."
   end
 
   private
