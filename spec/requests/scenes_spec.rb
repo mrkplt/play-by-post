@@ -65,7 +65,9 @@ RSpec.describe ScenesController, type: :request do
       sign_in(gm)
       post game_scenes_path(game), params: { scene: { title: "With Players" }, character_ids: [ character.id ] }
       scene = Scene.last
-      expect(scene.scene_participants.where(user: player)).to exist
+      sp = scene.scene_participants.find_by(user: player)
+      expect(sp).not_to be_nil
+      expect(sp.character).to eq(character)
     end
 
     it "GM can create a scene with blank title (gets default)" do
