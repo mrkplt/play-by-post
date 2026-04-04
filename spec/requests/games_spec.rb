@@ -1,6 +1,6 @@
 require "rails_helper"
 
-RSpec.describe "Games", type: :request do
+RSpec.describe GamesController, type: :request do
   let(:gm) { create(:user, :with_profile) }
   let(:player) { create(:user, :with_profile) }
   let(:game) { create(:game) }
