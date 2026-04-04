@@ -53,6 +53,21 @@ RSpec.describe ScenesController, type: :request do
       expect(response).to have_http_status(:redirect)
     end
 
+    it "automatically adds the GM as a participant" do
+      sign_in(gm)
+      post game_scenes_path(game), params: { scene: { title: "New Scene" } }
+      scene = Scene.last
+      expect(scene.scene_participants.where(user: gm)).to exist
+    end
+
+    it "adds character participants when character_ids provided" do
+      character = create(:character, game: game, user: player)
+      sign_in(gm)
+      post game_scenes_path(game), params: { scene: { title: "With Players" }, character_ids: [ character.id ] }
+      scene = Scene.last
+      expect(scene.scene_participants.where(user: player)).to exist
+    end
+
     it "GM can create a scene with blank title (gets default)" do
       sign_in(gm)
       post game_scenes_path(game), params: { scene: { title: "" } }
