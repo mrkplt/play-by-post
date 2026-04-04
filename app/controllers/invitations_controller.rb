@@ -1,11 +1,14 @@
 # typed: true
 
 class InvitationsController < ApplicationController
+  extend T::Sig
+
   skip_before_action :authenticate_user!, only: %i[accept]
 
   before_action :set_game, except: %i[accept]
   before_action :require_gm!, except: %i[accept]
 
+  sig { void }
   def create
     @invitation = @game.invitations.new(email: params[:invitation][:email], invited_by: current_user)
 
@@ -17,12 +20,14 @@ class InvitationsController < ApplicationController
     end
   end
 
+  sig { void }
   def destroy
     invitation = @game.invitations.find(params[:id])
     invitation.destroy
     redirect_to game_player_management_path(@game), notice: "Invitation cancelled."
   end
 
+  sig { void }
   def accept
     @invitation = Invitation.find_by(token: params[:token])
 
@@ -42,10 +47,12 @@ class InvitationsController < ApplicationController
 
   private
 
+  sig { void }
   def set_game
     @game = Game.find(params[:game_id])
   end
 
+  sig { void }
   def require_gm!
     unless @game.game_master?(current_user)
       redirect_to game_path(@game), alert: "Only the GM can manage invitations."

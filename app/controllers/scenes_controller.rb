@@ -1,11 +1,14 @@
 # typed: true
 
 class ScenesController < ApplicationController
+  extend T::Sig
+
   before_action :set_game
   before_action :require_game_access!
   before_action :require_gm!, only: %i[new create]
   before_action :set_scene, only: %i[show resolve toggle_notification_preference]
 
+  sig { void }
   def index
     all_scenes = @game.scenes
       .visible_to(current_user, @game)
@@ -20,12 +23,14 @@ class ScenesController < ApplicationController
     @is_gm = @game.game_master?(current_user)
   end
 
+  sig { void }
   def new
     @scene = @game.scenes.new
     @players_with_characters = active_players_with_characters
     @parent_scene_options = parent_scene_options
   end
 
+  sig { void }
   def create
     @scene = @game.scenes.new(scene_params)
 
@@ -40,6 +45,7 @@ class ScenesController < ApplicationController
     end
   end
 
+  sig { void }
   def show
     @posts = @scene.posts.published.includes(:user).order(:created_at)
     @draft = @scene.posts.drafts.find_by(user: current_user)
@@ -61,12 +67,14 @@ class ScenesController < ApplicationController
     end
   end
 
+  sig { void }
   def toggle_notification_preference
     NotificationPreference.toggle!(@scene, current_user)
     redirect_to game_scene_path(@game, @scene),
       notice: NotificationPreference.muted?(@scene, current_user) ? "Notifications muted for this scene." : "Notifications enabled for this scene."
   end
 
+  sig { void }
   def resolve
     unless @game.game_master?(current_user)
       redirect_to game_scene_path(@game, @scene), alert: "Only the GM can resolve a scene."
@@ -85,15 +93,18 @@ class ScenesController < ApplicationController
 
   private
 
+  sig { void }
   def set_game
     @game = Game.find(params[:game_id])
   end
 
+  sig { void }
   def set_scene
     @scene = @game.scenes.find(params[:id])
     check_scene_visibility!
   end
 
+  sig { void }
   def check_scene_visibility!
     return if @game.game_master?(current_user)
     return unless @scene.private?
@@ -102,6 +113,7 @@ class ScenesController < ApplicationController
     redirect_to game_path(@game), alert: "You do not have access to this scene."
   end
 
+  sig { void }
   def require_game_access!
     membership = @game.member_for(current_user)
     return if membership&.game_master?
@@ -110,6 +122,7 @@ class ScenesController < ApplicationController
     redirect_to root_path, alert: "You do not have access to this game."
   end
 
+  sig { void }
   def require_gm!
     return if @game.game_master?(current_user)
 
@@ -133,6 +146,7 @@ class ScenesController < ApplicationController
     players.map { |user| [ user, characters_by_user.fetch(user.id, []) ] }
   end
 
+  sig { void }
   def notify_new_scene
     @scene.users.where.not(id: current_user.id).each do |recipient|
       next if NotificationPreference.muted?(@scene, recipient)
@@ -140,6 +154,7 @@ class ScenesController < ApplicationController
     end
   end
 
+  sig { void }
   def notify_scene_resolved
     @scene.users.each do |recipient|
       next if NotificationPreference.muted?(@scene, recipient)
@@ -147,8 +162,9 @@ class ScenesController < ApplicationController
     end
   end
 
+  sig { void }
   def add_participants
-    gm = @game.game_master
+    gm = T.must(@game.game_master)
 
     # Always add the GM as a user-only (no character) participant
     @scene.scene_participants.find_or_create_by!(user_id: gm.id)
@@ -163,6 +179,7 @@ class ScenesController < ApplicationController
     end
   end
 
+  sig { returns(T::Array[Scene]) }
   def parent_scene_options
     active = @game.scenes.active.order(created_at: :desc).to_a
     recent_resolved = @game.scenes.resolved.order(resolved_at: :desc).limit(3).to_a
@@ -179,6 +196,7 @@ class ScenesController < ApplicationController
     }
   end
 
+  sig { returns(ActionController::Parameters) }
   def scene_params
     params.require(:scene).permit(:title, :private, :parent_scene_id, :image)
   end

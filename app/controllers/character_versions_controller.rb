@@ -1,26 +1,35 @@
+# typed: true
+
 class CharacterVersionsController < ApplicationController
+  extend T::Sig
+
   before_action :set_game
   before_action :require_game_access!
   before_action :set_character
   before_action :set_version
 
+  sig { void }
   def show
   end
 
   private
 
+  sig { void }
   def set_game
     @game = Game.find(params[:game_id])
   end
 
+  sig { void }
   def set_character
     @character = @game.characters.find(params[:character_id])
   end
 
+  sig { void }
   def set_version
     @version = @character.character_versions.find(params[:id])
   end
 
+  sig { void }
   def require_game_access!
     membership = @game.member_for(current_user)
     return if membership&.game_master?

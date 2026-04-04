@@ -1,6 +1,6 @@
 require "rails_helper"
 
-RSpec.describe "SceneParticipants", type: :request do
+RSpec.describe SceneParticipantsController, type: :request do
   let(:gm) { create(:user, :with_profile) }
   let(:player) { create(:user, :with_profile) }
   let(:game) { create(:game) }
@@ -29,11 +29,30 @@ RSpec.describe "SceneParticipants", type: :request do
   end
 
   describe "PATCH /games/:game_id/scenes/:scene_id/participants" do
-    it "GM can update participants" do
+    it "assigns the selected character to the participant row" do
       character = create(:character, game: game, user: player)
       sign_in(gm)
       patch game_scene_participants_path(game, scene), params: { character_ids: [ character.id ] }
       expect(response).to redirect_to(game_scene_path(game, scene))
+      sp = scene.scene_participants.find_by(user: player)
+      expect(sp).not_to be_nil
+      expect(sp.character_id).to eq(character.id)
+    end
+
+    it "removes participants whose characters were deselected" do
+      other_player = create(:user, :with_profile)
+      create(:game_member, game: game, user: other_player)
+      create(:scene_participant, scene: scene, user: other_player)
+      sign_in(gm)
+      # Pass empty character_ids — other_player should be removed
+      patch game_scene_participants_path(game, scene), params: { character_ids: [] }
+      expect(scene.scene_participants.where(user: other_player)).not_to exist
+    end
+
+    it "always keeps the GM as a participant" do
+      sign_in(gm)
+      patch game_scene_participants_path(game, scene), params: { character_ids: [] }
+      expect(scene.scene_participants.where(user: gm)).to exist
     end
 
     it "player cannot update participants" do
@@ -41,6 +60,46 @@ RSpec.describe "SceneParticipants", type: :request do
       patch game_scene_participants_path(game, scene), params: { character_ids: [] }
       expect(response).to redirect_to(game_scene_path(game, scene))
       expect(flash[:alert]).to match(/only the gm/i)
+    end
+  end
+
+  describe "POST /games/:game_id/scenes/:scene_id/participants/join" do
+    it "player can join a public non-resolved scene" do
+      new_player = create(:user, :with_profile)
+      create(:game_member, game: game, user: new_player)
+      sign_in(new_player)
+      post join_game_scene_participants_path(game, scene)
+      expect(response).to redirect_to(game_scene_path(game, scene))
+      expect(flash[:notice]).to match(/joined/i)
+    end
+
+    it "player cannot join a private scene" do
+      private_scene = create(:scene, :private, game: game)
+      sign_in(player)
+      post join_game_scene_participants_path(game, private_scene)
+      expect(response).to redirect_to(game_scene_path(game, private_scene))
+      expect(flash[:alert]).to match(/private/i)
+    end
+
+    it "GM can join a private scene" do
+      private_scene = create(:scene, :private, game: game)
+      sign_in(gm)
+      post join_game_scene_participants_path(game, private_scene)
+      expect(response).to redirect_to(game_scene_path(game, private_scene))
+      expect(flash[:notice]).to match(/joined/i)
+    end
+
+    it "player cannot join a resolved scene" do
+      resolved_scene = create(:scene, :resolved, game: game)
+      sign_in(player)
+      post join_game_scene_participants_path(game, resolved_scene)
+      expect(response).to redirect_to(game_scene_path(game, resolved_scene))
+      expect(flash[:alert]).to match(/resolved/i)
+    end
+
+    it "unauthenticated user is redirected" do
+      post join_game_scene_participants_path(game, scene)
+      expect(response).to have_http_status(:redirect)
     end
   end
 end
