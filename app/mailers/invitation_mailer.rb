@@ -11,7 +11,7 @@ class InvitationMailer < ApplicationMailer
   sig { params(invitation: Invitation).returns(Mail::Message) }
   def invite(invitation)
     @invitation = invitation
-    @game = invitation.game
+    @game = T.must(invitation.game)
     @accept_url = accept_invitation_url(token: invitation.token)
 
     mail(
