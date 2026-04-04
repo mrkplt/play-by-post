@@ -1,6 +1,8 @@
 # typed: true
 
 class User < ApplicationRecord
+  extend T::Sig
+
   devise :magic_link_authenticatable, :rememberable
 
   has_one :user_profile, dependent: :destroy
@@ -11,10 +13,12 @@ class User < ApplicationRecord
   has_many :posts, dependent: :destroy
   has_many :characters, dependent: :destroy
 
+  sig { returns(T.nilable(String)) }
   def display_name
     user_profile&.display_name
   end
 
+  sig { params(limit: T.nilable(Integer)).returns(ActiveRecord::Relation) }
   def games_by_recent_activity(limit: nil)
     # Get games where user is not removed/banned, ordered by most recent scene activity
     # Uses Arel for safe SQL generation

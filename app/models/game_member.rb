@@ -1,4 +1,8 @@
+# typed: true
+
 class GameMember < ApplicationRecord
+  extend T::Sig
+
   belongs_to :game
   belongs_to :user
 
@@ -12,18 +16,22 @@ class GameMember < ApplicationRecord
   scope :game_masters, -> { where(role: "game_master") }
   scope :players, -> { where(role: "player") }
 
+  sig { returns(T::Boolean) }
   def game_master?
     role == "game_master"
   end
 
+  sig { returns(T::Boolean) }
   def active?
     status == "active"
   end
 
+  sig { returns(T::Boolean) }
   def removed?
     status == "removed"
   end
 
+  sig { returns(T::Boolean) }
   def banned?
     status == "banned"
   end
