@@ -1,9 +1,14 @@
+# typed: true
+
 class SceneParticipantsController < ApplicationController
+  extend T::Sig
+
   before_action :set_game
   before_action :set_scene
   before_action :require_gm!, only: %i[edit update]
   before_action :require_active_member_for_write!, only: %i[join]
 
+  sig { void }
   def edit
     players = @game.users.joins(:game_members)
       .where(game_members: { game: @game, role: "player", status: "active" })
@@ -20,8 +25,9 @@ class SceneParticipantsController < ApplicationController
     @current_character_ids = @scene.scene_participants.where.not(character_id: nil).pluck(:character_id)
   end
 
+  sig { void }
   def update
-    gm = @game.game_master
+    gm = T.must(@game.game_master)
     character_ids = Array(params[:character_ids]).map(&:to_i)
     characters = @game.characters.where(id: character_ids)
     player_user_ids = characters.map(&:user_id)
@@ -42,6 +48,7 @@ class SceneParticipantsController < ApplicationController
     redirect_to game_scene_path(@game, @scene), notice: "Participants updated."
   end
 
+  sig { void }
   def join
     if @scene.private? && !@game.game_master?(current_user)
       redirect_to game_scene_path(@game, @scene), alert: "Cannot join a private scene."
@@ -59,20 +66,24 @@ class SceneParticipantsController < ApplicationController
 
   private
 
+  sig { void }
   def set_game
     @game = Game.find(params[:game_id])
   end
 
+  sig { void }
   def set_scene
     @scene = @game.scenes.find(params[:scene_id])
   end
 
+  sig { void }
   def require_gm!
     return if @game.game_master?(current_user)
 
     redirect_to game_scene_path(@game, @scene), alert: "Only the GM can edit participants."
   end
 
+  sig { void }
   def require_active_member_for_write!
     require_active_member!(@game)
   end

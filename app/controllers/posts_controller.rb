@@ -1,29 +1,35 @@
 # typed: true
 
 class PostsController < ApplicationController
+  extend T::Sig
+
   before_action :set_game
   before_action :set_scene
   before_action :require_participant!
   before_action :require_active_member_for_write!, only: %i[create save_draft]
   before_action :set_post, only: %i[edit update mark_read]
 
+  sig { void }
   def mark_read
     PostRead.mark!(@post, current_user)
     head :no_content
   end
 
+  sig { void }
   def edit
     unless @post.editable_by?(current_user)
       redirect_to game_scene_path(@game, @scene), alert: "This post can no longer be edited."
     end
   end
 
+  sig { void }
   def discard_draft
     draft = @scene.posts.drafts.find_by(user: current_user)
     draft&.destroy
     redirect_to game_scene_path(@game, @scene), notice: "Draft discarded."
   end
 
+  sig { void }
   def save_draft
     draft = @scene.posts.drafts.find_or_initialize_by(user: current_user)
     draft.assign_attributes(
@@ -39,6 +45,7 @@ class PostsController < ApplicationController
     end
   end
 
+  sig { void }
   def create
     draft = @scene.posts.drafts.find_by(user: current_user)
 
@@ -63,6 +70,7 @@ class PostsController < ApplicationController
     end
   end
 
+  sig { void }
   def update
     unless @post.editable_by?(current_user)
       redirect_to game_scene_path(@game, @scene), alert: "This post can no longer be edited."
@@ -79,28 +87,34 @@ class PostsController < ApplicationController
 
   private
 
+  sig { void }
   def set_game
     @game = Game.find(params[:game_id])
   end
 
+  sig { void }
   def set_scene
     @scene = @game.scenes.find(params[:scene_id])
   end
 
+  sig { void }
   def set_post
     @post = @scene.posts.find(params[:id])
   end
 
+  sig { void }
   def require_participant!
     unless @scene.participant?(current_user) || @game.game_master?(current_user)
       redirect_to game_scene_path(@game, @scene), alert: "You are not a participant in this scene."
     end
   end
 
+  sig { void }
   def require_active_member_for_write!
     require_active_member!(@game)
   end
 
+  sig { returns(ActionController::Parameters) }
   def post_params
     params.require(:post).permit(:content, :is_ooc, :image)
   end

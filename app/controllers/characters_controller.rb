@@ -1,6 +1,8 @@
 # typed: true
 
 class CharactersController < ApplicationController
+  extend T::Sig
+
   before_action :set_game
   before_action :require_game_access!
   before_action :require_active_member_for_write!, only: %i[new create edit update]
@@ -8,11 +10,13 @@ class CharactersController < ApplicationController
   before_action :require_edit_access!, only: %i[edit update]
   before_action :require_gm!, only: %i[archive restore]
 
+  sig { void }
   def new
     @character = Character.new
     @users = @game.active_members.where(role: "player").includes(:user).map(&:user)
   end
 
+  sig { void }
   def create
     if @game.game_master?(current_user)
       if params[:character][:user_id].blank?
@@ -37,23 +41,28 @@ class CharactersController < ApplicationController
     end
   end
 
+  sig { void }
   def show
     @versions = @character.character_versions.order(created_at: :desc)
   end
 
+  sig { void }
   def edit
   end
 
+  sig { void }
   def archive
     @character.archive!
     redirect_to game_character_path(@game, @character), notice: "#{@character.name} archived."
   end
 
+  sig { void }
   def restore
     @character.update!(archived_at: nil)
     redirect_to game_character_path(@game, @character), notice: "#{@character.name} restored."
   end
 
+  sig { void }
   def update
     if @character.update(character_params.except(:user_id))
       redirect_to game_character_path(@game, @character), notice: "Character updated."
@@ -64,10 +73,12 @@ class CharactersController < ApplicationController
 
   private
 
+  sig { void }
   def set_game
     @game = Game.find(params[:game_id])
   end
 
+  sig { void }
   def set_character
     @character = @game.characters.find(params[:id])
     unless @character.editable_by?(current_user, @game) || !@character.hidden? || @game.game_master?(current_user)
@@ -75,6 +86,7 @@ class CharactersController < ApplicationController
     end
   end
 
+  sig { void }
   def require_game_access!
     membership = @game.member_for(current_user)
     return if membership&.game_master?
@@ -83,22 +95,26 @@ class CharactersController < ApplicationController
     redirect_to root_path, alert: "You do not have access to this game."
   end
 
+  sig { void }
   def require_edit_access!
     unless @character.editable_by?(current_user, @game)
       redirect_to game_character_path(@game, @character), alert: "You cannot edit this character."
     end
   end
 
+  sig { void }
   def require_gm!
     unless @game.game_master?(current_user)
       redirect_to game_character_path(@game, @character), alert: "Only the GM can archive or restore characters."
     end
   end
 
+  sig { void }
   def require_active_member_for_write!
     require_active_member!(@game)
   end
 
+  sig { returns(ActionController::Parameters) }
   def character_params
     params.require(:character).permit(:name, :content, :hidden, :user_id)
   end
