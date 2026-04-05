@@ -1,12 +1,12 @@
-# typed: true
+# typed: strict
 
 class EmailContentExtractor
   extend T::Sig
 
-  OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
-  MODEL = "google/gemma-3-4b-it:free"
+  OPENROUTER_API_URL = T.let("https://openrouter.ai/api/v1/chat/completions", String)
+  MODEL = T.let("google/gemma-3-4b-it:free", String)
 
-  SYSTEM_PROMPT = <<~PROMPT.freeze
+  SYSTEM_PROMPT = T.let(<<~PROMPT.freeze, String)
     You are an email reply extractor. Extract only the new content the user wrote.
     Remove all quoted/replied text, email signatures, forwarded messages, and metadata.
     Return only the clean message body. No explanation, no commentary — just the extracted text.
@@ -30,6 +30,7 @@ class EmailContentExtractor
 
   private
 
+  sig { params(api_key: String).returns(T::Hash[String, T.untyped]) }
   def make_request(api_key)
     uri = URI(OPENROUTER_API_URL)
     http = Net::HTTP.new(uri.host, uri.port)

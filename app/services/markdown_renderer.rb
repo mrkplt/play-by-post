@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 
 class MarkdownRenderer
   extend T::Sig

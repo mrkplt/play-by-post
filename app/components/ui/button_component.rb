@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 
 class Ui::ButtonComponent < ApplicationComponent
   VARIANTS = T.let({

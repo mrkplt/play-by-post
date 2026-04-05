@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 
 class Shared::PostComposerComponent < ApplicationComponent
   extend T::Sig

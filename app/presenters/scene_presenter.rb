@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 
 class ScenePresenter < BasePresenter
   extend T::Sig

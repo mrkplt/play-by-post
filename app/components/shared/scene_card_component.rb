@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 
 class Shared::SceneCardComponent < ApplicationComponent
   extend T::Sig
