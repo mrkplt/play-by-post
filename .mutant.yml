@@ -51,6 +51,10 @@ matcher:
     - ProfilesController
     - PlayerManagementController
     - Users::SessionsController
+    # Adapters
+    - MailerNotifier
+    - MailerInvitationSender
+    - ActiveStorageFileStore
     # Jobs
     - PostDigestJob
     # Mailers
