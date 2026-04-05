@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 
 class UserPresenter < BasePresenter
   extend T::Sig

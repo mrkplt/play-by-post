@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 
 class BasePresenter < SimpleDelegator
   extend T::Sig

@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 
 class Shared::PostItemComponent < ApplicationComponent
   extend T::Sig

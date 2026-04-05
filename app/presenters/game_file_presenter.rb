@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 
 class GameFilePresenter < BasePresenter
   extend T::Sig
