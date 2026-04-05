@@ -1,12 +1,17 @@
+# typed: true
+
 class InvitationMailer < ApplicationMailer
+  extend T::Sig
+
   # Subject can be set in your I18n file at config/locales/en.yml
   # with the following lookup:
   #
   #   en.invitation_mailer.invite.subject
   #
+  sig { params(invitation: Invitation).returns(Mail::Message) }
   def invite(invitation)
     @invitation = invitation
-    @game = invitation.game
+    @game = T.must(invitation.game)
     @accept_url = accept_invitation_url(token: invitation.token)
 
     mail(

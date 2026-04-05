@@ -1,4 +1,8 @@
+# typed: true
+
 class EmailContentExtractor
+  extend T::Sig
+
   OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
   MODEL = "google/gemma-3-4b-it:free"
 
@@ -8,10 +12,12 @@ class EmailContentExtractor
     Return only the clean message body. No explanation, no commentary — just the extracted text.
   PROMPT
 
+  sig { params(raw_body: String).void }
   def initialize(raw_body)
     @raw_body = raw_body
   end
 
+  sig { returns(String) }
   def extract
     api_key = Rails.application.credentials.openrouter_api_key
     return @raw_body if api_key.blank?
