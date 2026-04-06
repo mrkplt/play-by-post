@@ -18,6 +18,7 @@ matcher:
   subjects:
     # Models
     - Game
+    - GameExportRequest
     - GameMember
     - GameFile
     - Character
@@ -38,7 +39,9 @@ matcher:
     - Shared::SidebarComponent
     # Services
     - EmailContentExtractor
+    - GameExportService
     # Controllers
+    - GameExportsController
     - ScenesController
     - CharactersController
     - GamesController
@@ -57,9 +60,11 @@ matcher:
     - ActiveStorageFileStore
     # Jobs
     - PostDigestJob
+    - ExportJob
     # Mailers
     - NotificationMailer
     - InvitationMailer
+    - ExportMailer
     # Mailboxes
     - SceneMailbox
     # Helpers

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_04_01_000003) do
+ActiveRecord::Schema[8.1].define(version: 2026_04_06_000001) do
   create_table "action_mailbox_inbound_emails", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "message_checksum", null: false
@@ -69,6 +69,16 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_01_000003) do
     t.integer "user_id", null: false
     t.index ["game_id"], name: "index_characters_on_game_id"
     t.index ["user_id"], name: "index_characters_on_user_id"
+  end
+
+  create_table "game_export_requests", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.integer "game_id"
+    t.datetime "updated_at", null: false
+    t.integer "user_id", null: false
+    t.index ["game_id"], name: "index_game_export_requests_on_game_id"
+    t.index ["user_id", "game_id"], name: "index_game_export_requests_on_user_id_and_game_id"
+    t.index ["user_id"], name: "index_game_export_requests_on_user_id"
   end
 
   create_table "game_files", force: :cascade do |t|
@@ -205,6 +215,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_01_000003) do
   add_foreign_key "character_versions", "users", column: "edited_by_id"
   add_foreign_key "characters", "games"
   add_foreign_key "characters", "users"
+  add_foreign_key "game_export_requests", "games"
+  add_foreign_key "game_export_requests", "users"
   add_foreign_key "game_files", "games"
   add_foreign_key "game_members", "games"
   add_foreign_key "game_members", "users"

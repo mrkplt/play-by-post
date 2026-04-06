@@ -84,3 +84,6 @@ group :test do
 end
 
 gem "sorbet-runtime"
+
+# Zip archive creation for game exports
+gem "rubyzip", "~> 2.3"

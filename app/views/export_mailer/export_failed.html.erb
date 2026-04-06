@@ -1,0 +1,13 @@
+<p>
+  Hi <%= @user.display_name.presence || @user.email %>,
+</p>
+
+<p>
+  <% if @game %>
+    Unfortunately your export of <strong><%= @game.name %></strong> could not be completed.
+  <% else %>
+    Unfortunately your all-games export could not be completed.
+  <% end %>
+</p>
+
+<p>Please try again from the app. If the problem persists, contact support.</p>

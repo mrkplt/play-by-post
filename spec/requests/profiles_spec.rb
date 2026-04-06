@@ -64,4 +64,45 @@ RSpec.describe ProfilesController, type: :request do
       expect(response).to have_http_status(:redirect)
     end
   end
+
+  describe "POST /profile/export_all" do
+    around do |example|
+      original_adapter = ActiveJob::Base.queue_adapter
+      ActiveJob::Base.queue_adapter = :test
+      example.run
+      ActiveJob::Base.queue_adapter = original_adapter
+    end
+
+    it "creates an all-games export request and enqueues the job" do
+      sign_in(user)
+      expect {
+        post export_all_profile_path
+      }.to change(GameExportRequest, :count).by(1)
+        .and have_enqueued_job(ExportJob)
+
+      expect(response).to redirect_to(profile_path)
+      expect(flash[:notice]).to match(/export requested/i)
+
+      request = GameExportRequest.last
+      expect(request.user).to eq(user)
+      expect(request.game).to be_nil
+    end
+
+    it "blocks a second all-games export within 24 hours" do
+      sign_in(user)
+      create(:game_export_request, :all_games, :recent, user: user)
+
+      expect {
+        post export_all_profile_path
+      }.not_to change(GameExportRequest, :count)
+
+      expect(response).to redirect_to(profile_path)
+      expect(flash[:alert]).to match(/24 hours/i)
+    end
+
+    it "unauthenticated user is redirected" do
+      post export_all_profile_path
+      expect(response).to have_http_status(:redirect)
+    end
+  end
 end
