@@ -13,6 +13,7 @@ Rails.application.routes.draw do
   authenticate :user do
     resource :profile, only: %i[show edit update], controller: "profiles" do
       post :toggle_hide_ooc, on: :collection
+      post :export_all, on: :collection
     end
     resources :games, only: %i[index new create show edit update] do
       member do
@@ -41,6 +42,7 @@ Rails.application.routes.draw do
         resources :invitations, only: %i[create destroy]
         resources :game_members, only: %i[update]
       end
+      resource :export, only: %i[create], controller: "game_exports"
       resources :game_files, only: %i[index create destroy]
       resources :characters, only: %i[new create show edit update] do
         member do

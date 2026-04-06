@@ -229,6 +229,24 @@ For technology stack, domain model, codebase conventions, and development workfl
 
 ---
 
+## Game Export
+
+- Any non-banned game member (active, GM, or removed) can request a zip export of a game
+- Removed members export only scenes they participated in; active members and GMs see all scenes visible to them
+- Banned members cannot export
+- "Export All Games" on the profile page bundles all non-banned games into a single zip archive
+- Exports are assembled in the background via `ExportJob` (Solid Queue)
+- Delivery: a 7-day signed Active Storage download link sent via `ExportMailer#export_ready`
+- Rate limit: one export request per user per game per 24-hour rolling window; all-games has its own independent 24-hour limit
+- Rate limits are tracked in the `game_export_requests` table
+- If a job fails, `ExportMailer#export_failed` is sent and the job re-raises (for retry by Solid Queue)
+- Archive structure: `{game-slug}-export-{date}/README.md`, `files_manifest.md`, `scenes/NNN-{slug}/scene_info.md`, `scenes/NNN-{slug}/posts.md`, `characters/{slug}/current_sheet.md`, `characters/{slug}/version_history/vNNN-{date}.md`
+- Drafts are excluded from posts; binary game files are excluded (a manifest is included)
+- User emails are never written to the archive; only display names
+- Zip files are purged from Active Storage after 7 days
+
+---
+
 ## Design Assumptions
 
 - All players are adults who are not cheating; no roll resolution system is needed

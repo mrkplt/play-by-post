@@ -67,6 +67,7 @@ class GamesController < ApplicationController
     @is_gm = @game.game_master?(current_user)
     @characters = @game.characters.active.visible_to(current_user, @game).includes(:user).order(:name)
     @game_files = @game.game_files.includes(file_attachment: :blob).order(created_at: :desc)
+    @export_rate_limited = GameExportRequest.rate_limited?(current_user, @game)
   end
 
   sig { void }

@@ -428,6 +428,7 @@ GEM
       ffi (~> 1.12)
       logger
     ruby2_keywords (0.0.5)
+    rubyzip (2.4.1)
     securerandom (0.4.1)
     simplecov (0.22.0)
       docile (~> 1.1)
@@ -581,6 +582,7 @@ DEPENDENCIES
   rspec-rails
   rubocop (>= 1.86)
   rubocop-rails-omakase
+  rubyzip (~> 2.3)
   simplecov
   solid_cache
   solid_queue

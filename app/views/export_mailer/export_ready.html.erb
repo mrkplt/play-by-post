@@ -1,0 +1,22 @@
+<p>
+  Hi <%= @user.display_name.presence || @user.email %>,
+</p>
+
+<p>
+  <% if @game %>
+    Your export of <strong><%= @game.name %></strong> is ready to download.
+  <% else %>
+    Your export of all your games is ready to download.
+  <% end %>
+</p>
+
+<p>The archive includes scenes, posts, characters, and a game file manifest.</p>
+
+<p style="margin: 1.5rem 0;">
+  <%= link_to "Download Export", @download_url,
+        style: "background:#1e40af; color:white; padding:0.625rem 1.25rem; border-radius:0.375rem; text-decoration:none; font-weight:600;" %>
+</p>
+
+<p style="font-size:0.85em; color:#64748b;">
+  This link expires in <%= @expires_days %> days. After that, you can request a new export from the app.
+</p>
