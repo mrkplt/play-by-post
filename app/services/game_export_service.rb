@@ -16,7 +16,8 @@ class GameExportService
   def call
     buffer = Zip::OutputStream.write_buffer do |zip|
       if @games.size == 1
-        build_game(T.must(@games.first), zip, prefix: root_prefix(@games.first))
+        single = T.must(@games.first)
+        build_game(single, zip, prefix: root_prefix(single))
       else
         @games.each do |game|
           slug = slugify(game.name)
@@ -34,10 +35,8 @@ class GameExportService
     Time.current.utc.strftime("%Y-%m-%d")
   end
 
-  sig { params(game: T.nilable(Game)).returns(String) }
+  sig { params(game: Game).returns(String) }
   def root_prefix(game)
-    return "all-games-export-#{export_date}/" if game.nil?
-
     "#{slugify(game.name)}-export-#{export_date}/"
   end
 
@@ -98,9 +97,7 @@ class GameExportService
     lines << "| Display Name | Role | Status |"
     lines << "|---|---|---|"
     members.each do |m|
-      user = m.user
-      next unless user
-
+      user = T.must(m.user)
       display = user.display_name.presence || user.email
       role = m.game_master? ? "GM" : "Player"
       status = m.removed? ? "Former" : "Active"
@@ -184,7 +181,7 @@ class GameExportService
     lines = []
     lines << "# #{scene.title}"
     lines << ""
-    lines << scene.description.presence || "_No description._"
+    lines << (scene.description.presence || "_No description._")
     lines << ""
 
     status = scene.resolved? ? "Resolved" : "Active"
@@ -209,9 +206,7 @@ class GameExportService
       lines << "| Display Name | Character |"
       lines << "|---|---|"
       participants.each do |sp|
-        user = sp.user
-        next unless user
-
+        user = T.must(sp.user)
         display = user.display_name.presence || user.email
         character = sp.character&.name || "—"
         lines << "| #{display} | #{character} |"
@@ -335,6 +330,7 @@ class GameExportService
         .gsub(/\s+/, "-")
         .gsub(/-+/, "-")
         .strip
+        .gsub(/\A-+|-+\z/, "")
         .then { |s| s.empty? ? "untitled" : s }
   end
 

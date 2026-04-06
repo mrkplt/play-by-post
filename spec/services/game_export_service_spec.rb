@@ -97,6 +97,160 @@ RSpec.describe GameExportService do
         content = zip_file_content(zip_data, readme_path)
         expect(content).to include("Active: 1")
       end
+
+      it "includes resolved scene count in README" do
+        create(:scene, :resolved, game: game, title: "Old Scene")
+        zip_data2 = GameExportService.new(gm_user, [ game ]).call
+        entries = zip_entries(zip_data2)
+        readme_path = entries.find { |e| e.end_with?("README.md") }
+        content = zip_file_content(zip_data2, readme_path)
+        expect(content).to include("Resolved: 1")
+      end
+
+      it "labels removed members as Former in README" do
+        removed_user = create(:user, :with_profile)
+        create(:game_member, :removed, game: game, user: removed_user)
+        entries = zip_entries(zip_data)
+        readme_path = entries.find { |e| e.end_with?("README.md") }
+        content = zip_file_content(zip_data, readme_path)
+        expect(content).to include("Former")
+      end
+
+      it "includes resolved scene status and date in scene_info.md" do
+        resolved = create(:scene, :resolved, game: game, title: "Done Scene", resolution: "All ends well.")
+        zip_data2 = GameExportService.new(gm_user, [ game ]).call
+        entries = zip_entries(zip_data2)
+        info_path = entries.find { |e| e.include?("done-scene") && e.end_with?("scene_info.md") }
+        content = zip_file_content(zip_data2, info_path)
+        expect(content).to include("Resolved")
+        expect(content).to include("All ends well.")
+      end
+
+      it "includes parent scene in scene_info.md" do
+        child = create(:scene, :with_parent, game: game, title: "Child Scene")
+        zip_data2 = GameExportService.new(gm_user, [ game ]).call
+        entries = zip_entries(zip_data2)
+        info_path = entries.find { |e| e.include?("child-scene") && e.end_with?("scene_info.md") }
+        content = zip_file_content(zip_data2, info_path)
+        expect(content).to include("## Parent Scene")
+      end
+
+      it "shows no description fallback in scene_info.md when description is blank" do
+        scene.update!(description: "")
+        zip_data2 = GameExportService.new(gm_user, [ game ]).call
+        entries = zip_entries(zip_data2)
+        info_path = entries.find { |e| e.end_with?("scene_info.md") }
+        content = zip_file_content(zip_data2, info_path)
+        expect(content).to include("_No description._")
+      end
+
+      it "labels OOC posts in posts.md" do
+        create(:post, :ooc, scene: scene, user: gm_user, content: "OOC message")
+        zip_data2 = GameExportService.new(gm_user, [ game ]).call
+        entries = zip_entries(zip_data2)
+        posts_path = entries.find { |e| e.end_with?("posts.md") }
+        content = zip_file_content(zip_data2, posts_path)
+        expect(content).to include("[Out of Character]")
+      end
+
+      it "marks edited posts with (edited) in posts.md" do
+        create(:post, :edited, scene: scene, user: gm_user, content: "Edited post")
+        zip_data2 = GameExportService.new(gm_user, [ game ]).call
+        entries = zip_entries(zip_data2)
+        posts_path = entries.find { |e| e.end_with?("posts.md") }
+        content = zip_file_content(zip_data2, posts_path)
+        expect(content).to include("(edited)")
+      end
+
+      it "shows no posts fallback when scene has no published posts" do
+        scene2 = create(:scene, game: game, title: "Empty Scene")
+        zip_data2 = GameExportService.new(gm_user, [ game ]).call
+        entries = zip_entries(zip_data2)
+        posts_path = entries.find { |e| e.include?("empty-scene") && e.end_with?("posts.md") }
+        content = zip_file_content(zip_data2, posts_path)
+        expect(content).to include("_No posts yet._")
+      end
+
+      it "notes hidden and archived character attributes in current_sheet.md" do
+        # Use gm_user's own characters so they appear in user_char_ids
+        hidden_char = create(:character, :hidden, game: game, user: gm_user, name: "Ghost")
+        archived_char = create(:character, :archived, game: game, user: gm_user, name: "Retired")
+        zip_data2 = GameExportService.new(gm_user, [ game ]).call
+        entries = zip_entries(zip_data2)
+
+        ghost_path = entries.find { |e| e.include?("ghost") && e.end_with?("current_sheet.md") }
+        ghost_content = zip_file_content(zip_data2, ghost_path)
+        expect(ghost_content).to include("**Hidden:** Yes")
+
+        retired_path = entries.find { |e| e.include?("retired") && e.end_with?("current_sheet.md") }
+        retired_content = zip_file_content(zip_data2, retired_path)
+        expect(retired_content).to include("**Archived:** Yes")
+      end
+
+      it "includes version history files for characters" do
+        character = create(:character, game: game, user: player_user, name: "Versioned")
+        participant.update!(character: character)
+        # Character gets a snapshot on create; update triggers another version
+        character.update!(content: "Updated sheet")
+        zip_data2 = GameExportService.new(gm_user, [ game ]).call
+        entries = zip_entries(zip_data2)
+        version_entries = entries.select { |e| e.include?("version_history") }
+        expect(version_entries.size).to be >= 2
+      end
+
+      it "includes files manifest with no-files message when no game files exist" do
+        entries = zip_entries(zip_data)
+        manifest_path = entries.find { |e| e.end_with?("files_manifest.md") }
+        content = zip_file_content(zip_data, manifest_path)
+        expect(content).to include("_No files uploaded._")
+      end
+
+      it "includes files manifest with file list when game files exist" do
+        gf = create(:game_file, game: game, filename: "rules.pdf", content_type: "application/pdf", byte_size: 2_048_000)
+        gf.file.attach(io: StringIO.new("pdf content"), filename: "rules.pdf", content_type: "application/pdf")
+        zip_data2 = GameExportService.new(gm_user, [ game ]).call
+        entries = zip_entries(zip_data2)
+        manifest_path = entries.find { |e| e.end_with?("files_manifest.md") }
+        content = zip_file_content(zip_data2, manifest_path)
+        expect(content).to include("rules.pdf")
+        expect(content).to include("MB")
+      end
+
+      it "shows KB size for medium files in manifest" do
+        gf = create(:game_file, game: game, filename: "notes.txt", content_type: "text/plain", byte_size: 2_048)
+        gf.file.attach(io: StringIO.new("notes"), filename: "notes.txt", content_type: "text/plain")
+        zip_data2 = GameExportService.new(gm_user, [ game ]).call
+        entries = zip_entries(zip_data2)
+        manifest_path = entries.find { |e| e.end_with?("files_manifest.md") }
+        content = zip_file_content(zip_data2, manifest_path)
+        expect(content).to include("KB")
+      end
+
+      it "shows 'unknown' size for game files without an attachment" do
+        create(:game_file, game: game, filename: "missing.pdf")
+        zip_data2 = GameExportService.new(gm_user, [ game ]).call
+        entries = zip_entries(zip_data2)
+        manifest_path = entries.find { |e| e.end_with?("files_manifest.md") }
+        content = zip_file_content(zip_data2, manifest_path)
+        expect(content).to include("unknown")
+      end
+
+      it "shows bytes for small files in manifest" do
+        gf = create(:game_file, game: game, filename: "tiny.txt", content_type: "text/plain", byte_size: 500)
+        gf.file.attach(io: StringIO.new("x"), filename: "tiny.txt", content_type: "text/plain")
+        zip_data2 = GameExportService.new(gm_user, [ game ]).call
+        entries = zip_entries(zip_data2)
+        manifest_path = entries.find { |e| e.end_with?("files_manifest.md") }
+        content = zip_file_content(zip_data2, manifest_path)
+        expect(content).to include(" B")
+      end
+
+      it "uses 'untitled' slug for a scene whose title produces an empty slug" do
+        create(:scene, game: game, title: "!!! @@@")
+        zip_data2 = GameExportService.new(gm_user, [ game ]).call
+        entries = zip_entries(zip_data2)
+        expect(entries).to include(a_string_matching(%r{-untitled/}))
+      end
     end
 
     context "single game, active player" do
