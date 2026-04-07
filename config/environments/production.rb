@@ -27,7 +27,7 @@ Rails.application.configure do
   # Store uploaded files on the local file system (see config/storage.yml for options).
   config.active_storage.service = :cloudflare_r2
 
-  config.secret_key_base = Rails.application.credentials.secret_key_base
+  config.secret_key_base = Rails.application.secrets.secret_key_base
 
   # Assume all access to the app is happening through a SSL-terminating reverse proxy.
   config.assume_ssl = true
