@@ -52,7 +52,7 @@ class NotificationMailer < ApplicationMailer
 
   sig { params(scene: Scene).returns(String) }
   def scene_reply_to(scene)
-    domain = ENV.fetch("MAILGUN_DOMAIN", "example.com")
+    domain = Rails.application.credentials.mailgun_domain
     "scene-#{scene.id}@inbound.#{domain}"
   end
 end
