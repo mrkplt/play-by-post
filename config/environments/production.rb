@@ -27,6 +27,8 @@ Rails.application.configure do
   # Store uploaded files on the local file system (see config/storage.yml for options).
   config.active_storage.service = :cloudflare_r2
 
+  config.secret_key_base = Rails.application.credentials.secret_key_base
+
   # Assume all access to the app is happening through a SSL-terminating reverse proxy.
   config.assume_ssl = true
 
@@ -60,7 +62,7 @@ Rails.application.configure do
   # config.action_mailer.raise_delivery_errors = false
 
   # Set host to be used by links generated in mailer templates.
-  config.action_mailer.default_url_options = { host: ENV.fetch("APP_HOST", "example.com") }
+  config.action_mailer.default_url_options = { host: ENV.fetch("APP_HOST") { ENV.fetch("RAILWAY_PUBLIC_DOMAIN", "example.com") } }
   config.action_mailer.delivery_method = :smtp
   config.action_mailer.smtp_settings = {
     user_name: "api",
