@@ -10,6 +10,7 @@ gem "tailwindcss-rails"
 gem "icons"
 # Use postgresql in production (Railway)
 gem "pg", "~> 1.1", group: :production
+gem "aws-sdk-s3", require: false, group: :production
 
 # Use sqlite3 locally
 gem "sqlite3", ">= 2.1", group: %i[ development test ]
