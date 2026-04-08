@@ -36,6 +36,7 @@ matcher:
     # Components
     - Shared::PostItemComponent
     - Shared::PostComposerComponent
+    - Shared::NavShellComponent
     - Shared::SidebarComponent
     # Services
     - EmailContentExtractor
