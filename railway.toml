@@ -2,7 +2,8 @@
 builder = "nixpacks"
 
 [deploy]
-startCommand = "bundle exec rails db:migrate && bundle exec rails server -p $PORT -e production"
+startCommand = "bundle exec rails server -b 0.0.0.0 -p $PORT -e production"
+dbMigrateCommand = "bundle exec rails db:migrate"
 healthcheckPath = "/up"
-healthcheckTimeout = 30
+healthcheckTimeout = 60
 restartPolicyType = "on_failure"
