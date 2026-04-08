@@ -5,9 +5,18 @@ RSpec.describe Shared::NavShellComponent, type: :component do
 
   let(:current_user) { build_stubbed(:user, email: "jane@example.com") }
 
+  before do
+    allow(current_user).to receive(:display_name).and_return("Jane Doe")
+    allow(current_user).to receive(:games).and_return(double(any?: false))
+  end
+
   def rendered_component
     render_inline(component)
     page
+  end
+
+  it "passes current_user to the sidebar" do
+    expect(rendered_component).to have_text("Jane Doe")
   end
 
   it "renders the hamburger button" do
