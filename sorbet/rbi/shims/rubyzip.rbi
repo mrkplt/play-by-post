@@ -5,8 +5,8 @@ module Zip
     sig { params(file_name: String, encrypter: T.untyped, block: T.proc.params(zip: Zip::OutputStream).void).returns(StringIO) }
     def self.write_buffer(file_name = "", encrypter = NullEncrypter.new, &block); end
 
-    sig { params(name: String, compression_method: Integer, size: T.nilable(Integer)).void }
-    def put_next_entry(name, compression_method = Entry::DEFLATED, size = nil); end
+    sig { params(entry: String, level: T.nilable(Integer), dest_io: T.untyped, compression_method: Integer, size: T.nilable(Integer)).void }
+    def put_next_entry(entry, level = nil, dest_io = nil, compression_method = Entry::DEFLATED, size = nil); end
 
     sig { params(data: String).returns(Integer) }
     def write(data); end
