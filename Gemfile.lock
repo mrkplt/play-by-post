@@ -316,7 +316,7 @@ GEM
       racc (~> 1.4)
     orm_adapter (0.5.0)
     ostruct (0.6.3)
-    pagy (43.4.4)
+    pagy (43.5.0)
       json
       uri
       yaml
@@ -611,7 +611,7 @@ DEPENDENCIES
   lookbook
   mailgun-ruby (~> 1.2)
   mutant-rspec
-  pagy (~> 43.4)
+  pagy (~> 43.5)
   pg (~> 1.1)
   propshaft
   puma (>= 5.0)
