@@ -10,27 +10,12 @@
   </head>
   <body>
     <div data-controller="sidebar">
-      <!-- Mobile hamburger -->
-      <button data-action="click->sidebar#open"
-              data-sidebar-target="toggle"
-              class="md:hidden fixed top-4 left-4 z-50 bg-[#2b2d31] text-[#cdd1d9] border border-[#3d3f45] rounded px-3 py-2 text-lg cursor-pointer"
-              aria-label="Open navigation">
-        &#9776;
-      </button>
-
-      <!-- Backdrop -->
-      <div class="sidebar-backdrop md:hidden"
-           hidden
-           data-sidebar-target="backdrop"
-           data-action="click->sidebar#close"></div>
-
-      <!-- Sidebar -->
-      <aside class="sidebar" data-sidebar-target="sidebar">
-        <%= render Shared::SidebarComponent.new(current_user: (current_user if user_signed_in?)) %>
-      </aside>
+      <% if user_signed_in? %>
+        <%= render Shared::NavShellComponent.new(current_user: current_user) %>
+      <% end %>
 
       <!-- Main -->
-      <div class="main-with-sidebar">
+      <div class="<%= user_signed_in? ? 'main-with-sidebar' : '' %>">
         <main class="content-area">
           <% if notice.present? %>
             <p class="px-4 py-3 rounded mb-4 text-sm bg-green-100 text-green-800"><%= notice %></p>
