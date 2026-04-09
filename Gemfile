@@ -88,4 +88,4 @@ end
 gem "sorbet-runtime"
 
 # Zip archive creation for game exports
-gem "rubyzip", "~> 2.3"
+gem "rubyzip", "~> 3.2"
