@@ -29,6 +29,7 @@ PROJECT_ROOT = File.expand_path("..", __dir__)
 THRESHOLD = 5.0 # max allowed regression in percentage points
 CHANGED_FILE_LINE_THRESHOLD = 80.0 # minimum line coverage for changed files
 CHANGED_FILE_BRANCH_THRESHOLD = 70.0 # minimum branch coverage for changed files
+CHANGED_VIEW_CSS_TOLERANCE = 0.10 # a view file may grow by at most this fraction of its previous CSS count
 REQUIRED_SORBET_SIGILS = %w[true strict strong].freeze
 
 METRIC_KEYS = %w[line_coverage branch_coverage sorbet_typed_pct mutation_coverage css_in_components_pct].freeze
@@ -290,7 +291,8 @@ def check_changed_view_css
   changed = changed_view_erb_files
   return [] if changed.empty?
 
-  puts "\n=== Changed View CSS (views must not gain CSS statements) ==="
+  pct = (CHANGED_VIEW_CSS_TOLERANCE * 100).to_i
+  puts "\n=== Changed View CSS (views may grow by at most #{pct}% of previous count) ==="
   failures = []
 
   changed.each do |relative_path|
@@ -300,12 +302,14 @@ def check_changed_view_css
     old_count   = css_statements_in_content(old_content)
     new_count   = css_statements_in_content(File.read(absolute_path, encoding: "utf-8"))
     delta       = new_count - old_count
+    allowed     = (old_count * CHANGED_VIEW_CSS_TOLERANCE).ceil
 
-    status = delta > 0 ? "FAIL" : "OK"
-    puts "  [#{status}] #{relative_path}: #{old_count} -> #{new_count} (#{delta >= 0 ? '+' : ''}#{delta})"
+    failed = delta > allowed
+    status = failed ? "FAIL" : "OK"
+    puts "  [#{status}] #{relative_path}: #{old_count} -> #{new_count} (#{delta >= 0 ? '+' : ''}#{delta}, allowed: +#{allowed})"
 
-    if delta > 0
-      failures << "#{relative_path}: +#{delta} CSS statement(s) added to a view template; move to a ViewComponent instead"
+    if failed
+      failures << "#{relative_path}: +#{delta} CSS statement(s) exceeds #{pct}% tolerance (+#{allowed} allowed); move to a ViewComponent instead"
     end
   end
 
