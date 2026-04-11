@@ -47,12 +47,18 @@ CSS_STYLE_ATTR_RE = /\bstyle=["']([^"'<>\n]*)["']/
 #   style="..." — each semicolon-separated declaration is one statement
 # Both are relevant to ViewComponent modularisation regardless of whether
 # the end result is Tailwind utilities or raw inline styles.
+def css_statements_in_content(content)
+  count = 0
+  content.scan(CSS_CLASS_ATTR_RE) { |m| count += m[0].split.size }
+  content.scan(CSS_STYLE_ATTR_RE) { |m| count += m[0].split(";").count { |d| !d.strip.empty? } }
+  count
+end
+
 def count_css_statements_in_files(files)
   count = 0
   files.each do |file|
     content = File.read(file, encoding: "utf-8")
-    content.scan(CSS_CLASS_ATTR_RE) { |m| count += m[0].split.size }
-    content.scan(CSS_STYLE_ATTR_RE) { |m| count += m[0].split(";").count { |d| !d.strip.empty? } }
+    count += css_statements_in_content(content)
   rescue Encoding::InvalidByteSequenceError, Encoding::UndefinedConversionError
     # skip non-UTF-8 files
   end
@@ -274,6 +280,38 @@ def check_changed_file_sigils
   failures
 end
 
+def changed_view_erb_files
+  `git diff --name-only origin/master -- app/views/`.strip.split("\n")
+    .select { |f| f.end_with?(".html.erb") }
+    .select { |f| File.exist?(File.join(PROJECT_ROOT, f)) }
+end
+
+def check_changed_view_css
+  changed = changed_view_erb_files
+  return [] if changed.empty?
+
+  puts "\n=== Changed View CSS (views must not gain CSS statements) ==="
+  failures = []
+
+  changed.each do |relative_path|
+    absolute_path = File.join(PROJECT_ROOT, relative_path)
+
+    old_content = `git show origin/master:#{relative_path} 2>/dev/null`
+    old_count   = css_statements_in_content(old_content)
+    new_count   = css_statements_in_content(File.read(absolute_path, encoding: "utf-8"))
+    delta       = new_count - old_count
+
+    status = delta > 0 ? "FAIL" : "OK"
+    puts "  [#{status}] #{relative_path}: #{old_count} -> #{new_count} (#{delta >= 0 ? '+' : ''}#{delta})"
+
+    if delta > 0
+      failures << "#{relative_path}: +#{delta} CSS statement(s) added to a view template; move to a ViewComponent instead"
+    end
+  end
+
+  failures
+end
+
 def check_sorbet_tc
   puts "\n=== Sorbet Type Check ==="
   output = `bundle exec srb tc 2>&1`
@@ -361,10 +399,11 @@ when "--check"
   baseline_failures = check_against_baseline(metrics, baseline)
   changed_file_failures = check_changed_file_coverage
   changed_file_sigil_failures = check_changed_file_sigils
-
+  changed_view_css_failures = check_changed_view_css
   sorbet_tc_failures = check_sorbet_tc
 
-  failures = baseline_failures + changed_file_failures + changed_file_sigil_failures + sorbet_tc_failures
+  failures = baseline_failures + changed_file_failures + changed_file_sigil_failures +
+             changed_view_css_failures + sorbet_tc_failures
 
   if failures.any?
     puts "\nFAILED: Quality checks did not pass:"
