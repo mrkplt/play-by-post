@@ -35,29 +35,24 @@ METRIC_KEYS = %w[line_coverage branch_coverage sorbet_typed_pct mutation_coverag
 FLOOR_METRICS = %w[mutation_coverage css_in_components_pct].freeze
 
 # Matches static class="..." / class='...' attribute values in ERB/HTML files.
+# The character class stops at < so ERB interpolations (e.g. <%= ... %>) are
+# not included in the captured value; only the static tokens around them count.
 CSS_CLASS_ATTR_RE = /\bclass=["']([^"'<>\n]*)["']/
 
-# Matches a Tailwind-like utility token: optional variant prefix(es) (e.g. hover:,
-# sm:, focus:), a base name containing letters/digits/hyphens, and an optional
-# arbitrary-value bracket (e.g. [3px]).  Single-word tokens are allowed because
-# utilities like "flex", "hidden", and "grid" have no hyphen.
-TAILWIND_TOKEN_RE = /\A(?:[a-z][a-z0-9]*:)*[a-z][a-z0-9]*(?:-[a-z0-9.\[\]#%,\/]+)*\z/
-
 # Directories / path patterns whose ERB files are excluded from the CSS metric.
-# Mailers use inline CSS for email-client compatibility — not Tailwind utilities —
-# and are not candidates for ViewComponent migration.
+# Mailer views are not candidates for ViewComponent modularisation.
 MAILER_VIEW_RE = %r{/views/(devise/mailer|[a-z_]+_mailer|layouts/mailer)}
 
-# Count individual Tailwind class tokens found in static class="..." attributes
-# across the given list of files.  ERB interpolations inside the attribute value
-# (e.g. <%= ... %>) stop the static match before the tag, so only tokens
-# that precede them are counted.
+# Count CSS class tokens in static class="..." attributes across the given
+# files.  All whitespace-separated tokens are counted regardless of framework;
+# the metric is about modularisation into ViewComponents, not about any
+# particular CSS convention.
 def count_css_tokens_in_files(files)
   count = 0
   files.each do |file|
     content = File.read(file, encoding: "utf-8")
     content.scan(CSS_CLASS_ATTR_RE) do |match|
-      count += match[0].split.count { |t| t.match?(TAILWIND_TOKEN_RE) }
+      count += match[0].split.size
     end
   rescue Encoding::InvalidByteSequenceError, Encoding::UndefinedConversionError
     # skip non-UTF-8 files
