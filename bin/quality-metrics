@@ -31,7 +31,76 @@ CHANGED_FILE_LINE_THRESHOLD = 80.0 # minimum line coverage for changed files
 CHANGED_FILE_BRANCH_THRESHOLD = 70.0 # minimum branch coverage for changed files
 REQUIRED_SORBET_SIGILS = %w[true strict strong].freeze
 
-METRIC_KEYS = %w[line_coverage branch_coverage sorbet_typed_pct mutation_coverage].freeze
+METRIC_KEYS = %w[line_coverage branch_coverage sorbet_typed_pct mutation_coverage css_in_components_pct].freeze
+FLOOR_METRICS = %w[mutation_coverage css_in_components_pct].freeze
+
+# Matches static class="..." / class='...' attribute values in ERB/HTML files.
+CSS_CLASS_ATTR_RE = /\bclass=["']([^"'<>\n]*)["']/
+
+# Matches a Tailwind-like utility token: optional variant prefix(es) (e.g. hover:,
+# sm:, focus:), a base name containing letters/digits/hyphens, and an optional
+# arbitrary-value bracket (e.g. [3px]).  Single-word tokens are allowed because
+# utilities like "flex", "hidden", and "grid" have no hyphen.
+TAILWIND_TOKEN_RE = /\A(?:[a-z][a-z0-9]*:)*[a-z][a-z0-9]*(?:-[a-z0-9.\[\]#%,\/]+)*\z/
+
+# Count individual CSS class tokens found in static class="..." attributes across
+# every file matching the given glob.  ERB expressions inside the attribute value
+# (e.g. <%= ... %>) are left in the string and will produce zero valid Tailwind
+# tokens, so they are silently skipped when counting.
+def count_css_tokens_in_erb_files(glob_pattern)
+  count = 0
+  Dir.glob(File.join(PROJECT_ROOT, glob_pattern)).each do |file|
+    content = File.read(file, encoding: "utf-8")
+    content.scan(CSS_CLASS_ATTR_RE) do |match|
+      count += match[0].split.count { |t| t.match?(TAILWIND_TOKEN_RE) }
+    end
+  rescue Encoding::InvalidByteSequenceError, Encoding::UndefinedConversionError
+    # skip non-UTF-8 files
+  end
+  count
+end
+
+# Count Tailwind tokens in Ruby source files under app/components/.
+# String literals whose every whitespace-separated token looks like a Tailwind
+# utility (e.g. "bg-blue-600 text-white hover:bg-blue-700") are counted.
+# Strings with fewer than two tokens are ignored to avoid counting ordinary
+# Ruby string values (method names, labels, SQL snippets, etc.).
+def count_css_tokens_in_ruby_components
+  count = 0
+  Dir.glob(File.join(PROJECT_ROOT, "app/components/**/*.rb")).each do |file|
+    content = File.read(file, encoding: "utf-8")
+    # Match both double- and single-quoted string literals.
+    content.scan(/"((?:[^"\\]|\\.)*)"/) do |match|
+      tokens = match[0].split.reject(&:empty?)
+      next if tokens.size < 2
+      next unless tokens.all? { |t| t.match?(TAILWIND_TOKEN_RE) }
+      count += tokens.size
+    end
+    content.scan(/'((?:[^'\\]|\\.)*)'/) do |match|
+      tokens = match[0].split.reject(&:empty?)
+      next if tokens.size < 2
+      next unless tokens.all? { |t| t.match?(TAILWIND_TOKEN_RE) }
+      count += tokens.size
+    end
+  rescue Encoding::InvalidByteSequenceError, Encoding::UndefinedConversionError
+    # skip
+  end
+  count
+end
+
+def collect_css_metrics
+  view_css      = count_css_tokens_in_erb_files("app/views/**/*.erb")
+  component_css = count_css_tokens_in_erb_files("app/components/**/*.html.erb") +
+                  count_css_tokens_in_ruby_components
+  total = view_css + component_css
+  pct   = total > 0 ? (component_css.to_f / total * 100).round(2) : 0.0
+
+  {
+    "view_css_tokens"      => view_css,
+    "component_css_tokens" => component_css,
+    "css_in_components_pct" => pct
+  }
+end
 
 def collect_metrics
   metrics = {}
@@ -76,6 +145,9 @@ def collect_metrics
     warn "         Run mutant and pipe output through: bin/quality-metrics --record-mutant"
   end
 
+  # --- CSS component coverage ---
+  metrics.merge!(collect_css_metrics)
+
   metrics
 end
 
@@ -111,10 +183,14 @@ end
 
 def display_metrics(metrics)
   puts "=== Code Quality Metrics ==="
-  puts "  Line coverage:      #{fmt(metrics['line_coverage'])}" if metrics["line_coverage"]
-  puts "  Branch coverage:    #{fmt(metrics['branch_coverage'])}" if metrics["branch_coverage"]
-  puts "  Sorbet typed files: #{fmt(metrics['sorbet_typed_pct'])}" if metrics["sorbet_typed_pct"]
-  puts "  Mutation coverage:  #{fmt(metrics['mutation_coverage'])}" if metrics["mutation_coverage"]
+  puts "  Line coverage:        #{fmt(metrics['line_coverage'])}" if metrics["line_coverage"]
+  puts "  Branch coverage:      #{fmt(metrics['branch_coverage'])}" if metrics["branch_coverage"]
+  puts "  Sorbet typed files:   #{fmt(metrics['sorbet_typed_pct'])}" if metrics["sorbet_typed_pct"]
+  puts "  Mutation coverage:    #{fmt(metrics['mutation_coverage'])}" if metrics["mutation_coverage"]
+  if metrics["css_in_components_pct"]
+    puts "  CSS in components:    #{fmt(metrics['css_in_components_pct'])}" \
+         " (#{metrics['component_css_tokens']} component / #{metrics['view_css_tokens']} view tokens)"
+  end
 end
 
 def fmt(value)
@@ -250,16 +326,20 @@ def check_against_baseline(metrics, baseline)
     previous = baseline[key]
     next if current.nil? || previous.nil?
 
-    if key == "mutation_coverage"
-      # Mutation coverage uses --since (incremental). The baseline value is a
-      # minimum floor, not a regression target. Changed code must meet or
-      # exceed the floor. Skip when --since found no mutations to test.
-      mutant_data = File.exist?(MUTANT_RESULT_PATH) ? JSON.parse(File.read(MUTANT_RESULT_PATH)) : {}
-      mutations = mutant_data["mutations"] || 0
+    if FLOOR_METRICS.include?(key)
+      # Floor metrics use the baseline value as a minimum.  The current value
+      # must meet or exceed it; improvement is always welcome.
+      #
+      # Special case for mutation_coverage: when --since finds no mutations to
+      # test (incremental run over a small diff), skip the check entirely.
+      if key == "mutation_coverage"
+        mutant_data = File.exist?(MUTANT_RESULT_PATH) ? JSON.parse(File.read(MUTANT_RESULT_PATH)) : {}
+        mutations = mutant_data["mutations"] || 0
 
-      if mutations.zero?
-        puts "  [SKIP] #{key}: no mutations in changed code"
-        next
+        if mutations.zero?
+          puts "  [SKIP] #{key}: no mutations in changed code"
+          next
+        end
       end
 
       failed = current < previous
