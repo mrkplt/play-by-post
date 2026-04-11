@@ -247,6 +247,16 @@ For technology stack, domain model, codebase conventions, and development workfl
 
 ---
 
+## CSS Component Coverage
+
+- CSS styling is progressively migrated from plain ERB view templates to ViewComponent files
+- `bin/quality-metrics` tracks a `css_in_components_pct` metric: the percentage of CSS statements in ViewComponent templates (`app/components/**/*.html.erb`) versus all application view templates (`app/views/**/*.html.erb`, including mailer views — mailers can render components just as web views can); a CSS statement is either a whitespace-separated token in a `class="..."` attribute or a semicolon-separated declaration in a `style="..."` attribute
+- The metric uses a floor model — it can only improve; any decrease below the recorded baseline fails the quality gate
+- Run `bin/quality-metrics --save` after intentional migration work to advance the baseline
+- Target is 100% (all styling in components; no inline CSS in plain ERB views)
+
+---
+
 ## Design Assumptions
 
 - All players are adults who are not cheating; no roll resolution system is needed

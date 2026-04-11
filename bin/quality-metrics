@@ -31,7 +31,55 @@ CHANGED_FILE_LINE_THRESHOLD = 80.0 # minimum line coverage for changed files
 CHANGED_FILE_BRANCH_THRESHOLD = 70.0 # minimum branch coverage for changed files
 REQUIRED_SORBET_SIGILS = %w[true strict strong].freeze
 
-METRIC_KEYS = %w[line_coverage branch_coverage sorbet_typed_pct mutation_coverage].freeze
+METRIC_KEYS = %w[line_coverage branch_coverage sorbet_typed_pct mutation_coverage css_in_components_pct].freeze
+FLOOR_METRICS = %w[mutation_coverage css_in_components_pct].freeze
+
+# Matches static class="..." / class='...' attribute values in ERB/HTML files.
+# The character class stops at < so ERB interpolations (e.g. <%= ... %>) are
+# not included in the captured value; only the static tokens around them count.
+CSS_CLASS_ATTR_RE = /\bclass=["']([^"'<>\n]*)["']/
+
+# Matches static style="..." / style='...' attribute values.
+CSS_STYLE_ATTR_RE = /\bstyle=["']([^"'<>\n]*)["']/
+
+# Count CSS statements across the given files.  Two kinds are recognised:
+#   class="..." — each whitespace-separated token is one statement
+#   style="..." — each semicolon-separated declaration is one statement
+# Both are relevant to ViewComponent modularisation regardless of whether
+# the end result is Tailwind utilities or raw inline styles.
+def css_statements_in_content(content)
+  count = 0
+  content.scan(CSS_CLASS_ATTR_RE) { |m| count += m[0].split.size }
+  content.scan(CSS_STYLE_ATTR_RE) { |m| count += m[0].split(";").count { |d| !d.strip.empty? } }
+  count
+end
+
+def count_css_statements_in_files(files)
+  count = 0
+  files.each do |file|
+    content = File.read(file, encoding: "utf-8")
+    count += css_statements_in_content(content)
+  rescue Encoding::InvalidByteSequenceError, Encoding::UndefinedConversionError
+    # skip non-UTF-8 files
+  end
+  count
+end
+
+def collect_css_metrics
+  view_files      = Dir.glob(File.join(PROJECT_ROOT, "app/views/**/*.html.erb"))
+  component_files = Dir.glob(File.join(PROJECT_ROOT, "app/components/**/*.html.erb"))
+
+  view_css      = count_css_statements_in_files(view_files)
+  component_css = count_css_statements_in_files(component_files)
+  total = view_css + component_css
+  pct   = total > 0 ? (component_css.to_f / total * 100).round(2) : 0.0
+
+  {
+    "view_css_statements"       => view_css,
+    "component_css_statements"  => component_css,
+    "css_in_components_pct"     => pct
+  }
+end
 
 def collect_metrics
   metrics = {}
@@ -76,6 +124,9 @@ def collect_metrics
     warn "         Run mutant and pipe output through: bin/quality-metrics --record-mutant"
   end
 
+  # --- CSS component coverage ---
+  metrics.merge!(collect_css_metrics)
+
   metrics
 end
 
@@ -111,10 +162,14 @@ end
 
 def display_metrics(metrics)
   puts "=== Code Quality Metrics ==="
-  puts "  Line coverage:      #{fmt(metrics['line_coverage'])}" if metrics["line_coverage"]
-  puts "  Branch coverage:    #{fmt(metrics['branch_coverage'])}" if metrics["branch_coverage"]
-  puts "  Sorbet typed files: #{fmt(metrics['sorbet_typed_pct'])}" if metrics["sorbet_typed_pct"]
-  puts "  Mutation coverage:  #{fmt(metrics['mutation_coverage'])}" if metrics["mutation_coverage"]
+  puts "  Line coverage:        #{fmt(metrics['line_coverage'])}" if metrics["line_coverage"]
+  puts "  Branch coverage:      #{fmt(metrics['branch_coverage'])}" if metrics["branch_coverage"]
+  puts "  Sorbet typed files:   #{fmt(metrics['sorbet_typed_pct'])}" if metrics["sorbet_typed_pct"]
+  puts "  Mutation coverage:    #{fmt(metrics['mutation_coverage'])}" if metrics["mutation_coverage"]
+  if metrics["css_in_components_pct"]
+    puts "  CSS in components:    #{fmt(metrics['css_in_components_pct'])}" \
+         " (#{metrics['component_css_statements']} component / #{metrics['view_css_statements']} view statements)"
+  end
 end
 
 def fmt(value)
@@ -225,6 +280,39 @@ def check_changed_file_sigils
   failures
 end
 
+def changed_view_erb_files
+  `git diff --name-only origin/master -- app/views/`.strip.split("\n")
+    .select { |f| f.end_with?(".html.erb") }
+    .select { |f| File.exist?(File.join(PROJECT_ROOT, f)) }
+end
+
+def check_changed_view_css
+  changed = changed_view_erb_files
+  return [] if changed.empty?
+
+  puts "\n=== Changed View CSS (views must not gain CSS statements) ==="
+  failures = []
+
+  changed.each do |relative_path|
+    absolute_path = File.join(PROJECT_ROOT, relative_path)
+
+    old_content = `git show origin/master:#{relative_path} 2>/dev/null`
+    old_count   = css_statements_in_content(old_content)
+    new_count   = css_statements_in_content(File.read(absolute_path, encoding: "utf-8"))
+    delta       = new_count - old_count
+
+    failed = delta > 0
+    status = failed ? "FAIL" : "OK"
+    puts "  [#{status}] #{relative_path}: #{old_count} -> #{new_count} (#{delta >= 0 ? '+' : ''}#{delta})"
+
+    if failed
+      failures << "#{relative_path}: +#{delta} CSS statement(s) added to a view template; move to a ViewComponent instead"
+    end
+  end
+
+  failures
+end
+
 def check_sorbet_tc
   puts "\n=== Sorbet Type Check ==="
   output = `bundle exec srb tc 2>&1`
@@ -250,16 +338,20 @@ def check_against_baseline(metrics, baseline)
     previous = baseline[key]
     next if current.nil? || previous.nil?
 
-    if key == "mutation_coverage"
-      # Mutation coverage uses --since (incremental). The baseline value is a
-      # minimum floor, not a regression target. Changed code must meet or
-      # exceed the floor. Skip when --since found no mutations to test.
-      mutant_data = File.exist?(MUTANT_RESULT_PATH) ? JSON.parse(File.read(MUTANT_RESULT_PATH)) : {}
-      mutations = mutant_data["mutations"] || 0
+    if FLOOR_METRICS.include?(key)
+      # Floor metrics use the baseline value as a minimum.  The current value
+      # must meet or exceed it; improvement is always welcome.
+      #
+      # Special case for mutation_coverage: when --since finds no mutations to
+      # test (incremental run over a small diff), skip the check entirely.
+      if key == "mutation_coverage"
+        mutant_data = File.exist?(MUTANT_RESULT_PATH) ? JSON.parse(File.read(MUTANT_RESULT_PATH)) : {}
+        mutations = mutant_data["mutations"] || 0
 
-      if mutations.zero?
-        puts "  [SKIP] #{key}: no mutations in changed code"
-        next
+        if mutations.zero?
+          puts "  [SKIP] #{key}: no mutations in changed code"
+          next
+        end
       end
 
       failed = current < previous
@@ -308,10 +400,11 @@ when "--check"
   baseline_failures = check_against_baseline(metrics, baseline)
   changed_file_failures = check_changed_file_coverage
   changed_file_sigil_failures = check_changed_file_sigils
-
+  changed_view_css_failures = check_changed_view_css
   sorbet_tc_failures = check_sorbet_tc
 
-  failures = baseline_failures + changed_file_failures + changed_file_sigil_failures + sorbet_tc_failures
+  failures = baseline_failures + changed_file_failures + changed_file_sigil_failures +
+             changed_view_css_failures + sorbet_tc_failures
 
   if failures.any?
     puts "\nFAILED: Quality checks did not pass:"
