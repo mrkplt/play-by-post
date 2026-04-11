@@ -250,7 +250,7 @@ For technology stack, domain model, codebase conventions, and development workfl
 ## CSS Component Coverage
 
 - CSS styling is progressively migrated from plain ERB view templates to ViewComponent files
-- `bin/quality-metrics` tracks a `css_in_components_pct` metric: the percentage of Tailwind class tokens that live in `app/components/` (both `.html.erb` templates and `.rb` class files defining class strings) versus `app/views/**/*.erb`
+- `bin/quality-metrics` tracks a `css_in_components_pct` metric: the percentage of Tailwind class tokens in ViewComponent templates (`app/components/**/*.html.erb`) versus plain application view templates (`app/views/**/*.html.erb`, mailer views excluded)
 - The metric uses a floor model — it can only improve; any decrease below the recorded baseline fails the quality gate
 - Run `bin/quality-metrics --save` after intentional migration work to advance the baseline
 - Target is 100% (all styling in components; no inline Tailwind in plain ERB views)
