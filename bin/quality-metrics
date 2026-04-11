@@ -39,17 +39,20 @@ FLOOR_METRICS = %w[mutation_coverage css_in_components_pct].freeze
 # not included in the captured value; only the static tokens around them count.
 CSS_CLASS_ATTR_RE = /\bclass=["']([^"'<>\n]*)["']/
 
-# Count CSS class tokens in static class="..." attributes across the given
-# files.  All whitespace-separated tokens are counted regardless of framework;
-# the metric is about modularisation into ViewComponents, not about any
-# particular CSS convention.
-def count_css_tokens_in_files(files)
+# Matches static style="..." / style='...' attribute values.
+CSS_STYLE_ATTR_RE = /\bstyle=["']([^"'<>\n]*)["']/
+
+# Count CSS statements across the given files.  Two kinds are recognised:
+#   class="..." — each whitespace-separated token is one statement
+#   style="..." — each semicolon-separated declaration is one statement
+# Both are relevant to ViewComponent modularisation regardless of whether
+# the end result is Tailwind utilities or raw inline styles.
+def count_css_statements_in_files(files)
   count = 0
   files.each do |file|
     content = File.read(file, encoding: "utf-8")
-    content.scan(CSS_CLASS_ATTR_RE) do |match|
-      count += match[0].split.size
-    end
+    content.scan(CSS_CLASS_ATTR_RE) { |m| count += m[0].split.size }
+    content.scan(CSS_STYLE_ATTR_RE) { |m| count += m[0].split(";").count { |d| !d.strip.empty? } }
   rescue Encoding::InvalidByteSequenceError, Encoding::UndefinedConversionError
     # skip non-UTF-8 files
   end
@@ -60,15 +63,15 @@ def collect_css_metrics
   view_files      = Dir.glob(File.join(PROJECT_ROOT, "app/views/**/*.html.erb"))
   component_files = Dir.glob(File.join(PROJECT_ROOT, "app/components/**/*.html.erb"))
 
-  view_css      = count_css_tokens_in_files(view_files)
-  component_css = count_css_tokens_in_files(component_files)
+  view_css      = count_css_statements_in_files(view_files)
+  component_css = count_css_statements_in_files(component_files)
   total = view_css + component_css
   pct   = total > 0 ? (component_css.to_f / total * 100).round(2) : 0.0
 
   {
-    "view_css_tokens"       => view_css,
-    "component_css_tokens"  => component_css,
-    "css_in_components_pct" => pct
+    "view_css_statements"       => view_css,
+    "component_css_statements"  => component_css,
+    "css_in_components_pct"     => pct
   }
 end
 
@@ -159,7 +162,7 @@ def display_metrics(metrics)
   puts "  Mutation coverage:    #{fmt(metrics['mutation_coverage'])}" if metrics["mutation_coverage"]
   if metrics["css_in_components_pct"]
     puts "  CSS in components:    #{fmt(metrics['css_in_components_pct'])}" \
-         " (#{metrics['component_css_tokens']} component / #{metrics['view_css_tokens']} view tokens)"
+         " (#{metrics['component_css_statements']} component / #{metrics['view_css_statements']} view statements)"
   end
 end
 
