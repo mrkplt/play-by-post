@@ -39,10 +39,6 @@ FLOOR_METRICS = %w[mutation_coverage css_in_components_pct].freeze
 # not included in the captured value; only the static tokens around them count.
 CSS_CLASS_ATTR_RE = /\bclass=["']([^"'<>\n]*)["']/
 
-# Directories / path patterns whose ERB files are excluded from the CSS metric.
-# Mailer views are not candidates for ViewComponent modularisation.
-MAILER_VIEW_RE = %r{/views/(devise/mailer|[a-z_]+_mailer|layouts/mailer)}
-
 # Count CSS class tokens in static class="..." attributes across the given
 # files.  All whitespace-separated tokens are counted regardless of framework;
 # the metric is about modularisation into ViewComponents, not about any
@@ -61,8 +57,7 @@ def count_css_tokens_in_files(files)
 end
 
 def collect_css_metrics
-  view_files = Dir.glob(File.join(PROJECT_ROOT, "app/views/**/*.html.erb"))
-                  .reject { |f| f.match?(MAILER_VIEW_RE) }
+  view_files      = Dir.glob(File.join(PROJECT_ROOT, "app/views/**/*.html.erb"))
   component_files = Dir.glob(File.join(PROJECT_ROOT, "app/components/**/*.html.erb"))
 
   view_css      = count_css_tokens_in_files(view_files)
