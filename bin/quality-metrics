@@ -20,6 +20,7 @@
 #   bin/quality-metrics --record-mutant FILE # extract mutation score from mutant output file
 
 require "json"
+require "set"
 require "time"
 
 BASELINE_PATH = File.expand_path("../quality_baseline.json", __dir__)
@@ -31,8 +32,11 @@ CHANGED_FILE_LINE_THRESHOLD = 80.0 # minimum line coverage for changed files
 CHANGED_FILE_BRANCH_THRESHOLD = 70.0 # minimum branch coverage for changed files
 REQUIRED_SORBET_SIGILS = %w[true strict strong].freeze
 
-METRIC_KEYS = %w[line_coverage branch_coverage sorbet_typed_pct mutation_coverage css_in_components_pct].freeze
+METRIC_KEYS = %w[line_coverage branch_coverage sorbet_typed_pct mutation_coverage css_in_components_pct presenter_method_violations].freeze
 FLOOR_METRICS = %w[mutation_coverage css_in_components_pct].freeze
+# Ceiling metrics track counts where lower is better; the baseline is a maximum.
+CEILING_METRICS = %w[presenter_method_violations].freeze
+EXCLUDED_MODEL_BASENAMES = %w[application_record.rb current.rb].freeze
 
 # Indicators of logic in ERB templates that belongs in presenters or component Ruby classes.
 # Three patterns are detected:
@@ -103,6 +107,117 @@ def collect_css_metrics
   }
 end
 
+# Returns the names of all explicitly declared public instance methods in a
+# model file.  Stops collecting when a bare `private` or `protected` keyword
+# is encountered (handles the common `private\ndef …` style used in this app).
+# Class methods and `initialize` are excluded; names shorter than four
+# characters are skipped to reduce false-positive matches in call-site search.
+def extract_public_model_methods(file_path)
+  content = File.read(file_path, encoding: "utf-8")
+  methods = []
+  past_private = false
+
+  content.each_line do |line|
+    stripped = line.strip
+    past_private = true if stripped.match?(/\A(private|protected)(\s|\z)/)
+    next if past_private
+
+    if (m = stripped.match(/\Adef\s+([a-z_]\w*[\?!]?)/))
+      name = m[1]
+      next if name == "initialize" || name.length < 4
+      methods << name
+    end
+  end
+
+  methods.uniq
+rescue Encoding::InvalidByteSequenceError, Encoding::UndefinedConversionError
+  []
+end
+
+# Scans all non-model, non-spec app files for each public model method.
+# A method is a *violation* when every call site found is in the presentation
+# layer (app/views, app/components ERBs, app/mailers Ruby) and none appear in
+# other Ruby or ERB files (controllers, presenters, jobs, services, helpers…).
+# This signals that the method exists solely to serve presentation concerns and
+# belongs in a presenter instead.
+#
+# Returns a hash whose keys are:
+#   "presenter_method_violations"  — integer count (stored in baseline)
+#   "_presenter_method_total"      — total public model methods (display only)
+#   "_presenter_violation_details" — array of violation hashes (display only)
+def collect_presenter_violations
+  model_files = Dir.glob(File.join(PROJECT_ROOT, "app/models/**/*.rb")).reject do |f|
+    EXCLUDED_MODEL_BASENAMES.include?(File.basename(f))
+  end
+
+  # Presentation layer: view ERBs, component ERBs, mailer Ruby files.
+  view_mailer_set = Set.new(
+    Dir.glob(File.join(PROJECT_ROOT, "app/views/**/*.erb")) +
+    Dir.glob(File.join(PROJECT_ROOT, "app/components/**/*.erb")) +
+    Dir.glob(File.join(PROJECT_ROOT, "app/mailers/**/*.rb"))
+  )
+
+  model_file_set = Set.new(model_files)
+
+  # All non-model app files (Ruby + ERB); specs are excluded from call-site
+  # search because test coverage should not count as a production call site.
+  search_files = Dir.glob("#{PROJECT_ROOT}/app/**/*.{rb,erb}").reject do |f|
+    model_file_set.include?(f)
+  end
+
+  # Pre-read every search file once to avoid repeated disk I/O per method.
+  file_contents = {}
+  search_files.each do |f|
+    file_contents[f] = File.read(f, encoding: "utf-8")
+  rescue Encoding::InvalidByteSequenceError, Encoding::UndefinedConversionError
+    file_contents[f] = ""
+  end
+
+  violations = []
+  total_methods = 0
+
+  model_files.sort.each do |model_file|
+    methods = extract_public_model_methods(model_file)
+    total_methods += methods.size
+    model_class = File.basename(model_file, ".rb").split("_").map(&:capitalize).join
+
+    methods.each do |method_name|
+      # Use a lookahead instead of a trailing \b so that method names ending
+      # with ? or ! (non-word chars) are also matched correctly.
+      pattern = /\b#{Regexp.escape(method_name)}(?=\W|\z)/
+      view_mailer_sites = []
+      other_sites = []
+
+      file_contents.each do |file, content|
+        next unless content.match?(pattern)
+
+        rel = file.delete_prefix("#{PROJECT_ROOT}/")
+        if view_mailer_set.include?(file)
+          view_mailer_sites << rel
+        else
+          other_sites << rel
+        end
+      end
+
+      # Only flag if the method has at least one view/mailer call site and
+      # zero call sites in any other part of the application.
+      next unless view_mailer_sites.any? && other_sites.empty?
+
+      violations << {
+        "model" => model_class,
+        "method" => method_name,
+        "sites" => view_mailer_sites
+      }
+    end
+  end
+
+  {
+    "presenter_method_violations" => violations.size,
+    "_presenter_method_total" => total_methods,
+    "_presenter_violation_details" => violations
+  }
+end
+
 def collect_metrics
   metrics = {}
 
@@ -149,6 +264,9 @@ def collect_metrics
   # --- CSS component coverage ---
   metrics.merge!(collect_css_metrics)
 
+  # --- Presenter method violations ---
+  metrics.merge!(collect_presenter_violations)
+
   metrics
 end
 
@@ -178,7 +296,8 @@ def load_baseline
 end
 
 def save_baseline(metrics)
-  File.write(BASELINE_PATH, JSON.pretty_generate(metrics.merge("saved_at" => Time.now.iso8601)))
+  storable = metrics.reject { |k, _| k.to_s.start_with?("_") }
+  File.write(BASELINE_PATH, JSON.pretty_generate(storable.merge("saved_at" => Time.now.iso8601)))
   puts "Baseline saved to #{BASELINE_PATH}"
 end
 
@@ -191,6 +310,10 @@ def display_metrics(metrics)
   if metrics["css_in_components_pct"]
     puts "  CSS in components:    #{fmt(metrics['css_in_components_pct'])}" \
          " (#{metrics['component_css_statements']} component / #{metrics['view_css_statements']} view statements)"
+  end
+  if metrics["presenter_method_violations"]
+    total = metrics["_presenter_method_total"] || "?"
+    puts "  Presenter violations: #{metrics['presenter_method_violations']} of #{total} public model methods"
   end
 end
 
@@ -393,7 +516,20 @@ def check_against_baseline(metrics, baseline)
     previous = baseline[key]
     next if current.nil? || previous.nil?
 
-    if FLOOR_METRICS.include?(key)
+    if CEILING_METRICS.include?(key)
+      current_int = current.to_i
+      previous_int = previous.to_i
+      delta = current_int - previous_int
+      failed = current_int > previous_int
+      status = failed ? "FAIL" : "OK"
+      direction = delta.zero? ? "" : delta.positive? ? " (+#{delta})" : " (#{delta})"
+      puts "  [#{status}] #{key}: #{current_int}#{direction} (ceiling: #{previous_int})"
+
+      if failed
+        failures << "#{key}: #{current_int} violations exceeds ceiling of #{previous_int}; " \
+                    "new model methods only called from views/mailers must be moved to a presenter"
+      end
+    elsif FLOOR_METRICS.include?(key)
       # Floor metrics use the baseline value as a minimum.  The current value
       # must meet or exceed it; improvement is always welcome.
       #
@@ -433,6 +569,18 @@ def check_against_baseline(metrics, baseline)
   failures
 end
 
+# Prints a labelled list of every model method that is only called from the
+# presentation layer, for use in --check mode output.
+def display_presenter_violation_details(details)
+  return if details.nil? || details.empty?
+
+  puts "\n=== Presenter Method Violations (model methods only called from views/mailers) ==="
+  details.each do |v|
+    puts "  #{v['model']}##{v['method']}"
+    v["sites"].each { |site| puts "    - #{site}" }
+  end
+end
+
 # --- Main ---
 require "fileutils"
 
@@ -452,6 +600,7 @@ when "--check"
 
   metrics = collect_metrics
   display_metrics(metrics)
+  display_presenter_violation_details(metrics["_presenter_violation_details"])
   baseline_failures = check_against_baseline(metrics, baseline)
   changed_file_failures = check_changed_file_coverage
   changed_file_sigil_failures = check_changed_file_sigils
