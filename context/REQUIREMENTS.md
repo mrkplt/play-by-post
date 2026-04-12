@@ -269,6 +269,18 @@ For technology stack, domain model, codebase conventions, and development workfl
 
 ---
 
+## Presenter Method Coverage
+
+- Public instance methods explicitly declared in model files should live in presenters when their only callers are ERB view templates or mailer Ruby files
+- `bin/quality-metrics` tracks a `presenter_method_violations` count: the number of such methods found by static analysis (word-boundary search across `app/views/**/*.erb`, `app/components/**/*.erb`, and `app/mailers/**/*.rb` for call sites, with `app/models/**/*.rb` excluded as the defining files)
+- A method is a *violation* when it has at least one call site in the presentation layer and zero call sites anywhere else in the application (controllers, presenters, components Ruby classes, jobs, services, helpers, etc.)
+- The metric uses a ceiling model — the violation count can only decrease; any increase above the recorded baseline fails the quality gate
+- Run `bin/quality-metrics --save` after moving a method to a presenter to lower the baseline
+- In `--check` mode, each violation is listed with its call sites to aid remediation
+- Methods shorter than four characters are excluded to reduce false-positive matches on common short names
+
+---
+
 ## Design Assumptions
 
 - All players are adults who are not cheating; no roll resolution system is needed
