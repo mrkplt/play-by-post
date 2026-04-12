@@ -257,6 +257,18 @@ For technology stack, domain model, codebase conventions, and development workfl
 
 ---
 
+## ERB Logic in Presenters
+
+- ERB templates (both `app/views/**/*.html.erb` and `app/components/**/*.html.erb`) must stay thin; display logic belongs in presenter or component Ruby classes
+- `bin/quality-metrics --check` detects three indicator patterns that signal logic has leaked into a template:
+  - **Ternary in output tag** — `<%= expr ? val : val %>`: conditional value selection should be a presenter method; a space before `?` distinguishes the ternary operator from predicate method calls ending in `?`
+  - **Boolean OR fallback in output tag** — `<%= a || b %>`: fallback/default logic (e.g. `display_name || email`) should be a presenter method
+  - **Local variable assignment** — `<% var = value %>`: data preparation or intermediate calculations in the template should move to the component class or controller; control-flow bindings (`if`, `each do |x|`, etc.) are excluded
+- The check uses a delta model: changed ERB files must not gain logic indicators compared to `origin/master`; existing indicators are grandfathered and do not block the build
+- To reduce existing indicators, move the logic to the appropriate presenter or component method and verify the count decreases
+
+---
+
 ## Design Assumptions
 
 - All players are adults who are not cheating; no roll resolution system is needed

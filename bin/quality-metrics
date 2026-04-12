@@ -34,6 +34,28 @@ REQUIRED_SORBET_SIGILS = %w[true strict strong].freeze
 METRIC_KEYS = %w[line_coverage branch_coverage sorbet_typed_pct mutation_coverage css_in_components_pct].freeze
 FLOOR_METRICS = %w[mutation_coverage css_in_components_pct].freeze
 
+# Indicators of logic in ERB templates that belongs in presenters or component Ruby classes.
+# Three patterns are detected:
+#   1. Ternary in output tag:     <%= expr ? val : val %>
+#      A space before ? distinguishes the ternary operator from predicate method calls.
+#   2. Boolean OR fallback:       <%= a || b %>
+#      Inline fallback/default logic belongs in a presenter method.
+#   3. Local variable assignment: <% var = value %>
+#      Data preparation in the template belongs in the component class or controller.
+ERB_TERNARY_OUTPUT_RE = /<%=.*?\s\?\s.*?%>/
+ERB_OR_FALLBACK_OUTPUT_RE = /<%=.*?\s\|\|\s.*?%>/
+ERB_LOCAL_ASSIGN_RE = /<%[^=%#].*?\b[a-z_]\w*\s*=(?![=~>]).*?%>/
+ERB_CONTROL_FLOW_RE = /\b(if|unless|while|until|for|case|when|rescue|begin|do)\b/
+
+def erb_logic_count(content)
+  count = content.scan(ERB_TERNARY_OUTPUT_RE).size
+  count += content.scan(ERB_OR_FALLBACK_OUTPUT_RE).size
+  content.scan(ERB_LOCAL_ASSIGN_RE) do |_|
+    count += 1 unless $~[0].match?(ERB_CONTROL_FLOW_RE)
+  end
+  count
+end
+
 # Matches static class="..." / class='...' attribute values in ERB/HTML files.
 # The character class stops at < so ERB interpolations (e.g. <%= ... %>) are
 # not included in the captured value; only the static tokens around them count.
@@ -313,6 +335,39 @@ def check_changed_view_css
   failures
 end
 
+def changed_all_erb_files
+  `git diff --name-only origin/master -- app/views/ app/components/`.strip.split("\n")
+    .select { |f| f.end_with?(".html.erb") }
+    .select { |f| File.exist?(File.join(PROJECT_ROOT, f)) }
+end
+
+def check_changed_erb_logic
+  changed = changed_all_erb_files
+  return [] if changed.empty?
+
+  puts "\n=== Changed ERB Logic (must not gain presenter-level logic) ==="
+  failures = []
+
+  changed.each do |relative_path|
+    absolute_path = File.join(PROJECT_ROOT, relative_path)
+
+    old_content = `git show origin/master:#{relative_path} 2>/dev/null`
+    old_count   = erb_logic_count(old_content)
+    new_count   = erb_logic_count(File.read(absolute_path, encoding: "utf-8"))
+    delta       = new_count - old_count
+
+    failed = delta > 0
+    status = failed ? "FAIL" : "OK"
+    puts "  [#{status}] #{relative_path}: #{old_count} -> #{new_count} (#{delta >= 0 ? '+' : ''}#{delta})"
+
+    if failed
+      failures << "#{relative_path}: +#{delta} logic indicator(s) added to ERB; move ternaries, || fallbacks, and local assignments to a presenter or component method"
+    end
+  end
+
+  failures
+end
+
 def check_sorbet_tc
   puts "\n=== Sorbet Type Check ==="
   output = `bundle exec srb tc 2>&1`
@@ -402,9 +457,10 @@ when "--check"
   changed_file_sigil_failures = check_changed_file_sigils
   changed_view_css_failures = check_changed_view_css
   sorbet_tc_failures = check_sorbet_tc
+  changed_erb_logic_failures = check_changed_erb_logic
 
   failures = baseline_failures + changed_file_failures + changed_file_sigil_failures +
-             changed_view_css_failures + sorbet_tc_failures
+             changed_view_css_failures + changed_erb_logic_failures + sorbet_tc_failures
 
   if failures.any?
     puts "\nFAILED: Quality checks did not pass:"
