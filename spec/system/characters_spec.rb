@@ -107,6 +107,19 @@ RSpec.describe "Characters", type: :feature do
     end
   end
 
+  describe "inactive (archived) characters" do
+    it "archived characters are hidden from the roster by default" do
+      create(:character, :archived, game: game, user: player, name: "Retired Hero")
+      create(:character, game: game, user: player, name: "Active Hero")
+
+      sign_in_as(gm)
+      visit game_path(game)
+
+      expect(page).to have_text("Active Hero")
+      expect(page).not_to have_text("Retired Hero")
+    end
+  end
+
   describe "sheets_hidden" do
     it "hides all character sheets from non-GM players when sheets_hidden is true" do
       game.update!(sheets_hidden: true)
@@ -142,6 +155,33 @@ RSpec.describe "Characters", type: :feature do
       visit edit_game_path(game)
       click_on "Show Character Sheets"
       expect(page).to have_text("Character sheets are now visible")
+    end
+  end
+
+  describe "character version history" do
+    let!(:character) { create(:character, game: game, user: player, name: "Aldric", content: "STR 16") }
+
+    it "player can view a historical version" do
+      character.update!(content: "STR 18")
+
+      sign_in_as(player)
+      visit game_character_path(game, character)
+
+      find("details").click
+      # Versions are newest-first; last link is the original (STR 16) version
+      all("a[href*='/versions/']").last.click
+
+      expect(page).to have_text("Aldric")
+      expect(page).to have_text("STR 16")
+    end
+
+    it "shows the editor name in version history" do
+      sign_in_as(player)
+      visit game_character_path(game, character)
+
+      find("details").click
+
+      expect(page).to have_text(player.display_name)
     end
   end
 

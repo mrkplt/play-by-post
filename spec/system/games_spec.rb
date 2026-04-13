@@ -158,6 +158,33 @@ RSpec.describe "Games", type: :feature do
       expect(page).to have_link("All Scenes")
     end
 
+    it "shows Manage Files link for GM" do
+      visit game_path(game)
+
+      expect(page).to have_link("Manage Files", href: game_game_files_path(game))
+    end
+
+    it "shows View Files link for non-GM players" do
+      player = create(:user, :with_profile)
+      create(:game_member, game: game, user: player)
+
+      sign_in_as(player)
+      visit game_path(game)
+
+      expect(page).to have_link("View Files", href: game_game_files_path(game))
+      expect(page).not_to have_link("Manage Files")
+    end
+
+    it "removed member can access game files" do
+      player = create(:user, :with_profile)
+      create(:game_member, game: game, user: player, status: "removed")
+
+      sign_in_as(player)
+      visit game_game_files_path(game)
+
+      expect(page).to have_current_path(game_game_files_path(game))
+    end
+
     it "shows parent and children links on active scene cards" do
       parent = create(:scene, :resolved, game: game, title: "The Road")
       active = create(:scene, game: game, title: "The Bridge", parent_scene: parent)
