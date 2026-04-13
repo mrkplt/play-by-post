@@ -42,11 +42,6 @@ class Scene < ApplicationRecord
     end
   end
 
-  sig { returns(ActiveStorage::VariantWithRecord) }
-  def banner_image
-    image.variant(resize_to_limit: [ 1200, nil ], format: :jpeg, quality: 85)
-  end
-
   sig { params(user: User).returns(T::Boolean) }
   def participant?(user)
     scene_participants.exists?(user: user)

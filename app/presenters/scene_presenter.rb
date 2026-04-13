@@ -31,4 +31,9 @@ class ScenePresenter < BasePresenter
   def tree_link_css_class
     @model.resolved? ? "text-slate-500" : ""
   end
+
+  sig { returns(ActiveStorage::VariantWithRecord) }
+  def banner_image
+    @model.image.variant(resize_to_limit: [ 1200, nil ], format: :jpeg, quality: 85)
+  end
 end

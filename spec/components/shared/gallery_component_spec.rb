@@ -4,10 +4,8 @@ RSpec.describe Shared::GalleryComponent, type: :component do
   let(:game) { build_stubbed(:game) }
   let(:game_file) do
     gf = build_stubbed(:game_file, filename: "map.pdf")
-    allow(gf).to receive(:thumbnail).and_return(nil)
     allow(gf).to receive(:image?).and_return(false)
     allow(gf).to receive(:display_image).and_return(nil)
-    allow(gf).to receive(:file_extension).and_return("PDF")
     allow(gf).to receive(:file).and_return(double(attached?: false))
     gf
   end

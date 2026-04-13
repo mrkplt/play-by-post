@@ -1,8 +1,10 @@
 {
-  "line_coverage": 99.34,
-  "branch_coverage": 89.36,
-  "sorbet_typed_pct": 0.0,
-  "css_in_components_pct": 22.07,
-  "presenter_method_violations": 5,
-  "saved_at": "2026-04-05T19:23:06+00:00"
+  "line_coverage": 99.4,
+  "branch_coverage": 90.88,
+  "sorbet_typed_pct": 30.85,
+  "view_css_statements": 823,
+  "component_css_statements": 237,
+  "css_in_components_pct": 22.36,
+  "presenter_method_violations": 0,
+  "saved_at": "2026-04-13T01:50:09+00:00"
 }
