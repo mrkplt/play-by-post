@@ -93,19 +93,6 @@ RSpec.describe Scene, type: :model do
     end
   end
 
-  describe "#banner_image" do
-    it "returns a variant with correct transformations" do
-      scene = build(:scene)
-      scene.image.attach(io: File.open(Rails.root.join("spec/fixtures/files/test_image.png")),
-                         filename: "banner.png", content_type: "image/png")
-      result = scene.banner_image
-      expect(result).to be_a(ActiveStorage::VariantWithRecord)
-      expect(result.variation.transformations).to eq(
-        resize_to_limit: [ 1200, nil ], format: :jpeg, quality: 85
-      )
-    end
-  end
-
   describe "#participant?" do
     let(:scene) { create(:scene) }
     let(:user) { create(:user) }

@@ -65,6 +65,8 @@ class ScenesController < ApplicationController
       eligible_ids = @posts.select { |p| p.created_at > 72.hours.ago }.map(&:id)
       @read_post_ids = PostRead.where(user: current_user, post_id: eligible_ids).pluck(:post_id).to_set
     end
+
+    @scene_presenter = ScenePresenter.new(@scene)
   end
 
   sig { void }

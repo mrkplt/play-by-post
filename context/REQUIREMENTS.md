@@ -278,6 +278,7 @@ For technology stack, domain model, codebase conventions, and development workfl
 - Run `bin/quality-metrics --save` after moving a method to a presenter to lower the baseline
 - In `--check` mode, each violation is listed with its call sites to aid remediation
 - Methods shorter than four characters are excluded to reduce false-positive matches on common short names
+- Presenters that gain new methods via this migration must be added to `.mutant.yml` under `matcher.subjects` so mutation coverage is tracked
 
 ---
 
