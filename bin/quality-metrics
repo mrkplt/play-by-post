@@ -441,7 +441,7 @@ def check_changed_view_css
   changed.each do |relative_path|
     absolute_path = File.join(PROJECT_ROOT, relative_path)
 
-    old_content = `git show origin/master:#{relative_path} 2>/dev/null`
+    old_content = `git show origin/master:#{relative_path} 2>/dev/null`.force_encoding("utf-8")
     old_count   = css_statements_in_content(old_content)
     new_count   = css_statements_in_content(File.read(absolute_path, encoding: "utf-8"))
     delta       = new_count - old_count
@@ -474,7 +474,7 @@ def check_changed_erb_logic
   changed.each do |relative_path|
     absolute_path = File.join(PROJECT_ROOT, relative_path)
 
-    old_content = `git show origin/master:#{relative_path} 2>/dev/null`
+    old_content = `git show origin/master:#{relative_path} 2>/dev/null`.force_encoding("utf-8")
     old_count   = erb_logic_count(old_content)
     new_count   = erb_logic_count(File.read(absolute_path, encoding: "utf-8"))
     delta       = new_count - old_count
