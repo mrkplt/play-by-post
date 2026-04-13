@@ -17,5 +17,4 @@ class User < ApplicationRecord
   def display_name
     user_profile&.display_name
   end
-
 end

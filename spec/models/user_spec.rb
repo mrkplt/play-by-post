@@ -28,5 +28,4 @@ RSpec.describe User, type: :model do
       expect(user.games).to include(game)
     end
   end
-
 end

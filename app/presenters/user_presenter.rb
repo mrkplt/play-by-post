@@ -10,7 +10,7 @@ class UserPresenter < BasePresenter
 
   sig { params(limit: T.nilable(Integer)).returns(ActiveRecord::Relation) }
   def games_by_recent_activity(limit: nil)
-    query = games
+    query = @model.games
       .where.not("game_members.status" => [ "removed", "banned" ])
       .left_joins(:scenes)
       .select("games.id, games.name, games.created_at, MAX(scenes.updated_at) as latest_activity")

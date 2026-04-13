@@ -34,6 +34,6 @@ class ScenePresenter < BasePresenter
 
   sig { returns(ActiveStorage::VariantWithRecord) }
   def banner_image
-    image.variant(resize_to_limit: [ 1200, nil ], format: :jpeg, quality: 85)
+    @model.image.variant(resize_to_limit: [ 1200, nil ], format: :jpeg, quality: 85)
   end
 end

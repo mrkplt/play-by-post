@@ -134,5 +134,4 @@ RSpec.describe GameFile, type: :model do
       )
     end
   end
-
 end
