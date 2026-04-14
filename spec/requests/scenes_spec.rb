@@ -83,6 +83,45 @@ RSpec.describe ScenesController, type: :request do
       }.not_to change(Scene, :count)
       expect(response).to redirect_to(game_path(game))
     end
+
+    context "email notifications" do
+      around do |example|
+        original_adapter = ActiveJob::Base.queue_adapter
+        ActiveJob::Base.queue_adapter = :test
+        example.run
+        ActiveJob::Base.queue_adapter = original_adapter
+      end
+
+      it "enqueues a new_scene notification email to participants but not the creator" do
+        character = create(:character, game: game, user: player)
+        sign_in(gm)
+
+        post game_scenes_path(game), params: { scene: { title: "Email Test Scene" }, character_ids: [ character.id ] }
+
+        mail_jobs = ActiveJob::Base.queue_adapter.enqueued_jobs.select { |j|
+          j["job_class"] == "ActionMailer::MailDeliveryJob" &&
+          j["arguments"]&.first == "NotificationMailer" &&
+          j["arguments"]&.second == "new_scene"
+        }
+        expect(mail_jobs.size).to eq(1)
+        recipient_gid = mail_jobs.first["arguments"][3]["args"][1]["_aj_globalid"]
+        expect(recipient_gid).to include("User/#{player.id}")
+        expect(recipient_gid).not_to include("User/#{gm.id}")
+      end
+
+      it "does not enqueue a new_scene email when the GM is the only participant" do
+        sign_in(gm)
+
+        post game_scenes_path(game), params: { scene: { title: "Solo Scene" } }
+
+        mail_jobs = ActiveJob::Base.queue_adapter.enqueued_jobs.select { |j|
+          j["job_class"] == "ActionMailer::MailDeliveryJob" &&
+          j["arguments"]&.first == "NotificationMailer" &&
+          j["arguments"]&.second == "new_scene"
+        }
+        expect(mail_jobs).to be_empty
+      end
+    end
   end
 
   describe "PATCH /games/:game_id/scenes/:id/resolve" do
@@ -104,6 +143,32 @@ RSpec.describe ScenesController, type: :request do
       patch resolve_game_scene_path(game, scene), params: { resolution: "Nope." }
       expect(scene.reload).not_to be_resolved
       expect(response).to redirect_to(game_scene_path(game, scene))
+    end
+
+    context "email notifications" do
+      around do |example|
+        original_adapter = ActiveJob::Base.queue_adapter
+        ActiveJob::Base.queue_adapter = :test
+        example.run
+        ActiveJob::Base.queue_adapter = original_adapter
+      end
+
+      it "enqueues scene_resolved notification emails to all participants" do
+        create(:scene_participant, scene: scene, user: player)
+        sign_in(gm)
+
+        patch resolve_game_scene_path(game, scene), params: { resolution: "All wrapped up." }
+
+        mail_jobs = ActiveJob::Base.queue_adapter.enqueued_jobs.select { |j|
+          j["job_class"] == "ActionMailer::MailDeliveryJob" &&
+          j["arguments"]&.first == "NotificationMailer" &&
+          j["arguments"]&.second == "scene_resolved"
+        }
+        expect(mail_jobs.size).to eq(2)
+        recipient_gids = mail_jobs.map { |j| j["arguments"][3]["args"][1]["_aj_globalid"] }
+        expect(recipient_gids).to include(a_string_including("User/#{gm.id}"))
+        expect(recipient_gids).to include(a_string_including("User/#{player.id}"))
+      end
     end
   end
 end
