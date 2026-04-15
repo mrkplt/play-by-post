@@ -22,8 +22,8 @@ Play-by-Post TTRPG — Rails 8 app for asynchronous tabletop RPGs. GMs and playe
 | Storage | Active Storage · Cloudflare R2 (prod) · image_processing |
 | Jobs | Solid Queue (in-process, no Redis) |
 | Cache | Solid Cache (DB-backed) |
-| Email out | ActionMailer · Mailgun |
-| Email in | ActionMailbox (reply-by-email → posts) |
+| Email out | ActionMailer · Resend (`resend` gem) |
+| Email in | ActionMailbox · Resend inbound webhook (custom ingress, Svix-signed) |
 | Markdown | Redcarpet · Stimulus live preview |
 | Pagination | Pagy |
 | Types | Sorbet (gradual) · sorbet-runtime |

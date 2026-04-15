@@ -29,7 +29,6 @@ module PlayByPost
     config.autoload_lib(ignore: %w[assets tasks])
     config.autoload_paths << Rails.root.join("app/services")
 
-    config.action_mailbox.ingress = :mailgun
     config.active_storage.variant_processor = :mini_magick
 
     # Configuration for the application, engines, and railties goes here.

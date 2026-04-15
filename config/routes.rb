@@ -1,4 +1,9 @@
 Rails.application.routes.draw do
+  # Resend inbound email webhook (custom ActionMailbox ingress)
+  post "/rails/action_mailbox/resend/inbound_emails" =>
+    "action_mailbox/ingresses/resend/inbound_emails#create",
+    as: :rails_resend_inbound_emails
+
   if Rails.env.development?
     mount LetterOpenerWeb::Engine, at: "/letter_opener"
   end
