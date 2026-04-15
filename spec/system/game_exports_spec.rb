@@ -4,6 +4,13 @@ RSpec.describe "Game Exports", type: :feature do
   let(:user) { create(:user, :with_profile) }
   let(:game) { create(:game) }
 
+  around do |example|
+    original_adapter = ActiveJob::Base.queue_adapter
+    ActiveJob::Base.queue_adapter = :test
+    example.run
+    ActiveJob::Base.queue_adapter = original_adapter
+  end
+
   before { sign_in_as(user) }
 
   describe "game show page" do
