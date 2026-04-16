@@ -7,11 +7,10 @@
 # This prevents classes with tests and implementation from silently escaping
 # mutation coverage simply because they were never added to the subjects list.
 #
-# To resolve a failure, choose one of:
-#   1. Add the class to .mutant.yml under matcher.subjects (preferred — means it
-#      will be mutation-tested).
-#   2. Add the class to mutation_exceptions in .mutant.yml with a comment
-#      explaining why it is excluded (e.g. no mutateable logic, pending tests).
+# To resolve a failure, add the class to .mutant.yml under matcher.subjects
+# and write mutation tests for it.  Classes with no mutateable logic (e.g.
+# pure attribute declarations) may be added to mutation_exceptions instead,
+# but that list is a last resort — not an escape hatch.
 
 require "yaml"
 require "set"
@@ -93,7 +92,7 @@ else
   missing.each do |constant, path|
     puts "  #{constant.ljust(52)} #{path}"
   end
-  puts "\nAdd each class to .mutant.yml under matcher.subjects (preferred) or"
-  puts "mutation_exceptions (with a comment explaining the exclusion)."
+  puts "\nYou must add each class to matcher.subjects in .mutant.yml and write"
+  puts "mutation tests for it before this branch can be pushed."
   exit 1
 end
