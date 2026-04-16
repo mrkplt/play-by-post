@@ -64,6 +64,3 @@
 # Ignore key files for decrypting credentials and more.
 /config/credentials/*.key
 
-# Mutant run results (generated artifacts)
-/.mutant/results/
-
