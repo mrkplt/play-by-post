@@ -19,10 +19,13 @@
 #   bin/quality-metrics --check              # compare against baseline, fail on regression
 #   bin/quality-metrics --record-mutant FILE # extract mutation score from mutant output file
 
+ENV["BUNDLE_GEMFILE"] ||= File.expand_path("../Gemfile", __dir__)
+require "rubygems"
+require "bundler/setup"
+
 require "json"
 require "set"
 require "time"
-require "bundler"
 require "spoom"
 
 BASELINE_PATH = File.expand_path("../quality_baseline.json", __dir__)
