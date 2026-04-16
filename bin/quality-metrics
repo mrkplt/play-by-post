@@ -493,7 +493,7 @@ end
 
 def check_sorbet_tc
   puts "\n=== Sorbet Type Check ==="
-  output = `bin/srb tc 2>&1`
+  output = `bundle exec srb tc 2>&1`
   status = $?.success?
 
   if status
