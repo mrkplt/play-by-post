@@ -1,6 +1,6 @@
 {
-  "line_coverage": 92.83,
-  "branch_coverage": 84.65,
+  "line_coverage": 99.4,
+  "branch_coverage": 90.88,
   "sorbet_typed_pct": 31.22,
   "mutation_coverage": 83.66,
   "view_css_statements": 823,

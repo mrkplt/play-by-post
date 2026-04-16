@@ -51,6 +51,9 @@
 /coverage
 /spoom_data
 
+# Mutant run results
+/.mutant/results/
+
 # Claude local config
 /.claude/config.json
 
