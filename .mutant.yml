@@ -45,6 +45,7 @@ matcher:
     - EmailContentExtractor
     - GameExportService
     # Controllers
+    - ActionMailbox::Ingresses::Resend::InboundEmailsController
     - GameExportsController
     - ScenesController
     - CharactersController

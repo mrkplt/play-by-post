@@ -9,9 +9,9 @@ gem "tailwindcss-rails"
 # Icon library [https://github.com/Rails-Designer/icons]
 gem "icons"
 # Use postgresql in production (Railway)
+gem "resend"
 gem "pg", "~> 1.1", group: :production
 gem "aws-sdk-s3", require: false, group: :production
-gem "resend", group: :production
 
 # Use sqlite3 locally
 gem "sqlite3", ">= 2.1", group: %i[ development test ]

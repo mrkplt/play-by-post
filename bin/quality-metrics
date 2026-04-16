@@ -22,6 +22,8 @@
 require "json"
 require "set"
 require "time"
+require "bundler"
+require "spoom"
 
 BASELINE_PATH = File.expand_path("../quality_baseline.json", __dir__)
 MUTANT_RESULT_PATH = File.expand_path("../tmp/mutant_result.json", __dir__)
@@ -232,24 +234,21 @@ def collect_metrics
     warn "WARNING: No SimpleCov data found. Run `bundle exec rspec` first."
   end
 
-  # --- Sorbet (sigils excluding RBIs) ---
-  spoom_output = `bundle exec spoom srb coverage 2>&1`
-  total_files = spoom_output[/files excluding rbis:\s*(\d+)/, 1]&.to_i || 0
-
-  # Parse sigils breakdown from spoom output — look for the excluding-RBIs section
-  # Spoom doesn't break this down in CLI, so we use the JSON snapshot
-  spoom_json_output = `bundle exec ruby -rjson -rspoom -e '
-    context = Spoom::Context.new(".")
-    snapshot = Spoom::Coverage.snapshot(context)
-    puts JSON.generate(snapshot.sigils_excluding_rbis)
-  ' 2>/dev/null`
-
+  # --- Sorbet (sigils excluding RBIs via spoom) ---
+  # Use spoom's Coverage snapshot which calls srb tc with --metrics-file to get
+  # accurate per-sigil counts. sorbet_bin points directly at the sorbet-static
+  # binary (not the srb gem wrapper) so spoom can invoke it without bundle exec.
   begin
-    sigils = JSON.parse(spoom_json_output)
+    sorbet_static_spec = Gem::Specification.find_by_name("sorbet-static")
+    sorbet_bin = File.join(sorbet_static_spec.gem_dir, "libexec", "sorbet")
+    spoom_context = Spoom::Context.new(PROJECT_ROOT)
+    snapshot = Spoom::Coverage.snapshot(spoom_context, sorbet_bin: sorbet_bin)
+    sigils = snapshot.sigils_excluding_rbis
     typed_files = (sigils["true"] || 0) + (sigils["strict"] || 0) + (sigils["strong"] || 0)
+    total_files = sigils.values.sum
     metrics["sorbet_typed_pct"] = total_files > 0 ? (typed_files.to_f / total_files * 100).round(2) : 0.0
-  rescue JSON::ParserError
-    warn "WARNING: Could not parse Sorbet coverage data."
+  rescue StandardError => e
+    warn "WARNING: Could not collect Sorbet coverage via spoom: #{e.message}"
   end
 
   # --- Mutant (mutation coverage) ---
@@ -493,7 +492,7 @@ end
 
 def check_sorbet_tc
   puts "\n=== Sorbet Type Check ==="
-  output = `bundle exec srb tc 2>&1`
+  output = `bin/srb tc 2>&1`
   status = $?.success?
 
   if status
