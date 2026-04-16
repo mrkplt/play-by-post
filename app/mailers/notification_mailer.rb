@@ -52,7 +52,8 @@ class NotificationMailer < ApplicationMailer
 
   sig { params(scene: Scene).returns(String) }
   def scene_reply_to(scene)
-    domain = Rails.application.credentials.mailgun_domain || Rails.application.config.action_mailer.default_url_options[:host]
-    "scene-#{scene.id}@inbound.#{domain}"
+    domain = Rails.application.credentials.resend_inbound_domain ||
+             Rails.application.config.action_mailer.default_url_options[:host]
+    "scene-#{scene.id}@#{domain}"
   end
 end

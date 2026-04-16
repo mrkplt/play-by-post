@@ -1,10 +1,11 @@
 {
   "line_coverage": 99.4,
   "branch_coverage": 90.88,
-  "sorbet_typed_pct": 30.85,
+  "sorbet_typed_pct": 31.22,
+  "mutation_coverage": 83.66,
   "view_css_statements": 823,
   "component_css_statements": 237,
   "css_in_components_pct": 22.36,
   "presenter_method_violations": 0,
-  "saved_at": "2026-04-13T01:50:09+00:00"
+  "saved_at": "2026-04-16T12:51:41+00:00"
 }

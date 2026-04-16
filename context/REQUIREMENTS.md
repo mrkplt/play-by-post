@@ -200,12 +200,13 @@ For technology stack, domain model, codebase conventions, and development workfl
 5. **Magic link login** — sent on sign-in request
 
 ### Reply-by-Email
-- Notification emails include a reply-to address encoding the scene ID
+- Notification emails include a reply-to address encoding the scene ID (`scene-{id}@{resend_inbound_domain}`)
 - Replying to a notification email creates a post in that scene
 - The sender must be a current scene participant; invalid senders are rejected
 - Email content is cleaned before posting (quoted text, signatures, and formatting artifacts are stripped)
 - Email-to-post always creates in-character posts; OOC posting requires the web interface
 - If content cleaning fails after retries, the post is created from the raw email body and the sender is notified
+- Inbound emails are delivered to the app via a Resend webhook (POST `/rails/action_mailbox/resend/inbound_emails`); the webhook is authenticated using HMAC-SHA256 signature verification (Svix standard) against the `resend_webhook_secret` credential
 
 ### Notification Preferences
 - Per-scene toggle: each participant can opt out of notifications for any scene they are in
