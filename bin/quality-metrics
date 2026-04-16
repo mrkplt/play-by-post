@@ -507,6 +507,53 @@ def check_sorbet_tc
   end
 end
 
+def check_baseline_integrity
+  master_content = `git show origin/master:quality_baseline.json 2>/dev/null`.strip
+  return [] if master_content.empty?
+
+  changed = !`git diff origin/master -- quality_baseline.json 2>/dev/null`.strip.empty?
+  return [] unless changed
+
+  puts "\n=== Baseline Integrity (numbers may only improve) ==="
+
+  begin
+    master_baseline = JSON.parse(master_content)
+    current_baseline = JSON.parse(File.read(BASELINE_PATH))
+  rescue JSON::ParserError => e
+    warn "Could not parse baseline for integrity check: #{e.message}"
+    return ["baseline integrity: could not parse baseline JSON"]
+  end
+
+  failures = []
+
+  METRIC_KEYS.each do |key|
+    current = current_baseline[key]
+    previous = master_baseline[key]
+    next if current.nil? || previous.nil?
+
+    if CEILING_METRICS.include?(key)
+      current_val = current.to_i
+      previous_val = previous.to_i
+      delta = current_val - previous_val
+      failed = current_val > previous_val
+      status = failed ? "FAIL" : "OK"
+      direction = delta.zero? ? "" : " (#{delta >= 0 ? "+" : ""}#{delta})"
+      puts "  [#{status}] #{key}: #{previous_val} -> #{current_val}#{direction}"
+      failures << "#{key}: baseline raised from #{previous_val} to #{current_val}" if failed
+    else
+      current_val = current.to_f
+      previous_val = previous.to_f
+      delta = current_val - previous_val
+      failed = current_val < previous_val
+      status = failed ? "FAIL" : "OK"
+      puts "  [#{status}] #{key}: #{previous_val.round(2)}% -> #{current_val.round(2)}% (#{delta >= 0 ? "+" : ""}#{delta.round(2)})"
+      failures << "#{key}: baseline lowered from #{previous_val.round(2)}% to #{current_val.round(2)}%" if failed
+    end
+  end
+
+  failures
+end
+
 def check_against_baseline(metrics, baseline)
   puts "\n=== Baseline Comparison (max regression: #{THRESHOLD} points) ==="
   failures = []
@@ -595,6 +642,13 @@ when "--check"
   baseline = load_baseline
   if baseline.nil?
     warn "No baseline found at #{BASELINE_PATH}. Run `bin/quality-metrics --save` first."
+    exit 1
+  end
+
+  integrity_failures = check_baseline_integrity
+  if integrity_failures.any?
+    puts "\nFAILED: Baseline has regressed from origin/master:"
+    integrity_failures.each { |f| puts "  - #{f}" }
     exit 1
   end
 
