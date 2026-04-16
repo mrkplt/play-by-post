@@ -6,6 +6,9 @@ echo "Running CI checks before push..."
 echo "==> Lint (rubocop)"
 bin/rubocop || exit 1
 
+echo "==> Mutant coverage registration check"
+bin/check-mutant-coverage || exit 1
+
 echo "==> JS security scan (importmap audit)"
 bin/importmap audit || exit 1
 
