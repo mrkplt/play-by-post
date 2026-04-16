@@ -283,6 +283,16 @@ For technology stack, domain model, codebase conventions, and development workfl
 
 ---
 
+## Baseline Integrity Gate
+
+- `quality_baseline.json` records the static thresholds that all quality checks are measured against
+- When `bin/quality-metrics --check` runs and `quality_baseline.json` has changed relative to `origin/master`, the gate verifies that every metric in the baseline only moved in the direction of improvement before running any other checks
+- "Improvement" follows each metric's model: floor metrics (`line_coverage`, `branch_coverage`, `sorbet_typed_pct`, `mutation_coverage`, `css_in_components_pct`) may only increase; ceiling metrics (`presenter_method_violations`) may only decrease
+- If any metric in the baseline file regressed, the gate fails immediately with a clear message listing each offending metric — no further checks run
+- This prevents gaming the quality pipeline by lowering baseline thresholds to make a PR pass
+
+---
+
 ## Design Assumptions
 
 - All players are adults who are not cheating; no roll resolution system is needed
