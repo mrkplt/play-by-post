@@ -50,6 +50,7 @@ matcher:
     # Services
     - EmailContentExtractor
     - GameExportService
+    - MarkdownRenderer
     # Controllers
     - ActionMailbox::Ingresses::Resend::InboundEmailsController
     - GameExportsController
@@ -84,10 +85,3 @@ coverage_criteria:
   timeout: false
   process_abort: false
   test_result: true
-
-# Classes intentionally excluded from mutation testing.
-# Each entry must include a comment explaining why it is excluded.
-# Prefer adding to matcher.subjects above over adding here.
-mutation_exceptions:
-  - Current         # ActiveSupport::CurrentAttributes — only attribute declarations, no logic
-  - MarkdownRenderer  # no spec yet; add spec then move to matcher.subjects

@@ -1,16 +1,14 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-# Checks that every concrete Ruby class under app/ is either registered in
-# .mutant.yml (matcher.subjects) or intentionally excluded (mutation_exceptions).
+# Checks that every concrete Ruby class under app/ is registered in
+# .mutant.yml under matcher.subjects.
 #
 # This prevents classes with tests and implementation from silently escaping
 # mutation coverage simply because they were never added to the subjects list.
 #
 # To resolve a failure, add the class to .mutant.yml under matcher.subjects
-# and write mutation tests for it.  Classes with no mutateable logic (e.g.
-# pure attribute declarations) may be added to mutation_exceptions instead,
-# but that list is a last resort — not an escape hatch.
+# and write mutation tests for it.
 
 require "yaml"
 require "set"
@@ -37,6 +35,7 @@ BASE_FILENAMES = %w[
   application_mailbox.rb
   application_record.rb
   base_presenter.rb
+  current.rb
 ].freeze
 
 # Sub-paths excluded entirely (e.g. mixins that are not independently testable).
@@ -63,8 +62,7 @@ unless File.exist?(mutant_config_path)
 end
 
 mutant_config = YAML.safe_load_file(mutant_config_path)
-subjects    = Set.new(mutant_config.dig("matcher", "subjects") || [])
-exceptions  = Set.new(mutant_config["mutation_exceptions"] || [])
+subjects = Set.new(mutant_config.dig("matcher", "subjects") || [])
 
 missing = []
 
@@ -77,7 +75,7 @@ APP_DIRS.each do |dir|
     next if EXCLUDE_PATH_PATTERNS.any? { |pat| file.match?(pat) }
 
     constant = path_to_constant(dir_path, file)
-    next if subjects.include?(constant) || exceptions.include?(constant)
+    next if subjects.include?(constant)
 
     missing << [constant, file.delete_prefix("#{root}/")]
   end
