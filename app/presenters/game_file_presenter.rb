@@ -28,6 +28,21 @@ class GameFilePresenter < BasePresenter
   end
 
   sig { returns(String) }
+  def filename
+    @model.filename
+  end
+
+  sig { returns(T.nilable(ActiveStorage::VariantWithRecord)) }
+  def display_image
+    @model.display_image
+  end
+
+  sig { returns(T.untyped) }
+  def file
+    @model.file
+  end
+
+  sig { returns(String) }
   def file_extension
     File.extname(@model.filename.to_s).delete(".").upcase.presence || content_type_extension
   end

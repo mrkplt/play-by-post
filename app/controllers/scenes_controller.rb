@@ -27,7 +27,7 @@ class ScenesController < ApplicationController
   def new
     @scene = @game.scenes.new
     @players_with_characters = active_players_with_characters
-    @parent_scene_options = parent_scene_options
+    @parent_scene_options = parent_scene_options.map { |s| ScenePresenter.new(s) }
   end
 
   sig { void }
@@ -40,7 +40,7 @@ class ScenesController < ApplicationController
       redirect_to game_scene_path(@game, @scene), notice: "Scene created."
     else
       @players_with_characters = active_players_with_characters
-      @parent_scene_options = parent_scene_options
+      @parent_scene_options = parent_scene_options.map { |s| ScenePresenter.new(s) }
       render :new, status: :unprocessable_content
     end
   end
@@ -67,6 +67,11 @@ class ScenesController < ApplicationController
     end
 
     @scene_presenter = ScenePresenter.new(@scene)
+    participants = @scene.scene_participants.includes(:character, :user).to_a
+    @post_presenters = T.let(
+      @posts.map { |post| PostPresenter.new(post, scene_participants: participants) },
+      T::Array[PostPresenter]
+    )
   end
 
   sig { void }

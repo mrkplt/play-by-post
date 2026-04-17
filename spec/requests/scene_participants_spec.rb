@@ -26,6 +26,14 @@ RSpec.describe SceneParticipantsController, type: :request do
       expect(response).to redirect_to(game_scene_path(game, scene))
       expect(flash[:alert]).to match(/only the gm/i)
     end
+
+    it "shows player email prefix when user has no display name" do
+      player_no_name = create(:user)
+      create(:game_member, game: game, user: player_no_name)
+      sign_in(gm)
+      get edit_game_scene_participants_path(game, scene)
+      expect(response.body).to include(player_no_name.email.split("@").first)
+    end
   end
 
   describe "PATCH /games/:game_id/scenes/:scene_id/participants" do

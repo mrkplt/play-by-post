@@ -11,7 +11,7 @@
 </div>
 
 <p style="font-size:0.85rem; color:#64748b;">
-  Edited by: <%= @version.edited_by.display_name || @version.edited_by.email %>
+  Edited by: <%= UserPresenter.new(@version.edited_by).display_name_or_email %>
 </p>
 
 <div class="bg-white border border-slate-200 rounded-lg p-5 mb-4">

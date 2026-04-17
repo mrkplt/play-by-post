@@ -42,6 +42,51 @@ RSpec.describe ScenesController, type: :request do
       expect(response).to redirect_to(game_path(game))
       expect(flash[:alert]).to match(/only the gm/i)
     end
+
+    it "shows resolved scene with (Resolved) suffix in parent options" do
+      resolved = create(:scene, :resolved, game: game, title: "Old Thread")
+      sign_in(gm)
+      get new_game_scene_path(game)
+      expect(response.body).to include("Old Thread (Resolved)")
+    end
+  end
+
+  describe "GET /games/:game_id/scenes/:id" do
+    let(:scene) { create(:scene, game: game) }
+
+    before do
+      create(:scene_participant, scene: scene, user: gm)
+    end
+
+    it "renders ok for a GM" do
+      sign_in(gm)
+      get game_scene_path(game, scene)
+      expect(response).to have_http_status(:ok)
+    end
+
+    it "renders ok for a participant" do
+      create(:scene_participant, scene: scene, user: player)
+      sign_in(player)
+      get game_scene_path(game, scene)
+      expect(response).to have_http_status(:ok)
+    end
+
+    it "shows participant names via scene_presenter" do
+      character = create(:character, game: game, user: player, name: "Drax")
+      create(:scene_participant, scene: scene, user: player, character: character)
+      sign_in(gm)
+      get game_scene_path(game, scene)
+      expect(response.body).to include("Drax")
+    end
+
+    it "shows post author names via post_presenters" do
+      create(:scene_participant, scene: scene, user: player)
+      post_record = create(:post, scene: scene, user: player)
+      sign_in(gm)
+      get game_scene_path(game, scene)
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include(post_record.user.email.split("@").first)
+    end
   end
 
   describe "POST /games/:game_id/scenes" do

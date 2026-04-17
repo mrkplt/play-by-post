@@ -26,6 +26,12 @@ RSpec.describe CharacterVersionsController, type: :request do
       expect(response).to have_http_status(:ok)
     end
 
+    it "shows editor email prefix when user has no display name" do
+      sign_in(player)
+      get game_character_character_version_path(game, character, version)
+      expect(response.body).to include(player.email.split("@").first)
+    end
+
     it "outsider is redirected to root" do
       sign_in(outsider)
       get game_character_character_version_path(game, character, version)

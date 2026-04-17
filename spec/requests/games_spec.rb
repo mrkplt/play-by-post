@@ -64,6 +64,18 @@ RSpec.describe GamesController, type: :request do
     end
   end
 
+  describe "GET /games/:id" do
+    it "shows character player email prefix when no display name is set" do
+      player_no_name = create(:user)
+      create(:game_member, game: game, user: player_no_name)
+      create(:character, game: game, user: player_no_name, name: "Spark")
+      sign_in(gm)
+      get game_path(game)
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include(player_no_name.email.split("@").first)
+    end
+  end
+
   describe "PATCH /games/:id/toggle_images_disabled" do
     it "GM can disable image attachments" do
       sign_in(gm)
