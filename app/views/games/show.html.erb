@@ -36,7 +36,7 @@
             <%= link_to character.name, game_character_path(@game, character) %>
           </div>
           <div class="text-xs text-slate-500 mt-0.5">
-            <%= character.user.display_name || character.user.email %>
+            <%= UserPresenter.new(character.user).display_name_or_email %>
           </div>
         </div>
       <% end %>

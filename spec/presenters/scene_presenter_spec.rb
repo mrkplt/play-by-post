@@ -5,6 +5,18 @@ RSpec.describe ScenePresenter do
 
   subject(:presenter) { described_class.new(scene) }
 
+  describe "#parent_option_label" do
+    context "when active" do
+      it { expect(presenter.parent_option_label).to eq(scene.title) }
+    end
+
+    context "when resolved" do
+      let(:scene) { build(:scene, :resolved) }
+
+      it { expect(presenter.parent_option_label).to eq("#{scene.title} (Resolved)") }
+    end
+  end
+
   describe "#status_label" do
     context "when active" do
       it { expect(presenter.status_label).to eq("Active") }

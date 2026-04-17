@@ -141,9 +141,36 @@ RSpec.describe GameFilePresenter do
     end
   end
 
-  describe "delegation" do
-    it "delegates filename to the model" do
+  describe "#filename" do
+    it "delegates to the model" do
       expect(presenter.filename).to eq(game_file.filename)
+    end
+  end
+
+  describe "#display_image" do
+    it "returns nil when no image is attached" do
+      game_file = build(:game_file)
+      expect(described_class.new(game_file).display_image).to be_nil
+    end
+
+    it "returns a variant for an attached image" do
+      game_file = build(:game_file)
+      game_file.file.attach(io: File.open(Rails.root.join("spec/fixtures/files/test_image.png")),
+                            filename: "photo.png", content_type: "image/png")
+      result = described_class.new(game_file).display_image
+      expect(result).to be_a(ActiveStorage::VariantWithRecord)
+    end
+
+    it "returns nil for a non-image file" do
+      game_file = build(:game_file)
+      game_file.file.attach(io: StringIO.new("test"), filename: "doc.pdf", content_type: "application/pdf")
+      expect(described_class.new(game_file).display_image).to be_nil
+    end
+  end
+
+  describe "#file" do
+    it "delegates to the model" do
+      expect(presenter.file).to eq(game_file.file)
     end
   end
 end

@@ -300,3 +300,13 @@ For technology stack, domain model, codebase conventions, and development workfl
 - Multiple scenes can run simultaneously within a game
 - Scenes and games are associated with players (via membership), not with individual characters
 - No explicit linking of scene outcomes to character sheets is required
+
+---
+
+## View Architecture Conventions
+
+- Dead ERB partials that have been superseded by ViewComponents are deleted; do not leave both in place
+- The Gallery component (`Shared::GalleryComponent`) delegates all URL construction and HTML generation for thumbnails and lightbox content to typed methods on the component class; the ERB template only iterates and renders
+- The post list in `scenes/show` is built from `@post_presenters` (an `Array[PostPresenter]` constructed in `ScenesController#show`); the view does not instantiate presenters itself
+- Player names in all views use `UserPresenter#display_name_or_email`, which falls back to the email prefix (text before `@`) when no display name is set; this replaces the inline `display_name || email` pattern and applies to all views including the player management table (previously used `"—"` as the fallback)
+- The parent scene select in the new scene form uses `ScenePresenter#parent_option_label` to format options; resolved scenes are shown as "Title (Resolved)"

@@ -87,7 +87,7 @@
   <% end %>
 
   <p style="font-size:0.85rem; color:#64748b; margin:0.25rem 0 0.75rem;">
-    Participants: <%= @scene.scene_participants.includes(:character, :user).map(&:display_name).join(", ") %>
+    Participants: <%= @scene_presenter.participant_names %>
   </p>
 
   <% if @scene.resolved? && @scene.resolution.present? %>
@@ -118,10 +118,9 @@
     <% if @posts.empty? %>
       <p id="no_posts_message" class="text-slate-400 m-0">No posts yet. Be the first!</p>
     <% else %>
-      <% participants = @scene.scene_participants.to_a %>
-      <% @posts.each do |post| %>
+      <% @post_presenters.each do |post_presenter| %>
         <%= render Shared::PostItemComponent.new(
-              post: PostPresenter.new(post, scene_participants: participants),
+              post: post_presenter,
               game: @game,
               current_user: current_user,
               scene: @scene,

@@ -28,5 +28,13 @@ RSpec.describe PlayerManagementController, type: :request do
       get game_player_management_path(game)
       expect(response).to have_http_status(:redirect)
     end
+
+    it "shows player email prefix when user has no display name" do
+      player_no_name = create(:user)
+      create(:game_member, game: game, user: player_no_name)
+      sign_in(gm)
+      get game_player_management_path(game)
+      expect(response.body).to include(player_no_name.email.split("@").first)
+    end
   end
 end

@@ -77,6 +77,15 @@ RSpec.describe CharactersController, type: :request do
       get game_character_path(game, character)
       expect(response).to have_http_status(:ok)
     end
+
+    it "shows player email prefix when user has no display name" do
+      player_no_name = create(:user)
+      create(:game_member, game: game, user: player_no_name)
+      char = create(:character, game: game, user: player_no_name)
+      sign_in(gm)
+      get game_character_path(game, char)
+      expect(response.body).to include(player_no_name.email.split("@").first)
+    end
   end
 
   describe "GET /games/:game_id/characters/:id/edit" do

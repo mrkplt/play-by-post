@@ -4,6 +4,11 @@ class ScenePresenter < BasePresenter
   extend T::Sig
 
   sig { returns(String) }
+  def parent_option_label
+    @model.resolved? ? "#{@model.title} (Resolved)" : @model.title
+  end
+
+  sig { returns(String) }
   def status_label
     @model.resolved? ? "Resolved" : "Active"
   end
