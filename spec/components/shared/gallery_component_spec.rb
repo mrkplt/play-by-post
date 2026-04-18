@@ -59,4 +59,47 @@ RSpec.describe Shared::GalleryComponent, type: :component do
       expect(rendered_component).not_to have_css("[data-testid='gallery-card']")
     end
   end
+
+  context "when the file is attached (download_url_for returns a path, not '#')" do
+    let(:game_file) do
+      gf = build_stubbed(:game_file, filename: "report.pdf")
+      allow(gf).to receive(:image?).and_return(false)
+      allow(gf).to receive(:display_image).and_return(nil)
+      allow(gf).to receive(:file).and_return(double(attached?: true, content_type: "application/pdf", previewable?: false, byte_size: 1024))
+      gf
+    end
+
+    it "renders the download path in the card's data attribute" do
+      allow_any_instance_of(described_class).to receive(:download_url_for).and_return("/files/report.pdf")
+      render_inline(described_class.new(game_files: [ game_file ], game: game))
+      expect(page).to have_css("[data-testid='gallery-card']")
+      expect(page.native.to_html).to include("/files/report.pdf")
+    end
+  end
+
+  context "when the file has a thumbnail (thumb_html_for non-nil path)" do
+    it "renders an img tag for the thumbnail in the card" do
+      allow_any_instance_of(described_class).to receive(:thumb_html_for).and_return('<img src="/thumb.jpg" alt="photo.png">'.html_safe)
+      render_inline(described_class.new(game_files: [ game_file ], game: game))
+      expect(page).to have_css("[data-testid='gallery-card'] img[src='/thumb.jpg']")
+    end
+  end
+
+  context "when the file is an image with display_image (lightbox_html_for image branch)" do
+    it "stores an img tag without max-w-full in the lightbox data attribute" do
+      allow_any_instance_of(described_class).to receive(:lightbox_html_for).and_return('<img src="/display.jpg" alt="photo.png">'.html_safe)
+      render_inline(described_class.new(game_files: [ game_file ], game: game))
+      expect(page.native.to_html).to include("/display.jpg")
+      expect(page.native.to_html).not_to match(/data-lightbox-html="[^"]*max-w-full/)
+    end
+  end
+
+  context "when file has thumbnail but is not an image (lightbox_html_for elsif branch)" do
+    it "stores an img tag with max-w-full in the lightbox data attribute" do
+      allow_any_instance_of(described_class).to receive(:lightbox_html_for).and_return('<img src="/thumb.jpg" alt="doc.pdf" class="max-w-full">'.html_safe)
+      render_inline(described_class.new(game_files: [ game_file ], game: game))
+      expect(page.native.to_html).to include("/thumb.jpg")
+      expect(page.native.to_html).to include("max-w-full")
+    end
+  end
 end
