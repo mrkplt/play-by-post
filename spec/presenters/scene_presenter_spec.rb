@@ -36,11 +36,28 @@ RSpec.describe ScenePresenter do
   end
 
   describe "#participant_names" do
-    it "returns empty string when no participants with characters" do
+    it "returns empty string when there are no participants" do
       allow(scene).to receive(:scene_participants).and_return(
         double(includes: [])
       )
       expect(presenter.participant_names).to eq("")
+    end
+
+    it "includes participants without characters (e.g. GM)" do
+      sp = double(display_name: "Alice")
+      allow(scene).to receive(:scene_participants).and_return(
+        double(includes: [ sp ])
+      )
+      expect(presenter.participant_names).to eq("Alice")
+    end
+
+    it "joins multiple participants with a comma" do
+      sp1 = double(display_name: "Alice")
+      sp2 = double(display_name: "Bob")
+      allow(scene).to receive(:scene_participants).and_return(
+        double(includes: [ sp1, sp2 ])
+      )
+      expect(presenter.participant_names).to eq("Alice, Bob")
     end
   end
 
