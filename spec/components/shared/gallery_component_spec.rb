@@ -41,6 +41,12 @@ RSpec.describe Shared::GalleryComponent, type: :component do
     it "does not render the delete button" do
       expect(rendered_component).not_to have_css("[data-lightbox-delete-btn]")
     end
+
+    it "does not set data-lightbox-delete on the gallery card" do
+      render_inline(component)
+      card = page.find("[data-testid='gallery-card']")
+      expect(card["data-lightbox-delete"]).to be_nil
+    end
   end
 
   context "when is_gm is true" do
@@ -76,7 +82,8 @@ RSpec.describe Shared::GalleryComponent, type: :component do
   context "when the file is not attached (download_url_for false branch)" do
     it "renders '#' in data-lightbox-download" do
       render_inline(described_class.new(game_files: [ game_file ], game: game))
-      expect(page).to have_css('[data-lightbox-download="#"]')
+      card = page.find("[data-testid='gallery-card']")
+      expect(card["data-lightbox-download"]).to eq("#")
     end
   end
 
@@ -91,10 +98,17 @@ RSpec.describe Shared::GalleryComponent, type: :component do
       gf
     end
 
-    it "renders a blob path (not '#') in data-lightbox-download when file is attached" do
+    it "renders a blob path (not '#' or empty) in data-lightbox-download when file is attached" do
       render_inline(described_class.new(game_files: [ attached_game_file ], game: attached_game_file.game))
       card = page.find("[data-testid='gallery-card']")
       expect(card["data-lightbox-download"]).not_to eq("#")
+      expect(card["data-lightbox-download"]).not_to be_empty
+    end
+
+    it "renders a path containing 'blob' in data-lightbox-download" do
+      render_inline(described_class.new(game_files: [ attached_game_file ], game: attached_game_file.game))
+      card = page.find("[data-testid='gallery-card']")
+      expect(card["data-lightbox-download"]).to include("blob")
     end
   end
 
@@ -104,6 +118,27 @@ RSpec.describe Shared::GalleryComponent, type: :component do
     lightbox_data = CGI.unescapeHTML(html.match(/data-lightbox-html='([^']*)'/)[1])
     expect(lightbox_data).to include("PDF")
     expect(lightbox_data).to include("lightbox-placeholder")
+  end
+
+  it "stores outer placeholder div CSS classes in data-lightbox-html" do
+    render_inline(described_class.new(game_files: [ game_file ], game: game))
+    html = page.native.to_html
+    lightbox_data = CGI.unescapeHTML(html.match(/data-lightbox-html='([^']*)'/)[1])
+    expect(lightbox_data).to include("flex")
+    expect(lightbox_data).to include("flex-col")
+    expect(lightbox_data).to include("items-center")
+    expect(lightbox_data).to include("justify-center")
+    expect(lightbox_data).to include("text-slate-500")
+  end
+
+  it "stores extension div CSS classes in data-lightbox-html" do
+    render_inline(described_class.new(game_files: [ game_file ], game: game))
+    html = page.native.to_html
+    lightbox_data = CGI.unescapeHTML(html.match(/data-lightbox-html='([^']*)'/)[1])
+    expect(lightbox_data).to include("text-5xl")
+    expect(lightbox_data).to include("font-bold")
+    expect(lightbox_data).to include("text-slate-400")
+    expect(lightbox_data).to include("lightbox-placeholder-ext")
   end
 
   context "when the file has a thumbnail (thumb_html_for non-nil path)" do
@@ -129,6 +164,13 @@ RSpec.describe Shared::GalleryComponent, type: :component do
       expect(html).to include("/display.jpg")
       expect(html).not_to include("max-w-full")
     end
+
+    it "stores the filename as alt attribute in the lightbox image HTML" do
+      render_inline(described_class.new(game_files: [ game_file ], game: game))
+      html = page.native.to_html
+      lightbox_data = CGI.unescapeHTML(html.match(/data-lightbox-html='([^']*)'/)[1])
+      expect(lightbox_data).to include("map.pdf")
+    end
   end
 
   context "when display_image is present but image? is false (lightbox_html_for uses elsif/else)" do
@@ -153,6 +195,13 @@ RSpec.describe Shared::GalleryComponent, type: :component do
       html = page.native.to_html
       expect(html).to include("/thumb.jpg")
       expect(html).to include("max-w-full")
+    end
+
+    it "stores the filename as alt attribute in the lightbox thumb HTML" do
+      render_inline(described_class.new(game_files: [ game_file ], game: game))
+      html = page.native.to_html
+      lightbox_data = CGI.unescapeHTML(html.match(/data-lightbox-html='([^']*)'/)[1])
+      expect(lightbox_data).to include("map.pdf")
     end
   end
 end
