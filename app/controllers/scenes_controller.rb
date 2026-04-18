@@ -68,10 +68,7 @@ class ScenesController < ApplicationController
 
     @scene_presenter = ScenePresenter.new(@scene)
     participants = @scene.scene_participants.includes(:character, :user).to_a
-    @post_presenters = T.let(
-      @posts.map { |post| PostPresenter.new(post, scene_participants: participants) },
-      T::Array[PostPresenter]
-    )
+    @post_presenters = @posts.map { |post| PostPresenter.new(post, scene_participants: participants) }
   end
 
   sig { void }
