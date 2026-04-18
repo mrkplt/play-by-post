@@ -61,6 +61,30 @@ RSpec.describe ScenePresenter do
     end
   end
 
+  describe "#tree_row_css_class" do
+    context "when active" do
+      it { expect(presenter.tree_row_css_class).to eq("font-semibold") }
+    end
+
+    context "when resolved" do
+      let(:scene) { build(:scene, :resolved) }
+
+      it { expect(presenter.tree_row_css_class).to eq("text-slate-500") }
+    end
+  end
+
+  describe "#tree_link_css_class" do
+    context "when active" do
+      it { expect(presenter.tree_link_css_class).to eq("") }
+    end
+
+    context "when resolved" do
+      let(:scene) { build(:scene, :resolved) }
+
+      it { expect(presenter.tree_link_css_class).to eq("text-slate-500") }
+    end
+  end
+
   describe "#banner_image" do
     it "returns a variant with correct transformations" do
       scene = build(:scene)
