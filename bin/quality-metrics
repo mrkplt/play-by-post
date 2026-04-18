@@ -494,7 +494,13 @@ end
 
 def check_sorbet_tc
   puts "\n=== Sorbet Type Check ==="
-  output = `bundle exec srb tc 2>&1`
+  srb = begin
+    spec = Gem::Specification.find_by_name("sorbet")
+    File.join(spec.bin_dir, "srb")
+  rescue Gem::MissingSpecError
+    "srb"
+  end
+  output = `#{srb} tc 2>&1`
   status = $?.success?
 
   if status
