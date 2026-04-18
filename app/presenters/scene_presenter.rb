@@ -17,7 +17,6 @@ class ScenePresenter < BasePresenter
   def participant_names
     @model.scene_participants
       .includes(:character, :user)
-      .reject { |sp| sp.character_id.nil? }
       .map(&:display_name)
       .join(", ")
   end
