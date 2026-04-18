@@ -79,13 +79,15 @@ RSpec.describe ScenesController, type: :request do
       expect(response.body).to include("Drax")
     end
 
-    it "shows post author names via post_presenters" do
-      create(:scene_participant, scene: scene, user: player)
-      post_record = create(:post, scene: scene, user: player)
+    it "renders post author names from post_presenters" do
+      nameless = create(:user)
+      create(:game_member, game: game, user: nameless)
+      create(:scene_participant, scene: scene, user: nameless)
+      create(:post, scene: scene, user: nameless)
       sign_in(gm)
       get game_scene_path(game, scene)
       expect(response).to have_http_status(:ok)
-      expect(response.body).to include(post_record.user.email.split("@").first)
+      expect(response.body).to include(nameless.email)
     end
   end
 
