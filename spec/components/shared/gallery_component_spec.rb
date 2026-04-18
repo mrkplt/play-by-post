@@ -49,6 +49,19 @@ RSpec.describe Shared::GalleryComponent, type: :component do
     it "renders the delete button" do
       expect(rendered_component).to have_css("[data-lightbox-delete-btn]", visible: :hidden)
     end
+
+    it "sets data-lightbox-delete on the gallery card" do
+      render_inline(component)
+      card = page.find("[data-testid='gallery-card']")
+      expect(card["data-lightbox-delete"]).to be_present
+    end
+
+    it "includes the game and file ids in the delete URL" do
+      render_inline(component)
+      card = page.find("[data-testid='gallery-card']")
+      expect(card["data-lightbox-delete"]).to include("/games/")
+      expect(card["data-lightbox-delete"]).to include("/game_files/")
+    end
   end
 
   context "with no files" do
@@ -85,14 +98,22 @@ RSpec.describe Shared::GalleryComponent, type: :component do
     end
   end
 
+  it "stores placeholder HTML with file extension in data-lightbox-html for non-thumbnailable files" do
+    render_inline(described_class.new(game_files: [ game_file ], game: game))
+    html = page.native.to_html
+    lightbox_data = CGI.unescapeHTML(html.match(/data-lightbox-html='([^']*)'/)[1])
+    expect(lightbox_data).to include("PDF")
+    expect(lightbox_data).to include("lightbox-placeholder")
+  end
+
   context "when the file has a thumbnail (thumb_html_for non-nil path)" do
     before do
       allow_any_instance_of(GameFilePresenter).to receive(:thumbnail).and_return("/thumb.jpg")
     end
 
-    it "renders an img tag for the thumbnail in the card" do
+    it "renders an img with correct src, alt, and loading attributes in the card" do
       render_inline(described_class.new(game_files: [ game_file ], game: game))
-      expect(page).to have_css("[data-testid='gallery-card'] img[src='/thumb.jpg']")
+      expect(page).to have_css("[data-testid='gallery-card'] img[src='/thumb.jpg'][alt='map.pdf'][loading='lazy']")
     end
   end
 
@@ -107,6 +128,18 @@ RSpec.describe Shared::GalleryComponent, type: :component do
       html = page.native.to_html
       expect(html).to include("/display.jpg")
       expect(html).not_to include("max-w-full")
+    end
+  end
+
+  context "when display_image is present but image? is false (lightbox_html_for uses elsif/else)" do
+    before do
+      allow_any_instance_of(GameFilePresenter).to receive(:image?).and_return(false)
+      allow_any_instance_of(GameFilePresenter).to receive(:display_image).and_return("/display.jpg")
+    end
+
+    it "does not render the display image when image? is false" do
+      render_inline(described_class.new(game_files: [ game_file ], game: game))
+      expect(page.native.to_html).not_to include("/display.jpg")
     end
   end
 
