@@ -60,46 +60,66 @@ RSpec.describe Shared::GalleryComponent, type: :component do
     end
   end
 
-  context "when the file is attached (download_url_for returns a path, not '#')" do
-    let(:game_file) do
-      gf = build_stubbed(:game_file, filename: "report.pdf")
-      allow(gf).to receive(:image?).and_return(false)
-      allow(gf).to receive(:display_image).and_return(nil)
-      allow(gf).to receive(:file).and_return(double(attached?: true, content_type: "application/pdf", previewable?: false, byte_size: 1024))
+  context "when the file is not attached (download_url_for false branch)" do
+    it "renders '#' in data-lightbox-download" do
+      render_inline(described_class.new(game_files: [ game_file ], game: game))
+      expect(page).to have_css('[data-lightbox-download="#"]')
+    end
+  end
+
+  context "when the file is attached (download_url_for true branch)" do
+    let(:attached_game_file) do
+      gf = create(:game_file)
+      gf.file.attach(
+        io: File.open(Rails.root.join("spec/fixtures/files/test_document.pdf")),
+        filename: "doc.pdf",
+        content_type: "application/pdf"
+      )
       gf
     end
 
-    it "renders the download path in the card's data attribute" do
-      allow_any_instance_of(described_class).to receive(:download_url_for).and_return("/files/report.pdf")
-      render_inline(described_class.new(game_files: [ game_file ], game: game))
-      expect(page).to have_css("[data-testid='gallery-card']")
-      expect(page.native.to_html).to include("/files/report.pdf")
+    it "renders a blob path (not '#') in data-lightbox-download when file is attached" do
+      render_inline(described_class.new(game_files: [ attached_game_file ], game: attached_game_file.game))
+      card = page.find("[data-testid='gallery-card']")
+      expect(card["data-lightbox-download"]).not_to eq("#")
     end
   end
 
   context "when the file has a thumbnail (thumb_html_for non-nil path)" do
+    before do
+      allow_any_instance_of(GameFilePresenter).to receive(:thumbnail).and_return("/thumb.jpg")
+    end
+
     it "renders an img tag for the thumbnail in the card" do
-      allow_any_instance_of(described_class).to receive(:thumb_html_for).and_return('<img src="/thumb.jpg" alt="photo.png">'.html_safe)
       render_inline(described_class.new(game_files: [ game_file ], game: game))
       expect(page).to have_css("[data-testid='gallery-card'] img[src='/thumb.jpg']")
     end
   end
 
   context "when the file is an image with display_image (lightbox_html_for image branch)" do
-    it "stores an img tag without max-w-full in the lightbox data attribute" do
-      allow_any_instance_of(described_class).to receive(:lightbox_html_for).and_return('<img src="/display.jpg" alt="photo.png">'.html_safe)
+    before do
+      allow_any_instance_of(GameFilePresenter).to receive(:image?).and_return(true)
+      allow_any_instance_of(GameFilePresenter).to receive(:display_image).and_return("/display.jpg")
+    end
+
+    it "stores an img tag without max-w-full in the data-lightbox-html attribute" do
       render_inline(described_class.new(game_files: [ game_file ], game: game))
-      expect(page.native.to_html).to include("/display.jpg")
-      expect(page.native.to_html).not_to match(/data-lightbox-html="[^"]*max-w-full/)
+      html = page.native.to_html
+      expect(html).to include("/display.jpg")
+      expect(html).not_to include("max-w-full")
     end
   end
 
   context "when file has thumbnail but is not an image (lightbox_html_for elsif branch)" do
-    it "stores an img tag with max-w-full in the lightbox data attribute" do
-      allow_any_instance_of(described_class).to receive(:lightbox_html_for).and_return('<img src="/thumb.jpg" alt="doc.pdf" class="max-w-full">'.html_safe)
+    before do
+      allow_any_instance_of(GameFilePresenter).to receive(:thumbnail).and_return("/thumb.jpg")
+    end
+
+    it "stores an img with max-w-full in the data-lightbox-html attribute" do
       render_inline(described_class.new(game_files: [ game_file ], game: game))
-      expect(page.native.to_html).to include("/thumb.jpg")
-      expect(page.native.to_html).to include("max-w-full")
+      html = page.native.to_html
+      expect(html).to include("/thumb.jpg")
+      expect(html).to include("max-w-full")
     end
   end
 end
