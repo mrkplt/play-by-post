@@ -89,15 +89,262 @@ RSpec.describe ScenesController, type: :request do
       expect(response).to have_http_status(:ok)
       expect(response.body).to include(nameless.email)
     end
+
+    context "GM-specific content (@is_gm)" do
+      it "shows Edit Participants link to GM" do
+        sign_in(gm)
+        get game_scene_path(game, scene)
+        expect(response.body).to include("Edit Participants")
+      end
+
+      it "does not show Edit Participants link to non-GM player" do
+        create(:scene_participant, scene: scene, user: player)
+        sign_in(player)
+        get game_scene_path(game, scene)
+        expect(response.body).not_to include("Edit Participants")
+      end
+
+      it "shows resolve form only to GM" do
+        sign_in(gm)
+        get game_scene_path(game, scene)
+        expect(response.body).to include("End Scene")
+      end
+
+      it "does not show resolve form to player" do
+        create(:scene_participant, scene: scene, user: player)
+        sign_in(player)
+        get game_scene_path(game, scene)
+        expect(response.body).not_to include("End Scene")
+      end
+    end
+
+    context "notification mute toggle (@is_muted)" do
+      it "shows Mute notifications when not muted" do
+        sign_in(gm)
+        get game_scene_path(game, scene)
+        expect(response.body).to include("Mute notifications")
+      end
+
+      it "shows Unmute notifications when muted" do
+        create(:notification_preference, scene: scene, user: gm, muted: true)
+        sign_in(gm)
+        get game_scene_path(game, scene)
+        expect(response.body).to include("Unmute notifications")
+      end
+    end
+
+    context "hide_ooc data attribute (@hide_ooc)" do
+      it "sets hide-ooc-value to false by default" do
+        sign_in(gm)
+        get game_scene_path(game, scene)
+        expect(response.body).to include('data-ooc-filter-hide-ooc-value="false"')
+      end
+
+      it "sets hide-ooc-value to true when user has hide_ooc enabled" do
+        gm.user_profile.update!(hide_ooc: true)
+        sign_in(gm)
+        get game_scene_path(game, scene)
+        expect(response.body).to include('data-ooc-filter-hide-ooc-value="true"')
+      end
+
+      it "sets hide-ooc-value to false when user has no profile" do
+        user_no_profile = create(:user)
+        create(:game_member, game: game, user: user_no_profile)
+        create(:scene_participant, scene: scene, user: user_no_profile)
+        sign_in(user_no_profile)
+        get game_scene_path(game, scene)
+        expect(response.body).to include('data-ooc-filter-hide-ooc-value="false"')
+      end
+    end
+
+    context "post composer visibility (@is_participant, @is_gm)" do
+      it "shows post composer to GM" do
+        sign_in(gm)
+        get game_scene_path(game, scene)
+        expect(response.body).to include("post_composer")
+      end
+
+      it "shows post composer to a participant" do
+        create(:scene_participant, scene: scene, user: player)
+        sign_in(player)
+        get game_scene_path(game, scene)
+        expect(response.body).to include("post_composer")
+      end
+
+      it "does not show post composer to non-participant player" do
+        sign_in(player)
+        get game_scene_path(game, scene)
+        expect(response.body).not_to include("post_composer")
+      end
+    end
+
+    context "join scene button (@is_participant, @current_membership)" do
+      it "shows Join Scene to active non-participant player" do
+        sign_in(player)
+        get game_scene_path(game, scene)
+        expect(response.body).to include("Join Scene")
+      end
+
+      it "does not show Join Scene to a participant" do
+        create(:scene_participant, scene: scene, user: player)
+        sign_in(player)
+        get game_scene_path(game, scene)
+        expect(response.body).not_to include("Join Scene")
+      end
+
+      it "does not show Join Scene to GM" do
+        sign_in(gm)
+        get game_scene_path(game, scene)
+        expect(response.body).not_to include("Join Scene")
+      end
+    end
+
+    context "draft recovery (@draft)" do
+      it "shows draft recovery notice on resolved scene when draft exists" do
+        resolved_scene = create(:scene, :resolved, game: game)
+        create(:scene_participant, scene: resolved_scene, user: gm)
+        create(:post, :draft, scene: resolved_scene, user: gm, content: "My unfinished post")
+        sign_in(gm)
+        get game_scene_path(game, resolved_scene)
+        expect(response.body).to include("unsaved draft")
+      end
+
+      it "does not show draft recovery on active scene" do
+        create(:post, :draft, scene: scene, user: gm, content: "Draft content")
+        sign_in(gm)
+        get game_scene_path(game, scene)
+        expect(response.body).not_to include("unsaved draft")
+      end
+
+      it "does not show draft notice on resolved scene when only published posts exist" do
+        resolved_scene = create(:scene, :resolved, game: game)
+        create(:scene_participant, scene: resolved_scene, user: gm)
+        create(:post, scene: resolved_scene, user: gm, content: "Published content")
+        sign_in(gm)
+        get game_scene_path(game, resolved_scene)
+        expect(response.body).not_to include("unsaved draft")
+      end
+    end
+
+    context "last_visited_at update" do
+      it "updates last_visited_at to current time for the current user's scene participant" do
+        sp = SceneParticipant.find_by!(scene: scene, user: gm)
+        sp.update!(last_visited_at: 1.hour.ago)
+        sign_in(gm)
+        get game_scene_path(game, scene)
+        expect(sp.reload.last_visited_at).to be_within(5.seconds).of(Time.current)
+      end
+
+      it "does not update last_visited_at for other participants" do
+        create(:scene_participant, scene: scene, user: player)
+        player_sp = SceneParticipant.find_by!(scene: scene, user: player)
+        player_sp.update!(last_visited_at: 2.hours.ago)
+        sign_in(gm)
+        get game_scene_path(game, scene)
+        expect(player_sp.reload.last_visited_at).to be_within(1.minute).of(2.hours.ago)
+      end
+    end
+
+    context "child scenes (@child_scenes)" do
+      it "shows child scenes in the response" do
+        child = create(:scene, game: game, parent_scene: scene, title: "Child Thread")
+        create(:scene_participant, scene: child, user: gm)
+        sign_in(gm)
+        get game_scene_path(game, scene)
+        expect(response.body).to include("Child Thread")
+      end
+
+      it "does not show private child scenes to non-participants" do
+        private_child = create(:scene, :private, game: game, parent_scene: scene, title: "Secret Thread")
+        sign_in(player)
+        get game_scene_path(game, scene)
+        expect(response.body).not_to include("Secret Thread")
+      end
+    end
+
+    context "only published posts appear (@posts with .published)" do
+      it "does not show another user's draft post in the response" do
+        # player's draft should not appear even in composer (only current user's draft shows)
+        create(:post, :draft, scene: scene, user: player, content: "Draft content only")
+        sign_in(gm)
+        get game_scene_path(game, scene)
+        expect(response.body).not_to include("Draft content only")
+      end
+
+      it "shows published posts" do
+        create(:post, scene: scene, user: gm, content: "Published content here")
+        sign_in(gm)
+        get game_scene_path(game, scene)
+        expect(response.body).to include("Published content here")
+      end
+    end
+
+    context "resolved scene (@read_post_ids is empty Set)" do
+      it "renders the resolved badge for a resolved scene" do
+        resolved_scene = create(:scene, :resolved, game: game)
+        create(:scene_participant, scene: resolved_scene, user: gm)
+        sign_in(gm)
+        get game_scene_path(game, resolved_scene)
+        expect(response.body).to include("Resolved")
+      end
+    end
+
+    context "@post_presenters with scene participants" do
+      it "shows character name when post is by a character participant" do
+        character = create(:character, game: game, user: player, name: "Gandalf")
+        create(:scene_participant, scene: scene, user: player, character: character)
+        create(:post, scene: scene, user: player)
+        sign_in(gm)
+        get game_scene_path(game, scene)
+        expect(response.body).to include("Gandalf")
+      end
+    end
+
+    context "read post tracking (@read_post_ids via PostRead)" do
+      it "marks a recently-read post as not unread" do
+        post_record = create(:post, scene: scene, user: player)
+        create(:post_read, post: post_record, user: gm)
+        sign_in(gm)
+        get game_scene_path(game, scene)
+        expect(response.body).to include('data-unread="false"')
+      end
+
+      it "marks a recent post without a PostRead as unread" do
+        create(:post, scene: scene, user: player)
+        sign_in(gm)
+        get game_scene_path(game, scene)
+        expect(response.body).to include('data-unread="true"')
+      end
+    end
+  end
+
+  describe "POST /games/:game_id/scenes (create error path)" do
+    it "re-renders new with parent scene options wrapped as presenters on validation failure" do
+      resolved_parent = create(:scene, :resolved, game: game, title: "Ended Saga")
+      sign_in(gm)
+      long_title = "a" * 201
+      post game_scenes_path(game), params: { scene: { title: long_title } }
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.body).to include("Ended Saga (Resolved)")
+    end
+
+    it "shows active scenes in parent options on validation failure" do
+      active_parent = create(:scene, game: game, title: "Active Saga")
+      sign_in(gm)
+      long_title = "a" * 201
+      post game_scenes_path(game), params: { scene: { title: long_title } }
+      expect(response.body).to include("Active Saga")
+    end
   end
 
   describe "POST /games/:game_id/scenes" do
     it "GM can create a scene" do
       sign_in(gm)
       expect {
-        post game_scenes_path(game), params: { scene: { title: "Test" } }
+        post game_scenes_path(game), params: { scene: { title: "Test Scene" } }
       }.to change(Scene, :count).by(1)
-      expect(response).to have_http_status(:redirect)
+      expect(response).to redirect_to(game_scene_path(game, Scene.last))
+      expect(flash[:notice]).to eq("Scene created.")
     end
 
     it "automatically adds the GM as a participant" do
@@ -182,6 +429,8 @@ RSpec.describe ScenesController, type: :request do
       sign_in(gm)
       patch resolve_game_scene_path(game, scene), params: { resolution: "Done." }
       expect(scene.reload).to be_resolved
+      expect(response).to redirect_to(game_scene_path(game, scene))
+      expect(flash[:notice]).to eq("Scene resolved.")
     end
 
     it "player cannot resolve a scene" do
