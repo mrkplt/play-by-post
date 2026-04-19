@@ -120,6 +120,20 @@ RSpec.describe Shared::GalleryComponent, type: :component do
     expect(lightbox_data).to include("lightbox-placeholder")
   end
 
+  it "stores the outer placeholder div with correct testid in data-lightbox-html" do
+    render_inline(described_class.new(game_files: [ game_file ], game: game))
+    html = page.native.to_html
+    lightbox_data = CGI.unescapeHTML(html.match(/data-lightbox-html='([^']*)'/)[1])
+    expect(lightbox_data).to include('data-testid="lightbox-placeholder"')
+  end
+
+  it "stores the extension div with correct testid in data-lightbox-html" do
+    render_inline(described_class.new(game_files: [ game_file ], game: game))
+    html = page.native.to_html
+    lightbox_data = CGI.unescapeHTML(html.match(/data-lightbox-html='([^']*)'/)[1])
+    expect(lightbox_data).to include('data-testid="lightbox-placeholder-ext"')
+  end
+
   it "stores outer placeholder div CSS classes in data-lightbox-html" do
     render_inline(described_class.new(game_files: [ game_file ], game: game))
     html = page.native.to_html
@@ -129,6 +143,7 @@ RSpec.describe Shared::GalleryComponent, type: :component do
     expect(lightbox_data).to include("items-center")
     expect(lightbox_data).to include("justify-center")
     expect(lightbox_data).to include("text-slate-500")
+    expect(lightbox_data).to include('class="flex flex-col items-center justify-center')
   end
 
   it "stores extension div CSS classes in data-lightbox-html" do
@@ -139,6 +154,14 @@ RSpec.describe Shared::GalleryComponent, type: :component do
     expect(lightbox_data).to include("font-bold")
     expect(lightbox_data).to include("text-slate-400")
     expect(lightbox_data).to include("lightbox-placeholder-ext")
+    expect(lightbox_data).to include('class="text-5xl font-bold text-slate-400"')
+  end
+
+  it "stores the file size div with text-sm class in data-lightbox-html" do
+    render_inline(described_class.new(game_files: [ game_file ], game: game))
+    html = page.native.to_html
+    lightbox_data = CGI.unescapeHTML(html.match(/data-lightbox-html='([^']*)'/)[1])
+    expect(lightbox_data).to include('class="text-sm text-slate-400"')
   end
 
   context "when the file has a thumbnail (thumb_html_for non-nil path)" do
@@ -149,6 +172,20 @@ RSpec.describe Shared::GalleryComponent, type: :component do
     it "renders an img with correct src, alt, and loading attributes in the card" do
       render_inline(described_class.new(game_files: [ game_file ], game: game))
       expect(page).to have_css("[data-testid='gallery-card'] img[src='/thumb.jpg'][alt='map.pdf'][loading='lazy']")
+    end
+
+    it "stores the filename as alt attribute in the lightbox thumb HTML" do
+      render_inline(described_class.new(game_files: [ game_file ], game: game))
+      html = page.native.to_html
+      lightbox_data = CGI.unescapeHTML(html.match(/data-lightbox-html='([^']*)'/)[1])
+      expect(lightbox_data).to include('alt="map.pdf"')
+    end
+
+    it "stores max-w-full as a class attribute in the lightbox thumb HTML" do
+      render_inline(described_class.new(game_files: [ game_file ], game: game))
+      html = page.native.to_html
+      lightbox_data = CGI.unescapeHTML(html.match(/data-lightbox-html='([^']*)'/)[1])
+      expect(lightbox_data).to include('class="max-w-full"')
     end
   end
 
@@ -169,7 +206,7 @@ RSpec.describe Shared::GalleryComponent, type: :component do
       render_inline(described_class.new(game_files: [ game_file ], game: game))
       html = page.native.to_html
       lightbox_data = CGI.unescapeHTML(html.match(/data-lightbox-html='([^']*)'/)[1])
-      expect(lightbox_data).to include("map.pdf")
+      expect(lightbox_data).to include('alt="map.pdf"')
     end
   end
 
