@@ -137,14 +137,11 @@ jobs:
           ruby-version: .ruby-version
           bundler-cache: true
 
-      - name: Show runner CPU count
-        run: echo "nproc=$(nproc) | lscpu cores=$(lscpu | awk '/^CPU\(s\):/{print $2}')"
-
       - name: Run mutation testing
         env:
           RAILS_ENV: test
         run: |
-          bundle exec mutant run --usage opensource --jobs 2 --since origin/master 2>&1 | tee tmp/mutant_output.txt || true
+          bundle exec mutant run --usage opensource --jobs 8 --since origin/master 2>&1 | tee tmp/mutant_output.txt || true
           bin/quality-metrics --record-mutant tmp/mutant_output.txt
 
       - name: Upload mutant results
