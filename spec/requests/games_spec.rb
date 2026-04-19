@@ -74,6 +74,71 @@ RSpec.describe GamesController, type: :request do
       expect(response).to have_http_status(:ok)
       expect(response.body).to include(player_no_name.email.split("@").first)
     end
+
+    it "shows character owner display name when set" do
+      player.user_profile.update!(display_name: "Frodo Baggins")
+      create(:character, game: game, user: player, name: "Ring Bearer")
+      sign_in(gm)
+      get game_path(game)
+      expect(response.body).to include("Frodo Baggins")
+    end
+
+    it "shows active scene titles in the active scenes section" do
+      scene = create(:scene, game: game, title: "The Fellowship Meets")
+      create(:scene_participant, scene: scene, user: gm)
+      sign_in(gm)
+      get game_path(game)
+      expect(response.body).to include("The Fellowship Meets")
+    end
+
+    it "does not show resolved scene titles in the active scenes section" do
+      resolved = create(:scene, :resolved, game: game, title: "Finished Quest")
+      create(:scene_participant, scene: resolved, user: gm)
+      sign_in(gm)
+      get game_path(game)
+      expect(response.body).not_to include("Finished Quest")
+    end
+
+    it "does not show private scenes to non-participants in the active scenes section" do
+      private_scene = create(:scene, :private, game: game, title: "Secret Council")
+      create(:scene_participant, scene: private_scene, user: gm)
+      sign_in(player)
+      get game_path(game)
+      expect(response.body).not_to include("Secret Council")
+    end
+
+    it "shows active scenes to participants" do
+      public_scene = create(:scene, game: game, title: "Open Battle")
+      create(:scene_participant, scene: public_scene, user: player)
+      sign_in(player)
+      get game_path(game)
+      expect(response.body).to include("Open Battle")
+    end
+
+    it "does not show archived characters in the character roster" do
+      archived = create(:character, :archived, game: game, user: player, name: "Retired Hero")
+      sign_in(gm)
+      get game_path(game)
+      expect(response.body).not_to include("Retired Hero")
+    end
+
+    it "shows the Export Game button when not rate limited" do
+      sign_in(gm)
+      get game_path(game)
+      expect(response.body).to include("Export Game")
+    end
+
+    it "shows GM management controls for GM" do
+      sign_in(gm)
+      get game_path(game)
+      expect(response.body).to include("New Scene")
+    end
+
+    it "does not show New Scene button to non-GM player" do
+      sign_in(player)
+      get game_path(game)
+      expect(response.body).not_to include("New Scene")
+    end
   end
 
   describe "PATCH /games/:id/toggle_images_disabled" do

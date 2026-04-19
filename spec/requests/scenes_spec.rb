@@ -49,6 +49,44 @@ RSpec.describe ScenesController, type: :request do
       get new_game_scene_path(game)
       expect(response.body).to include("Old Thread (Resolved)")
     end
+
+    it "shows active player display names in the participants section" do
+      player.user_profile.update!(display_name: "Epic Player")
+      sign_in(gm)
+      get new_game_scene_path(game)
+      expect(response.body).to include("Epic Player")
+    end
+
+    it "shows player email prefix when no display name in participants section" do
+      player_no_name = create(:user)
+      create(:game_member, game: game, user: player_no_name)
+      sign_in(gm)
+      get new_game_scene_path(game)
+      expect(response.body).to include(player_no_name.email.split("@").first)
+    end
+
+    it "does not show removed players in the participants section" do
+      removed = create(:user, :with_profile)
+      removed.user_profile.update!(display_name: "Former Member")
+      create(:game_member, :removed, game: game, user: removed)
+      sign_in(gm)
+      get new_game_scene_path(game)
+      expect(response.body).not_to include("Former Member")
+    end
+
+    it "shows character names for player selection" do
+      character = create(:character, game: game, user: player, name: "Ranger of the North")
+      sign_in(gm)
+      get new_game_scene_path(game)
+      expect(response.body).to include("Ranger of the North")
+    end
+
+    it "does not show inactive characters in the participants section" do
+      create(:character, :archived, game: game, user: player, name: "Retired Ranger")
+      sign_in(gm)
+      get new_game_scene_path(game)
+      expect(response.body).not_to include("Retired Ranger")
+    end
   end
 
   describe "GET /games/:game_id/scenes/:id" do

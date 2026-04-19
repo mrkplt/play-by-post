@@ -86,6 +86,33 @@ RSpec.describe CharactersController, type: :request do
       get game_character_path(game, char)
       expect(response.body).to include(player_no_name.email.split("@").first)
     end
+
+    it "shows player display name when set" do
+      player.user_profile.update!(display_name: "Elrond Half-Elven")
+      char = create(:character, game: game, user: player)
+      sign_in(gm)
+      get game_character_path(game, char)
+      expect(response.body).to include("Elrond Half-Elven")
+    end
+
+    it "shows version editor display name in version history" do
+      char = create(:character, game: game, user: player)
+      player.user_profile.update!(display_name: "Bilbo Baggins")
+      char.character_versions.create!(content: "v1 content", edited_by: player)
+      sign_in(gm)
+      get game_character_path(game, char)
+      expect(response.body).to include("Bilbo Baggins")
+    end
+
+    it "shows version editor email prefix when editor has no display name" do
+      char = create(:character, game: game, user: player)
+      nameless = create(:user)
+      create(:game_member, game: game, user: nameless)
+      char.character_versions.create!(content: "v2 content", edited_by: nameless)
+      sign_in(gm)
+      get game_character_path(game, char)
+      expect(response.body).to include(nameless.email.split("@").first)
+    end
   end
 
   describe "GET /games/:game_id/characters/:id/edit" do
