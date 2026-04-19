@@ -137,6 +137,9 @@ jobs:
           ruby-version: .ruby-version
           bundler-cache: true
 
+      - name: Show runner CPU count
+        run: echo "nproc=$(nproc) | lscpu cores=$(lscpu | awk '/^CPU\(s\):/{print $2}')"
+
       - name: Run mutation testing
         env:
           RAILS_ENV: test
