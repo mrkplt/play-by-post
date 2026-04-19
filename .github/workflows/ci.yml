@@ -148,7 +148,9 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: mutant-data
-          path: tmp/mutant_result.json
+          path: |
+            tmp/mutant_result.json
+            tmp/mutant_output.txt
 
   quality_gate:
     runs-on: ubuntu-latest
