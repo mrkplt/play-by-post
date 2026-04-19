@@ -34,6 +34,44 @@ RSpec.describe SceneParticipantsController, type: :request do
       get edit_game_scene_participants_path(game, scene)
       expect(response.body).to include(player_no_name.email.split("@").first)
     end
+
+    it "shows player display name when set" do
+      player.user_profile.update!(display_name: "Samwise Gamgee")
+      sign_in(gm)
+      get edit_game_scene_participants_path(game, scene)
+      expect(response.body).to include("Samwise Gamgee")
+    end
+
+    it "shows character name checkboxes for selection" do
+      character = create(:character, game: game, user: player, name: "Aragorn Son of Arathorn")
+      sign_in(gm)
+      get edit_game_scene_participants_path(game, scene)
+      expect(response.body).to include("Aragorn Son of Arathorn")
+    end
+
+    it "pre-checks the current participant character" do
+      character = create(:character, game: game, user: player, name: "Boromir")
+      scene.scene_participants.find_by(user: player).update!(character: character)
+      sign_in(gm)
+      get edit_game_scene_participants_path(game, scene)
+      expect(response.body).to match(/value="#{character.id}"[^>]*checked/)
+    end
+
+    it "does not show inactive characters" do
+      create(:character, :archived, game: game, user: player, name: "Retired Knight")
+      sign_in(gm)
+      get edit_game_scene_participants_path(game, scene)
+      expect(response.body).not_to include("Retired Knight")
+    end
+
+    it "does not show removed players" do
+      removed = create(:user, :with_profile)
+      removed.user_profile.update!(display_name: "Ex Member")
+      create(:game_member, :removed, game: game, user: removed)
+      sign_in(gm)
+      get edit_game_scene_participants_path(game, scene)
+      expect(response.body).not_to include("Ex Member")
+    end
   end
 
   describe "PATCH /games/:game_id/scenes/:scene_id/participants" do

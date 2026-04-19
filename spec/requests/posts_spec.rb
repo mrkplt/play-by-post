@@ -32,6 +32,15 @@ RSpec.describe PostsController, type: :request do
         expect(response).to have_http_status(:ok)
       end
 
+      it "includes post content in turbo_stream response" do
+        sign_in(player)
+        post game_scene_posts_path(game, scene),
+          params: { post: { content: "Unique turbo post text", is_ooc: false } },
+          headers: { "Accept" => "text/vnd.turbo-stream.html" }
+        expect(response).to have_http_status(:ok)
+        expect(response.body).to include("Unique turbo post text")
+      end
+
       it "redirects with alert on failure" do
         sign_in(player)
         post game_scene_posts_path(game, scene), params: { post: { content: "", is_ooc: false } }
@@ -105,6 +114,16 @@ RSpec.describe PostsController, type: :request do
         params: { post: { content: "Updated" } },
         headers: { "Accept" => "text/vnd.turbo-stream.html" }
       expect(response).to have_http_status(:ok)
+    end
+
+    it "includes updated content in turbo_stream response" do
+      post_record = create(:post, scene: scene, user: player)
+      sign_in(player)
+      patch game_scene_post_path(game, scene, post_record),
+        params: { post: { content: "Turbo updated content here" } },
+        headers: { "Accept" => "text/vnd.turbo-stream.html" }
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Turbo updated content here")
     end
 
     it "redirects with alert when outside edit window" do

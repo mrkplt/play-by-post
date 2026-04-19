@@ -36,5 +36,35 @@ RSpec.describe PlayerManagementController, type: :request do
       get game_player_management_path(game)
       expect(response.body).to include(player_no_name.email.split("@").first)
     end
+
+    it "shows player display name when set" do
+      player.user_profile.update!(display_name: "Quest Master")
+      sign_in(gm)
+      get game_player_management_path(game)
+      expect(response.body).to include("Quest Master")
+    end
+
+    it "shows pending invitation email" do
+      create(:invitation, game: game, email: "invited@example.com", invited_by: gm)
+      sign_in(gm)
+      get game_player_management_path(game)
+      expect(response.body).to include("invited@example.com")
+    end
+
+    it "does not show accepted invitation in pending list" do
+      create(:invitation, :accepted, game: game, email: "accepted@example.com", invited_by: gm)
+      sign_in(gm)
+      get game_player_management_path(game)
+      expect(response.body).not_to include("accepted@example.com")
+    end
+
+    it "does not show banned members in the members list" do
+      banned_user = create(:user, :with_profile)
+      banned_user.user_profile.update!(display_name: "Banned Person")
+      create(:game_member, :banned, game: game, user: banned_user)
+      sign_in(gm)
+      get game_player_management_path(game)
+      expect(response.body).not_to include("Banned Person")
+    end
   end
 end
