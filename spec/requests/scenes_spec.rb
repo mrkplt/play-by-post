@@ -27,6 +27,31 @@ RSpec.describe ScenesController, type: :request do
       get game_scenes_path(game)
       expect(response).to have_http_status(:redirect)
     end
+
+    it "shows New Scene link to GM" do
+      sign_in(gm)
+      get game_scenes_path(game)
+      expect(response.body).to include("New Scene")
+    end
+
+    it "does not show New Scene link to player" do
+      sign_in(player)
+      get game_scenes_path(game)
+      expect(response.body).not_to include("New Scene")
+    end
+
+    it "shows scene titles in the tree" do
+      create(:scene, game: game, title: "Epic Battle Scene")
+      sign_in(gm)
+      get game_scenes_path(game)
+      expect(response.body).to include("Epic Battle Scene")
+    end
+
+    it "shows No scenes yet when game has no scenes" do
+      sign_in(gm)
+      get game_scenes_path(game)
+      expect(response.body).to include("No scenes yet")
+    end
   end
 
   describe "GET /games/:game_id/scenes/new" do
@@ -86,6 +111,35 @@ RSpec.describe ScenesController, type: :request do
       sign_in(gm)
       get new_game_scene_path(game)
       expect(response.body).not_to include("Retired Ranger")
+    end
+
+    it "does not show the GM as a selectable participant" do
+      create(:character, game: game, user: player, name: "Player Hero")
+      sign_in(gm)
+      get new_game_scene_path(game)
+      expect(response.body).not_to include("No active characters")
+    end
+
+    it "shows players in alphabetical order by display name" do
+      player.user_profile.update!(display_name: "Zelda Zephyr")
+      player2 = create(:user)
+      create(:game_member, game: game, user: player2)
+      create(:user_profile, user: player2, display_name: "Aaron Aardvark")
+      sign_in(gm)
+      get new_game_scene_path(game)
+      aaron_pos = response.body.index("Aaron Aardvark")
+      zelda_pos = response.body.index("Zelda Zephyr")
+      expect(aaron_pos).to be < zelda_pos
+    end
+
+    it "shows characters in alphabetical order under each player" do
+      create(:character, game: game, user: player, name: "Zara the Fierce")
+      create(:character, game: game, user: player, name: "Aaron the Brave")
+      sign_in(gm)
+      get new_game_scene_path(game)
+      aaron_pos = response.body.index("Aaron the Brave")
+      zara_pos = response.body.index("Zara the Fierce")
+      expect(aaron_pos).to be < zara_pos
     end
   end
 

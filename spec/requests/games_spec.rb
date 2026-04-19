@@ -139,6 +139,16 @@ RSpec.describe GamesController, type: :request do
       get game_path(game)
       expect(response.body).not_to include("New Scene")
     end
+
+    it "shows characters in alphabetical order" do
+      create(:character, game: game, user: player, name: "Zara the Bold")
+      create(:character, game: game, user: player, name: "Aaron the Swift")
+      sign_in(gm)
+      get game_path(game)
+      aaron_pos = response.body.index("Aaron the Swift")
+      zara_pos = response.body.index("Zara the Bold")
+      expect(aaron_pos).to be < zara_pos
+    end
   end
 
   describe "PATCH /games/:id/toggle_images_disabled" do

@@ -72,6 +72,35 @@ RSpec.describe SceneParticipantsController, type: :request do
       get edit_game_scene_participants_path(game, scene)
       expect(response.body).not_to include("Ex Member")
     end
+
+    it "does not show the GM as a selectable participant" do
+      create(:character, game: game, user: player, name: "Player Character")
+      sign_in(gm)
+      get edit_game_scene_participants_path(game, scene)
+      expect(response.body).not_to include("No active characters")
+    end
+
+    it "shows players in alphabetical order by display name" do
+      player.user_profile.update!(display_name: "Zelda Zephyr")
+      player2 = create(:user)
+      create(:game_member, game: game, user: player2)
+      create(:user_profile, user: player2, display_name: "Aaron Aardvark")
+      sign_in(gm)
+      get edit_game_scene_participants_path(game, scene)
+      aaron_pos = response.body.index("Aaron Aardvark")
+      zelda_pos = response.body.index("Zelda Zephyr")
+      expect(aaron_pos).to be < zelda_pos
+    end
+
+    it "shows characters in alphabetical order under each player" do
+      create(:character, game: game, user: player, name: "Zara the Fierce")
+      create(:character, game: game, user: player, name: "Aaron the Brave")
+      sign_in(gm)
+      get edit_game_scene_participants_path(game, scene)
+      aaron_pos = response.body.index("Aaron the Brave")
+      zara_pos = response.body.index("Zara the Fierce")
+      expect(aaron_pos).to be < zara_pos
+    end
   end
 
   describe "PATCH /games/:game_id/scenes/:scene_id/participants" do
