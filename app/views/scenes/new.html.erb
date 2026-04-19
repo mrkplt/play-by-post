@@ -23,7 +23,7 @@
       <% @players_with_characters.each do |user, characters| %>
         <div class="mb-3">
           <div class="text-sm font-semibold text-slate-700 mb-1">
-            <%= UserPresenter.new(user).display_name_or_email %>
+            <%= user.display_name_or_email %>
           </div>
           <% if characters.empty? %>
             <div class="text-sm text-slate-400 pl-4">No active characters</div>

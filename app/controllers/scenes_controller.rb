@@ -147,7 +147,7 @@ class ScenesController < ApplicationController
       .order(:name)
       .group_by(&:user_id)
 
-    players.map { |user| [ user, characters_by_user.fetch(user.id, []) ] }
+    players.map { |user| [ UserPresenter.new(user), characters_by_user.fetch(user.id, []) ] }
   end
 
   sig { void }

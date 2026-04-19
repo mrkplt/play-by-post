@@ -10,8 +10,6 @@ class Shared::GalleryComponent < ApplicationComponent
     @is_gm      = T.let(is_gm, T::Boolean)
   end
 
-  private
-
   sig { params(gf: GameFilePresenter).returns(T.untyped) }
   def download_url_for(gf)
     gf.file.attached? ? T.unsafe(helpers).rails_blob_path(gf.file, disposition: "attachment") : "#"
