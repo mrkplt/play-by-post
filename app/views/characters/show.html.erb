@@ -12,7 +12,7 @@
 </div>
 
 <p style="font-size:0.85rem; color:#64748b;">
-  Player: <%= UserPresenter.new(@character.user).display_name_or_email %>
+  Player: <%= @character_owner.display_name_or_email %>
   <% if @character.archived? %>
     <%= render(Ui::BadgeComponent.new(variant: :gray)) { "Archived" } %>
   <% end %>
@@ -44,7 +44,7 @@
         <% @versions.each do |version| %>
           <tr>
             <td><%= link_to game_character_character_version_path(@game, @character, version) do %><time data-local-time="<%= version.created_at.iso8601 %>"><%= version.created_at.strftime("%b %-d, %Y %-I:%M %p") %></time><% end %></td>
-            <td><%= UserPresenter.new(version.edited_by).display_name_or_email %></td>
+            <td><%= @version_editor_names[version.id] %></td>
           </tr>
         <% end %>
       </tbody>

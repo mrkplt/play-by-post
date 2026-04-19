@@ -58,6 +58,7 @@ class PostsController < ApplicationController
     end
 
     if @post.save
+      @post_presenter = PostPresenter.new(@post, scene_participants: @scene.scene_participants.includes(:character, :user).to_a)
       respond_to do |format|
         format.turbo_stream
         format.html { redirect_to game_scene_path(@game, @scene) }
@@ -78,6 +79,7 @@ class PostsController < ApplicationController
     end
 
     @post.update!(content: params[:post][:content], last_edited_at: Time.current)
+    @post_presenter = PostPresenter.new(@post, scene_participants: @scene.scene_participants.includes(:character, :user).to_a)
 
     respond_to do |format|
       format.turbo_stream

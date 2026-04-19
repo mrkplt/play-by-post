@@ -43,7 +43,9 @@ class CharactersController < ApplicationController
 
   sig { void }
   def show
-    @versions = @character.character_versions.order(created_at: :desc)
+    @versions = @character.character_versions.order(created_at: :desc).includes(:edited_by)
+    @character_owner = UserPresenter.new(@character.user)
+    @version_editor_names = @versions.each_with_object({}) { |v, h| h[v.id] = UserPresenter.new(v.edited_by).display_name_or_email }
   end
 
   sig { void }
