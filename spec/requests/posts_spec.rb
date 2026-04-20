@@ -87,6 +87,16 @@ RSpec.describe PostsController, type: :request do
       post game_scene_posts_path(game, scene), params: { post: { content: "Hi" } }
       expect(response).to redirect_to(game_scene_path(game, scene))
     end
+
+    it "blocks a removed member from creating a post" do
+      removed = create(:user, :with_profile)
+      create(:game_member, :removed, game: game, user: removed)
+      create(:scene_participant, scene: scene, user: removed)
+      sign_in(removed)
+      post game_scene_posts_path(game, scene), params: { post: { content: "Hi", is_ooc: false } }
+      expect(response).to redirect_to(game_path(game))
+      expect(flash[:alert]).to match(/write access/i)
+    end
   end
 
   describe "GET /games/:game_id/scenes/:scene_id/posts/:id/edit" do
