@@ -10,6 +10,42 @@ RSpec.describe GamesController, type: :request do
     create(:game_member, game: game, user: player)
   end
 
+  describe "GET /games/new" do
+    it "renders ok for authenticated user" do
+      sign_in(gm)
+      get new_game_path
+      expect(response).to have_http_status(:ok)
+    end
+
+    it "unauthenticated user is redirected" do
+      get new_game_path
+      expect(response).to have_http_status(:redirect)
+    end
+  end
+
+  describe "POST /games" do
+    it "creates a game and adds the creator as GM" do
+      sign_in(gm)
+      expect {
+        post games_path, params: { game: { name: "New Adventure" } }
+      }.to change(Game, :count).by(1)
+      new_game = Game.last
+      expect(response).to redirect_to(game_path(new_game))
+      expect(new_game.game_master?(gm)).to be true
+    end
+
+    it "renders new with unprocessable_content on invalid params" do
+      sign_in(gm)
+      post games_path, params: { game: { name: "" } }
+      expect(response).to have_http_status(:unprocessable_content)
+    end
+
+    it "unauthenticated user is redirected" do
+      post games_path, params: { game: { name: "Adventure" } }
+      expect(response).to have_http_status(:redirect)
+    end
+  end
+
   describe "GET /games/:id/edit" do
     it "GM can access the edit form" do
       sign_in(gm)
@@ -173,6 +209,46 @@ RSpec.describe GamesController, type: :request do
       older_pos = response.body.index("Older Scene Title")
       newer_pos = response.body.index("Newer Scene Title")
       expect(newer_pos).to be < older_pos
+    end
+  end
+
+  describe "PATCH /games/:id/toggle_sheets_hidden" do
+    it "GM can hide character sheets" do
+      sign_in(gm)
+      patch toggle_sheets_hidden_game_path(game)
+      expect(game.reload.sheets_hidden?).to be true
+      expect(response).to redirect_to(game_path(game))
+      expect(flash[:notice]).to match(/hidden/i)
+    end
+
+    it "GM can reveal character sheets" do
+      game.update!(sheets_hidden: true)
+      sign_in(gm)
+      patch toggle_sheets_hidden_game_path(game)
+      expect(game.reload.sheets_hidden?).to be false
+      expect(flash[:notice]).to match(/visible/i)
+    end
+
+    it "player cannot toggle character sheet visibility" do
+      sign_in(player)
+      patch toggle_sheets_hidden_game_path(game)
+      expect(response).to redirect_to(game_path(game))
+      expect(game.reload.sheets_hidden?).to be false
+    end
+  end
+
+  describe "require_game_access! — banned user" do
+    let(:banned_user) { create(:user, :with_profile) }
+
+    before do
+      create(:game_member, :banned, game: game, user: banned_user)
+    end
+
+    it "redirects to root with alert on show" do
+      sign_in(banned_user)
+      get game_path(game)
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to match(/do not have access/i)
     end
   end
 
