@@ -10,6 +10,52 @@ RSpec.describe ScenesController, type: :request do
     create(:game_member, game: game, user: player)
   end
 
+  describe "PATCH /games/:game_id/scenes/:id/toggle_notification_preference" do
+    let(:scene) { create(:scene, game: game) }
+
+    before { create(:scene_participant, scene: scene, user: gm) }
+
+    it "mutes notifications when currently unmuted" do
+      sign_in(gm)
+      post toggle_notification_preference_game_scene_path(game, scene)
+      expect(response).to redirect_to(game_scene_path(game, scene))
+      expect(flash[:notice]).to match(/muted/i)
+      expect(NotificationPreference.muted?(scene, gm)).to be true
+    end
+
+    it "unmutes notifications when currently muted" do
+      create(:notification_preference, scene: scene, user: gm, muted: true)
+      sign_in(gm)
+      post toggle_notification_preference_game_scene_path(game, scene)
+      expect(response).to redirect_to(game_scene_path(game, scene))
+      expect(flash[:notice]).to match(/enabled/i)
+      expect(NotificationPreference.muted?(scene, gm)).to be false
+    end
+  end
+
+  describe "require_game_access! — banned or non-member user" do
+    let(:scene) { create(:scene, game: game) }
+
+    before { create(:scene_participant, scene: scene, user: gm) }
+
+    it "redirects a banned member to root with alert" do
+      banned = create(:user, :with_profile)
+      create(:game_member, :banned, game: game, user: banned)
+      sign_in(banned)
+      get game_scene_path(game, scene)
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to match(/do not have access/i)
+    end
+
+    it "redirects a non-member user to root with alert" do
+      outsider = create(:user, :with_profile)
+      sign_in(outsider)
+      get game_scene_path(game, scene)
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to match(/do not have access/i)
+    end
+  end
+
   describe "GET /games/:game_id/scenes (index)" do
     it "GM can access the scene index" do
       sign_in(gm)
@@ -161,6 +207,26 @@ RSpec.describe ScenesController, type: :request do
       sign_in(player)
       get game_scene_path(game, scene)
       expect(response).to have_http_status(:ok)
+    end
+
+    context "private scene visibility (check_scene_visibility!)" do
+      let(:private_scene) { create(:scene, :private, game: game) }
+
+      before { create(:scene_participant, scene: private_scene, user: gm) }
+
+      it "redirects a non-participant non-GM from a private scene" do
+        sign_in(player)
+        get game_scene_path(game, private_scene)
+        expect(response).to redirect_to(game_path(game))
+        expect(flash[:alert]).to match(/do not have access/i)
+      end
+
+      it "allows a participant to access a private scene" do
+        create(:scene_participant, scene: private_scene, user: player)
+        sign_in(player)
+        get game_scene_path(game, private_scene)
+        expect(response).to have_http_status(:ok)
+      end
     end
 
     it "shows participant names via scene_presenter" do
@@ -543,6 +609,14 @@ RSpec.describe ScenesController, type: :request do
       expect(response).to redirect_to(game_scene_path(game, scene))
     end
 
+    it "redirects with alert when scene is already resolved" do
+      scene.update!(resolved_at: 1.hour.ago)
+      sign_in(gm)
+      patch resolve_game_scene_path(game, scene)
+      expect(response).to redirect_to(game_scene_path(game, scene))
+      expect(flash[:alert]).to match(/already resolved/i)
+    end
+
     context "email notifications" do
       around do |example|
         original_adapter = ActiveJob::Base.queue_adapter
@@ -567,6 +641,32 @@ RSpec.describe ScenesController, type: :request do
         expect(recipient_gids).to include(a_string_including("User/#{gm.id}"))
         expect(recipient_gids).to include(a_string_including("User/#{player.id}"))
       end
+
+      it "does not enqueue scene_resolved email for a muted participant" do
+        create(:scene_participant, scene: scene, user: player)
+        create(:notification_preference, scene: scene, user: player, muted: true)
+        sign_in(gm)
+
+        patch resolve_game_scene_path(game, scene), params: { resolution: "Done." }
+
+        mail_jobs = ActiveJob::Base.queue_adapter.enqueued_jobs.select { |j|
+          j["job_class"] == "ActionMailer::MailDeliveryJob" &&
+          j["arguments"]&.first == "NotificationMailer" &&
+          j["arguments"]&.second == "scene_resolved"
+        }
+        recipient_gids = mail_jobs.map { |j| j["arguments"][3]["args"][1]["_aj_globalid"] }
+        expect(recipient_gids).not_to include(a_string_including("User/#{player.id}"))
+      end
+    end
+  end
+
+  describe "POST /games/:game_id/scenes — invalid character_id in add_participants" do
+    it "skips unknown character ids and still creates the scene" do
+      sign_in(gm)
+      post game_scenes_path(game), params: { scene: { title: "New Scene" }, character_ids: [ 999999 ] }
+      scene = Scene.last
+      expect(scene).not_to be_nil
+      expect(scene.scene_participants.count).to eq(1)
     end
   end
 end
