@@ -407,7 +407,6 @@ RSpec.describe ScenesController, type: :request do
         get game_scene_path(game, scene)
         expect(response.body).to include('data-unread="true"')
       end
-
     end
 
     context "posts appear in chronological order" do
