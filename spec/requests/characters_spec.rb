@@ -113,6 +113,21 @@ RSpec.describe CharactersController, type: :request do
       get game_character_path(game, char)
       expect(response.body).to include(nameless.email.split("@").first)
     end
+
+    it "shows versions in reverse chronological order" do
+      char = create(:character, game: game, user: player)
+      editor_old = create(:user, :with_profile)
+      editor_old.user_profile.update!(display_name: "Early Editor Aardvark")
+      create(:game_member, game: game, user: editor_old)
+      editor_new = create(:user, :with_profile)
+      editor_new.user_profile.update!(display_name: "Recent Editor Zebra")
+      create(:game_member, game: game, user: editor_new)
+      char.character_versions.create!(content: "v1", edited_by: editor_old, created_at: 2.days.ago)
+      char.character_versions.create!(content: "v2", edited_by: editor_new, created_at: 1.day.ago)
+      sign_in(gm)
+      get game_character_path(game, char)
+      expect(response.body.index("Recent Editor Zebra")).to be < response.body.index("Early Editor Aardvark")
+    end
   end
 
   describe "GET /games/:game_id/characters/:id/edit" do
