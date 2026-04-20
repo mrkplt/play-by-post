@@ -149,6 +149,31 @@ RSpec.describe GamesController, type: :request do
       zara_pos = response.body.index("Zara the Bold")
       expect(aaron_pos).to be < zara_pos
     end
+
+    it "does not show hidden characters to a non-owner player" do
+      other = create(:user, :with_profile)
+      create(:game_member, game: game, user: other)
+      create(:character, :hidden, game: game, user: other, name: "Secret Character")
+      sign_in(player)
+      get game_path(game)
+      expect(response.body).not_to include("Secret Character")
+    end
+
+    it "shows scenes sorted by most recent activity first" do
+      older_scene = create(:scene, game: game, title: "Older Scene Title")
+      create(:scene_participant, scene: older_scene, user: gm)
+      create(:post, scene: older_scene, user: gm, created_at: 2.days.ago)
+
+      newer_scene = create(:scene, game: game, title: "Newer Scene Title")
+      create(:scene_participant, scene: newer_scene, user: gm)
+      create(:post, scene: newer_scene, user: gm, created_at: 1.hour.ago)
+
+      sign_in(gm)
+      get game_path(game)
+      older_pos = response.body.index("Older Scene Title")
+      newer_pos = response.body.index("Newer Scene Title")
+      expect(newer_pos).to be < older_pos
+    end
   end
 
   describe "PATCH /games/:id/toggle_images_disabled" do

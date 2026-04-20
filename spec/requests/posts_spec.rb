@@ -65,6 +65,14 @@ RSpec.describe PostsController, type: :request do
         expect(draft.reload.draft).to eq(false)
         expect(draft.reload.content).to eq("Published from draft")
       end
+
+      it "creates a new post without modifying an existing published post when no draft exists" do
+        existing = create(:post, scene: scene, user: player, content: "Existing published post")
+        sign_in(player)
+        post game_scene_posts_path(game, scene), params: { post: { content: "Brand new post", is_ooc: false } }
+        expect(existing.reload.content).to eq("Existing published post")
+        expect(scene.posts.published.count).to eq(2)
+      end
     end
 
     it "blocks unauthenticated requests" do
@@ -133,6 +141,13 @@ RSpec.describe PostsController, type: :request do
       patch game_scene_post_path(game, scene, post_record), params: { post: { content: "Too late" } }
       expect(response).to redirect_to(game_scene_path(game, scene))
       expect(post_record.reload.content).not_to eq("Too late")
+    end
+
+    it "sets last_edited_at on successful update" do
+      post_record = create(:post, scene: scene, user: player, last_edited_at: nil)
+      sign_in(player)
+      patch game_scene_post_path(game, scene, post_record), params: { post: { content: "Edited content" } }
+      expect(post_record.reload.last_edited_at).to be_within(5.seconds).of(Time.current)
     end
   end
 

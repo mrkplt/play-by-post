@@ -407,6 +407,17 @@ RSpec.describe ScenesController, type: :request do
         get game_scene_path(game, scene)
         expect(response.body).to include('data-unread="true"')
       end
+
+    end
+
+    context "posts appear in chronological order" do
+      it "renders older posts before newer posts" do
+        create(:post, scene: scene, user: gm, content: "Older Post Alpha", created_at: 2.hours.ago)
+        create(:post, scene: scene, user: gm, content: "Newer Post Beta", created_at: 1.hour.ago)
+        sign_in(gm)
+        get game_scene_path(game, scene)
+        expect(response.body.index("Older Post Alpha")).to be < response.body.index("Newer Post Beta")
+      end
     end
   end
 
