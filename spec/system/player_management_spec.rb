@@ -96,7 +96,7 @@ RSpec.describe "Player Management", type: :feature do
     end
 
     it "GM can cancel a pending invitation" do
-      create(:invitation, game: game, email: "todelete@example.com")
+      invitation = create(:invitation, game: game, email: "todelete@example.com")
 
       visit game_player_management_path(game)
 
@@ -106,6 +106,7 @@ RSpec.describe "Player Management", type: :feature do
 
       expect(page).not_to have_text("todelete@example.com")
       expect(page).to have_text("Invitation cancelled")
+      expect(Invitation.exists?(invitation.id)).to be false
     end
   end
 

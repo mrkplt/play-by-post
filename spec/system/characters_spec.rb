@@ -67,9 +67,11 @@ RSpec.describe "Characters", type: :feature do
       sign_in_as(player)
       visit game_character_path(game, character)
 
-      find("details").click
-      expect(page).to have_text("Version History")
-      expect(page).to have_text(player.display_name)
+      find("summary", text: /^Version History/).click
+
+      within("details[open] tbody") do
+        expect(page).to have_text(player.display_name)
+      end
     end
   end
 
@@ -163,14 +165,15 @@ RSpec.describe "Characters", type: :feature do
 
     it "player can view a historical version" do
       character.update!(content: "STR 18")
+      original_version = character.character_versions.find_by!(content: "STR 16")
 
       sign_in_as(player)
       visit game_character_path(game, character)
 
-      find("details").click
-      # Versions are newest-first; last link is the original (STR 16) version
-      all("a[href*='/versions/']").last.click
+      find("summary", text: /^Version History/).click
+      find("a[href='#{game_character_character_version_path(game, character, original_version)}']").click
 
+      expect(page).to have_current_path(game_character_character_version_path(game, character, original_version))
       expect(page).to have_text("Aldric")
       expect(page).to have_text("STR 16")
     end
@@ -179,9 +182,11 @@ RSpec.describe "Characters", type: :feature do
       sign_in_as(player)
       visit game_character_path(game, character)
 
-      find("details").click
+      find("summary", text: /^Version History/).click
 
-      expect(page).to have_text(player.display_name)
+      within("details[open] tbody") do
+        expect(page).to have_text(player.display_name)
+      end
     end
   end
 

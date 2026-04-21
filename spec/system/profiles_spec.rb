@@ -38,8 +38,9 @@ RSpec.describe "Profiles", type: :feature do
     it "profile shows current hide OOC status" do
       visit profile_path
 
-      expect(page).to have_text(/hide ooc posts/i)
-      expect(page).to have_text("No")
+      expect(page).to have_xpath(
+        "//div[normalize-space()='Hide OOC Posts']/following-sibling::div[normalize-space()='No']"
+      )
     end
 
     it "OOC posts are hidden on scene load when hide_ooc is enabled" do

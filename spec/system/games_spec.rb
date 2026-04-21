@@ -183,6 +183,8 @@ RSpec.describe "Games", type: :feature do
       visit game_game_files_path(game)
 
       expect(page).to have_current_path(game_game_files_path(game))
+      expect(page).to have_css("h1", text: "Game Files")
+      expect(page).to have_text("No files uploaded yet.")
     end
 
     it "shows parent and children links on active scene cards" do
