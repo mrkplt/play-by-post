@@ -1,6 +1,6 @@
 Rails.application.routes.draw do
   # Resend inbound email webhook (custom ActionMailbox ingress)
-  post "/rails/action_mailbox/resend/inbound_emails" =>
+  post "/mail/inbound" =>
     "action_mailbox/ingresses/resend/inbound_emails#create",
     as: :rails_resend_inbound_emails
 
