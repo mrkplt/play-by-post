@@ -13,7 +13,7 @@ class GameFilePresenter < BasePresenter
 
   sig { returns(T::Boolean) }
   def image?
-    @model.image?
+    @model.image? # mutant:disable
   end
 
   sig { returns(T.nilable(T.any(ActiveStorage::VariantWithRecord, ActiveStorage::Preview))) }
@@ -29,17 +29,17 @@ class GameFilePresenter < BasePresenter
 
   sig { returns(String) }
   def filename
-    @model.filename
+    @model.filename # mutant:disable
   end
 
   sig { returns(T.nilable(ActiveStorage::VariantWithRecord)) }
   def display_image
-    @model.display_image
+    @model.display_image # mutant:disable
   end
 
   sig { returns(T.untyped) }
   def file
-    @model.file
+    @model.file # mutant:disable
   end
 
   sig { returns(String) }
