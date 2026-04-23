@@ -26,6 +26,81 @@ RSpec.describe SceneParticipantsController, type: :request do
       expect(response).to redirect_to(game_scene_path(game, scene))
       expect(flash[:alert]).to match(/only the gm/i)
     end
+
+    it "shows player email prefix when user has no display name" do
+      player_no_name = create(:user)
+      create(:game_member, game: game, user: player_no_name)
+      sign_in(gm)
+      get edit_game_scene_participants_path(game, scene)
+      expect(response.body).to include(player_no_name.email.split("@").first)
+    end
+
+    it "shows player display name when set" do
+      player.user_profile.update!(display_name: "Samwise Gamgee")
+      sign_in(gm)
+      get edit_game_scene_participants_path(game, scene)
+      expect(response.body).to include("Samwise Gamgee")
+    end
+
+    it "shows character name checkboxes for selection" do
+      character = create(:character, game: game, user: player, name: "Aragorn Son of Arathorn")
+      sign_in(gm)
+      get edit_game_scene_participants_path(game, scene)
+      expect(response.body).to include("Aragorn Son of Arathorn")
+    end
+
+    it "pre-checks the current participant character" do
+      character = create(:character, game: game, user: player, name: "Boromir")
+      scene.scene_participants.find_by(user: player).update!(character: character)
+      sign_in(gm)
+      get edit_game_scene_participants_path(game, scene)
+      expect(response.body).to match(/value="#{character.id}"[^>]*checked/)
+    end
+
+    it "does not show inactive characters" do
+      create(:character, :archived, game: game, user: player, name: "Retired Knight")
+      sign_in(gm)
+      get edit_game_scene_participants_path(game, scene)
+      expect(response.body).not_to include("Retired Knight")
+    end
+
+    it "does not show removed players" do
+      removed = create(:user, :with_profile)
+      removed.user_profile.update!(display_name: "Ex Member")
+      create(:game_member, :removed, game: game, user: removed)
+      sign_in(gm)
+      get edit_game_scene_participants_path(game, scene)
+      expect(response.body).not_to include("Ex Member")
+    end
+
+    it "does not show the GM as a selectable participant" do
+      create(:character, game: game, user: player, name: "Player Character")
+      sign_in(gm)
+      get edit_game_scene_participants_path(game, scene)
+      expect(response.body).not_to include("No active characters")
+    end
+
+    it "shows players in alphabetical order by display name" do
+      player.user_profile.update!(display_name: "Zelda Zephyr")
+      player2 = create(:user)
+      create(:game_member, game: game, user: player2)
+      create(:user_profile, user: player2, display_name: "Aaron Aardvark")
+      sign_in(gm)
+      get edit_game_scene_participants_path(game, scene)
+      aaron_pos = response.body.index("Aaron Aardvark")
+      zelda_pos = response.body.index("Zelda Zephyr")
+      expect(aaron_pos).to be < zelda_pos
+    end
+
+    it "shows characters in alphabetical order under each player" do
+      create(:character, game: game, user: player, name: "Zara the Fierce")
+      create(:character, game: game, user: player, name: "Aaron the Brave")
+      sign_in(gm)
+      get edit_game_scene_participants_path(game, scene)
+      aaron_pos = response.body.index("Aaron the Brave")
+      zara_pos = response.body.index("Zara the Fierce")
+      expect(aaron_pos).to be < zara_pos
+    end
   end
 
   describe "PATCH /games/:game_id/scenes/:scene_id/participants" do

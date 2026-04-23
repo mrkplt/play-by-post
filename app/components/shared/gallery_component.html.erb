@@ -1,33 +1,16 @@
 <div data-controller="lightbox" data-action="keydown@document->lightbox#closeOnEscape">
   <div class="grid grid-cols-[repeat(auto-fill,minmax(100px,120px))] gap-2" data-testid="gallery-grid">
     <% @game_files.each do |gf| %>
-      <%
-        thumb = gf.thumbnail
-        thumb_html = thumb ? image_tag(url_for(thumb), alt: gf.filename, loading: "lazy") : nil
-        download_url = gf.file.attached? ? rails_blob_path(gf.file, disposition: "attachment") : "#"
-        delete_url = @is_gm ? game_game_file_path(@game, gf) : nil
-
-        lightbox_html = if gf.image? && gf.display_image
-          tag.img(src: url_for(gf.display_image), alt: gf.filename)
-        elsif thumb
-          tag.img(src: url_for(thumb), alt: gf.filename, class: "max-w-full")
-        else
-          tag.div(class: "flex flex-col items-center justify-center gap-3 p-8 text-slate-500", data: { testid: "lightbox-placeholder" }) do
-            tag.div(gf.file_extension, class: "text-5xl font-bold text-slate-400", data: { testid: "lightbox-placeholder-ext" }) +
-            tag.div(gf.human_file_size, class: "text-sm text-slate-400")
-          end
-        end
-      %>
       <div class="bg-white border border-slate-200 rounded-lg overflow-hidden cursor-pointer relative hover:shadow-md transition-shadow"
            data-testid="gallery-card"
            data-action="click->lightbox#open"
-           data-lightbox-html="<%= escape_once(lightbox_html.to_s) %>"
+           data-lightbox-html="<%= escape_once(lightbox_html_for(gf).to_s) %>"
            data-lightbox-filename="<%= gf.filename %>"
-           data-lightbox-download="<%= download_url %>"
-           <% if delete_url %>data-lightbox-delete="<%= delete_url %>"<% end %>>
+           data-lightbox-download="<%= download_url_for(gf) %>"
+           <% if (du = delete_url_for(gf)) %>data-lightbox-delete="<%= du %>"<% end %>>
         <div class="w-full aspect-square flex items-center justify-center bg-slate-50 overflow-hidden">
-          <% if thumb_html %>
-            <%= thumb_html %>
+          <% if (th = thumb_html_for(gf)) %>
+            <%= th %>
           <% else %>
             <div class="text-2xl font-bold text-slate-500 uppercase tracking-wide bg-slate-100 w-full h-full flex items-center justify-center" data-testid="gallery-card-placeholder"><%= gf.file_extension %></div>
           <% end %>

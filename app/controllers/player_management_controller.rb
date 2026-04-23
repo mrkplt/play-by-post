@@ -9,6 +9,7 @@ class PlayerManagementController < ApplicationController
   sig { void }
   def show
     @members = @game.game_members.where.not(status: "banned").includes(:user)
+    @member_display_names = @members.each_with_object({}) { |m, h| h[m.user_id] = UserPresenter.new(m.user).display_name_or_email }
     @pending_invitations = @game.invitations.pending.order(created_at: :desc)
     @invitation = Invitation.new
   end

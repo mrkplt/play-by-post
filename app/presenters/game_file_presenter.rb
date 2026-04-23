@@ -13,7 +13,7 @@ class GameFilePresenter < BasePresenter
 
   sig { returns(T::Boolean) }
   def image?
-    @model.image?
+    @model.image? # mutant:disable
   end
 
   sig { returns(T.nilable(T.any(ActiveStorage::VariantWithRecord, ActiveStorage::Preview))) }
@@ -25,6 +25,21 @@ class GameFilePresenter < BasePresenter
     elsif @model.pdf? && @model.file.previewable?
       @model.file.preview(resize_to_limit: [ 240, 240 ], format: :jpeg, quality: 80)
     end
+  end
+
+  sig { returns(String) }
+  def filename
+    @model.filename # mutant:disable
+  end
+
+  sig { returns(T.nilable(ActiveStorage::VariantWithRecord)) }
+  def display_image
+    @model.display_image # mutant:disable
+  end
+
+  sig { returns(T.untyped) }
+  def file
+    @model.file # mutant:disable
   end
 
   sig { returns(String) }

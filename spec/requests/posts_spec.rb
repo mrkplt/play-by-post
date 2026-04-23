@@ -32,6 +32,15 @@ RSpec.describe PostsController, type: :request do
         expect(response).to have_http_status(:ok)
       end
 
+      it "includes post content in turbo_stream response" do
+        sign_in(player)
+        post game_scene_posts_path(game, scene),
+          params: { post: { content: "Unique turbo post text", is_ooc: false } },
+          headers: { "Accept" => "text/vnd.turbo-stream.html" }
+        expect(response).to have_http_status(:ok)
+        expect(response.body).to include("Unique turbo post text")
+      end
+
       it "redirects with alert on failure" do
         sign_in(player)
         post game_scene_posts_path(game, scene), params: { post: { content: "", is_ooc: false } }
@@ -56,6 +65,21 @@ RSpec.describe PostsController, type: :request do
         expect(draft.reload.draft).to eq(false)
         expect(draft.reload.content).to eq("Published from draft")
       end
+
+      it "clears last_edited_at when publishing a draft" do
+        draft = create(:post, :draft, scene: scene, user: player, last_edited_at: 1.hour.ago)
+        sign_in(player)
+        post game_scene_posts_path(game, scene), params: { post: { content: "Published", is_ooc: false } }
+        expect(draft.reload.last_edited_at).to be_nil
+      end
+
+      it "creates a new post without modifying an existing published post when no draft exists" do
+        existing = create(:post, scene: scene, user: player, content: "Existing published post")
+        sign_in(player)
+        post game_scene_posts_path(game, scene), params: { post: { content: "Brand new post", is_ooc: false } }
+        expect(existing.reload.content).to eq("Existing published post")
+        expect(scene.posts.published.count).to eq(2)
+      end
     end
 
     it "blocks unauthenticated requests" do
@@ -69,6 +93,16 @@ RSpec.describe PostsController, type: :request do
       sign_in(outsider)
       post game_scene_posts_path(game, scene), params: { post: { content: "Hi" } }
       expect(response).to redirect_to(game_scene_path(game, scene))
+    end
+
+    it "blocks a removed member from creating a post" do
+      removed = create(:user, :with_profile)
+      create(:game_member, :removed, game: game, user: removed)
+      create(:scene_participant, scene: scene, user: removed)
+      sign_in(removed)
+      post game_scene_posts_path(game, scene), params: { post: { content: "Hi", is_ooc: false } }
+      expect(response).to redirect_to(game_path(game))
+      expect(flash[:alert]).to match(/write access/i)
     end
   end
 
@@ -91,6 +125,7 @@ RSpec.describe PostsController, type: :request do
 
   describe "PATCH /games/:game_id/scenes/:scene_id/posts/:id (update)" do
     it "updates post content and redirects" do
+      create(:post, scene: scene, user: gm) # offset post IDs from scene IDs
       post_record = create(:post, scene: scene, user: player)
       sign_in(player)
       patch game_scene_post_path(game, scene, post_record), params: { post: { content: "Updated content" } }
@@ -107,13 +142,32 @@ RSpec.describe PostsController, type: :request do
       expect(response).to have_http_status(:ok)
     end
 
+    it "includes updated content in turbo_stream response" do
+      post_record = create(:post, scene: scene, user: player)
+      sign_in(player)
+      patch game_scene_post_path(game, scene, post_record),
+        params: { post: { content: "Turbo updated content here" } },
+        headers: { "Accept" => "text/vnd.turbo-stream.html" }
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Turbo updated content here")
+    end
+
     it "redirects with alert when outside edit window" do
+      create(:post, scene: scene, user: gm) # offset post IDs from scene IDs
       game.update!(post_edit_window_minutes: 10)
       post_record = create(:post, scene: scene, user: player, created_at: 11.minutes.ago)
       sign_in(player)
       patch game_scene_post_path(game, scene, post_record), params: { post: { content: "Too late" } }
       expect(response).to redirect_to(game_scene_path(game, scene))
+      expect(flash[:alert]).to match(/can no longer be edited/i)
       expect(post_record.reload.content).not_to eq("Too late")
+    end
+
+    it "sets last_edited_at on successful update" do
+      post_record = create(:post, scene: scene, user: player, last_edited_at: nil)
+      sign_in(player)
+      patch game_scene_post_path(game, scene, post_record), params: { post: { content: "Edited content" } }
+      expect(post_record.reload.last_edited_at).to be_within(5.seconds).of(Time.current)
     end
   end
 

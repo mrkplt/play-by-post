@@ -5,6 +5,18 @@ RSpec.describe ScenePresenter do
 
   subject(:presenter) { described_class.new(scene) }
 
+  describe "#parent_option_label" do
+    context "when active" do
+      it { expect(presenter.parent_option_label).to eq(scene.title) }
+    end
+
+    context "when resolved" do
+      let(:scene) { build(:scene, :resolved) }
+
+      it { expect(presenter.parent_option_label).to eq("#{scene.title} (Resolved)") }
+    end
+  end
+
   describe "#status_label" do
     context "when active" do
       it { expect(presenter.status_label).to eq("Active") }
@@ -24,11 +36,52 @@ RSpec.describe ScenePresenter do
   end
 
   describe "#participant_names" do
-    it "returns empty string when no participants with characters" do
+    it "returns empty string when there are no participants" do
       allow(scene).to receive(:scene_participants).and_return(
         double(includes: [])
       )
       expect(presenter.participant_names).to eq("")
+    end
+
+    it "includes participants without characters (e.g. GM)" do
+      sp = double(display_name: "Alice")
+      allow(scene).to receive(:scene_participants).and_return(
+        double(includes: [ sp ])
+      )
+      expect(presenter.participant_names).to eq("Alice")
+    end
+
+    it "joins multiple participants with a comma" do
+      sp1 = double(display_name: "Alice")
+      sp2 = double(display_name: "Bob")
+      allow(scene).to receive(:scene_participants).and_return(
+        double(includes: [ sp1, sp2 ])
+      )
+      expect(presenter.participant_names).to eq("Alice, Bob")
+    end
+  end
+
+  describe "#tree_row_css_class" do
+    context "when active" do
+      it { expect(presenter.tree_row_css_class).to eq("font-semibold") }
+    end
+
+    context "when resolved" do
+      let(:scene) { build(:scene, :resolved) }
+
+      it { expect(presenter.tree_row_css_class).to eq("text-slate-500") }
+    end
+  end
+
+  describe "#tree_link_css_class" do
+    context "when active" do
+      it { expect(presenter.tree_link_css_class).to eq("") }
+    end
+
+    context "when resolved" do
+      let(:scene) { build(:scene, :resolved) }
+
+      it { expect(presenter.tree_link_css_class).to eq("text-slate-500") }
     end
   end
 

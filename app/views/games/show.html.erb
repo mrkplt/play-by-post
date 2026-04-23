@@ -36,7 +36,7 @@
             <%= link_to character.name, game_character_path(@game, character) %>
           </div>
           <div class="text-xs text-slate-500 mt-0.5">
-            <%= character.user.display_name || character.user.email %>
+            <%= @character_owner_names[character.id] %>
           </div>
         </div>
       <% end %>
@@ -59,7 +59,7 @@
     <p class="text-slate-400">No active scenes.</p>
   <% else %>
     <% @active_scenes.each do |scene| %>
-      <%= render Shared::SceneCardComponent.new(scene: ScenePresenter.new(scene), game: @game) %>
+      <%= render Shared::SceneCardComponent.new(scene: scene, game: @game) %>
     <% end %>
   <% end %>
 </div>

@@ -4,6 +4,11 @@ class ScenePresenter < BasePresenter
   extend T::Sig
 
   sig { returns(String) }
+  def parent_option_label
+    @model.resolved? ? "#{@model.title} (Resolved)" : @model.title
+  end
+
+  sig { returns(String) }
   def status_label
     @model.resolved? ? "Resolved" : "Active"
   end
@@ -12,7 +17,6 @@ class ScenePresenter < BasePresenter
   def participant_names
     @model.scene_participants
       .includes(:character, :user)
-      .reject { |sp| sp.character_id.nil? }
       .map(&:display_name)
       .join(", ")
   end

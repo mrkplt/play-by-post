@@ -57,15 +57,17 @@ class GamesController < ApplicationController
 
   sig { void }
   def show
-    @active_scenes = @game.scenes
+    raw_scenes = @game.scenes
       .visible_to(current_user, @game)
       .active
       .includes(:parent_scene, :child_scenes, :posts, scene_participants: [ :character, :user ])
       .to_a
       .sort_by { |s| -s.last_activity_at.to_i }
+    @active_scenes = raw_scenes.map { |s| ScenePresenter.new(s) }
 
     @is_gm = @game.game_master?(current_user)
     @characters = @game.characters.active.visible_to(current_user, @game).includes(:user).order(:name)
+    @character_owner_names = @characters.each_with_object({}) { |c, h| h[c.id] = UserPresenter.new(c.user).display_name_or_email }
     @game_files = @game.game_files.includes(file_attachment: :blob).order(created_at: :desc)
     @export_rate_limited = GameExportRequest.rate_limited?(current_user, @game)
   end

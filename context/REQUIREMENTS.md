@@ -300,3 +300,10 @@ For technology stack, domain model, codebase conventions, and development workfl
 - Multiple scenes can run simultaneously within a game
 - Scenes and games are associated with players (via membership), not with individual characters
 - No explicit linking of scene outcomes to character sheets is required
+
+---
+
+## View Architecture Conventions
+
+- Dead ERB partials that have been superseded by ViewComponents are deleted; do not leave both in place
+- Presenters are always instantiated in controllers, not in views; controllers wrap models in presenter instances and assign them as instance variables; views consume presenters directly and never instantiate them — this maintains a clear, consistent interface between the controller and view layers
