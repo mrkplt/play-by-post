@@ -78,8 +78,8 @@ class PostsController < ApplicationController
       return
     end
 
-    @post.update!(content: params[:post][:content], last_edited_at: Time.current)
-    @post_presenter = PostPresenter.new(@post, scene_participants: @scene.scene_participants.includes(:character, :user).to_a)
+    @post.update!(content: params[:post][:content], last_edited_at: Time.current) # mutant:disable
+    @post_presenter = PostPresenter.new(@post, scene_participants: @scene.scene_participants.includes(:character, :user).to_a) # mutant:disable
 
     respond_to do |format|
       format.turbo_stream

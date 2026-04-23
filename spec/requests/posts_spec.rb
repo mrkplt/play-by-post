@@ -66,6 +66,13 @@ RSpec.describe PostsController, type: :request do
         expect(draft.reload.content).to eq("Published from draft")
       end
 
+      it "clears last_edited_at when publishing a draft" do
+        draft = create(:post, :draft, scene: scene, user: player, last_edited_at: 1.hour.ago)
+        sign_in(player)
+        post game_scene_posts_path(game, scene), params: { post: { content: "Published", is_ooc: false } }
+        expect(draft.reload.last_edited_at).to be_nil
+      end
+
       it "creates a new post without modifying an existing published post when no draft exists" do
         existing = create(:post, scene: scene, user: player, content: "Existing published post")
         sign_in(player)
@@ -118,6 +125,7 @@ RSpec.describe PostsController, type: :request do
 
   describe "PATCH /games/:game_id/scenes/:scene_id/posts/:id (update)" do
     it "updates post content and redirects" do
+      create(:post, scene: scene, user: gm) # offset post IDs from scene IDs
       post_record = create(:post, scene: scene, user: player)
       sign_in(player)
       patch game_scene_post_path(game, scene, post_record), params: { post: { content: "Updated content" } }
@@ -145,11 +153,13 @@ RSpec.describe PostsController, type: :request do
     end
 
     it "redirects with alert when outside edit window" do
+      create(:post, scene: scene, user: gm) # offset post IDs from scene IDs
       game.update!(post_edit_window_minutes: 10)
       post_record = create(:post, scene: scene, user: player, created_at: 11.minutes.ago)
       sign_in(player)
       patch game_scene_post_path(game, scene, post_record), params: { post: { content: "Too late" } }
       expect(response).to redirect_to(game_scene_path(game, scene))
+      expect(flash[:alert]).to match(/can no longer be edited/i)
       expect(post_record.reload.content).not_to eq("Too late")
     end
 
