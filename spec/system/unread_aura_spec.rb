@@ -21,7 +21,7 @@ RSpec.describe "Unread post aura", type: :feature do
     sign_in_as(player)
     visit game_scene_path(game, scene)
 
-    expect(page).to have_css("##{dom_id(post)}.post-unread-aura")
+    expect(page).to have_css("##{dom_id(post)}.ui-glow")
   end
 
   it "does not show aura on posts older than 72 hours" do
@@ -30,7 +30,7 @@ RSpec.describe "Unread post aura", type: :feature do
     sign_in_as(player)
     visit game_scene_path(game, scene)
 
-    expect(page).not_to have_css("##{dom_id(post)}.post-unread-aura")
+    expect(page).not_to have_css("##{dom_id(post)}.ui-glow")
   end
 
   it "does not show aura on already-read posts" do
@@ -40,7 +40,7 @@ RSpec.describe "Unread post aura", type: :feature do
     sign_in_as(player)
     visit game_scene_path(game, scene)
 
-    expect(page).not_to have_css("##{dom_id(post)}.post-unread-aura")
+    expect(page).not_to have_css("##{dom_id(post)}.ui-glow")
   end
 
   it "does not show aura on posts in resolved scenes" do
@@ -50,6 +50,6 @@ RSpec.describe "Unread post aura", type: :feature do
     sign_in_as(player)
     visit game_scene_path(game, scene)
 
-    expect(page).not_to have_css("##{dom_id(post)}.post-unread-aura")
+    expect(page).not_to have_css("##{dom_id(post)}.ui-glow")
   end
 end
