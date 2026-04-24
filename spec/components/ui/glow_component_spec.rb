@@ -25,4 +25,12 @@ RSpec.describe Ui::GlowComponent, type: :component do
   it "active? returns false when inactive" do
     expect(described_class.new(active: false).active?).to be false
   end
+
+  it "wrapper_class returns ui-glow when active" do
+    expect(described_class.new(active: true).wrapper_class).to eq("ui-glow")
+  end
+
+  it "wrapper_class returns empty string when inactive" do
+    expect(described_class.new(active: false).wrapper_class).to eq("")
+  end
 end

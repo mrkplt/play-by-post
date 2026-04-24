@@ -12,4 +12,9 @@ class Ui::GlowComponent < ApplicationComponent
   def active?
     @active
   end
+
+  sig { returns(String) }
+  def wrapper_class
+    active? ? "ui-glow" : ""
+  end
 end
