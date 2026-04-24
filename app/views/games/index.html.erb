@@ -17,6 +17,9 @@
       <div class="flex justify-between items-start">
         <div>
           <%= link_to game.name, game_path(game), class: "text-base font-bold no-underline" %>
+          <% if item[:new_activity] %>
+            <%= render(Ui::BadgeComponent.new(variant: :yellow)) { "New" } %>
+          <% end %>
           <% if membership.removed? %>
             <%= render(Ui::BadgeComponent.new(variant: :gray)) { "Former" } %>
           <% end %>

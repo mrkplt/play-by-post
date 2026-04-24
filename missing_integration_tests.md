@@ -6,26 +6,7 @@ known constraints.
 
 ---
 
-## 1. Dashboard New Activity Indicator
-
-**Requirements:** `context/REQUIREMENTS.md` — "Player Dashboard" section
-
-> "a 'new activity' indicator if anything changed since last login"
-
-**Status:** The `@dashboard_items` hash in `GamesController#index` does not currently include
-a new-activity flag, and the `app/views/games/index.html.erb` template does not render one.
-This requirement appears **unimplemented**. A test cannot be written until the feature exists.
-
-**What to implement first:**
-1. Add `new_activity: (last_post_at > current_user.last_login_at)` (or similar) to each
-   dashboard item in `GamesController#index`
-2. Render a visual indicator in `app/views/games/index.html.erb`
-3. Write a system test verifying the indicator appears when there is activity since last login
-   and is absent when there is none
-
----
-
-## 2. Dashboard "+N" Additional Characters
+## 1. Dashboard "+N" Additional Characters
 
 **Requirements:** `context/REQUIREMENTS.md` — "Player Dashboard" section
 
