@@ -13,23 +13,25 @@
   <% @dashboard_items.each do |item| %>
     <% game = item[:game] %>
     <% membership = item[:membership] %>
-    <div class="bg-white border border-slate-200 rounded-lg p-5 mb-4 <%= 'shadow-[0_0_14px_4px_rgba(202,138,4,0.45)]' if item[:new_activity] %>"
-         <%= "data-new-activity=\"true\"" if item[:new_activity] %>>
-      <div class="flex justify-between items-start">
-        <div>
-          <%= link_to game.name, game_path(game), class: "text-base font-bold no-underline" %>
-          <% if membership.removed? %>
-            <%= render(Ui::BadgeComponent.new(variant: :gray)) { "Former" } %>
-          <% end %>
+    <%= render(Ui::GlowComponent.new(active: item[:new_activity])) do %>
+      <div class="bg-white border border-slate-200 rounded-lg p-5 mb-4"
+           <%= "data-new-activity=\"true\"" if item[:new_activity] %>>
+        <div class="flex justify-between items-start">
+          <div>
+            <%= link_to game.name, game_path(game), class: "text-base font-bold no-underline" %>
+            <% if membership.removed? %>
+              <%= render(Ui::BadgeComponent.new(variant: :gray)) { "Former" } %>
+            <% end %>
+          </div>
+          <%= render(Ui::BadgeComponent.new(variant: membership.game_master? ? :blue : :green)) { membership.game_master? ? "GM" : "Player" } %>
         </div>
-        <%= render(Ui::BadgeComponent.new(variant: membership.game_master? ? :blue : :green)) { membership.game_master? ? "GM" : "Player" } %>
+        <div class="text-xs text-slate-500 mt-2">
+          <% if item[:primary_character] %>
+            <%= link_to item[:primary_character].name, game_character_path(game, item[:primary_character]) %> &middot;
+          <% end %>
+          <%= item[:active_scene_count] %> active <%= "scene".pluralize(item[:active_scene_count]) %>
+        </div>
       </div>
-      <div class="text-xs text-slate-500 mt-2">
-        <% if item[:primary_character] %>
-          <%= link_to item[:primary_character].name, game_character_path(game, item[:primary_character]) %> &middot;
-        <% end %>
-        <%= item[:active_scene_count] %> active <%= "scene".pluralize(item[:active_scene_count]) %>
-      </div>
-    </div>
+    <% end %>
   <% end %>
 <% end %>
