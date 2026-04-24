@@ -10,6 +10,44 @@ RSpec.describe GamesController, type: :request do
     create(:game_member, game: game, user: player)
   end
 
+  describe "GET /" do
+    it "renders ok" do
+      sign_in(gm)
+      get root_path
+      expect(response).to have_http_status(:ok)
+    end
+
+    it "includes new activity flag when posts exist since last login" do
+      sign_in(gm)
+      scene = create(:scene, game: game)
+      gm.user_profile.update!(last_login_at: 1.hour.ago)
+      create(:post, scene: scene, user: player)
+
+      get root_path
+
+      expect(response.body).to include("data-new-activity")
+    end
+
+    it "excludes new activity flag when no posts since last login" do
+      sign_in(gm)
+      scene = create(:scene, game: game)
+      create(:post, scene: scene, user: player, created_at: 2.hours.ago)
+
+      get root_path
+
+      expect(response.body).not_to include("data-new-activity")
+    end
+
+    it "renders empty dashboard for user with no memberships" do
+      user = create(:user, :with_profile)
+      sign_in(user)
+
+      get root_path
+
+      expect(response).to have_http_status(:ok)
+    end
+  end
+
   describe "GET /games/new" do
     it "renders ok for authenticated user" do
       sign_in(gm)
