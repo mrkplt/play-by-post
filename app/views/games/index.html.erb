@@ -14,8 +14,7 @@
     <% game = item[:game] %>
     <% membership = item[:membership] %>
     <%= render(Ui::GlowComponent.new(active: item[:new_activity])) do %>
-      <div class="bg-white border border-slate-200 rounded-lg p-5 mb-4"
-           <%= "data-new-activity=\"true\"" if item[:new_activity] %>>
+      <div class="bg-white border border-slate-200 rounded-lg p-5 mb-4"<% if item[:new_activity] %> data-new-activity="true"<% end %>>
         <div class="flex justify-between items-start">
           <div>
             <%= link_to game.name, game_path(game), class: "text-base font-bold no-underline" %>

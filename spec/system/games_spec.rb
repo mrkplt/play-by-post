@@ -77,6 +77,7 @@ RSpec.describe "Games", type: :feature do
       game = create(:game)
       create(:game_member, :game_master, game: game, user: gm)
       scene = create(:scene, game: game)
+      gm.user_profile.update!(last_login_at: 1.hour.ago)
       create(:post, scene: scene, user: gm, created_at: 2.hours.ago)
 
       visit root_path
