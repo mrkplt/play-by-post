@@ -70,7 +70,7 @@ RSpec.describe "Games", type: :feature do
 
       visit root_path
 
-      expect(page).to have_css(".bg-yellow-100", text: "New")
+      expect(page).to have_css("[data-new-activity='true']")
     end
 
     it "does not show new activity indicator when no posts since last login" do
@@ -81,7 +81,7 @@ RSpec.describe "Games", type: :feature do
 
       visit root_path
 
-      expect(page).not_to have_css(".bg-yellow-100", text: "New")
+      expect(page).not_to have_css("[data-new-activity='true']")
     end
   end
 

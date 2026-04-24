@@ -13,13 +13,11 @@
   <% @dashboard_items.each do |item| %>
     <% game = item[:game] %>
     <% membership = item[:membership] %>
-    <div class="bg-white border border-slate-200 rounded-lg p-5 mb-4">
+    <div class="bg-white border border-slate-200 rounded-lg p-5 mb-4 <%= 'shadow-[0_0_14px_4px_rgba(202,138,4,0.45)]' if item[:new_activity] %>"
+         <%= "data-new-activity=\"true\"" if item[:new_activity] %>>
       <div class="flex justify-between items-start">
         <div>
           <%= link_to game.name, game_path(game), class: "text-base font-bold no-underline" %>
-          <% if item[:new_activity] %>
-            <%= render(Ui::BadgeComponent.new(variant: :yellow)) { "New" } %>
-          <% end %>
           <% if membership.removed? %>
             <%= render(Ui::BadgeComponent.new(variant: :gray)) { "Former" } %>
           <% end %>
