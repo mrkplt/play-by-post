@@ -32,7 +32,7 @@ class GamesController < ApplicationController
       active_scenes = game.scenes.where(resolved_at: nil).count
       user_characters = game.characters.active.where(user: current_user).to_a
       primary_character = user_characters.first
-      additional_character_count = [user_characters.length - 1, 0].max
+      additional_character_count = [ user_characters.length - 1, 0 ].max
       {
         game: game,
         membership: membership,
