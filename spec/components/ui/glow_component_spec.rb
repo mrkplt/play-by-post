@@ -33,4 +33,20 @@ RSpec.describe Ui::GlowComponent, type: :component do
   it "wrapper_class returns empty string when inactive" do
     expect(described_class.new(active: false).wrapper_class).to eq("")
   end
+
+  it "wrapper_html_attributes includes data-new-activity when active" do
+    expect(described_class.new(active: true).wrapper_html_attributes).to include(data: { new_activity: true })
+  end
+
+  it "wrapper_html_attributes omits data key when inactive" do
+    expect(described_class.new(active: false).wrapper_html_attributes).not_to have_key(:data)
+  end
+
+  it "renders data-new-activity attribute on wrapper when active" do
+    expect(rendered(active: true) { "content" }).to have_css("div[data-new-activity='true']")
+  end
+
+  it "does not render data-new-activity attribute on wrapper when inactive" do
+    expect(rendered { "content" }).not_to have_css("[data-new-activity]")
+  end
 end

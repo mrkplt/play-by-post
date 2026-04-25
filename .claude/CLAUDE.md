@@ -169,7 +169,20 @@ Enforced by `bin/quality-metrics --check` against `quality_baseline.json`:
 - Sorbet sigil required; per-action `sig` blocks not needed
 
 ### Presenters & ViewComponents
-- `BasePresenter < SimpleDelegator` — silently exposes all model methods, but **Sorbet cannot see them**. Every method a ViewComponent template calls on a presenter must be explicitly declared on the presenter with a Sorbet `sig`. Do not rely on `SimpleDelegator` passthrough.
+
+**Role split — enforce strictly:**
+- **Presenters hold presentation logic:** data transformation, display-ready strings, CSS class selection based on model state, formatted timestamps, derived boolean flags for rendering decisions.
+- **ViewComponents hold visual presentation:** HTML structure, which sub-components to render, slot content. A component's Ruby class may compute CSS class strings that are purely additive (e.g. combining a BASE constant with a variant), but must not inspect model state or branch on domain data.
+
+**ERB template rules — no logic in templates:**
+- No ternaries in output tags: `<%= a ? b : c %>` → extract a method
+- No Boolean-OR fallbacks in output tags: `<%= a || b %>` → extract a method
+- No inline conditionals on HTML attributes: `<div <% if x %> data-foo="bar"<% end %>>` → extract a method that returns the attribute hash
+
+**Sorbet:**
+- `BasePresenter < SimpleDelegator` silently exposes all model methods, but **Sorbet cannot see them**. Every method a ViewComponent template calls on a presenter must be explicitly declared on the presenter with a Sorbet `sig`. Do not rely on `SimpleDelegator` passthrough.
+
+**Other rules:**
 - Happy path and error path in the same controller action must render the same component. Never mix a ViewComponent in one branch and a partial in the other. Delete old partials once fully replaced.
 - Component namespaces: `Ui::*` for primitives, `Shared::*` for domain components.
 
