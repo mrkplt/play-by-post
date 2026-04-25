@@ -92,6 +92,32 @@ RSpec.describe "Games", type: :feature do
       expect(page).not_to have_text("more")
     end
 
+    it "does not count archived characters toward the primary character or +N more" do
+      game = create(:game)
+      create(:game_member, :game_master, game: game, user: gm)
+      create(:character, game: game, user: gm, name: "Active Knight")
+      create(:character, :archived, game: game, user: gm, name: "Retired Mage")
+
+      visit root_path
+
+      expect(page).to have_link("Active Knight")
+      expect(page).not_to have_text("more")
+    end
+
+    it "shows new activity indicator only for the game with new posts" do
+      active_game = create(:game, name: "Active Game")
+      quiet_game = create(:game, name: "Quiet Game")
+      create(:game_member, :game_master, game: active_game, user: gm)
+      create(:game_member, :game_master, game: quiet_game, user: gm)
+      scene = create(:scene, game: active_game)
+      gm.user_profile.update!(last_login_at: 1.hour.ago)
+      create(:post, scene: scene, user: gm)
+
+      visit root_path
+
+      expect(page).to have_css("[data-new-activity='true']", count: 1)
+    end
+
     it "shows 'Former' badge for removed players" do
       game = create(:game)
       create(:game_member, game: game, user: gm, role: "player", status: "removed")
