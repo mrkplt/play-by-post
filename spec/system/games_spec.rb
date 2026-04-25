@@ -60,6 +60,30 @@ RSpec.describe "Games", type: :feature do
 
       expect(page).not_to have_text("Hidden Game")
     end
+
+    it "shows new activity indicator when posts exist since last login" do
+      game = create(:game)
+      create(:game_member, :game_master, game: game, user: gm)
+      scene = create(:scene, game: game)
+      gm.user_profile.update!(last_login_at: 1.hour.ago)
+      create(:post, scene: scene, user: gm)
+
+      visit root_path
+
+      expect(page).to have_css("[data-new-activity='true']")
+    end
+
+    it "does not show new activity indicator when no posts since last login" do
+      game = create(:game)
+      create(:game_member, :game_master, game: game, user: gm)
+      scene = create(:scene, game: game)
+      gm.user_profile.update!(last_login_at: 1.hour.ago)
+      create(:post, scene: scene, user: gm, created_at: 2.hours.ago)
+
+      visit root_path
+
+      expect(page).not_to have_css("[data-new-activity='true']")
+    end
   end
 
   describe "game creation" do

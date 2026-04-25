@@ -10,6 +10,93 @@ RSpec.describe GamesController, type: :request do
     create(:game_member, game: game, user: player)
   end
 
+  describe "GET /" do
+    it "lists only the current user's non-banned games in name order with role badges" do
+      alpha_game = create(:game, name: "Alpha Quest")
+      zeta_game = create(:game, name: "Zeta Quest")
+      banned_game = create(:game, name: "Hidden Game")
+      other_users_game = create(:game, name: "Other User Game")
+
+      create(:game_member, game: alpha_game, user: gm)
+      create(:game_member, :game_master, game: zeta_game, user: gm)
+      create(:game_member, :banned, game: banned_game, user: gm)
+      create(:game_member, :game_master, game: other_users_game, user: player)
+
+      sign_in(gm)
+      get root_path
+
+      alpha_card = %(<a class="text-base font-bold no-underline" href="#{game_path(alpha_game)}">Alpha Quest</a>)
+      zeta_card = %(<a class="text-base font-bold no-underline" href="#{game_path(zeta_game)}">Zeta Quest</a>)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include(alpha_card, zeta_card)
+      expect(response.body).not_to include("Hidden Game")
+      expect(response.body).not_to include("Other User Game")
+      expect(response.body.index(alpha_card)).to be < response.body.index(zeta_card)
+      expect(response.body).to include(%(data-variant="green">Player</span>))
+      expect(response.body).to include(%(data-variant="blue">GM</span>))
+    end
+
+    it "shows the primary character link and active scene count for each dashboard item" do
+      create(:character, game: game, user: gm, name: "Sir Galahad")
+      create(:scene, game: game)
+      create(:scene, :resolved, game: game)
+
+      sign_in(gm)
+      get root_path
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Sir Galahad")
+      expect(response.body).to include("1 active scene")
+    end
+
+    it "shows a new activity flag only on games with posts since last login" do
+      recent_game = create(:game, name: "Recent Game")
+      create(:game_member, game: recent_game, user: gm)
+
+      login_as(gm, scope: :user, run_callbacks: false)
+      gm.user_profile.update!(last_login_at: 1.hour.ago)
+
+      old_scene = create(:scene, game: game)
+      create(:post, scene: old_scene, user: gm, created_at: 2.hours.ago)
+
+      recent_scene = create(:scene, game: recent_game)
+      create(:post, scene: recent_scene, user: gm)
+
+      get root_path
+
+      doc = Nokogiri::HTML.parse(response.body)
+      recent_wrapper = doc.at_xpath("//a[@href='#{game_path(recent_game)}']/ancestor::div[@data-new-activity='true']")
+      old_wrapper = doc.at_xpath("//a[@href='#{game_path(game)}']/ancestor::div[@data-new-activity='true']")
+
+      expect(doc.css("[data-new-activity='true']").count).to eq(1)
+      expect(recent_wrapper).not_to be_nil
+      expect(old_wrapper).to be_nil
+    end
+
+    it "does not show a new activity flag when the user has no last login timestamp" do
+      login_as(gm, scope: :user, run_callbacks: false)
+      gm.user_profile.update!(last_login_at: nil)
+      scene = create(:scene, game: game)
+      create(:post, scene: scene, user: gm)
+
+      get root_path
+
+      doc = Nokogiri::HTML.parse(response.body)
+
+      expect(doc.css("[data-new-activity='true']")).to be_empty
+    end
+
+    it "renders empty dashboard for user with no memberships" do
+      user = create(:user, :with_profile)
+      sign_in(user)
+
+      get root_path
+
+      expect(response).to have_http_status(:ok)
+    end
+  end
+
   describe "GET /games/new" do
     it "renders ok for authenticated user" do
       sign_in(gm)

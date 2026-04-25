@@ -47,6 +47,7 @@ matcher:
     - Ui::BadgeComponent
     - Ui::BreadcrumbComponent
     - Ui::ButtonComponent
+    - Ui::GlowComponent
     # Services
     - EmailContentExtractor
     - GameExportService

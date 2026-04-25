@@ -14,6 +14,19 @@ class GamesController < ApplicationController
       .includes(game: %i[scenes])
       .order("games.name")
 
+    last_login_at = current_user.user_profile&.last_login_at
+    game_ids = @memberships.filter_map(&:game_id)
+
+    games_with_new_activity = if last_login_at && game_ids.any?
+      Post.joins(:scene)
+        .where(scenes: { game_id: game_ids })
+        .where("posts.created_at > ?", last_login_at)
+        .distinct
+        .pluck("scenes.game_id")
+    else
+      []
+    end
+
     @dashboard_items = @memberships.map do |membership|
       game = T.must(membership.game)
       active_scenes = game.scenes.where(resolved_at: nil).count
@@ -22,7 +35,8 @@ class GamesController < ApplicationController
         game: game,
         membership: membership,
         active_scene_count: active_scenes,
-        primary_character: primary_character
+        primary_character: primary_character,
+        new_activity: games_with_new_activity.include?(game.id)
       }
     end
   end

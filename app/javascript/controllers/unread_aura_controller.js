@@ -5,7 +5,7 @@ export default class extends Controller {
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content
 
     this.element.querySelectorAll('[data-unread="true"]').forEach(post => {
-      post.classList.add("post-unread-aura")
+      post.classList.add("ui-glow")
 
       const url = post.dataset.markReadUrl
       if (!url) return
