@@ -66,12 +66,12 @@ RSpec.describe GamesController, type: :request do
       get root_path
 
       doc = Nokogiri::HTML.parse(response.body)
-      recent_card = doc.at_xpath("//a[@href='#{game_path(recent_game)}']/ancestor::div[contains(@class, 'bg-white')][1]")
-      old_card = doc.at_xpath("//a[@href='#{game_path(game)}']/ancestor::div[contains(@class, 'bg-white')][1]")
+      recent_wrapper = doc.at_xpath("//a[@href='#{game_path(recent_game)}']/ancestor::div[@data-new-activity='true']")
+      old_wrapper = doc.at_xpath("//a[@href='#{game_path(game)}']/ancestor::div[@data-new-activity='true']")
 
       expect(doc.css("[data-new-activity='true']").count).to eq(1)
-      expect(recent_card["data-new-activity"]).to eq("true")
-      expect(old_card["data-new-activity"]).to be_nil
+      expect(recent_wrapper).not_to be_nil
+      expect(old_wrapper).to be_nil
     end
 
     it "does not show a new activity flag when the user has no last login timestamp" do
