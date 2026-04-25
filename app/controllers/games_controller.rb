@@ -30,12 +30,15 @@ class GamesController < ApplicationController
     @dashboard_items = @memberships.map do |membership|
       game = T.must(membership.game)
       active_scenes = game.scenes.where(resolved_at: nil).count
-      primary_character = game.characters.active.find_by(user: current_user)
+      user_characters = game.characters.active.where(user: current_user).to_a
+      primary_character = user_characters.first
+      additional_character_count = [user_characters.length - 1, 0].max
       {
         game: game,
         membership: membership,
         active_scene_count: active_scenes,
         primary_character: primary_character,
+        additional_character_count: additional_character_count,
         new_activity: games_with_new_activity.include?(game.id)
       }
     end

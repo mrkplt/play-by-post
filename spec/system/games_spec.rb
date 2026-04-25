@@ -43,6 +43,28 @@ RSpec.describe "Games", type: :feature do
       expect(page).to have_link("Aldric the Bold")
     end
 
+    it "shows +N more indicator when player has multiple characters" do
+      game = create(:game)
+      create(:game_member, :game_master, game: game, user: gm)
+      create(:character, game: game, user: gm, name: "Aldric the Bold")
+      create(:character, game: game, user: gm, name: "Mira Ashveil")
+      create(:character, game: game, user: gm, name: "Torven Coldstone")
+
+      visit root_path
+
+      expect(page).to have_text("+2 more")
+    end
+
+    it "does not show +N more indicator when player has only one character" do
+      game = create(:game)
+      create(:game_member, :game_master, game: game, user: gm)
+      create(:character, game: game, user: gm, name: "Aldric the Bold")
+
+      visit root_path
+
+      expect(page).not_to have_text("more")
+    end
+
     it "shows 'Former' badge for removed players" do
       game = create(:game)
       create(:game_member, game: game, user: gm, role: "player", status: "removed")
