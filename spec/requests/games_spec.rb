@@ -50,6 +50,52 @@ RSpec.describe GamesController, type: :request do
       expect(response.body).to include("1 active scene")
     end
 
+    it "shows the first character with +N more count when user has multiple active characters" do
+      create(:character, game: game, user: gm, name: "First Knight")
+      create(:character, game: game, user: gm, name: "Second Rogue")
+      create(:character, game: game, user: gm, name: "Third Wizard")
+
+      sign_in(gm)
+      get root_path
+
+      expect(response.body).to include("First Knight")
+      expect(response.body).to include("+2 more")
+      expect(response.body).not_to include("Third Wizard")
+    end
+
+    it "does not show +N more count with only one active character" do
+      create(:character, game: game, user: gm, name: "Solo Hero")
+
+      sign_in(gm)
+      get root_path
+
+      expect(response.body).to include("Solo Hero")
+      expect(response.body).not_to include("more")
+    end
+
+    it "excludes archived characters from the primary character and +N count" do
+      create(:character, game: game, user: gm, name: "Active Paladin")
+      create(:character, :archived, game: game, user: gm, name: "Retired Ranger")
+
+      sign_in(gm)
+      get root_path
+
+      expect(response.body).to include("Active Paladin")
+      expect(response.body).not_to include("more")
+    end
+
+    it "excludes other players' characters from the +N count" do
+      create(:character, game: game, user: gm, name: "My Fighter")
+      create(:character, game: game, user: player, name: "Other Cleric")
+      create(:character, game: game, user: player, name: "Other Druid")
+
+      sign_in(gm)
+      get root_path
+
+      expect(response.body).to include("My Fighter")
+      expect(response.body).not_to include("more")
+    end
+
     it "shows a new activity flag only on games with posts since last login" do
       recent_game = create(:game, name: "Recent Game")
       create(:game_member, game: recent_game, user: gm)
