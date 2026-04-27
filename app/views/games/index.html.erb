@@ -26,7 +26,11 @@
         </div>
         <div class="text-xs text-slate-500 mt-2">
           <% if item[:primary_character] %>
-            <%= link_to item[:primary_character].name, game_character_path(game, item[:primary_character]) %> &middot;
+            <%= link_to item[:primary_character].name, game_character_path(game, item[:primary_character]) %>
+            <% if item[:additional_character_count] > 0 %>
+              +<%= item[:additional_character_count] %> more
+            <% end %>
+            &middot;
           <% end %>
           <%= item[:active_scene_count] %> active <%= "scene".pluralize(item[:active_scene_count]) %>
         </div>

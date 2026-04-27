@@ -21,6 +21,15 @@ RSpec.describe "Games", type: :feature do
       expect(page).to have_text("GM")
     end
 
+    it "lists games in alphabetical order" do
+      create(:game_member, :game_master, game: create(:game, name: "Zebra Campaign"), user: gm)
+      create(:game_member, :game_master, game: create(:game, name: "Alpha Campaign"), user: gm)
+
+      visit root_path
+
+      expect(page.body).to match(/Alpha Campaign.*Zebra Campaign/m)
+    end
+
     it "shows active scene count" do
       game = create(:game)
       create(:game_member, :game_master, game: game, user: gm)
@@ -41,6 +50,72 @@ RSpec.describe "Games", type: :feature do
       visit root_path
 
       expect(page).to have_link("Aldric the Bold")
+    end
+
+    it "shows +N more indicator when player has multiple characters, linking the first" do
+      game = create(:game)
+      create(:game_member, :game_master, game: game, user: gm)
+      create(:character, game: game, user: gm, name: "Aldric the Bold")
+      create(:character, game: game, user: gm, name: "Mira Ashveil")
+      create(:character, game: game, user: gm, name: "Torven Coldstone")
+
+      visit root_path
+
+      expect(page).to have_link("Aldric the Bold")
+      expect(page).to have_text("+2 more")
+      expect(page).not_to have_link("Mira Ashveil")
+      expect(page).not_to have_link("Torven Coldstone")
+    end
+
+    it "does not show +N more indicator when player has only one character" do
+      game = create(:game)
+      create(:game_member, :game_master, game: game, user: gm)
+      create(:character, game: game, user: gm, name: "Aldric the Bold")
+
+      visit root_path
+
+      expect(page).not_to have_text("more")
+    end
+
+    it "does not count other players' characters toward the +N more indicator" do
+      game = create(:game)
+      create(:game_member, :game_master, game: game, user: gm)
+      create(:character, game: game, user: gm, name: "Aldric the Bold")
+      other_player = create(:user, :with_profile)
+      create(:game_member, game: game, user: other_player)
+      create(:character, game: game, user: other_player, name: "Mira Ashveil")
+      create(:character, game: game, user: other_player, name: "Torven Coldstone")
+
+      visit root_path
+
+      expect(page).to have_link("Aldric the Bold")
+      expect(page).not_to have_text("more")
+    end
+
+    it "does not count archived characters toward the primary character or +N more" do
+      game = create(:game)
+      create(:game_member, :game_master, game: game, user: gm)
+      create(:character, game: game, user: gm, name: "Active Knight")
+      create(:character, :archived, game: game, user: gm, name: "Retired Mage")
+
+      visit root_path
+
+      expect(page).to have_link("Active Knight")
+      expect(page).not_to have_text("more")
+    end
+
+    it "shows new activity indicator only for the game with new posts" do
+      active_game = create(:game, name: "Active Game")
+      quiet_game = create(:game, name: "Quiet Game")
+      create(:game_member, :game_master, game: active_game, user: gm)
+      create(:game_member, :game_master, game: quiet_game, user: gm)
+      scene = create(:scene, game: active_game)
+      gm.user_profile.update!(last_login_at: 1.hour.ago)
+      create(:post, scene: scene, user: gm)
+
+      visit root_path
+
+      expect(page).to have_css("[data-new-activity='true']", count: 1)
     end
 
     it "shows 'Former' badge for removed players" do
