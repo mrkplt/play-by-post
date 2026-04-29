@@ -96,8 +96,8 @@ User
   Actions: `edit`, `update`, `destroy` (GM only).  
   Nested under `games/:game_id/scenes/:scene_id`.
 
-- `app/controllers/campaign_logs_controller.rb`  
-  Actions: `show` (HTML + RSS formats).  
+- `app/controllers/scene_summaries_feed_controller.rb` (or extend `SceneSummariesController`)  
+  Actions: `index` (HTML + RSS formats).  
   Nested under `games/:game_id`.  
   Scope: resolved, non-private scenes with summaries, ordered by `resolved_at`.  
   HTML: session auth. RSS: resolves token → user → checks active (non-banned) game membership; no token needed for public games.
@@ -111,12 +111,12 @@ User
 - `app/components/shared/scene_summary_component.rb` + template  
   Displays summary body, status badge, edit/delete controls (GM only).
 
-- `app/components/shared/campaign_log_entry_component.rb` + template  
-  One entry in the campaign log: scene title, resolution date, summary prose, link to scene.
+- `app/components/shared/scene_summary_entry_component.rb` + template  
+  One entry in the summary index: scene title, resolution date, summary prose, link to scene.
 
 ### Views / Templates
-- `app/views/campaign_logs/show.html.erb` — campaign log page
-- `app/views/campaign_logs/show.rss.builder` — RSS feed
+- `app/views/scene_summaries/index.html.erb` — campaign log page
+- `app/views/scene_summaries/index.rss.builder` — RSS feed
 - `app/views/scene_summaries/edit.html.erb` — GM edit form
 
 ---
@@ -125,8 +125,8 @@ User
 
 ```ruby
 resources :games do
-  resource :campaign_log, only: [:show]   # GET /games/:id/campaign_log
-                                           # GET /games/:id/campaign_log.rss?token=…
+  resources :scene_summaries, only: [:index] # GET /games/:id/scene_summaries
+                                             # GET /games/:id/scene_summaries.rss?token=…
 
   resources :scenes do
     resource :scene_summary, only: [:edit, :update, :destroy]
@@ -167,7 +167,7 @@ Rules:
 | `app/models/scene.rb` | Add `has_one :scene_summary` |
 | `app/models/game.rb` | Add `ai_summaries_enabled` boolean |
 | `app/controllers/scenes_controller.rb` | Enqueue `SceneSummaryJob` on `resolve` when AI enabled |
-| `config/routes.rb` | Add `campaign_log` resource + `scene_summary` resource |
+| `config/routes.rb` | Add `scene_summaries` index route (HTML + RSS) + `scene_summary` member routes (edit/update/destroy) |
 | `Gemfile` | Add `ruby-openai` (OpenAI-compatible client for OpenRouter) |
 | `context/REQUIREMENTS.md` | Document new feature |
 | `.mutant.yml` | Register new classes |
@@ -186,12 +186,12 @@ Rules:
 ## Quality Checklist
 
 - [ ] Sorbet `# typed: true` on all new files; explicit `sig` on all methods called from templates
-- [ ] Request specs: `spec/requests/scene_summaries_spec.rb`, `spec/requests/campaign_logs_spec.rb`
+- [ ] Request specs: `spec/requests/scene_summaries_spec.rb`
 - [ ] Model specs: `spec/models/scene_summary_spec.rb`, `spec/models/rss_token_spec.rb`
 - [ ] User profile UI: generate / rotate RSS token
 - [ ] Service spec: `spec/services/scene_summary_service_spec.rb` (stub OpenRouter)
 - [ ] Job spec: `spec/jobs/scene_summary_job_spec.rb`
-- [ ] Component specs: `spec/components/shared/scene_summary_component_spec.rb`, `spec/components/shared/campaign_log_entry_component_spec.rb`
+- [ ] Component specs: `spec/components/shared/scene_summary_component_spec.rb`, `spec/components/shared/scene_summary_entry_component_spec.rb`
 - [ ] Presenter spec: `spec/presenters/scene_summary_presenter_spec.rb`
 - [ ] Register all new classes in `.mutant.yml`
 - [ ] `bin/pre-push` passes before each push
@@ -207,8 +207,8 @@ Rules:
 5. `SceneSummariesController` (edit/update/destroy) + request specs
 6. Presenter + ViewComponents for summary display
 7. Surface summary on `scenes#show`
-8. `CampaignLogsController` + HTML campaign log page
-9. RSS feed format + token auth
+8. `SceneSummariesController#index` + HTML campaign log page
+9. RSS feed format (`scene_summaries.rss`) + token auth
 10. Game settings UI to toggle `ai_summaries_enabled`
 11. User profile UI to generate / rotate RSS token
 12. `REQUIREMENTS.md` update
