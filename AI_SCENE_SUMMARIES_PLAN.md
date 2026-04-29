@@ -22,7 +22,7 @@ consumable as an RSS feed ordered by resolution time.
 | Rate limiting regeneration | Not an app concern |
 | Campaign log / RSS ordering | Chronological by `resolved_at` |
 | AI provider | OpenRouter (OpenAI-compatible API) |
-| RSS auth | Secret token in query string for members; public URL for public games |
+| RSS auth | Per-user secret token in query string; one token per user across all their games; user manages rotation from their profile; access checked against current membership (non-banned) at request time |
 
 ---
 
@@ -50,11 +50,13 @@ consumable as an RSS feed ordered by resolution time.
 
 ### New table: `rss_tokens`
 
+One token per user, valid across all games. Feed endpoints resolve the token to a
+user, then check active (non-banned) membership for the requested game at runtime.
+
 | Column | Type | Notes |
 |--------|------|-------|
 | `id` | integer | PK |
-| `game_id` | integer | FK → games |
-| `user_id` | integer | FK → users |
+| `user_id` | integer | FK → users, unique (one token per user) |
 | `token` | string | unique, random 32-char hex |
 | `created_at` / `updated_at` | datetime | |
 
@@ -66,7 +68,9 @@ consumable as an RSS feed ordered by resolution time.
 Game (ai_summaries_enabled)
   └─ Scene
        └─ SceneSummary (body, ai_generated, model_used, …)
-  └─ RssToken → User
+
+User
+  └─ RssToken (one per user; access checked against game membership at request time)
 ```
 
 ---
@@ -75,7 +79,7 @@ Game (ai_summaries_enabled)
 
 ### Models
 - `app/models/scene_summary.rb` — `belongs_to :scene`, `belongs_to :edited_by, class_name: "User", optional: true`
-- `app/models/rss_token.rb` — `belongs_to :game`, `belongs_to :user`
+- `app/models/rss_token.rb` — `belongs_to :user`; unique index on both `user_id` and `token`
 
 ### Service
 - `app/services/scene_summary_service.rb`  
@@ -96,7 +100,7 @@ Game (ai_summaries_enabled)
   Actions: `show` (HTML + RSS formats).  
   Nested under `games/:game_id`.  
   Scope: resolved, non-private scenes with summaries, ordered by `resolved_at`.  
-  HTML: session auth. RSS: token param for members, no token required for public games.
+  HTML: session auth. RSS: resolves token → user → checks active (non-banned) game membership; no token needed for public games.
 
 ### Presenters
 - `app/presenters/scene_summary_presenter.rb`  
@@ -161,7 +165,7 @@ Rules:
 | File | Change |
 |------|--------|
 | `app/models/scene.rb` | Add `has_one :scene_summary` |
-| `app/models/game.rb` | Add `ai_summaries_enabled` boolean; `has_many :rss_tokens` |
+| `app/models/game.rb` | Add `ai_summaries_enabled` boolean |
 | `app/controllers/scenes_controller.rb` | Enqueue `SceneSummaryJob` on `resolve` when AI enabled |
 | `config/routes.rb` | Add `campaign_log` resource + `scene_summary` resource |
 | `Gemfile` | Add `ruby-openai` (OpenAI-compatible client for OpenRouter) |
@@ -175,7 +179,7 @@ Rules:
 
 1. `AddAiSummariesEnabledToGames` — boolean column, default false
 2. `CreateSceneSummaries` — new table with unique index on `scene_id`
-3. `CreateRssTokens` — new table with unique index on `token`
+3. `CreateRssTokens` — new table with unique index on `user_id` and `token`
 
 ---
 
@@ -184,6 +188,7 @@ Rules:
 - [ ] Sorbet `# typed: true` on all new files; explicit `sig` on all methods called from templates
 - [ ] Request specs: `spec/requests/scene_summaries_spec.rb`, `spec/requests/campaign_logs_spec.rb`
 - [ ] Model specs: `spec/models/scene_summary_spec.rb`, `spec/models/rss_token_spec.rb`
+- [ ] User profile UI: generate / rotate RSS token
 - [ ] Service spec: `spec/services/scene_summary_service_spec.rb` (stub OpenRouter)
 - [ ] Job spec: `spec/jobs/scene_summary_job_spec.rb`
 - [ ] Component specs: `spec/components/shared/scene_summary_component_spec.rb`, `spec/components/shared/campaign_log_entry_component_spec.rb`
@@ -204,9 +209,10 @@ Rules:
 7. Surface summary on `scenes#show`
 8. `CampaignLogsController` + HTML campaign log page
 9. RSS feed format + token auth
-10. Game settings UI to toggle `ai_summaries_enabled` + RSS token management
-11. `REQUIREMENTS.md` update
-12. Full `bin/pre-push` run
+10. Game settings UI to toggle `ai_summaries_enabled`
+11. User profile UI to generate / rotate RSS token
+12. `REQUIREMENTS.md` update
+13. Full `bin/pre-push` run
 
 ---
 
@@ -220,5 +226,5 @@ Rules:
   re-enqueueing never creates duplicate summaries.
 - **RSS caching:** The feed should set `Cache-Control` headers; Solid Cache can serve
   repeated polls without a DB hit.
-- **Token revocation:** GMs should be able to regenerate a member's RSS token (e.g. if
-  they shared the URL inadvertently). A simple destroy+create on `RssToken` suffices.
+- **Token rotation:** Users rotate their own token from their profile (destroy + create
+  on `RssToken`). Any previously shared feed URLs stop working immediately.
