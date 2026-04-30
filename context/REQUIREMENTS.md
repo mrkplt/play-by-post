@@ -207,6 +207,13 @@ For technology stack, domain model, codebase conventions, and development workfl
 - Email-to-post always creates in-character posts; OOC posting requires the web interface
 - If content cleaning fails after retries, the post is created from the raw email body and the sender is notified
 - Inbound emails are delivered to the app via a Resend webhook (POST `/rails/action_mailbox/resend/inbound_emails`); the webhook is authenticated using HMAC-SHA256 signature verification (Svix standard) against the `resend_webhook_secret` credential
+- Content cleaning uses OpenRouter (model `google/gemma-3-4b-it:free`); each successful API call writes an `AiUsage` record capturing `feature`, `model_used`, `input_tokens`, and `output_tokens`; a failed write is logged and does not interrupt email processing
+
+### AI Usage Tracking
+- Every successful AI API call writes an append-only `AiUsage` record: `feature` (string identifier, e.g. `"inbound_email"`), `model_used`, `input_tokens`, `output_tokens`, `created_at`
+- Records are never updated after creation
+- Fallback paths (no API key, network error, blank response content) do not write records
+- Cost calculation and per-user/per-game aggregation are out of scope for this table; derive from queries as needed
 
 ### Notification Preferences
 - Per-scene toggle: each participant can opt out of notifications for any scene they are in

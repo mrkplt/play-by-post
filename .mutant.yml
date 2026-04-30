@@ -17,6 +17,7 @@ integration:
 matcher:
   subjects:
     # Models
+    - AiUsage
     - Game
     - GameExportRequest
     - GameMember
