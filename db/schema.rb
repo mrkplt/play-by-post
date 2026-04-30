@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_04_06_000001) do
+ActiveRecord::Schema[8.1].define(version: 2026_04_30_000001) do
   create_table "action_mailbox_inbound_emails", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "message_checksum", null: false
@@ -46,6 +46,16 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_06_000001) do
     t.bigint "blob_id", null: false
     t.string "variation_digest", null: false
     t.index ["blob_id", "variation_digest"], name: "index_active_storage_variant_records_uniqueness", unique: true
+  end
+
+  create_table "ai_usages", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "feature", null: false
+    t.integer "input_tokens"
+    t.string "model_used", null: false
+    t.integer "output_tokens"
+    t.index ["created_at"], name: "index_ai_usages_on_created_at"
+    t.index ["feature"], name: "index_ai_usages_on_feature"
   end
 
   create_table "character_versions", force: :cascade do |t|

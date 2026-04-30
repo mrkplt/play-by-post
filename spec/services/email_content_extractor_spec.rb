@@ -13,6 +13,10 @@ RSpec.describe EmailContentExtractor do
         expect(Net::HTTP).not_to receive(:new)
         expect(described_class.new(raw_body).extract).to eq(raw_body)
       end
+
+      it "does not create an AiUsage record" do
+        expect { described_class.new(raw_body).extract }.not_to change(AiUsage, :count)
+      end
     end
 
     context "when API key is blank" do
@@ -23,6 +27,10 @@ RSpec.describe EmailContentExtractor do
       it "returns the raw body without making an HTTP request" do
         expect(Net::HTTP).not_to receive(:new)
         expect(described_class.new(raw_body).extract).to eq(raw_body)
+      end
+
+      it "does not create an AiUsage record" do
+        expect { described_class.new(raw_body).extract }.not_to change(AiUsage, :count)
       end
     end
 
@@ -182,6 +190,90 @@ RSpec.describe EmailContentExtractor do
         described_class.new(raw_body).extract
 
         expect(http_double).to have_received(:read_timeout=).with(15)
+      end
+
+      context "when the API call succeeds" do
+        let(:api_response) do
+          {
+            "model"   => "google/gemma-3-4b-it:free",
+            "choices" => [ { "message" => { "content" => "Clean reply." } } ],
+            "usage"   => { "prompt_tokens" => 150, "completion_tokens" => 30 }
+          }.to_json
+        end
+
+        before do
+          allow(Net::HTTP).to receive(:new).and_return(http_double)
+          allow(response_double).to receive(:body).and_return(api_response)
+        end
+
+        it "creates an AiUsage record" do
+          expect { described_class.new(raw_body).extract }.to change(AiUsage, :count).by(1)
+        end
+
+        it "records the correct feature" do
+          described_class.new(raw_body).extract
+          expect(AiUsage.last.feature).to eq("inbound_email")
+        end
+
+        it "records the model returned by the API" do
+          described_class.new(raw_body).extract
+          expect(AiUsage.last.model_used).to eq("google/gemma-3-4b-it:free")
+        end
+
+        it "records input token count" do
+          described_class.new(raw_body).extract
+          expect(AiUsage.last.input_tokens).to eq(150)
+        end
+
+        it "records output token count" do
+          described_class.new(raw_body).extract
+          expect(AiUsage.last.output_tokens).to eq(30)
+        end
+
+        it "falls back to the MODEL constant when response omits model" do
+          allow(response_double).to receive(:body).and_return(
+            {
+              "choices" => [ { "message" => { "content" => "reply" } } ],
+              "usage"   => { "prompt_tokens" => 10, "completion_tokens" => 5 }
+            }.to_json
+          )
+          described_class.new(raw_body).extract
+          expect(AiUsage.last.model_used).to eq(EmailContentExtractor::MODEL)
+        end
+
+        it "still returns the extracted content even when AiUsage.create! raises" do
+          allow(AiUsage).to receive(:create!).and_raise(ActiveRecord::RecordInvalid)
+          expect(described_class.new(raw_body).extract).to eq("Clean reply.")
+        end
+
+        it "does not raise when AiUsage.create! fails" do
+          allow(AiUsage).to receive(:create!).and_raise(ActiveRecord::RecordInvalid)
+          expect { described_class.new(raw_body).extract }.not_to raise_error
+        end
+      end
+
+      context "when the API response has no content (fallback)" do
+        before do
+          allow(Net::HTTP).to receive(:new).and_return(http_double)
+          allow(response_double).to receive(:body).and_return(
+            { "choices" => [ { "message" => { "content" => nil } } ] }.to_json
+          )
+        end
+
+        it "does not create an AiUsage record" do
+          expect { described_class.new(raw_body).extract }.not_to change(AiUsage, :count)
+        end
+      end
+
+      context "when a network error occurs (fallback)" do
+        before do
+          allow(Net::HTTP).to receive(:new).and_return(http_double)
+          allow(http_double).to receive(:request).and_raise(SocketError.new("Connection refused"))
+        end
+
+        it "does not create an AiUsage record" do
+          expect { described_class.new(raw_body).extract }.not_to change(AiUsage, :count)
+        end
       end
     end
   end
