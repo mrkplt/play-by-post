@@ -99,3 +99,5 @@ bin/quality-metrics --check      # run all quality gates
 ```
 
 https://railsdesigner.com/open-source/rails-icons/hugeicons/
+
+<!-- schema: openclaw.inbound_meta.v1 -->
