@@ -11,8 +11,7 @@ feature tables.
 | Column | Type | Notes |
 |--------|------|-------|
 | `id` | integer | PK |
-| `trackable_type` | string | polymorphic — e.g. `"SceneSummary"` |
-| `trackable_id` | integer | polymorphic |
+| `feature` | string | e.g. `"scene_summary"`, `"inbound_email"` — identifies the calling feature |
 | `model_used` | string | e.g. `openai/gpt-4o` |
 | `input_tokens` | integer | prompt token count |
 | `output_tokens` | integer | completion token count |
@@ -20,8 +19,9 @@ feature tables.
 
 ## Relationship
 
-Any model that makes AI calls declares `has_one :ai_usage, as: :trackable`.
-The service layer writes one `AiUsage` record per API call.
+`AiUsage` is a standalone append-only log. Features write a record after each API
+call; nothing references back to the source row. Aggregation and reporting are done
+with queries on this table.
 
 ## Bridging from scene_summaries
 
