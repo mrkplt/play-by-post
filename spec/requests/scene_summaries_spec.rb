@@ -46,6 +46,21 @@ RSpec.describe SceneSummariesController, type: :request do
       get game_scene_summaries_path(game)
       expect(response.body).not_to include(summary.body)
     end
+
+    it "redirects a removed member who is not signed in" do
+      removed_user = create(:user, :with_profile)
+      create(:game_member, :removed, game: game, user: removed_user)
+      get game_scene_summaries_path(game)
+      expect(response).to have_http_status(:redirect)
+    end
+
+    it "returns 200 for a removed member who is signed in" do
+      removed_user = create(:user, :with_profile)
+      create(:game_member, :removed, game: game, user: removed_user)
+      sign_in(removed_user)
+      get game_scene_summaries_path(game)
+      expect(response).to have_http_status(:ok)
+    end
   end
 
   # ── index (RSS) ───────────────────────────────────────────────────────────
@@ -107,13 +122,17 @@ RSpec.describe SceneSummariesController, type: :request do
   # ── create ────────────────────────────────────────────────────────────────
 
   describe "POST /games/:game_id/scenes/:scene_id/scene_summary" do
-    it "creates a summary and redirects GM" do
+    it "creates a summary and redirects GM with notice" do
       sign_in(gm)
       expect {
         post game_scene_scene_summary_path(game, resolved_scene),
              params: { scene_summary: { body: "Summary text." } }
       }.to change(SceneSummary, :count).by(1)
       expect(response).to redirect_to(game_scene_path(game, resolved_scene))
+      expect(flash[:notice]).to match(/saved/i)
+      summary = SceneSummary.find_by!(scene: resolved_scene)
+      expect(summary.edited_by).to eq(gm)
+      expect(summary.edited_at).to be_present
     end
 
     it "rejects a player" do
@@ -130,12 +149,13 @@ RSpec.describe SceneSummariesController, type: :request do
       expect(response).to have_http_status(:unprocessable_content)
     end
 
-    it "redirects to edit when summary already exists" do
+    it "redirects to edit when summary already exists with alert" do
       create(:scene_summary, scene: resolved_scene)
       sign_in(gm)
       post game_scene_scene_summary_path(game, resolved_scene),
            params: { scene_summary: { body: "Duplicate." } }
       expect(response).to redirect_to(edit_game_scene_scene_summary_path(game, resolved_scene))
+      expect(flash[:alert]).to be_present
     end
   end
 
@@ -149,10 +169,29 @@ RSpec.describe SceneSummariesController, type: :request do
       expect(response).to have_http_status(:ok)
     end
 
-    it "redirects when no summary exists" do
+    it "redirects with alert when no summary exists" do
       sign_in(gm)
       get edit_game_scene_scene_summary_path(game, resolved_scene)
       expect(response).to redirect_to(game_scene_path(game, resolved_scene))
+      expect(flash[:alert]).to be_present
+    end
+  end
+
+  describe "require_resolved_scene! guard" do
+    it "redirects GM with alert on an unresolved scene" do
+      sign_in(gm)
+      get new_game_scene_scene_summary_path(game, active_scene)
+      expect(response).to redirect_to(game_scene_path(game, active_scene))
+      expect(flash[:alert]).to be_present
+    end
+  end
+
+  describe "require_gm! guard" do
+    it "redirects a player with alert" do
+      sign_in(player)
+      get new_game_scene_scene_summary_path(game, resolved_scene)
+      expect(response).to redirect_to(game_path(game))
+      expect(flash[:alert]).to be_present
     end
   end
 
@@ -161,15 +200,20 @@ RSpec.describe SceneSummariesController, type: :request do
   describe "PATCH /games/:game_id/scenes/:scene_id/scene_summary" do
     let!(:summary) { create(:scene_summary, :ai_generated, scene: resolved_scene) }
 
-    it "updates body and clears AI metadata" do
+    it "updates body and clears AI metadata with notice" do
       sign_in(gm)
       patch game_scene_scene_summary_path(game, resolved_scene),
             params: { scene_summary: { body: "Edited text." } }
       expect(response).to redirect_to(game_scene_path(game, resolved_scene))
+      expect(flash[:notice]).to match(/updated/i)
       summary.reload
       expect(summary.body).to eq("Edited text.")
       expect(summary.generated_at).to be_nil
       expect(summary.model_used).to be_nil
+      expect(summary.input_tokens).to be_nil
+      expect(summary.output_tokens).to be_nil
+      expect(summary.edited_by).to eq(gm)
+      expect(summary.edited_at).to be_present
     end
 
     it "rejects a player" do
@@ -185,12 +229,13 @@ RSpec.describe SceneSummariesController, type: :request do
   describe "DELETE /games/:game_id/scenes/:scene_id/scene_summary" do
     let!(:summary) { create(:scene_summary, scene: resolved_scene) }
 
-    it "destroys the summary as GM" do
+    it "destroys the summary as GM with notice" do
       sign_in(gm)
       expect {
         delete game_scene_scene_summary_path(game, resolved_scene)
       }.to change(SceneSummary, :count).by(-1)
       expect(response).to redirect_to(game_scene_path(game, resolved_scene))
+      expect(flash[:notice]).to match(/deleted/i)
     end
 
     it "rejects a player" do

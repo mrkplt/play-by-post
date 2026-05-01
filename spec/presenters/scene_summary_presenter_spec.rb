@@ -73,4 +73,24 @@ RSpec.describe SceneSummaryPresenter do
       expect(presenter.edited?).to eq(summary.edited?)
     end
   end
+
+  describe "#scene" do
+    it "returns the model's scene association" do
+      scene = build_stubbed(:scene)
+      allow(summary).to receive(:scene).and_return(scene)
+      expect(presenter.scene).to eq(scene)
+    end
+  end
+
+  describe "#status_label" do
+    it "requires both ai_generated? and edited? to return 'Edited'" do
+      ai_only = build_stubbed(:scene_summary, :ai_generated, edited_at: nil)
+      expect(described_class.new(ai_only).status_label).to eq("AI-generated")
+    end
+
+    it "returns 'Hand-written' when edited but not AI-generated" do
+      edited_manual = build_stubbed(:scene_summary, :edited, generated_at: nil)
+      expect(described_class.new(edited_manual).status_label).to eq("Hand-written")
+    end
+  end
 end

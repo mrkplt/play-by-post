@@ -45,6 +45,8 @@ matcher:
     - Shared::RssTokenComponent
     - Shared::SceneSummaryComponent
     - Shared::SceneSummaryEntryComponent
+    - Shared::SceneSummaryFormComponent
+    - Shared::SceneSummaryIndexPageComponent
     - Shared::GalleryComponent
     - Shared::NavShellComponent
     - Shared::PostComposerComponent

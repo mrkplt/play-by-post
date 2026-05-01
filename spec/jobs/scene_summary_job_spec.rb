@@ -34,6 +34,8 @@ RSpec.describe SceneSummaryJob, type: :job do
       expect(summary.generated_at).to be_present
       expect(summary.input_tokens).to eq(100)
       expect(summary.output_tokens).to eq(40)
+      expect(summary.edited_at).to be_nil
+      expect(summary.edited_by_id).to be_nil
     end
 
     it "upserts on re-run (does not create duplicate)" do
@@ -49,6 +51,19 @@ RSpec.describe SceneSummaryJob, type: :job do
 
       expect { described_class.new.perform(scene.id) }.not_to change(SceneSummary, :count)
       expect(SceneSummary.find_by!(scene: scene).body).to eq("Updated tale.")
+    end
+
+    it "resets edited_at and edited_by_id to nil when upserting over an existing edited summary" do
+      user = create(:user, :with_profile)
+      create(:game_member, game: game, user: user)
+      scene.create_scene_summary!(body: "Old text.", edited_at: Time.current, edited_by: user)
+
+      described_class.new.perform(scene.id)
+
+      summary = SceneSummary.find_by!(scene: scene)
+      expect(summary.body).to eq("A heroic tale.")
+      expect(summary.edited_at).to be_nil
+      expect(summary.edited_by_id).to be_nil
     end
 
     it "does nothing if scene does not exist" do

@@ -26,4 +26,13 @@ RSpec.describe Shared::SceneSummaryEntryComponent, type: :component do
   it "renders the summary body as markdown" do
     expect(rendered_component).to have_css("strong", text: "brave")
   end
+
+  context "when the scene has no resolved_at" do
+    let(:scene) { build_stubbed(:scene, game: game, title: "Unresolved", resolved_at: nil) }
+
+    it "formatted_resolved_at returns nil" do
+      component = described_class.new(summary: presenter, game: game)
+      expect(component.formatted_resolved_at).to be_nil
+    end
+  end
 end

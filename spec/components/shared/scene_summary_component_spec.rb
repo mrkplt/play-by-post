@@ -40,4 +40,12 @@ RSpec.describe Shared::SceneSummaryComponent, type: :component do
       expect(rendered).to have_text("AI-generated")
     end
   end
+
+  context "when AI-generated and edited" do
+    let(:summary) { build_stubbed(:scene_summary, :ai_generated, :edited, scene: scene) }
+
+    it "shows Edited badge" do
+      expect(rendered).to have_text("Edited")
+    end
+  end
 end

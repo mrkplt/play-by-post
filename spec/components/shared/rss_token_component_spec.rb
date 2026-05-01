@@ -4,11 +4,21 @@ require "rails_helper"
 
 RSpec.describe Shared::RssTokenComponent, type: :component do
   context "when no token exists" do
+    subject(:component) { described_class.new(rss_token: nil) }
+
     it "shows generate button" do
-      render_inline(described_class.new(rss_token: nil))
+      render_inline(component)
       expect(page).to have_button("Generate RSS Token")
       expect(page).not_to have_button("Rotate Token")
       expect(page).not_to have_button("Revoke Token")
+    end
+
+    it "token_present? returns false" do
+      expect(component.token_present?).to be(false)
+    end
+
+    it "token_value returns nil" do
+      expect(component.token_value).to be_nil
     end
   end
 
