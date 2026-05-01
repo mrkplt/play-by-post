@@ -32,17 +32,15 @@ consumable as an RSS feed (20 most recent entries) ordered by resolution time.
 ### New table: `scene_summaries`
 
 `generated_at` being non-null is the indicator that AI produced the current body.
-No separate boolean needed.
+No separate boolean needed. Token and model data are written to the `ai_usages` table
+(already implemented) — not stored here.
 
 | Column | Type | Notes |
 |--------|------|-------|
 | `id` | integer | PK |
 | `scene_id` | integer | FK → scenes, unique (one summary per scene) |
 | `body` | text | Markdown prose |
-| `model_used` | string | e.g. `openai/gpt-4o`, null if hand-written |
 | `generated_at` | datetime | when the model produced this body; null if hand-written |
-| `input_tokens` | integer | prompt tokens used; null if hand-written |
-| `output_tokens` | integer | completion tokens used; null if hand-written |
 | `edited_at` | datetime | last manual edit timestamp |
 | `edited_by_id` | integer | FK → users, who last manually edited |
 | `created_at` / `updated_at` | datetime | standard |
@@ -72,24 +70,13 @@ user, then check active (non-banned) membership for the requested game at runtim
 ```
 Game (ai_summaries_enabled)
   └─ Scene
-       └─ SceneSummary (body, model_used, generated_at, input_tokens, output_tokens, …)
+       └─ SceneSummary (body, generated_at, …)
 
 User
   └─ RssToken (one per user; access checked against game membership at request time)
+
+AiUsage (append-only log — receives one record per successful SceneSummaryJob call)
 ```
-
----
-
-## Future: AI Usage Tracking
-
-**Saved for later — do not implement now.**
-
-We should create a dedicated `ai_usages` table that any AI-touching feature can write
-to (scene summaries, inbound email processing, etc.), storing model, input tokens,
-output tokens, and a polymorphic reference to the source record. This will let us
-report and budget across all AI features in one place. The `input_tokens` /
-`output_tokens` columns on `scene_summaries` are a pragmatic starting point until
-that table exists.
 
 ---
 
@@ -106,9 +93,10 @@ that table exists.
 
 ### Job
 - `app/jobs/scene_summary_job.rb`  
-  Receives `scene_id`, calls `SceneSummaryService`, upserts `SceneSummary` with body,
-  model, `generated_at`, and token counts. Enqueued automatically on scene resolution
-  when `ai_summaries_enabled`.
+  Receives `scene_id`, calls `SceneSummaryService`, upserts `SceneSummary` with body
+  and `generated_at`, and writes one `AiUsage` record (`feature: "scene_summary"`)
+  with model and token counts. Enqueued automatically on scene resolution when
+  `ai_summaries_enabled`.
 
 ### Controllers
 - `app/controllers/scene_summaries_controller.rb`  
@@ -194,7 +182,7 @@ Rules:
 ## Migrations
 
 1. `AddAiSummariesEnabledToGames` — boolean column, default false
-2. `CreateSceneSummaries` — new table with unique index on `scene_id`
+2. `CreateSceneSummaries` — new table with unique index on `scene_id` (no token/model columns — those go to `ai_usages`)
 3. `CreateRssTokens` — new table with unique index on `user_id` and `token`
 
 ---
