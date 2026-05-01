@@ -139,6 +139,21 @@
 
 </div><!-- end ooc-filter -->
 
+<!-- Scene Summary (resolved scenes only) -->
+<% if @scene.resolved? %>
+  <% if @scene.scene_summary %>
+    <%= render Shared::SceneSummaryComponent.new(
+          summary: SceneSummaryPresenter.new(@scene.scene_summary),
+          game: @game,
+          scene: @scene,
+          is_gm: @is_gm
+        ) %>
+  <% elsif @is_gm %>
+    <%= link_to "Write Summary", new_game_scene_scene_summary_path(@game, @scene),
+        class: "mt-6 px-5 py-2 bg-slate-500 text-white rounded text-base cursor-pointer hover:bg-slate-600 inline-block no-underline" %>
+  <% end %>
+<% end %>
+
 <!-- Draft recovery notice for resolved scenes -->
 <% if @scene.resolved? && @draft %>
   <div class="bg-amber-50 border border-amber-200 rounded-lg p-4 mt-4">

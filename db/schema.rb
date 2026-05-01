@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_04_30_000001) do
+ActiveRecord::Schema[8.1].define(version: 2026_04_30_232933) do
   create_table "action_mailbox_inbound_emails", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "message_checksum", null: false
@@ -114,6 +114,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_30_000001) do
   end
 
   create_table "games", force: :cascade do |t|
+    t.boolean "ai_summaries_enabled", default: false, null: false
     t.datetime "created_at", null: false
     t.text "description"
     t.boolean "images_disabled", default: false, null: false
@@ -171,6 +172,15 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_30_000001) do
     t.index ["user_id"], name: "index_posts_on_user_id"
   end
 
+  create_table "rss_tokens", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "token", null: false
+    t.datetime "updated_at", null: false
+    t.integer "user_id", null: false
+    t.index ["token"], name: "index_rss_tokens_on_token", unique: true
+    t.index ["user_id"], name: "index_rss_tokens_on_user_id", unique: true
+  end
+
   create_table "scene_participants", force: :cascade do |t|
     t.integer "character_id"
     t.datetime "created_at", null: false
@@ -182,6 +192,21 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_30_000001) do
     t.index ["scene_id", "user_id"], name: "index_scene_participants_on_scene_id_and_user_id", unique: true
     t.index ["scene_id"], name: "index_scene_participants_on_scene_id"
     t.index ["user_id"], name: "index_scene_participants_on_user_id"
+  end
+
+  create_table "scene_summaries", force: :cascade do |t|
+    t.text "body", null: false
+    t.datetime "created_at", null: false
+    t.datetime "edited_at"
+    t.integer "edited_by_id"
+    t.datetime "generated_at"
+    t.integer "input_tokens"
+    t.string "model_used"
+    t.integer "output_tokens"
+    t.integer "scene_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["edited_by_id"], name: "index_scene_summaries_on_edited_by_id"
+    t.index ["scene_id"], name: "index_scene_summaries_on_scene_id", unique: true
   end
 
   create_table "scenes", force: :cascade do |t|
@@ -238,9 +263,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_30_000001) do
   add_foreign_key "post_reads", "users"
   add_foreign_key "posts", "scenes"
   add_foreign_key "posts", "users"
+  add_foreign_key "rss_tokens", "users"
   add_foreign_key "scene_participants", "characters"
   add_foreign_key "scene_participants", "scenes"
   add_foreign_key "scene_participants", "users"
+  add_foreign_key "scene_summaries", "scenes"
+  add_foreign_key "scene_summaries", "users", column: "edited_by_id"
   add_foreign_key "scenes", "games"
   add_foreign_key "scenes", "scenes", column: "parent_scene_id"
   add_foreign_key "user_profiles", "users"

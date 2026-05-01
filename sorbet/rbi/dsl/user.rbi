@@ -361,6 +361,9 @@ class User
   end
 
   module GeneratedAssociationMethods
+    sig { params(args: T.untyped, blk: T.untyped).returns(::RssToken) }
+    def build_rss_token(*args, &blk); end
+
     sig { params(args: T.untyped, blk: T.untyped).returns(::UserProfile) }
     def build_user_profile(*args, &blk); end
 
@@ -377,6 +380,12 @@ class User
 
     sig { params(value: T::Enumerable[::Character]).void }
     def characters=(value); end
+
+    sig { params(args: T.untyped, blk: T.untyped).returns(::RssToken) }
+    def create_rss_token(*args, &blk); end
+
+    sig { params(args: T.untyped, blk: T.untyped).returns(::RssToken) }
+    def create_rss_token!(*args, &blk); end
 
     sig { params(args: T.untyped, blk: T.untyped).returns(::UserProfile) }
     def create_user_profile(*args, &blk); end
@@ -426,11 +435,23 @@ class User
     sig { params(value: T::Enumerable[::Post]).void }
     def posts=(value); end
 
+    sig { returns(T.nilable(::RssToken)) }
+    def reload_rss_token; end
+
     sig { returns(T.nilable(::UserProfile)) }
     def reload_user_profile; end
 
     sig { void }
+    def reset_rss_token; end
+
+    sig { void }
     def reset_user_profile; end
+
+    sig { returns(T.nilable(::RssToken)) }
+    def rss_token; end
+
+    sig { params(value: T.nilable(::RssToken)).void }
+    def rss_token=(value); end
 
     sig { returns(T::Array[T.untyped]) }
     def scene_ids; end

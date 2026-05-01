@@ -92,6 +92,7 @@ class ScenesController < ApplicationController
 
     @scene.update!(resolved_at: Time.current, resolution: params[:resolution])
     notify_scene_resolved
+    SceneSummaryJob.perform_later(@scene.id) if @game.ai_summaries_enabled?
     redirect_to game_scene_path(@game, @scene), notice: "Scene resolved."
   end
 

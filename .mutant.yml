@@ -19,6 +19,8 @@ matcher:
     # Models
     - AiUsage
     - Game
+    - RssToken
+    - SceneSummary
     - GameExportRequest
     - GameMember
     - GameFile
@@ -35,9 +37,14 @@ matcher:
     # Presenters
     - GameFilePresenter
     - PostPresenter
+    - SceneSummaryPresenter
     - ScenePresenter
     - UserPresenter
     # Components
+    - Shared::AiSummariesToggleComponent
+    - Shared::RssTokenComponent
+    - Shared::SceneSummaryComponent
+    - Shared::SceneSummaryEntryComponent
     - Shared::GalleryComponent
     - Shared::NavShellComponent
     - Shared::PostComposerComponent
@@ -53,8 +60,10 @@ matcher:
     - EmailContentExtractor
     - GameExportService
     - MarkdownRenderer
+    - SceneSummaryService
     # Controllers
     - ActionMailbox::Ingresses::Resend::InboundEmailsController
+    - SceneSummariesController
     - GameExportsController
     - ScenesController
     - CharactersController
@@ -71,6 +80,7 @@ matcher:
     # Jobs
     - PostDigestJob
     - ExportJob
+    - SceneSummaryJob
     # Mailers
     - NotificationMailer
     - InvitationMailer

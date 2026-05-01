@@ -300,6 +300,40 @@ For technology stack, domain model, codebase conventions, and development workfl
 
 ---
 
+## AI Scene Summaries
+
+- GMs can write scene summaries manually at any time after a scene is resolved
+- If `ai_summaries_enabled` is toggled on for the game, a background job (`SceneSummaryJob`) automatically generates a summary via OpenRouter when a scene is resolved
+- The AI summary is upserted — re-resolving or re-enqueueing never creates duplicates
+- GMs can edit or delete any summary (AI-generated or hand-written)
+- Editing an AI-generated summary clears `generated_at`, `model_used`, and token counts, marking it as hand-edited
+- Private scenes are never included in the campaign log or RSS feed
+- Only resolved, non-private scenes appear in the campaign log
+- The campaign log is paginated (HTML) or limited to 20 most recent entries (RSS), ordered by `resolved_at` descending
+- The RSS feed is accessible with a per-user secret token (query param `?token=…`) or by an active game member via session
+- RSS tokens are per-user, valid across all games; users generate/rotate/revoke from their profile
+- AI provider: OpenRouter (OpenAI-compatible); configured via `OPENROUTER_API_KEY` and `OPENROUTER_MODEL` env vars
+- The service raises `SceneSummaryService::ConfigurationError` if `OPENROUTER_API_KEY` is absent
+- OOC posts are sent to the model labelled `[OOC]`; the model decides narrative relevance
+- Token counts (`input_tokens`, `output_tokens`) and `model_used` are stored on `SceneSummary`; `generated_at` non-null indicates AI-produced content
+
+### Summary status labels
+- `generated_at` present, `edited_at` nil → "AI-generated"
+- `generated_at` present, `edited_at` present → "Edited"
+- `generated_at` nil → "Hand-written"
+
+---
+
+## RSS Token Management
+
+- Each user has at most one RSS token, accessible from their profile page
+- Tokens are 64-character random hex strings
+- Users can generate a new token (or rotate an existing one) from their profile
+- Revoking a token immediately invalidates all feed URLs that use it
+- Token access is checked at request time against current active (non-banned) game membership
+
+---
+
 ## Design Assumptions
 
 - All players are adults who are not cheating; no roll resolution system is needed

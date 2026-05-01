@@ -7,13 +7,13 @@
 
 class NotificationMailer
   class << self
-    sig { params(scene: T.untyped, recipient: T.untyped).returns(::ActionMailer::MessageDelivery) }
+    sig { params(scene: ::Scene, recipient: ::User).returns(::ActionMailer::MessageDelivery) }
     def new_scene(scene, recipient); end
 
-    sig { params(scene: T.untyped, recipient: T.untyped, posts: T.untyped).returns(::ActionMailer::MessageDelivery) }
+    sig { params(scene: ::Scene, recipient: ::User, posts: T::Array[::Post]).returns(::ActionMailer::MessageDelivery) }
     def post_digest(scene, recipient, posts); end
 
-    sig { params(scene: T.untyped, recipient: T.untyped).returns(::ActionMailer::MessageDelivery) }
+    sig { params(scene: ::Scene, recipient: ::User).returns(::ActionMailer::MessageDelivery) }
     def scene_resolved(scene, recipient); end
   end
 end
