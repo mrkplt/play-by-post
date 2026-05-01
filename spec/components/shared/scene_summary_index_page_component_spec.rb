@@ -22,7 +22,7 @@ RSpec.describe Shared::SceneSummaryIndexPageComponent, type: :component do
     let(:summary) { build_stubbed(:scene_summary, scene: scene) }
 
     subject(:component) do
-      described_class.new(game: game, summaries: [summary], pagy: pagy, is_gm: false)
+      described_class.new(game: game, summaries: [ summary ], pagy: pagy, is_gm: false)
     end
 
     it "summaries_empty? returns false" do
