@@ -83,6 +83,35 @@ RSpec.describe Shared::SceneSummaryFormComponent, type: :component do
     end
   end
 
+  context "when editing a non-AI-generated summary" do
+    let(:summary) { build_stubbed(:scene_summary, generated_at: nil, scene: scene) }
+
+    subject(:component) { described_class.new(game: game, scene: scene, summary: summary) }
+
+    it "show_ai_notice? returns false" do
+      expect(component.show_ai_notice?).to be(false)
+    end
+  end
+
+  context "when not editing but generated_at is present" do
+    let(:summary) { SceneSummary.new(generated_at: Time.current) }
+
+    subject(:component) { described_class.new(game: game, scene: scene, summary: summary) }
+
+    it "show_ai_notice? returns false because not editing" do
+      expect(component.show_ai_notice?).to be(false)
+    end
+  end
+
+  context "rendering the Cancel link" do
+    let(:summary) { SceneSummary.new }
+
+    it "renders a Cancel link pointing to the scene" do
+      render_inline(described_class.new(game: game, scene: scene, summary: summary))
+      expect(page).to have_link("Cancel", href: /scenes/)
+    end
+  end
+
   context "when the summary has validation errors" do
     let(:summary) do
       s = SceneSummary.new

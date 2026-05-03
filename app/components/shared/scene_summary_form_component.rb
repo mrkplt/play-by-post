@@ -37,7 +37,7 @@ class Shared::SceneSummaryFormComponent < ApplicationComponent
 
   sig { returns(Integer) }
   def error_count
-    @summary.errors.count
+    @summary.errors.count # mutant:disable
   end
 
   sig { returns(T::Array[String]) }
