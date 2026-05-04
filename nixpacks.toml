@@ -1,2 +1,5 @@
 [phases.setup]
 aptPkgs = ["...", "ghostscript", "imagemagick", "poppler-utils"]
+
+[phases.install]
+cmds = ["bundle install --frozen", "bundle exec bootsnap precompile --gemfile"]
