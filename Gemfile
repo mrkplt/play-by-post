@@ -53,7 +53,7 @@ gem "devise-passwordless"
 gem "redcarpet"
 
 # Pagination
-gem "pagy", "~> 43.4"
+gem "pagy", "~> 43.5"
 
 # Use Active Storage variants [https://guides.rubyonrails.org/active_storage_overview.html#transforming-images]
 gem "image_processing", "~> 1.2"
