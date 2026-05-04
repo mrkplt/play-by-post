@@ -7,7 +7,7 @@
 
 class InvitationMailer
   class << self
-    sig { params(invitation: T.untyped).returns(::ActionMailer::MessageDelivery) }
+    sig { params(invitation: ::Invitation).returns(::ActionMailer::MessageDelivery) }
     def invite(invitation); end
   end
 end

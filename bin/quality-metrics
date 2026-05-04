@@ -272,7 +272,7 @@ def collect_metrics
 end
 
 def record_mutant(output_file)
-  content = File.read(output_file)
+  content = File.read(output_file, encoding: "UTF-8", invalid: :replace, undef: :replace)
   coverage_match = content[/Coverage:\s*([\d.]+)%/, 1]
   mutations_match = content[/Mutations:\s*(\d+)/, 1]
   kills_match = content[/Kills:\s*(\d+)/, 1]

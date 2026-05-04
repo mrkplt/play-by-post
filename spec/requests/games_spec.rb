@@ -385,6 +385,32 @@ RSpec.describe GamesController, type: :request do
     end
   end
 
+  describe "PATCH /games/:id/toggle_ai_summaries_enabled" do
+    it "GM can enable AI summaries" do
+      sign_in(gm)
+      patch toggle_ai_summaries_enabled_game_path(game)
+      expect(game.reload.ai_summaries_enabled?).to be true
+      expect(response).to redirect_to(edit_game_path(game))
+      expect(flash[:notice]).to match(/enabled/i)
+    end
+
+    it "GM can disable AI summaries" do
+      game.update!(ai_summaries_enabled: true)
+      sign_in(gm)
+      patch toggle_ai_summaries_enabled_game_path(game)
+      expect(game.reload.ai_summaries_enabled?).to be false
+      expect(response).to redirect_to(edit_game_path(game))
+      expect(flash[:notice]).to match(/disabled/i)
+    end
+
+    it "player cannot toggle AI summaries" do
+      sign_in(player)
+      patch toggle_ai_summaries_enabled_game_path(game)
+      expect(response).to redirect_to(game_path(game))
+      expect(game.reload.ai_summaries_enabled?).to be false
+    end
+  end
+
   describe "PATCH /games/:id/toggle_images_disabled" do
     it "GM can disable image attachments" do
       sign_in(gm)

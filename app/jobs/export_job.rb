@@ -42,7 +42,7 @@ class ExportJob < ApplicationJob
     Rails.logger.error("ExportJob failed for request #{request_id}: #{e.message}")
     failed_request = GameExportRequest.find_by(id: request_id)
     failed_user = failed_request&.user
-    T.unsafe(ExportMailer).export_failed(failed_user, game: failed_request&.game).deliver_later if failed_user
+    T.unsafe(ExportMailer).export_failed(failed_user, game: failed_request.game).deliver_later if failed_user
     raise
   end
 

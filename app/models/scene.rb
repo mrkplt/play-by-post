@@ -15,6 +15,7 @@ class Scene < ApplicationRecord
   has_many :scene_participants, dependent: :destroy
   has_many :users, through: :scene_participants
   has_many :posts, dependent: :destroy
+  has_one :scene_summary, dependent: :destroy
 
   before_validation :default_title
 

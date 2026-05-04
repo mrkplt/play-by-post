@@ -89,3 +89,6 @@ gem "sorbet-runtime"
 
 # Zip archive creation for game exports
 gem "rubyzip", "~> 3.2"
+
+# OpenAI-compatible client for OpenRouter AI integration
+gem "ruby-openai", "~> 8.1"

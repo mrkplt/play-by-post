@@ -1,0 +1,24 @@
+<div class="bg-amber-50 border border-amber-200 rounded-lg p-5 mt-6">
+  <div class="flex justify-between items-start mb-3">
+    <h3 class="m-0 text-base font-semibold text-amber-900">Scene Summary</h3>
+    <div class="flex gap-2 items-center">
+      <%= render(Ui::BadgeComponent.new(variant: status_badge_variant.to_sym)) { @summary.status_label } %>
+      <% if is_gm? %>
+        <%= link_to "Edit", edit_game_scene_scene_summary_path(@game, @scene),
+            class: "text-xs text-amber-700 hover:text-amber-900 no-underline" %>
+        <%= button_to "Delete", game_scene_scene_summary_path(@game, @scene),
+            method: :delete,
+            class: "text-xs text-red-600 hover:text-red-800 bg-transparent border-none cursor-pointer p-0",
+            data: { confirm: "Delete this summary?" } %>
+      <% end %>
+    </div>
+  </div>
+  <div class="markdown-base prose prose-sm max-w-none text-amber-950">
+    <%= @summary.rendered_body.html_safe %>
+  </div>
+  <% if @summary.formatted_edited_at %>
+    <p class="text-xs text-amber-700 mt-2 mb-0">Last edited <%= @summary.formatted_edited_at %></p>
+  <% elsif @summary.formatted_generated_at %>
+    <p class="text-xs text-amber-700 mt-2 mb-0">Generated <%= @summary.formatted_generated_at %></p>
+  <% end %>
+</div>

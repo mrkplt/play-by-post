@@ -1,0 +1,8 @@
+<%= render(Ui::BreadcrumbComponent.new) do %>
+  <%= link_to "Games", root_path %> &rsaquo;
+  <%= link_to @game.name, game_path(@game) %> &rsaquo;
+  Campaign Log
+<% end %>
+
+<%= render Shared::SceneSummaryIndexPageComponent.new(
+      game: @game, summaries: @summaries, pagy: @pagy, is_gm: @is_gm) %>

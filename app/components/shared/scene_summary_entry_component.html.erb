@@ -1,0 +1,13 @@
+<div class="bg-white border border-slate-200 rounded-lg p-5 mb-4">
+  <div class="flex justify-between items-start mb-2">
+    <h3 class="m-0 text-base font-semibold">
+      <%= link_to scene_title, game_scene_path(@game, @summary.scene) %>
+    </h3>
+    <% if formatted_resolved_at %>
+      <span class="text-xs text-slate-400 flex-shrink-0 ml-2">Resolved <%= formatted_resolved_at %></span>
+    <% end %>
+  </div>
+  <div class="markdown-base prose prose-sm max-w-none text-slate-700">
+    <%= @summary.rendered_body.html_safe %>
+  </div>
+</div>

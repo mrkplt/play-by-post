@@ -19,17 +19,22 @@ Rails.application.routes.draw do
     resource :profile, only: %i[show edit update], controller: "profiles" do
       post :toggle_hide_ooc, on: :collection
       post :export_all, on: :collection
+      post :generate_rss_token, on: :collection
+      delete :revoke_rss_token, on: :collection
     end
     resources :games, only: %i[index new create show edit update] do
       member do
         patch :toggle_sheets_hidden
         patch :toggle_images_disabled
+        patch :toggle_ai_summaries_enabled
       end
       resources :scenes, only: %i[index new create show] do
         member do
           patch :resolve
           post :toggle_notification_preference
         end
+        resource :scene_summary, only: %i[new create edit update destroy],
+                                  controller: "scene_summaries"
         resources :posts, only: %i[create edit update] do
           member do
             post :mark_read
@@ -57,6 +62,11 @@ Rails.application.routes.draw do
         resources :character_versions, only: %i[show], path: "versions"
       end
     end
+  end
+
+  # Campaign log index and RSS feed — accessible with RSS token (no session required)
+  resources :games, only: [] do
+    resources :scene_summaries, only: %i[index]
   end
 
   root "games#index"
