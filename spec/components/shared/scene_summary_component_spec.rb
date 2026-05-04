@@ -33,11 +33,23 @@ RSpec.describe Shared::SceneSummaryComponent, type: :component do
     end
   end
 
+  context "with a hand-written summary" do
+    it "status_badge_variant returns 'gray'" do
+      component = described_class.new(summary: presenter, game: game, scene: scene, is_gm: false)
+      expect(component.status_badge_variant).to eq("gray")
+    end
+  end
+
   context "when AI-generated" do
     let(:summary) { build_stubbed(:scene_summary, :ai_generated, scene: scene) }
 
     it "shows AI-generated badge" do
       expect(rendered).to have_text("AI-generated")
+    end
+
+    it "status_badge_variant returns 'blue'" do
+      component = described_class.new(summary: presenter, game: game, scene: scene, is_gm: false)
+      expect(component.status_badge_variant).to eq("blue")
     end
   end
 
@@ -46,6 +58,11 @@ RSpec.describe Shared::SceneSummaryComponent, type: :component do
 
     it "shows Edited badge" do
       expect(rendered).to have_text("Edited")
+    end
+
+    it "status_badge_variant returns 'yellow'" do
+      component = described_class.new(summary: presenter, game: game, scene: scene, is_gm: false)
+      expect(component.status_badge_variant).to eq("yellow")
     end
   end
 end

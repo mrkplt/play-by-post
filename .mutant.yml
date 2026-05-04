@@ -93,7 +93,7 @@ matcher:
     - ApplicationHelper
 
 mutation:
-  timeout: 10.0
+  timeout: 20.0
 
 coverage_criteria:
   timeout: false

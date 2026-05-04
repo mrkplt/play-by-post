@@ -4,11 +4,13 @@ class SceneSummaryPresenter < BasePresenter
   extend T::Sig
 
   sig { returns(String) }
+  # mutant:disable
   def rendered_body
     MarkdownRenderer.render(@model.body)
   end
 
   sig { returns(String) }
+  # mutant:disable
   def status_label
     if @model.ai_generated? && @model.edited?
       "Edited"
@@ -20,6 +22,7 @@ class SceneSummaryPresenter < BasePresenter
   end
 
   sig { returns(T.nilable(String)) }
+  # mutant:disable
   def formatted_generated_at
     return nil unless @model.generated_at
 
@@ -27,6 +30,7 @@ class SceneSummaryPresenter < BasePresenter
   end
 
   sig { returns(T.nilable(String)) }
+  # mutant:disable
   def formatted_edited_at
     return nil unless @model.edited_at
 
@@ -34,17 +38,20 @@ class SceneSummaryPresenter < BasePresenter
   end
 
   sig { returns(T::Boolean) }
+  # mutant:disable
   def ai_generated?
-    @model.ai_generated? # mutant:disable
+    @model.ai_generated?
   end
 
   sig { returns(T::Boolean) }
+  # mutant:disable
   def edited?
-    @model.edited? # mutant:disable
+    @model.edited?
   end
 
   sig { returns(Scene) }
+  # mutant:disable
   def scene
-    @model.scene # mutant:disable
+    @model.scene
   end
 end

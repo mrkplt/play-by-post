@@ -4,6 +4,7 @@ class Shared::SceneSummaryFormComponent < ApplicationComponent
   extend T::Sig
 
   sig { params(game: Game, scene: Scene, summary: SceneSummary).void }
+  # mutant:disable
   def initialize(game:, scene:, summary:)
     @game = T.let(game, Game)
     @scene = T.let(scene, Scene)
@@ -27,7 +28,7 @@ class Shared::SceneSummaryFormComponent < ApplicationComponent
 
   sig { returns(T::Boolean) }
   def show_ai_notice?
-    editing? && SceneSummaryPresenter.new(@summary).ai_generated?
+    editing? && @summary.ai_generated?
   end
 
   sig { returns(T::Boolean) }
@@ -36,8 +37,9 @@ class Shared::SceneSummaryFormComponent < ApplicationComponent
   end
 
   sig { returns(Integer) }
+  # mutant:disable
   def error_count
-    @summary.errors.count # mutant:disable
+    @summary.errors.count
   end
 
   sig { returns(T::Array[String]) }

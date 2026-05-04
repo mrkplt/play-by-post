@@ -114,7 +114,7 @@ class SceneSummariesController < ApplicationController
   def require_gm!
     return if @game.game_master?(current_user)
 
-    redirect_to game_path(@game), alert: "Only the GM can manage summaries."
+    redirect_to @game, alert: "Only the GM can manage summaries."
   end
 
   sig { void }

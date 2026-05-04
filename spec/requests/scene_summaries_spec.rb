@@ -61,6 +61,33 @@ RSpec.describe SceneSummariesController, type: :request do
       get game_scene_summaries_path(game)
       expect(response).to have_http_status(:ok)
     end
+
+    it "redirects a banned member to sign-in" do
+      banned_user = create(:user, :with_profile)
+      create(:game_member, :banned, game: game, user: banned_user)
+      sign_in(banned_user)
+      get game_scene_summaries_path(game)
+      expect(response).to redirect_to(new_user_session_path)
+    end
+
+    it "redirects a signed-in non-member to sign-in" do
+      outsider = create(:user, :with_profile)
+      sign_in(outsider)
+      get game_scene_summaries_path(game)
+      expect(response).to redirect_to(new_user_session_path)
+    end
+
+    it "returns summaries ordered by resolved_at descending" do
+      older_scene = create(:scene, :resolved, game: game, resolved_at: 2.days.ago)
+      newer_scene = create(:scene, :resolved, game: game, resolved_at: 1.day.ago)
+      older_summary = create(:scene_summary, scene: older_scene, body: "Older summary")
+      newer_summary = create(:scene_summary, scene: newer_scene, body: "Newer summary")
+      sign_in(player)
+      get game_scene_summaries_path(game)
+      older_pos = response.body.index(older_summary.body)
+      newer_pos = response.body.index(newer_summary.body)
+      expect(newer_pos).to be < older_pos
+    end
   end
 
   # ── index (RSS) ───────────────────────────────────────────────────────────
@@ -195,6 +222,25 @@ RSpec.describe SceneSummariesController, type: :request do
     end
   end
 
+  describe "require_game_access! guard" do
+    it "redirects a non-member to root with alert" do
+      outsider = create(:user, :with_profile)
+      sign_in(outsider)
+      get new_game_scene_scene_summary_path(game, resolved_scene)
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to be_present
+    end
+
+    it "redirects a banned member to root with alert" do
+      banned_user = create(:user, :with_profile)
+      create(:game_member, :banned, game: game, user: banned_user)
+      sign_in(banned_user)
+      get new_game_scene_scene_summary_path(game, resolved_scene)
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to be_present
+    end
+  end
+
   # ── update ────────────────────────────────────────────────────────────────
 
   describe "PATCH /games/:game_id/scenes/:scene_id/scene_summary" do
@@ -221,6 +267,13 @@ RSpec.describe SceneSummariesController, type: :request do
       patch game_scene_scene_summary_path(game, resolved_scene),
             params: { scene_summary: { body: "Edited." } }
       expect(response).to redirect_to(game_path(game))
+    end
+
+    it "renders edit with 422 on validation failure" do
+      sign_in(gm)
+      patch game_scene_scene_summary_path(game, resolved_scene),
+            params: { scene_summary: { body: "" } }
+      expect(response).to have_http_status(:unprocessable_content)
     end
   end
 

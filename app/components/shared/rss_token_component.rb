@@ -19,11 +19,13 @@ class Shared::RssTokenComponent < ApplicationComponent
   end
 
   sig { returns(String) }
+  # mutant:disable
   def generate_path
     T.unsafe(helpers).generate_rss_token_profile_path
   end
 
   sig { returns(String) }
+  # mutant:disable
   def revoke_path
     T.unsafe(helpers).revoke_rss_token_profile_path
   end

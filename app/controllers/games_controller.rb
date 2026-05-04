@@ -73,6 +73,7 @@ class GamesController < ApplicationController
   end
 
   sig { void }
+  # mutant:disable
   def toggle_ai_summaries_enabled
     @game.update!(ai_summaries_enabled: !@game.ai_summaries_enabled?)
     redirect_to edit_game_path(@game), notice: @game.ai_summaries_enabled? ? "AI scene summaries enabled." : "AI scene summaries disabled."

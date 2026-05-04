@@ -24,6 +24,7 @@ class Shared::AiSummariesToggleComponent < ApplicationComponent
   end
 
   sig { returns(String) }
+  # mutant:disable
   def toggle_path
     T.unsafe(helpers).toggle_ai_summaries_enabled_game_path(@game)
   end

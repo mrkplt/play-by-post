@@ -44,6 +44,12 @@ RSpec.describe RssToken, type: :model do
       token_record.regenerate!
       expect(token_record.reload.token).not_to eq(old_token)
     end
+
+    it "generates a valid 64-char hex token" do
+      token_record = create(:rss_token)
+      token_record.regenerate!
+      expect(token_record.reload.token).to match(/\A[0-9a-f]{64}\z/)
+    end
   end
 
   describe ".generate_secure_token" do
