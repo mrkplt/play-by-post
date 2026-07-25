@@ -1,0 +1,77 @@
+# Coolify deployment — play-by-post
+#
+# Target: PiHost (Raspberry Pi 4, 8GB, aarch64)
+# Paste this into Coolify: Project -> + Add Resource -> Docker Compose Empty
+#
+# Images are built off-device by .github/workflows/build-image.yml and PULLED here.
+# Do not build on the Pi: its USB-SATA bridge runs without command queuing, so
+# builds are slow and IO-heavy.
+#
+# NO REDIS: this app uses Solid Queue and Solid Cache, both Postgres-backed.
+#
+# Set these in the Coolify UI (Environment Variables), not in this file:
+#   POSTGRES_PASSWORD   strong random value
+#   SECRET_KEY_BASE     `rails secret` output
+#   IMAGE_TAG           e.g. sha-<commit> — pin explicitly, avoid :latest
+#
+# Rails 8 multi-database: config/database.yml defines primary, cache and queue
+# databases. bin/docker-entrypoint runs `db:prepare` when the server starts,
+# which creates and migrates all three. The worker does not run migrations.
+
+services:
+  web:
+    image: ghcr.io/mrkplt/play-by-post:${IMAGE_TAG}
+    environment:
+      RAILS_ENV: production
+      DATABASE_URL: postgres://play_by_post:${POSTGRES_PASSWORD}@postgres:5432/play_by_post_production
+      SECRET_KEY_BASE: ${SECRET_KEY_BASE}
+      RAILS_LOG_TO_STDOUT: "1"
+      RAILS_MAX_THREADS: "5"
+      # Thruster terminates HTTP on 80 inside the container.
+      # Coolify/Traefik routes to it; set the domain in the Coolify UI.
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    mem_limit: 1g
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost/up || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+
+  worker:
+    image: ghcr.io/mrkplt/play-by-post:${IMAGE_TAG}
+    command: ["bundle", "exec", "rake", "solid_queue:start"]
+    environment:
+      RAILS_ENV: production
+      DATABASE_URL: postgres://play_by_post:${POSTGRES_PASSWORD}@postgres:5432/play_by_post_production
+      SECRET_KEY_BASE: ${SECRET_KEY_BASE}
+      RAILS_LOG_TO_STDOUT: "1"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      web:
+        condition: service_started
+    restart: unless-stopped
+    mem_limit: 768m
+
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: play_by_post
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: play_by_post_production
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U play_by_post -d play_by_post_production"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    mem_limit: 1g
+
+volumes:
+  pgdata:
