@@ -15,7 +15,16 @@ Rails.application.configure do
   # Full error reports are disabled.
   config.consider_all_requests_local = false
 
-  config.require_master_key = true
+  # Refuse to boot production without the credentials key.
+  #
+  # Exempt image builds: the Dockerfile runs `assets:precompile` with
+  # RAILS_ENV=production (so assets compile as production would) but
+  # config/credentials/*.key is gitignored and absent from the build context.
+  # SECRET_KEY_BASE_DUMMY is Rails' signal for "booting to compile assets, not
+  # to serve traffic" — it stubs secret_key_base but does not affect this
+  # setting, so gate on it explicitly. Real production boots never set it and
+  # continue to require the key.
+  config.require_master_key = ENV["SECRET_KEY_BASE_DUMMY"].blank?
 
   # Turn on fragment caching in view templates.
   config.action_controller.perform_caching = true
