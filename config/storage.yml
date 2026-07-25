@@ -7,7 +7,25 @@ local:
   root: <%= Rails.root.join("storage") %>
 
 # S3-compatible object storage — used in production (Railway bucket or Cloudflare R2)
-cloudflare_r2:
+# cloudflare_r2:
+#  service: S3
+#  access_key_id: <%= ENV["STORAGE_ACCESS_KEY_ID"] %>
+#  secret_access_key: <%= ENV["STORAGE_SECRET_ACCESS_KEY"] %>
+#  region: <%= ENV.fetch("STORAGE_REGION", "auto") %>
+#  bucket: <%= ENV["STORAGE_BUCKET"] %>
+#  endpoint: <%= ENV["STORAGE_ENDPOINT"] %>
+#  force_path_style: true
+
+# # AWS S3 — alternative production storage
+# amazon:
+#   service: S3
+#   access_key_id: <%= ENV["STORAGE_ACCESS_KEY_ID"] %>
+#   secret_access_key: <%= ENV["STORAGE_SECRET_ACCESS_KEY"] %>
+#   region: <%= ENV.fetch("STORAGE_REGION", "us-east-1") %>
+#   bucket: <%= ENV["STORAGE_BUCKET"] %>
+
+# Railway S3-compatible bucket storage
+railway:
   service: S3
   access_key_id: <%= ENV["STORAGE_ACCESS_KEY_ID"] %>
   secret_access_key: <%= ENV["STORAGE_SECRET_ACCESS_KEY"] %>
