@@ -16,7 +16,10 @@ class SceneSummaryService
 
   sig { returns(Result) }
   def call
-    raise ConfigurationError, "OPENROUTER_API_KEY is not set" if api_key.blank?
+    if api_key.blank?
+      raise ConfigurationError,
+            "OpenRouter API key is not set (credentials.openrouter_api_key or OPENROUTER_API_KEY)"
+    end
 
     client = OpenAI::Client.new(
       access_token: api_key,
@@ -45,9 +48,12 @@ class SceneSummaryService
 
   private
 
+  # Reads the encrypted credential first so this matches EmailContentExtractor;
+  # the env var remains a fallback for local runs without the credentials key.
   sig { returns(String) }
   def api_key
-    ENV.fetch("OPENROUTER_API_KEY", "")
+    Rails.application.credentials.openrouter_api_key.presence ||
+      ENV.fetch("OPENROUTER_API_KEY", "")
   end
 
   sig { returns(String) }

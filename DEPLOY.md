@@ -64,14 +64,19 @@ Verify on the Pi:
 Coolify -> **Project -> + Add Resource -> Docker Compose Empty**, then paste the contents
 of `docker-compose.coolify.yml`.
 
-Set these as **Environment Variables in the Coolify UI** — never commit them:
+Set the environment variables in the Coolify UI — never commit them.
 
-    IMAGE_TAG           sha-<commit>   pin explicitly; avoid `latest` so redeploys are deterministic
-    POSTGRES_PASSWORD   strong random value
-    SECRET_KEY_BASE     output of `rails secret`
+**The complete, authoritative list is [docs/CONFIGURATION.md](docs/CONFIGURATION.md).** It
+covers required and optional variables, the values that must go in encrypted credentials
+instead, and the variables that must *not* be set in production. It is deliberately not
+duplicated here.
 
-Note `SECRET_KEY_BASE_DUMMY=1` is used at *build* time for asset precompilation only. The
-runtime value must be a real secret supplied here.
+Two things that bite during this step, both detailed in that file:
+
+- The container has **no credentials key baked in**, so Resend and OpenRouter features fail
+  at runtime unless the key is supplied — even though the app boots and serves pages fine.
+- The `worker` service needs the same storage, LLM and host variables as `web`, because
+  scene summaries and Active Storage processing run as background jobs.
 
 ---
 

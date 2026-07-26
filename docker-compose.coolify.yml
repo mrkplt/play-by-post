@@ -10,9 +10,19 @@
 # NO REDIS: this app uses Solid Queue and Solid Cache, both Postgres-backed.
 #
 # Set these in the Coolify UI (Environment Variables), not in this file:
+#   RAILS_MASTER_KEY    contents of config/credentials/production.key
+#   APP_HOST            hostname used in outbound email links
 #   POSTGRES_PASSWORD   strong random value
-#   SECRET_KEY_BASE     `rails secret` output
-#   IMAGE_TAG           e.g. sha-<commit> — pin explicitly, avoid :latest
+#
+# Everything else secret (Resend, OpenRouter, Cloudflare R2, secret_key_base)
+# lives in config/credentials/production.yml.enc and is unlocked by
+# RAILS_MASTER_KEY. See docs/CONFIGURATION.md.
+#
+# Images are tagged :latest on every push to master by the build workflow, so
+# this tracks the tip of master. IMPORTANT: enable "always pull image" in
+# Coolify — otherwise Docker reuses the cached :latest layer and silently keeps
+# running stale code. To roll back, temporarily replace :latest with
+# :sha-<commit>.
 #
 # Rails 8 multi-database: config/database.yml defines primary, cache and queue
 # databases. bin/docker-entrypoint runs `db:prepare` when the server starts,
@@ -20,11 +30,15 @@
 
 services:
   web:
-    image: ghcr.io/mrkplt/play-by-post:${IMAGE_TAG}
+    image: ghcr.io/mrkplt/play-by-post:latest
     environment:
       RAILS_ENV: production
       DATABASE_URL: postgres://play_by_post:${POSTGRES_PASSWORD}@postgres:5432/play_by_post_production
-      SECRET_KEY_BASE: ${SECRET_KEY_BASE}
+      # Unlocks config/credentials/production.yml.enc, which holds the Resend,
+      # OpenRouter and Cloudflare R2 secrets. Without it those features fail at
+      # runtime even though the app boots. See docs/CONFIGURATION.md.
+      RAILS_MASTER_KEY: ${RAILS_MASTER_KEY}
+      APP_HOST: ${APP_HOST}
       RAILS_LOG_TO_STDOUT: "1"
       RAILS_MAX_THREADS: "5"
       # Thruster terminates HTTP on 80 inside the container.
@@ -42,12 +56,15 @@ services:
       start_period: 60s
 
   worker:
-    image: ghcr.io/mrkplt/play-by-post:${IMAGE_TAG}
+    image: ghcr.io/mrkplt/play-by-post:latest
     command: ["bundle", "exec", "rake", "solid_queue:start"]
     environment:
       RAILS_ENV: production
       DATABASE_URL: postgres://play_by_post:${POSTGRES_PASSWORD}@postgres:5432/play_by_post_production
-      SECRET_KEY_BASE: ${SECRET_KEY_BASE}
+      # Jobs do scene summaries and Active Storage processing, so the worker
+      # needs the same credentials key and host as web.
+      RAILS_MASTER_KEY: ${RAILS_MASTER_KEY}
+      APP_HOST: ${APP_HOST}
       RAILS_LOG_TO_STDOUT: "1"
     depends_on:
       postgres:

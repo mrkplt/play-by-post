@@ -32,22 +32,26 @@ Email previews are available at `http://localhost:3000/letter_opener` in develop
 
 ## Deployment
 
-Hosted on [Railway](https://railway.app). Deployments are triggered automatically on push to `master`.
+Self-hosted on Coolify. Images are built by GitHub Actions and pulled from GHCR;
+builds do not run on the deployment host. See [DEPLOY.md](DEPLOY.md) for the runbook.
 
 **Production stack:**
-- Build: Nixpacks
-- Database: PostgreSQL (`DATABASE_URL` env var)
+- Build: Docker, via `.github/workflows/build-image.yml` (arm64)
+- Database: PostgreSQL 17
 - File storage: Cloudflare R2 (via Active Storage)
-- Email: Mailgun (inbound + outbound)
-- Jobs: Solid Queue (in-process, no Redis)
+- Email: Resend (inbound + outbound)
+- LLM: OpenRouter (inbound email parsing, scene summaries)
+- Jobs: Solid Queue (dedicated worker container, no Redis)
 - Cache: Solid Cache (database-backed)
 
-**On each deploy Railway runs:**
-```sh
-bundle exec rails db:migrate && bundle exec rails server -p $PORT -e production
-```
+`bin/docker-entrypoint` runs `db:prepare` when the server starts, which creates and
+migrates the primary, cache and queue databases.
 
 Health check endpoint: `GET /up`
+
+**Configuration:** [docs/CONFIGURATION.md](docs/CONFIGURATION.md) is the source of truth
+for every environment variable and credential, each with the file and line that reads it.
+Do not restate config values here.
 
 ## Quality
 

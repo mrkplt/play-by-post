@@ -6,14 +6,19 @@ local:
   service: Disk
   root: <%= Rails.root.join("storage") %>
 
-# S3-compatible object storage — used in production (Railway bucket or Cloudflare R2)
+# S3-compatible object storage — Cloudflare R2 in production.
+#
+# Values come from encrypted credentials (credentials.storage.*), falling back to
+# env vars for local runs without the credentials key. Documented in
+# docs/CONFIGURATION.md (source of truth).
+<% storage = Rails.application.credentials.storage || {} %>
 cloudflare_r2:
   service: S3
-  access_key_id: <%= ENV["STORAGE_ACCESS_KEY_ID"] %>
-  secret_access_key: <%= ENV["STORAGE_SECRET_ACCESS_KEY"] %>
-  region: <%= ENV.fetch("STORAGE_REGION", "auto") %>
-  bucket: <%= ENV["STORAGE_BUCKET"] %>
-  endpoint: <%= ENV["STORAGE_ENDPOINT"] %>
+  access_key_id: <%= storage[:access_key_id] || ENV["STORAGE_ACCESS_KEY_ID"] %>
+  secret_access_key: <%= storage[:secret_access_key] || ENV["STORAGE_SECRET_ACCESS_KEY"] %>
+  region: <%= storage[:region] || ENV.fetch("STORAGE_REGION", "auto") %>
+  bucket: <%= storage[:bucket] || ENV["STORAGE_BUCKET"] %>
+  endpoint: <%= storage[:endpoint] || ENV["STORAGE_ENDPOINT"] %>
   force_path_style: true
 
 # Remember not to checkin your GCS keyfile to a repository
