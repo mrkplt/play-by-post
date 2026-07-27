@@ -11,17 +11,22 @@ queuing, so builds are slow and IO-heavy.
 
 ## Stack
 
-Three containers. **No Redis** — this app uses Solid Queue and Solid Cache, both
-Postgres-backed.
+Two containers. **No Redis and no database server** — the app runs on SQLite.
 
     web        ghcr.io/mrkplt/play-by-post   Thruster + Puma on :80
     worker     same image                    bundle exec rake solid_queue:start
-    postgres   postgres:17-alpine            named volume `pgdata`
+
+The database files live on the named volume `dbdata`, mounted at `/data` in **both**
+containers, so web and worker stay separate processes sharing one database. Rails 8
+runs SQLite in WAL mode, which allows readers to proceed during a write and makes
+that sharing safe.
 
 `config/database.yml` defines **three production databases** — primary, `_cache` and
-`_queue` — each with its own migration path. `bin/docker-entrypoint` runs `db:prepare`
-when the server starts, which creates and migrates all three. The worker does not run
-migrations, which is correct: only one process should.
+`_queue` — each its own file under `/data`, each with its own migration path.
+`bin/docker-entrypoint` runs `db:prepare` when the server starts, which creates and
+migrates all three. The worker does not run migrations, which is correct: only one
+process should. The worker waits on web's healthcheck, because with Postgres gone
+web is the only thing that creates the database.
 
 ---
 
@@ -83,7 +88,7 @@ Two things that bite during this step, both detailed in that file:
 ## 4. Verify
 
     docker compose -p <service> ps
-    # web, worker, postgres all Up; postgres and web healthy
+    # web and worker both Up; web healthy
 
     docker compose -p <service> logs --tail 50 web
     # look for db:prepare completing and Puma booting
@@ -91,9 +96,13 @@ Two things that bite during this step, both detailed in that file:
     docker compose -p <service> logs --tail 50 worker
     # SolidQueue::Supervisor started
 
-    docker compose -p <service> exec postgres \
-      psql -U play_by_post -d play_by_post_production -c '\l'
-    # primary, _cache and _queue databases present
+    docker compose -p <service> exec web ls -la /data
+    # production.sqlite3, production_cache.sqlite3, production_queue.sqlite3
+    # each with -wal and -shm sidecars once written to
+
+    docker compose -p <service> exec web \
+      sqlite3 /data/production.sqlite3 'pragma journal_mode;'
+    # wal
 
 The web container has a healthcheck against `/up` (`rails/health#show`, confirmed present
 in `config/routes.rb`). `curl` is installed in the image's base stage, so the check works.
@@ -116,11 +125,10 @@ cannot reach the host from the internet. Options:
 
 ## Resource budget
 
-Memory limits total ~2.75GB of the Pi's 8GB, leaving room for Coolify (~0.8GB) and headroom:
+Memory limits total ~1.75GB of the Pi's 8GB, leaving room for Coolify (~0.8GB) and headroom:
 
     web        1g
     worker     768m
-    postgres   1g
 
 These are enforced — the memory cgroup controller is enabled on this host. Verify with:
 
@@ -129,14 +137,25 @@ These are enforced — the memory cgroup controller is enabled on this host. Ver
 
 Disk is the scarce resource (120GB SSD), not RAM. Watch `df -h /` and `docker system df`.
 `docker image prune` is safe here since images are pulled, not built. **Never** prune
-volumes blindly — `pgdata` lives there.
+volumes blindly — `dbdata` lives there, and it is now the entire database.
 
 ---
 
 ## Backups
 
-`pgdata` is a Docker volume on the Pi's SSD. It is **not** backed up by anything yet.
-Configure scheduled `pg_dump` to an off-box location before this holds data you care about.
+`dbdata` is a Docker volume on the Pi's SSD holding the SQLite files. It is **not**
+backed up by anything yet. Configure a scheduled copy to an off-box location before
+this holds data you care about.
+
+Use SQLite's `.backup`, which takes a consistent snapshot of a live database. Do **not**
+`cp` the file while the app is running: with WAL enabled a plain copy can capture a torn
+file, and copying `production.sqlite3` without its `-wal` sidecar loses recent commits.
+
+    docker compose -p <service> exec web \
+      sqlite3 /data/production.sqlite3 ".backup '/data/backup.sqlite3'"
+
+Only the primary database needs backing up. `production_cache` and `production_queue`
+are regenerable — Solid Cache holds nothing durable and the queue is transient.
 
 ---
 

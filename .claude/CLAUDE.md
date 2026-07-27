@@ -15,7 +15,7 @@ Play-by-Post TTRPG — Rails 8 app for asynchronous tabletop RPGs. GMs and playe
 | Concern | Technology |
 |---------|-----------|
 | Framework | Rails 8.1 · Ruby 3.3 |
-| Database | SQLite (dev/test) · PostgreSQL (prod) |
+| Database | SQLite everywhere · prod runs from a mounted volume |
 | Frontend | Hotwire (Turbo + Stimulus) · Importmap (no bundler) · Tailwind CSS |
 | UI | ViewComponent · Draper (presenters) · HugeIcons (`icons` gem) |
 | Auth | Devise + devise-passwordless (magic link, no passwords) |

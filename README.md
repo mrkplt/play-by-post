@@ -37,7 +37,7 @@ builds do not run on the deployment host. See [DEPLOY.md](DEPLOY.md) for the run
 
 **Production stack:**
 - Build: Docker, via `.github/workflows/build-image.yml` (arm64)
-- Database: PostgreSQL 17
+- Database: SQLite on a mounted volume, shared by the web and worker containers
 - File storage: Cloudflare R2 (via Active Storage)
 - Email: Resend (inbound + outbound)
 - LLM: OpenRouter (inbound email parsing, scene summaries)

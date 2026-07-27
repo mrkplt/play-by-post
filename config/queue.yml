@@ -1,0 +1,22 @@
+default: &default
+  dispatchers:
+    - polling_interval: 1
+      batch_size: 500
+      # Picks up the schedules in config/recurring.yml (currently PostDigestJob).
+      recurring_tasks: true
+  workers:
+    - queues: "*"
+      threads: 3
+      processes: <%= ENV.fetch("JOB_CONCURRENCY", 1) %>
+      polling_interval: 0.1
+
+development:
+  <<: *default
+
+test:
+  <<: *default
+
+# One worker process on the Pi. SQLite serialises writes, so adding processes
+# buys contention rather than throughput; raise `threads` before `processes`.
+production:
+  <<: *default

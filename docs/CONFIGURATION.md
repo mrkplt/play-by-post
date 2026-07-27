@@ -66,10 +66,10 @@ Set these in the Coolify UI. The app is broken without them.
 |---|---|---|
 | `RAILS_MASTER_KEY` | `encrypted_file.rb:53` | Contents of `config/credentials/production.key`. Without it every credential below is unreadable |
 | `APP_HOST` | `config/environments/production.rb:74` | Host for mailer links. **Fails silently** — see Traps |
-| `POSTGRES_PASSWORD` | compose file only | Strong random value; interpolated into `DATABASE_URL` and Postgres init |
 
-That is the entire list — three variables. `DATABASE_URL` is composed from
-`POSTGRES_PASSWORD` inside `docker-compose.coolify.yml`, not set by hand.
+That is the entire list — two variables. The database needs no configuration: it is
+SQLite, and `DATABASE_PATH` is set to `/data` in `docker-compose.coolify.yml` rather
+than by hand. There is no `DATABASE_URL` and no database password.
 
 **Do not set `SECRET_KEY_BASE`.** It lives in credentials and Rails reads it from there
 (verified: with the env var unset, `Rails.application.secret_key_base` resolves to
@@ -160,7 +160,9 @@ serves pages, but storage, email and LLM features all fail.
 
 **The worker needs the same variables as web.** Scene summaries and Active Storage
 processing run as background jobs, so the `worker` service needs `RAILS_MASTER_KEY` and
-`APP_HOST` too — not just `web`.
+`APP_HOST` too — not just `web`. It is load-bearing: with Solid Queue, all outbound
+email flows through it. If the worker is down, jobs accumulate in the queue database
+and wait — nothing is lost, but nothing sends either.
 
 **`config/credentials/production.key` exists only on the developer machine.** It is
 untracked by design. If lost, `production.yml.enc` is unrecoverable and every secret in it
@@ -172,12 +174,22 @@ must be reissued from Resend, Cloudflare, and OpenRouter. Back it up to a passwo
 
 | Service | Purpose | Values to recover |
 |---|---|---|
-| PostgreSQL 17 | Primary + Solid Cache + Solid Queue databases | Password (self-hosted in compose) |
 | Resend | Outbound email and inbound webhook | API key, webhook signing secret (`whsec_…`), inbound domain |
 | Cloudflare R2 | Active Storage via the S3 API | Access key ID, secret access key, bucket, account endpoint |
 | OpenRouter | Inbound email parsing and scene summaries | API key |
 
-**No Redis.** Solid Queue and Solid Cache are both Postgres-backed.
+**No Redis, no database server.** The database is SQLite on the `dbdata` volume,
+mounted at `/data` in both the web and worker containers. Rails 8 runs SQLite in
+WAL mode, which is what makes concurrent access from the two containers safe.
+
+**Backups are now a file copy.** The whole database is `/data/production.sqlite3`
+(plus its `-wal` and `-shm` sidecars). Copy it with `sqlite3 … ".backup"` rather
+than `cp`, which can capture a torn file mid-write:
+
+```bash
+docker compose -p <service> exec web \
+  sqlite3 /data/production.sqlite3 ".backup '/data/backup.sqlite3'"
+```
 
 ---
 
