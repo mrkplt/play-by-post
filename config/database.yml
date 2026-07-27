@@ -1,27 +1,35 @@
 default: &default
+  adapter: sqlite3
   pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+  timeout: 5000
 
 development:
   <<: *default
-  adapter: sqlite3
   database: storage/development.sqlite3
 
 test:
   <<: *default
-  adapter: "sqlite3"
   database: storage/test.sqlite3
 
+# Production runs SQLite from a mounted volume shared by the web and worker
+# containers (see docker-compose.coolify.yml). DATABASE_PATH is the mount point.
+# Rails 8 defaults the sqlite3 adapter to WAL, which is what makes concurrent
+# access from both containers safe.
 production:
-  primary: &primary_production
-    adapter: postgresql
-    encoding: unicode
-    url: <%= ENV["DATABASE_URL"] %>
-    pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+  primary:
+    <<: *default
+    database: <%= ENV.fetch("DATABASE_PATH") { "storage" } %>/production.sqlite3
+  # Solid Cache and Solid Queue own their schemas outright: they load from
+  # db/cache_schema.rb and db/queue_schema.rb. `migrations_paths` points at a
+  # directory with no migrations in it — without it these databases inherit the
+  # primary's migration path and every app table gets duplicated into all three.
   cache:
-    <<: *primary_production
-    database: play_by_post_production_cache
+    <<: *default
+    database: <%= ENV.fetch("DATABASE_PATH") { "storage" } %>/production_cache.sqlite3
     migrations_paths: db/cache_migrate
+    schema_dump: cache_schema.rb
   queue:
-    <<: *primary_production
-    database: play_by_post_production_queue
+    <<: *default
+    database: <%= ENV.fetch("DATABASE_PATH") { "storage" } %>/production_queue.sqlite3
     migrations_paths: db/queue_migrate
+    schema_dump: queue_schema.rb

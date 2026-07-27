@@ -8,13 +8,13 @@ gem "propshaft"
 gem "tailwindcss-rails"
 # Icon library [https://github.com/Rails-Designer/icons]
 gem "icons"
-# Use postgresql in production (Railway)
 gem "resend"
-gem "pg", "~> 1.1", group: :production
 gem "aws-sdk-s3", require: false, group: :production
 
-# Use sqlite3 locally
-gem "sqlite3", ">= 2.1", group: %i[ development test ]
+# SQLite everywhere, including production. In production the database files live
+# on a mounted volume shared by the web and worker containers — see
+# docker-compose.coolify.yml and docs/CONFIGURATION.md.
+gem "sqlite3", ">= 2.1"
 # Use the Puma web server [https://github.com/puma/puma]
 gem "puma", ">= 5.0"
 # Use JavaScript with ESM import maps [https://github.com/rails/importmap-rails]

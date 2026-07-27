@@ -13,7 +13,7 @@ RUN apt-get update -qq && \
       imagemagick \
       libvips \
       poppler-utils \
-      postgresql-client && \
+      sqlite3 && \
     rm -rf /var/lib/apt/lists /var/cache/apt/archives
 
 ENV RAILS_ENV="production" \
@@ -28,7 +28,6 @@ RUN apt-get update -qq && \
     apt-get install --no-install-recommends -y \
       build-essential \
       git \
-      libpq-dev \
       node-gyp \
       pkg-config \
       python-is-python3 && \
@@ -63,10 +62,16 @@ FROM base AS final
 COPY --from=build "${BUNDLE_PATH}" "${BUNDLE_PATH}"
 COPY --from=build /rails /rails
 
+# /data is where the compose file mounts the SQLite volume. It must exist and be
+# owned by `rails` before the volume is mounted, otherwise the unprivileged
+# process cannot create the database files.
 RUN useradd rails --create-home --shell /bin/bash && \
-    chown -R rails:rails db log storage tmp
+    mkdir -p /data && \
+    chown -R rails:rails db log storage tmp /data
 USER rails:rails
 
 ENTRYPOINT ["/rails/bin/docker-entrypoint"]
 EXPOSE 80
-CMD ["./bin/thruster", "./bin/rails", "server"]
+# The thruster gem's executable is `thrust`, not `thruster` — ./bin/thruster
+# does not exist and the container cannot start with it.
+CMD ["./bin/thrust", "./bin/rails", "server"]

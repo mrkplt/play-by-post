@@ -10,12 +10,35 @@ RSpec.describe SceneSummaryService do
   end
 
   describe "#call" do
-    context "when OPENROUTER_API_KEY is not set" do
+    context "when no OpenRouter key is configured" do
       it "raises ConfigurationError with a message about the key" do
+        allow(Rails.application.credentials).to receive(:openrouter_api_key).and_return(nil)
+        allow(ENV).to receive(:fetch).and_call_original
         allow(ENV).to receive(:fetch).with("OPENROUTER_API_KEY", "").and_return("")
         expect { SceneSummaryService.new(scene).call }.to raise_error(
-          SceneSummaryService::ConfigurationError, /OPENROUTER_API_KEY/
+          SceneSummaryService::ConfigurationError, /openrouter_api_key/
         )
+      end
+    end
+
+    context "when the key is in encrypted credentials" do
+      let(:client_double) { instance_double(OpenAI::Client) }
+
+      before do
+        allow(Rails.application.credentials).to receive(:openrouter_api_key).and_return("cred-key")
+        allow(ENV).to receive(:fetch).and_call_original
+        allow(OpenAI::Client).to receive(:new).and_return(client_double)
+        allow(client_double).to receive(:chat).and_return(
+          { "choices" => [ { "message" => { "content" => "Summary." } } ], "usage" => {} }
+        )
+      end
+
+      it "prefers the credential over the environment variable" do
+        allow(ENV).to receive(:fetch).with("OPENROUTER_API_KEY", "").and_return("env-key")
+        expect(OpenAI::Client).to receive(:new).with(
+          hash_including(access_token: "cred-key")
+        ).and_return(client_double)
+        SceneSummaryService.new(scene).call
       end
     end
 
@@ -29,6 +52,8 @@ RSpec.describe SceneSummaryService do
       end
 
       before do
+        # Credential absent, so the service falls back to the env var.
+        allow(Rails.application.credentials).to receive(:openrouter_api_key).and_return(nil)
         allow(ENV).to receive(:fetch).with("OPENROUTER_API_KEY", "").and_return("test-key")
         allow(ENV).to receive(:fetch).with("OPENROUTER_MODEL", SceneSummaryService::DEFAULT_MODEL).and_return("openai/gpt-4o")
         allow(OpenAI::Client).to receive(:new).and_return(client_double)

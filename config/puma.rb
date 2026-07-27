@@ -33,8 +33,11 @@ port ENV.fetch("PORT", 3000)
 # Allow puma to be restarted by `bin/rails restart` command.
 plugin :tmp_restart
 
-# Run Tailwind CSS watcher inside Puma
-plugin :tailwindcss
+# Run the Tailwind CSS watcher inside Puma — development only. In production
+# the CSS is already built by `assets:precompile` at image build time, and
+# app/assets/builds is not writable by the unprivileged `rails` user, so the
+# watcher dies with EACCES and takes Puma down with it on every boot.
+plugin :tailwindcss unless ENV["RAILS_ENV"] == "production"
 
 # Run the Solid Queue supervisor inside of Puma for single-server deployments
 plugin :solid_queue if ENV["SOLID_QUEUE_IN_PUMA"]

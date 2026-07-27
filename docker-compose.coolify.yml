@@ -7,31 +7,53 @@
 # Do not build on the Pi: its USB-SATA bridge runs without command queuing, so
 # builds are slow and IO-heavy.
 #
-# NO REDIS: this app uses Solid Queue and Solid Cache, both Postgres-backed.
+# NO REDIS, NO POSTGRES: this app runs on SQLite. The database files live on the
+# `dbdata` volume, mounted at /data in both the web and worker containers, so the
+# two services stay separate processes while sharing one database. Rails 8 runs
+# SQLite in WAL mode, which is what makes that concurrent access safe.
+#
+# The worker is load-bearing: production uses Solid Queue, so outbound email,
+# inbound-email processing, scene summaries and the daily digest all run here.
+# If this container is down, those jobs queue up in the database and wait —
+# they are not lost, but nothing sends until it comes back.
 #
 # Set these in the Coolify UI (Environment Variables), not in this file:
-#   POSTGRES_PASSWORD   strong random value
-#   SECRET_KEY_BASE     `rails secret` output
-#   IMAGE_TAG           e.g. sha-<commit> — pin explicitly, avoid :latest
+#   RAILS_MASTER_KEY    contents of config/credentials/production.key
+#   APP_HOST            hostname used in outbound email links
+#
+# Everything else secret (Resend, OpenRouter, Cloudflare R2, secret_key_base)
+# lives in config/credentials/production.yml.enc and is unlocked by
+# RAILS_MASTER_KEY. See docs/CONFIGURATION.md.
+#
+# Images are tagged :latest on every push to master by the build workflow, so
+# this tracks the tip of master. IMPORTANT: enable "always pull image" in
+# Coolify — otherwise Docker reuses the cached :latest layer and silently keeps
+# running stale code. To roll back, temporarily replace :latest with
+# :sha-<commit>.
 #
 # Rails 8 multi-database: config/database.yml defines primary, cache and queue
-# databases. bin/docker-entrypoint runs `db:prepare` when the server starts,
-# which creates and migrates all three. The worker does not run migrations.
+# databases, each its own file under /data. bin/docker-entrypoint runs
+# `db:prepare` when the server starts, which creates and migrates all three.
+# The worker does not run migrations — it waits for web to come up first.
 
 services:
   web:
-    image: ghcr.io/mrkplt/play-by-post:${IMAGE_TAG}
+    image: ghcr.io/mrkplt/play-by-post:latest
     environment:
       RAILS_ENV: production
-      DATABASE_URL: postgres://play_by_post:${POSTGRES_PASSWORD}@postgres:5432/play_by_post_production
-      SECRET_KEY_BASE: ${SECRET_KEY_BASE}
+      # Directory holding the SQLite files; see config/database.yml.
+      DATABASE_PATH: /data
+      # Unlocks config/credentials/production.yml.enc, which holds the Resend,
+      # OpenRouter and Cloudflare R2 secrets. Without it those features fail at
+      # runtime even though the app boots. See docs/CONFIGURATION.md.
+      RAILS_MASTER_KEY: ${RAILS_MASTER_KEY}
+      APP_HOST: ${APP_HOST}
       RAILS_LOG_TO_STDOUT: "1"
       RAILS_MAX_THREADS: "5"
       # Thruster terminates HTTP on 80 inside the container.
       # Coolify/Traefik routes to it; set the domain in the Coolify UI.
-    depends_on:
-      postgres:
-        condition: service_healthy
+    volumes:
+      - dbdata:/data
     restart: unless-stopped
     mem_limit: 1g
     healthcheck:
@@ -42,36 +64,25 @@ services:
       start_period: 60s
 
   worker:
-    image: ghcr.io/mrkplt/play-by-post:${IMAGE_TAG}
+    image: ghcr.io/mrkplt/play-by-post:latest
     command: ["bundle", "exec", "rake", "solid_queue:start"]
     environment:
       RAILS_ENV: production
-      DATABASE_URL: postgres://play_by_post:${POSTGRES_PASSWORD}@postgres:5432/play_by_post_production
-      SECRET_KEY_BASE: ${SECRET_KEY_BASE}
+      DATABASE_PATH: /data
+      # Jobs do scene summaries and Active Storage processing, so the worker
+      # needs the same credentials key and host as web.
+      RAILS_MASTER_KEY: ${RAILS_MASTER_KEY}
+      APP_HOST: ${APP_HOST}
       RAILS_LOG_TO_STDOUT: "1"
+    volumes:
+      - dbdata:/data
     depends_on:
-      postgres:
-        condition: service_healthy
+      # web runs db:prepare on boot; the worker must not start against a
+      # database that does not exist yet.
       web:
-        condition: service_started
+        condition: service_healthy
     restart: unless-stopped
     mem_limit: 768m
 
-  postgres:
-    image: postgres:17-alpine
-    environment:
-      POSTGRES_USER: play_by_post
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: play_by_post_production
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U play_by_post -d play_by_post_production"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    restart: unless-stopped
-    mem_limit: 1g
-
 volumes:
-  pgdata:
+  dbdata:

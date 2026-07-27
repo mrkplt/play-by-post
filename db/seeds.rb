@@ -1,5 +1,15 @@
 # Seeds are idempotent — safe to run multiple times.
 # Creates a GM + 3 players, one game, characters, scenes, and posts.
+#
+# These are demo accounts with well-known email addresses. Sign-in is by magic
+# link with no password, so anyone who knows an address could request a link —
+# never create them in production. `db:prepare` runs seeds automatically the
+# first time it creates a database, including on a fresh production volume,
+# so this guard is what keeps that from happening.
+if Rails.env.production? && ENV["SEED_DEMO_DATA"] != "true"
+  puts "Skipping demo seeds in production (set SEED_DEMO_DATA=true to override)."
+  return
+end
 
 puts "Seeding..."
 

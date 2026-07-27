@@ -15,7 +15,7 @@ Play-by-Post TTRPG — Rails 8 app for asynchronous tabletop RPGs. GMs and playe
 | Concern | Technology |
 |---------|-----------|
 | Framework | Rails 8.1 · Ruby 3.3 |
-| Database | SQLite (dev/test) · PostgreSQL (prod) |
+| Database | SQLite everywhere · prod runs from a mounted volume |
 | Frontend | Hotwire (Turbo + Stimulus) · Importmap (no bundler) · Tailwind CSS |
 | UI | ViewComponent · Draper (presenters) · HugeIcons (`icons` gem) |
 | Auth | Devise + devise-passwordless (magic link, no passwords) |
@@ -33,7 +33,9 @@ Play-by-Post TTRPG — Rails 8 app for asynchronous tabletop RPGs. GMs and playe
 | Mutation | mutant-rspec |
 | Security | Brakeman · importmap audit |
 | Dev tools | Lookbook (component previews) · letter_opener_web |
-| Deployment | Railway.app · Docker · Kamal |
+| Deployment | Coolify (self-hosted) · Docker image built in GitHub Actions, pulled from GHCR |
+| Email / LLM / Storage | Resend · OpenRouter · Cloudflare R2 |
+| Configuration | `docs/CONFIGURATION.md` is the source of truth for all env vars and credentials |
 
 ---
 
