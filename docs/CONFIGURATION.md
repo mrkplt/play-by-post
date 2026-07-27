@@ -164,6 +164,13 @@ processing run as background jobs, so the `worker` service needs `RAILS_MASTER_K
 email flows through it. If the worker is down, jobs accumulate in the queue database
 and wait — nothing is lost, but nothing sends either.
 
+**R2 rejects the AWS SDK's default checksums.** `aws-sdk-s3` >= 1.178 adds a CRC32
+checksum to every upload, which R2 refuses alongside the `Content-MD5` Active Storage
+already sends: `InvalidRequest: You can only specify one non-default checksum at a
+time` — every upload fails. `config/storage.yml` pins
+`request_checksum_calculation: when_required` to prevent this. Do not remove it, and
+re-test uploads after any `aws-sdk-s3` upgrade.
+
 **`config/credentials/production.key` exists only on the developer machine.** It is
 untracked by design. If lost, `production.yml.enc` is unrecoverable and every secret in it
 must be reissued from Resend, Cloudflare, and OpenRouter. Back it up to a password manager.

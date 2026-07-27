@@ -20,6 +20,12 @@ cloudflare_r2:
   bucket: <%= storage[:bucket] || ENV["STORAGE_BUCKET"] %>
   endpoint: <%= storage[:endpoint] || ENV["STORAGE_ENDPOINT"] %>
   force_path_style: true
+  # aws-sdk-s3 >= 1.178 sends a CRC32 checksum on every upload by default. R2
+  # rejects that alongside the Content-MD5 Active Storage already sends, with
+  # "You can only specify one non-default checksum at a time", so every upload
+  # fails. `when_required` keeps checksums only where the API mandates them.
+  request_checksum_calculation: when_required
+  response_checksum_validation: when_required
 
 # Remember not to checkin your GCS keyfile to a repository
 # google:
