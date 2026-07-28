@@ -11,6 +11,10 @@ gem "icons"
 gem "resend"
 gem "aws-sdk-s3", require: false, group: :production
 
+# Error tracking — reports to GlitchTip (self-hosted, Sentry-protocol compatible)
+gem "sentry-ruby"
+gem "sentry-rails"
+
 # SQLite everywhere, including production. In production the database files live
 # on a mounted volume shared by the web and worker containers — see
 # docker-compose.coolify.yml and docs/CONFIGURATION.md.

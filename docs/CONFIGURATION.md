@@ -99,6 +99,7 @@ Safe defaults exist; set only to override.
 | `OPENROUTER_MODEL` | `app/services/scene_summary_service.rb` | `openai/gpt-4o`. Not a secret, so env var is fine |
 | `RAILS_MAX_THREADS` | `config/database.yml:2`, `config/puma.rb:27` | `5` (DB pool) / `3` (Puma). Compose sets `5` |
 | `RAILS_LOG_LEVEL` | `config/environments/production.rb:55` | `info` |
+| `GLITCHTIP_DSN` | `config/initializers/sentry.rb:6` | unset — falls back from the `glitchtip_dsn` credential; if both are unset, error reporting is disabled entirely |
 | `RAILS_LOG_TO_STDOUT` | Rails default | Compose sets `1`; required for Coolify to capture logs |
 | `PORT` | `config/puma.rb:31` | `3000`. Thruster terminates HTTP on 80 in front of Puma |
 | `WEB_CONCURRENCY` | `config/puma.rb` | Puma worker count |
@@ -128,6 +129,7 @@ Stored in `config/credentials/production.yml.enc`. Edit with
 | `storage.endpoint` | `config/storage.yml` | Yes — `https://<account_id>.r2.cloudflarestorage.com` |
 | `storage.region` | `config/storage.yml` | Optional — defaults to `auto` |
 | `resend_inbound_domain` | `app/mailers/notification_mailer.rb:55` | Optional — falls back to `APP_HOST` |
+| `glitchtip_dsn` | `config/initializers/sentry.rb:6` | Optional — DSN for the self-hosted GlitchTip instance; falls back to `GLITCHTIP_DSN` env var; error reporting is disabled entirely if both are unset |
 | `secret_key_base` | Rails internal (no explicit read site) | Yes — this is the live source. Do **not** also set the `SECRET_KEY_BASE` env var; it would override this, and divergence invalidates all signed cookies |
 
 Verified present as of this writing: `openrouter_api_key`, `resend_api_key`,
@@ -184,6 +186,7 @@ must be reissued from Resend, Cloudflare, and OpenRouter. Back it up to a passwo
 | Resend | Outbound email and inbound webhook | API key, webhook signing secret (`whsec_…`), inbound domain |
 | Cloudflare R2 | Active Storage via the S3 API | Access key ID, secret access key, bucket, account endpoint |
 | OpenRouter | Inbound email parsing and scene summaries | API key |
+| GlitchTip | Error tracking (Sentry-protocol compatible, self-hosted on the Coolify instance) | DSN |
 
 **No Redis, no database server.** The database is SQLite on the `dbdata` volume,
 mounted at `/data` in both the web and worker containers. Rails 8 runs SQLite in

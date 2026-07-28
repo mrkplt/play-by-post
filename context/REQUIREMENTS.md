@@ -334,6 +334,14 @@ For technology stack, domain model, codebase conventions, and development workfl
 
 ---
 
+## Error Tracking
+
+- Unhandled exceptions are reported via the Sentry SDK (`sentry-ruby`, `sentry-rails`) to a self-hosted GlitchTip instance, which speaks the Sentry protocol
+- Reporting is DSN-gated: `Sentry.init` only runs when `glitchtip_dsn` (credentials) or `GLITCHTIP_DSN` (env var fallback) is present, so local development and CI run without a configured DSN and without reporting errors anywhere
+- No PII scrubbing beyond the SDK's defaults is configured; do not log request bodies or user-supplied content into breadcrumbs
+
+---
+
 ## Design Assumptions
 
 - All players are adults who are not cheating; no roll resolution system is needed
