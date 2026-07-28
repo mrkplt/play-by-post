@@ -379,6 +379,9 @@ class Scene
     sig { params(args: T.untyped, blk: T.untyped).returns(::Scene) }
     def build_parent_scene(*args, &blk); end
 
+    sig { params(args: T.untyped, blk: T.untyped).returns(::SceneSummary) }
+    def build_scene_summary(*args, &blk); end
+
     sig { returns(T::Array[T.untyped]) }
     def child_scene_ids; end
 
@@ -416,6 +419,12 @@ class Scene
 
     sig { params(args: T.untyped, blk: T.untyped).returns(::Scene) }
     def create_parent_scene!(*args, &blk); end
+
+    sig { params(args: T.untyped, blk: T.untyped).returns(::SceneSummary) }
+    def create_scene_summary(*args, &blk); end
+
+    sig { params(args: T.untyped, blk: T.untyped).returns(::SceneSummary) }
+    def create_scene_summary!(*args, &blk); end
 
     sig { returns(T.nilable(::Game)) }
     def game; end
@@ -479,6 +488,9 @@ class Scene
     sig { returns(T.nilable(::Scene)) }
     def reload_parent_scene; end
 
+    sig { returns(T.nilable(::SceneSummary)) }
+    def reload_scene_summary; end
+
     sig { void }
     def reset_game; end
 
@@ -490,6 +502,9 @@ class Scene
 
     sig { void }
     def reset_parent_scene; end
+
+    sig { void }
+    def reset_scene_summary; end
 
     sig { returns(T::Array[T.untyped]) }
     def scene_participant_ids; end
@@ -504,6 +519,12 @@ class Scene
 
     sig { params(value: T::Enumerable[::SceneParticipant]).void }
     def scene_participants=(value); end
+
+    sig { returns(T.nilable(::SceneSummary)) }
+    def scene_summary; end
+
+    sig { params(value: T.nilable(::SceneSummary)).void }
+    def scene_summary=(value); end
 
     sig { returns(T::Array[T.untyped]) }
     def user_ids; end

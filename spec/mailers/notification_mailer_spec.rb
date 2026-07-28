@@ -18,6 +18,16 @@ RSpec.describe NotificationMailer, type: :mailer do
       expect(mail.reply_to.first).to match(/scene-#{scene.id}@/)
     end
 
+    it "uses resend_inbound_domain credential as the reply-to domain when configured" do
+      allow(Rails.application.credentials).to receive(:resend_inbound_domain).and_return("reply.example.com")
+      expect(NotificationMailer.new_scene(scene, recipient).reply_to.first).to eq("scene-#{scene.id}@reply.example.com")
+    end
+
+    it "falls back to the mailer host when resend_inbound_domain is not set" do
+      allow(Rails.application.credentials).to receive(:resend_inbound_domain).and_return(nil)
+      expect(mail.reply_to.first).to match(/@example\.com\z/)
+    end
+
     it "renders the body with a link" do
       expect(mail.body.encoded).to include("scene")
     end

@@ -141,14 +141,16 @@ jobs:
         env:
           RAILS_ENV: test
         run: |
-          bundle exec mutant run --usage opensource --jobs 8 --since origin/master 2>&1 | tee tmp/mutant_output.txt || true
+          bundle exec mutant run --usage opensource --jobs 4 --since origin/master 2>&1 | tee tmp/mutant_output.txt || true
           bin/quality-metrics --record-mutant tmp/mutant_output.txt
 
       - name: Upload mutant results
         uses: actions/upload-artifact@v7
         with:
           name: mutant-data
-          path: tmp/mutant_result.json
+          path: |
+            tmp/mutant_result.json
+            tmp/mutant_output.txt
 
   quality_gate:
     runs-on: ubuntu-latest

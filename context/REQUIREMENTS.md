@@ -200,12 +200,20 @@ For technology stack, domain model, codebase conventions, and development workfl
 5. **Magic link login** — sent on sign-in request
 
 ### Reply-by-Email
-- Notification emails include a reply-to address encoding the scene ID
+- Notification emails include a reply-to address encoding the scene ID (`scene-{id}@{resend_inbound_domain}`)
 - Replying to a notification email creates a post in that scene
 - The sender must be a current scene participant; invalid senders are rejected
 - Email content is cleaned before posting (quoted text, signatures, and formatting artifacts are stripped)
 - Email-to-post always creates in-character posts; OOC posting requires the web interface
 - If content cleaning fails after retries, the post is created from the raw email body and the sender is notified
+- Inbound emails are delivered to the app via a Resend webhook (POST `/rails/action_mailbox/resend/inbound_emails`); the webhook is authenticated using HMAC-SHA256 signature verification (Svix standard) against the `resend_webhook_secret` credential
+- Content cleaning uses OpenRouter (model `google/gemma-3-4b-it:free`); each successful API call writes an `AiUsage` record capturing `feature`, `model_used`, `input_tokens`, and `output_tokens`; a failed write is logged and does not interrupt email processing
+
+### AI Usage Tracking
+- Every successful AI API call writes an append-only `AiUsage` record: `feature` (string identifier, e.g. `"inbound_email"`), `model_used`, `input_tokens`, `output_tokens`, `created_at`
+- Records are never updated after creation
+- Fallback paths (no API key, network error, blank response content) do not write records
+- Cost calculation and per-user/per-game aggregation are out of scope for this table; derive from queries as needed
 
 ### Notification Preferences
 - Per-scene toggle: each participant can opt out of notifications for any scene they are in
@@ -247,6 +255,85 @@ For technology stack, domain model, codebase conventions, and development workfl
 
 ---
 
+## CSS Component Coverage
+
+- CSS styling is progressively migrated from plain ERB view templates to ViewComponent files
+- `bin/quality-metrics` tracks a `css_in_components_pct` metric: the percentage of CSS statements in ViewComponent templates (`app/components/**/*.html.erb`) versus all application view templates (`app/views/**/*.html.erb`, including mailer views — mailers can render components just as web views can); a CSS statement is either a whitespace-separated token in a `class="..."` attribute or a semicolon-separated declaration in a `style="..."` attribute
+- The metric uses a floor model — it can only improve; any decrease below the recorded baseline fails the quality gate
+- Run `bin/quality-metrics --save` after intentional migration work to advance the baseline
+- Target is 100% (all styling in components; no inline CSS in plain ERB views)
+
+---
+
+## ERB Logic in Presenters
+
+- ERB templates (both `app/views/**/*.html.erb` and `app/components/**/*.html.erb`) must stay thin; display logic belongs in presenter or component Ruby classes
+- `bin/quality-metrics --check` detects three indicator patterns that signal logic has leaked into a template:
+  - **Ternary in output tag** — `<%= expr ? val : val %>`: conditional value selection should be a presenter method; a space before `?` distinguishes the ternary operator from predicate method calls ending in `?`
+  - **Boolean OR fallback in output tag** — `<%= a || b %>`: fallback/default logic (e.g. `display_name || email`) should be a presenter method
+  - **Local variable assignment** — `<% var = value %>`: data preparation or intermediate calculations in the template should move to the component class or controller; control-flow bindings (`if`, `each do |x|`, etc.) are excluded
+- The check uses a delta model: changed ERB files must not gain logic indicators compared to `origin/master`; existing indicators are grandfathered and do not block the build
+- To reduce existing indicators, move the logic to the appropriate presenter or component method and verify the count decreases
+
+---
+
+## Presenter Method Coverage
+
+- Public instance methods explicitly declared in model files should live in presenters when their only callers are ERB view templates or mailer Ruby files
+- `bin/quality-metrics` tracks a `presenter_method_violations` count: the number of such methods found by static analysis (word-boundary search across `app/views/**/*.erb`, `app/components/**/*.erb`, and `app/mailers/**/*.rb` for call sites, with `app/models/**/*.rb` excluded as the defining files)
+- A method is a *violation* when it has at least one call site in the presentation layer and zero call sites anywhere else in the application (controllers, presenters, components Ruby classes, jobs, services, helpers, etc.)
+- The metric uses a ceiling model — the violation count can only decrease; any increase above the recorded baseline fails the quality gate
+- Run `bin/quality-metrics --save` after moving a method to a presenter to lower the baseline
+- In `--check` mode, each violation is listed with its call sites to aid remediation
+- Methods shorter than four characters are excluded to reduce false-positive matches on common short names
+- Presenters that gain new methods via this migration must be added to `.mutant.yml` under `matcher.subjects` so mutation coverage is tracked
+
+---
+
+## Baseline Integrity Gate
+
+- `quality_baseline.json` records the static thresholds that all quality checks are measured against
+- When `bin/quality-metrics --check` runs and `quality_baseline.json` has changed relative to `origin/master`, the gate verifies that every metric in the baseline only moved in the direction of improvement before running any other checks
+- "Improvement" follows each metric's model: floor metrics (`line_coverage`, `branch_coverage`, `sorbet_typed_pct`, `mutation_coverage`, `css_in_components_pct`) may only increase; ceiling metrics (`presenter_method_violations`) may only decrease
+- If any metric in the baseline file regressed, the gate fails immediately with a clear message listing each offending metric — no further checks run
+- This prevents gaming the quality pipeline by lowering baseline thresholds to make a PR pass
+
+---
+
+## AI Scene Summaries
+
+- GMs can write scene summaries manually at any time after a scene is resolved
+- If `ai_summaries_enabled` is toggled on for the game, a background job (`SceneSummaryJob`) automatically generates a summary via OpenRouter when a scene is resolved
+- The AI summary is upserted — re-resolving or re-enqueueing never creates duplicates
+- GMs can edit or delete any summary (AI-generated or hand-written)
+- Editing an AI-generated summary clears `generated_at`, `model_used`, and token counts, marking it as hand-edited
+- Private scenes are never included in the campaign log or RSS feed
+- Only resolved, non-private scenes appear in the campaign log
+- The campaign log is paginated (HTML) or limited to 20 most recent entries (RSS), ordered by `resolved_at` descending
+- The RSS feed is accessible with a per-user secret token (query param `?token=…`) or by an active game member via session
+- RSS tokens are per-user, valid across all games; users generate/rotate/revoke from their profile
+- AI provider: OpenRouter (OpenAI-compatible); configured via `OPENROUTER_API_KEY` and `OPENROUTER_MODEL` env vars
+- The service raises `SceneSummaryService::ConfigurationError` if `OPENROUTER_API_KEY` is absent
+- OOC posts are sent to the model labelled `[OOC]`; the model decides narrative relevance
+- Token counts (`input_tokens`, `output_tokens`) and `model_used` are stored on `SceneSummary`; `generated_at` non-null indicates AI-produced content
+
+### Summary status labels
+- `generated_at` present, `edited_at` nil → "AI-generated"
+- `generated_at` present, `edited_at` present → "Edited"
+- `generated_at` nil → "Hand-written"
+
+---
+
+## RSS Token Management
+
+- Each user has at most one RSS token, accessible from their profile page
+- Tokens are 64-character random hex strings
+- Users can generate a new token (or rotate an existing one) from their profile
+- Revoking a token immediately invalidates all feed URLs that use it
+- Token access is checked at request time against current active (non-banned) game membership
+
+---
+
 ## Design Assumptions
 
 - All players are adults who are not cheating; no roll resolution system is needed
@@ -254,3 +341,10 @@ For technology stack, domain model, codebase conventions, and development workfl
 - Multiple scenes can run simultaneously within a game
 - Scenes and games are associated with players (via membership), not with individual characters
 - No explicit linking of scene outcomes to character sheets is required
+
+---
+
+## View Architecture Conventions
+
+- Dead ERB partials that have been superseded by ViewComponents are deleted; do not leave both in place
+- Presenters are always instantiated in controllers, not in views; controllers wrap models in presenter instances and assign them as instance variables; views consume presenters directly and never instantiate them — this maintains a clear, consistent interface between the controller and view layers

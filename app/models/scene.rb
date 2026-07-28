@@ -15,6 +15,7 @@ class Scene < ApplicationRecord
   has_many :scene_participants, dependent: :destroy
   has_many :users, through: :scene_participants
   has_many :posts, dependent: :destroy
+  has_one :scene_summary, dependent: :destroy
 
   before_validation :default_title
 
@@ -40,11 +41,6 @@ class Scene < ApplicationRecord
     else
       posts.maximum(:created_at) || created_at
     end
-  end
-
-  sig { returns(ActiveStorage::VariantWithRecord) }
-  def banner_image
-    image.variant(resize_to_limit: [ 1200, nil ], format: :jpeg, quality: 85)
   end
 
   sig { params(user: User).returns(T::Boolean) }

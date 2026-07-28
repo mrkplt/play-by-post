@@ -28,4 +28,16 @@ RSpec.describe "Sign in", type: :feature do
     expect(page).to have_current_path(root_path)
     expect(page).to have_text(user.display_name)
   end
+
+  it "sends a magic link email to the submitted address containing a sign-in URL" do
+    user = FactoryBot.create(:user, :with_profile)
+
+    visit new_user_session_path
+    fill_in "Email address", with: user.email
+    click_on "Send sign-in link"
+
+    mail = ActionMailer::Base.deliveries.last
+    expect(mail.to).to include(user.email)
+    expect(mail.body.encoded).to match(/magic_link/)
+  end
 end

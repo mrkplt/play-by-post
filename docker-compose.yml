@@ -1,0 +1,40 @@
+services:
+  web:
+    image: ghcr.io/mrkplt/play-by-post:latest
+    environment:
+      RAILS_ENV: production
+      DATABASE_PATH: /data
+      RAILS_MASTER_KEY: ${RAILS_MASTER_KEY}
+      APP_HOST: ${APP_HOST}
+      RAILS_LOG_TO_STDOUT: "1"
+      RAILS_MAX_THREADS: "5"
+    volumes:
+      - dbdata:/data
+    restart: unless-stopped
+    mem_limit: 1g
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost/up || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+
+  worker:
+    image: ghcr.io/mrkplt/play-by-post:latest
+    command: ["bundle", "exec", "rake", "solid_queue:start"]
+    environment:
+      RAILS_ENV: production
+      DATABASE_PATH: /data
+      RAILS_MASTER_KEY: ${RAILS_MASTER_KEY}
+      APP_HOST: ${APP_HOST}
+      RAILS_LOG_TO_STDOUT: "1"
+    volumes:
+      - dbdata:/data
+    depends_on:
+      web:
+        condition: service_healthy
+    restart: unless-stopped
+    mem_limit: 768m
+
+volumes:
+  dbdata:

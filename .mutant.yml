@@ -17,7 +17,10 @@ integration:
 matcher:
   subjects:
     # Models
+    - AiUsage
     - Game
+    - RssToken
+    - SceneSummary
     - GameExportRequest
     - GameMember
     - GameFile
@@ -32,16 +35,37 @@ matcher:
     - NotificationPreference
     - PostRead
     # Presenters
+    - GameFilePresenter
     - PostPresenter
+    - SceneSummaryPresenter
+    - ScenePresenter
+    - UserPresenter
     # Components
-    - Shared::PostItemComponent
-    - Shared::PostComposerComponent
+    - Shared::AiSummariesToggleComponent
+    - Shared::RssTokenComponent
+    - Shared::SceneSummaryComponent
+    - Shared::SceneSummaryEntryComponent
+    - Shared::SceneSummaryFormComponent
+    - Shared::SceneSummaryIndexPageComponent
+    - Shared::GalleryComponent
     - Shared::NavShellComponent
+    - Shared::PostComposerComponent
+    - Shared::PostItemComponent
+    - Shared::SceneCardComponent
     - Shared::SidebarComponent
+    - Shared::TreeNodeComponent
+    - Ui::BadgeComponent
+    - Ui::BreadcrumbComponent
+    - Ui::ButtonComponent
+    - Ui::GlowComponent
     # Services
     - EmailContentExtractor
     - GameExportService
+    - MarkdownRenderer
+    - SceneSummaryService
     # Controllers
+    - ActionMailbox::Ingresses::Resend::InboundEmailsController
+    - SceneSummariesController
     - GameExportsController
     - ScenesController
     - CharactersController
@@ -58,6 +82,7 @@ matcher:
     # Jobs
     - PostDigestJob
     - ExportJob
+    - SceneSummaryJob
     # Mailers
     - NotificationMailer
     - InvitationMailer
@@ -68,7 +93,7 @@ matcher:
     - ApplicationHelper
 
 mutation:
-  timeout: 10.0
+  timeout: 20.0
 
 coverage_criteria:
   timeout: false

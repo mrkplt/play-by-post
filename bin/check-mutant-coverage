@@ -1,0 +1,96 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Checks that every concrete Ruby class under app/ is registered in
+# .mutant.yml under matcher.subjects.
+#
+# This prevents classes with tests and implementation from silently escaping
+# mutation coverage simply because they were never added to the subjects list.
+#
+# To resolve a failure, add the class to .mutant.yml under matcher.subjects
+# and write mutation tests for it.
+
+require "yaml"
+require "set"
+require "pathname"
+
+APP_DIRS = %w[
+  app/models
+  app/controllers
+  app/components
+  app/presenters
+  app/jobs
+  app/mailers
+  app/mailboxes
+  app/services
+  app/helpers
+].freeze
+
+# Files whose classes are base/abstract and never mutation-tested.
+BASE_FILENAMES = %w[
+  application_component.rb
+  application_controller.rb
+  application_job.rb
+  application_mailer.rb
+  application_mailbox.rb
+  application_record.rb
+  base_presenter.rb
+  current.rb
+].freeze
+
+# Sub-paths excluded entirely (e.g. mixins that are not independently testable).
+EXCLUDE_PATH_PATTERNS = [
+  %r{/concerns/},
+].freeze
+
+def path_to_constant(autoload_root, absolute_path)
+  Pathname.new(absolute_path)
+    .relative_path_from(Pathname.new(autoload_root))
+    .to_s
+    .delete_suffix(".rb")
+    .split("/")
+    .map { |part| part.split("_").map(&:capitalize).join }
+    .join("::")
+end
+
+root = File.expand_path("..", __dir__)
+mutant_config_path = File.join(root, ".mutant.yml")
+
+unless File.exist?(mutant_config_path)
+  warn "ERROR: .mutant.yml not found at #{mutant_config_path}"
+  exit 1
+end
+
+mutant_config = YAML.safe_load_file(mutant_config_path)
+subjects = Set.new(mutant_config.dig("matcher", "subjects") || [])
+
+missing = []
+
+APP_DIRS.each do |dir|
+  dir_path = File.join(root, dir)
+  next unless File.directory?(dir_path)
+
+  Dir.glob("#{dir_path}/**/*.rb").sort.each do |file|
+    next if BASE_FILENAMES.include?(File.basename(file))
+    next if EXCLUDE_PATH_PATTERNS.any? { |pat| file.match?(pat) }
+
+    constant = path_to_constant(dir_path, file)
+    next if subjects.include?(constant)
+
+    missing << [constant, file.delete_prefix("#{root}/")]
+  end
+end
+
+if missing.empty?
+  puts "Mutant coverage check: OK (all app/ classes are registered)"
+  exit 0
+else
+  puts "Mutant coverage check: FAIL"
+  puts "The following classes are not registered in .mutant.yml:\n\n"
+  missing.each do |constant, path|
+    puts "  #{constant.ljust(52)} #{path}"
+  end
+  puts "\nYou must add each class to matcher.subjects in .mutant.yml and write"
+  puts "mutation tests for it before this branch can be pushed."
+  exit 1
+end

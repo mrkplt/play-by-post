@@ -85,6 +85,51 @@ RSpec.describe "Player Management", type: :feature do
     end
   end
 
+  describe "pending invitations" do
+    it "shows pending invitations list" do
+      create(:invitation, game: game, email: "pending@example.com")
+
+      visit game_player_management_path(game)
+
+      expect(page).to have_text("Pending Invitations")
+      expect(page).to have_text("pending@example.com")
+    end
+
+    it "GM can cancel a pending invitation" do
+      invitation = create(:invitation, game: game, email: "todelete@example.com")
+
+      visit game_player_management_path(game)
+
+      within("tr", text: "todelete@example.com") do
+        click_on "Cancel"
+      end
+
+      expect(page).not_to have_text("todelete@example.com")
+      expect(page).to have_text("Invitation cancelled")
+      expect(Invitation.exists?(invitation.id)).to be false
+    end
+  end
+
+  describe "player status badges" do
+    it "shows Removed status for removed players" do
+      game.member_for(player).update!(status: "removed")
+
+      visit game_player_management_path(game)
+
+      within("tr[data-member-id='#{player.id}']") do
+        expect(page).to have_text("Removed")
+      end
+    end
+
+    it "banned players do not appear in the player management list" do
+      game.member_for(player).update!(status: "banned")
+
+      visit game_player_management_path(game)
+
+      expect(page).not_to have_css("tr[data-member-id='#{player.id}']")
+    end
+  end
+
   describe "banning players" do
     it "GM can ban a player" do
       visit game_player_management_path(game)

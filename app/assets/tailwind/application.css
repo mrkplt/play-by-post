@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "../../components/ui/glow_component.css";
 @import "../../components/shared/sidebar_component.css";
 @import "../../components/shared/post_item_component.css";
 @import "../../components/shared/post_composer_component.css";

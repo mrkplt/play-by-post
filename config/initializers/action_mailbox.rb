@@ -1,5 +1,4 @@
 # typed: true
 
-Rails.application.config.after_initialize do
-  Rails.application.config.action_mailbox.ingress_password = Rails.application.credentials.inbound_email_password
-end
+# No ingress_password is needed; the Resend inbound webhook is authenticated
+# via Svix HMAC-SHA256 signature verification in the ingress controller itself.

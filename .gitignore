@@ -51,6 +51,13 @@
 /coverage
 /spoom_data
 
+# Mutant run results
+/.mutant/results/
+
+# Local binstubs (generated via bundle binstubs, not committed)
+/bin/mutant
+/bin/mutant-ruby
+
 # Claude local config
 /.claude/config.json
 

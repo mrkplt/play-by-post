@@ -23,7 +23,14 @@ class EmailContentExtractor
     return @raw_body if api_key.blank?
 
     response = make_request(api_key)
-    response.dig("choices", 0, "message", "content").presence || @raw_body
+    content  = response.dig("choices", 0, "message", "content").presence
+
+    if content
+      record_usage(response)
+      content
+    else
+      @raw_body
+    end
   rescue StandardError
     @raw_body
   end
@@ -50,5 +57,18 @@ class EmailContentExtractor
     })
 
     JSON.parse(http.request(request).body)
+  end
+
+  sig { params(response: T::Hash[String, T.untyped]).void }
+  def record_usage(response)
+    usage = response["usage"] || {}
+    AiUsage.create!(
+      feature:       "inbound_email",
+      model_used:    response.fetch("model", MODEL),
+      input_tokens:  usage["prompt_tokens"],
+      output_tokens: usage["completion_tokens"]
+    )
+  rescue StandardError => e
+    Rails.logger.error("AiUsage write failed: #{e.message}")
   end
 end

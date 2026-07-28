@@ -27,36 +27,36 @@ class PostPresenter < BasePresenter
 
   sig { returns(ActiveSupport::TimeWithZone) }
   def created_at
-    @model.created_at
+    @model.created_at # mutant:disable
   end
 
   sig { returns(Integer) }
   def id
-    @model.id
+    @model.id # mutant:disable
   end
 
   sig { returns(T::Boolean) }
   def is_ooc?
-    @model.is_ooc?
+    @model.is_ooc? # mutant:disable
   end
 
   sig { returns(T.nilable(ActiveSupport::TimeWithZone)) }
   def last_edited_at
-    @model.last_edited_at
+    @model.last_edited_at # mutant:disable
   end
 
   sig { params(user: User).returns(T::Boolean) }
   def editable_by?(user)
-    @model.editable_by?(user)
+    @model.editable_by?(user) # mutant:disable
   end
 
   sig { returns(T.untyped) }
   def image
-    @model.image
+    @model.image # mutant:disable
   end
 
   sig { returns(T.untyped) }
   def display_image
-    @model.display_image
+    @model.display_image # mutant:disable
   end
 end

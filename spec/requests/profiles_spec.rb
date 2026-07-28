@@ -65,6 +65,57 @@ RSpec.describe ProfilesController, type: :request do
     end
   end
 
+  describe "POST /profile/generate_rss_token" do
+    it "creates a new token and redirects" do
+      sign_in(user)
+      expect {
+        post generate_rss_token_profile_path
+      }.to change(RssToken, :count).by(1)
+      expect(response).to redirect_to(profile_path)
+      expect(flash[:notice]).to match(/generated/i)
+    end
+
+    it "rotates an existing token" do
+      sign_in(user)
+      existing = create(:rss_token, user: user)
+      expect {
+        post generate_rss_token_profile_path
+      }.not_to change(RssToken, :count)
+      expect(RssToken.find_by(id: existing.id)).to be_nil
+      expect(user.reload.rss_token).to be_present
+    end
+
+    it "unauthenticated user is redirected" do
+      post generate_rss_token_profile_path
+      expect(response).to have_http_status(:redirect)
+    end
+  end
+
+  describe "DELETE /profile/revoke_rss_token" do
+    it "destroys an existing token and redirects" do
+      sign_in(user)
+      create(:rss_token, user: user)
+      expect {
+        delete revoke_rss_token_profile_path
+      }.to change(RssToken, :count).by(-1)
+      expect(response).to redirect_to(profile_path)
+      expect(flash[:notice]).to match(/revoked/i)
+    end
+
+    it "does nothing when no token exists" do
+      sign_in(user)
+      expect {
+        delete revoke_rss_token_profile_path
+      }.not_to change(RssToken, :count)
+      expect(response).to redirect_to(profile_path)
+    end
+
+    it "unauthenticated user is redirected" do
+      delete revoke_rss_token_profile_path
+      expect(response).to have_http_status(:redirect)
+    end
+  end
+
   describe "POST /profile/export_all" do
     around do |example|
       original_adapter = ActiveJob::Base.queue_adapter

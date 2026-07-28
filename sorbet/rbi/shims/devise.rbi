@@ -20,6 +20,9 @@ module Devise
       # so current_user is guaranteed non-nil in controller actions.
       sig { returns(User) }
       def current_user; end
+
+      sig { returns(T::Boolean) }
+      def user_signed_in?; end
     end
   end
 end

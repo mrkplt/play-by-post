@@ -1,0 +1,8 @@
+<%= render(Ui::BreadcrumbComponent.new) do %>
+  <%= link_to "Games", root_path %> &rsaquo;
+  <%= link_to @game.name, game_path(@game) %> &rsaquo;
+  <%= link_to @scene.title, game_scene_path(@game, @scene) %> &rsaquo;
+  Edit Summary
+<% end %>
+
+<%= render Shared::SceneSummaryFormComponent.new(game: @game, scene: @scene, summary: @summary) %>

@@ -10,7 +10,7 @@ class PostDigestJob
     sig { params(block: T.nilable(T.proc.params(job: PostDigestJob).void)).returns(T.any(PostDigestJob, FalseClass)) }
     def perform_later(&block); end
 
-    sig { returns(T.untyped) }
+    sig { void }
     def perform_now; end
   end
 end

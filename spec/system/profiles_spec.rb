@@ -24,6 +24,44 @@ RSpec.describe "Profiles", type: :feature do
     expect(page).to have_current_path(profile_path)
   end
 
+  describe "hide OOC preference" do
+    let(:game) { create(:game) }
+    let(:scene) { create(:scene, game: game) }
+
+    before do
+      create(:game_member, :game_master, game: game, user: user)
+      create(:scene_participant, scene: scene, user: user)
+      create(:post, :ooc, scene: scene, user: user, content: "OOC: scheduling note")
+      create(:post, scene: scene, user: user, content: "In character action.")
+    end
+
+    it "profile shows current hide OOC status" do
+      visit profile_path
+
+      expect(page).to have_xpath(
+        "//div[normalize-space()='Hide OOC Posts']/following-sibling::div[normalize-space()='No']"
+      )
+    end
+
+    it "OOC posts are hidden on scene load when hide_ooc is enabled" do
+      user.user_profile.update!(hide_ooc: true)
+
+      visit game_scene_path(game, scene)
+
+      expect(page).to have_text("In character action.")
+      expect(page).not_to have_css('[data-testid="ooc-post"]', visible: true)
+    end
+
+    it "toggling hide OOC via scene menu hides OOC posts on the page" do
+      visit game_scene_path(game, scene)
+      find("button[title='Scene actions']").click
+      click_on "Hide OOC posts"
+
+      expect(page).not_to have_css('[data-testid="ooc-post"]', visible: true)
+      expect(page).to have_text("In character action.")
+    end
+  end
+
   describe "profile show page" do
     it "shows display name and email" do
       visit profile_path

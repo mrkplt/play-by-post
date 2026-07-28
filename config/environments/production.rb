@@ -15,7 +15,16 @@ Rails.application.configure do
   # Full error reports are disabled.
   config.consider_all_requests_local = false
 
-  config.require_master_key = true
+  # Refuse to boot production without the credentials key.
+  #
+  # Exempt image builds: the Dockerfile runs `assets:precompile` with
+  # RAILS_ENV=production (so assets compile as production would) but
+  # config/credentials/*.key is gitignored and absent from the build context.
+  # SECRET_KEY_BASE_DUMMY is Rails' signal for "booting to compile assets, not
+  # to serve traffic" — it stubs secret_key_base but does not affect this
+  # setting, so gate on it explicitly. Real production boots never set it and
+  # continue to require the key.
+  config.require_master_key = ENV["SECRET_KEY_BASE_DUMMY"].blank?
 
   # Turn on fragment caching in view templates.
   config.action_controller.perform_caching = true
@@ -51,11 +60,18 @@ Rails.application.configure do
   # Don't log any deprecations.
   config.active_support.report_deprecations = false
 
-  # Replace the default in-process memory cache store with a durable alternative.
-  # config.cache_store = :mem_cache_store
+  # Durable, database-backed cache. Uses the `cache` database in
+  # config/database.yml — its own SQLite file on the mounted volume.
+  # Without connects_to, Solid Cache binds to the primary database, where
+  # solid_cache_entries does not exist and every write raises.
+  config.cache_store = :solid_cache_store
+  config.solid_cache.connects_to = { database: { writing: :cache } }
 
-  # Replace the default in-process and non-durable queuing backend for Active Job.
-  # config.active_job.queue_adapter = :resque
+  # Database-backed queue, processed by the `worker` container. Without this
+  # Active Job falls back to the :async adapter, which keeps jobs in memory
+  # inside Puma and silently drops anything still queued on deploy or restart.
+  config.active_job.queue_adapter = :solid_queue
+  config.solid_queue.connects_to = { database: { writing: :queue } }
 
   # Ignore bad email addresses and do not raise email delivery errors.
   # Set this to true and configure the email server for immediate delivery to raise delivery errors.
@@ -63,11 +79,7 @@ Rails.application.configure do
 
   # Set host to be used by links generated in mailer templates.
   config.action_mailer.default_url_options = { host: ENV.fetch("APP_HOST") { ENV.fetch("RAILWAY_PUBLIC_DOMAIN", "example.com") } }
-  config.action_mailer.delivery_method = :mailgun
-  config.action_mailer.mailgun_settings = {
-    api_key: Rails.application.credentials.mailgun_api_key,
-    domain: Rails.application.credentials.mailgun_domain
-  }
+  config.action_mailer.delivery_method = :resend
 
   # Specify outgoing SMTP server. Remember to add smtp/* credentials via rails credentials:edit.
   # config.action_mailer.smtp_settings = {

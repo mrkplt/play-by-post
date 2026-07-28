@@ -53,4 +53,47 @@ RSpec.describe SceneMailbox, type: :mailbox do
 
     expect(inbound.bounced?).to be true
   end
+
+  it "creates the post with is_ooc set to false" do
+    create(:scene_participant, scene: scene, user: user)
+
+    receive_inbound_email_from_mail(
+      from: user.email,
+      to: "scene-#{scene.id}@inbound.example.com",
+      subject: "Re: Scene",
+      body: "An in-character action"
+    )
+
+    expect(scene.posts.last.is_ooc).to be false
+  end
+
+  it "passes the email body through EmailContentExtractor and saves the extracted content" do
+    create(:scene_participant, scene: scene, user: user)
+    allow_any_instance_of(EmailContentExtractor).to receive(:extract).and_return("Extracted reply text")
+
+    receive_inbound_email_from_mail(
+      from: user.email,
+      to: "scene-#{scene.id}@inbound.example.com",
+      subject: "Re: Scene",
+      body: "Extracted reply text\n\n> Previous message that should be stripped"
+    )
+
+    expect(scene.posts.last.content).to eq("Extracted reply text")
+  end
+
+  it "creates the post from the full raw body when the email extractor falls back" do
+    create(:scene_participant, scene: scene, user: user)
+    body_with_quoted_text = "My reply here\n\n> Quoted content that would normally be stripped"
+
+    # In the test environment no OpenRouter API key is configured, so EmailContentExtractor
+    # returns the raw body unchanged. Verify the post preserves the complete raw body.
+    receive_inbound_email_from_mail(
+      from: user.email,
+      to: "scene-#{scene.id}@inbound.example.com",
+      subject: "Re: Scene",
+      body: body_with_quoted_text
+    )
+
+    expect(scene.posts.last.content).to include("> Quoted content that would normally be stripped")
+  end
 end

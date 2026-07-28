@@ -10,6 +10,7 @@ class CharacterVersionsController < ApplicationController
 
   sig { void }
   def show
+    @editor = UserPresenter.new(@version.edited_by)
   end
 
   private

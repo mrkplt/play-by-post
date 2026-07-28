@@ -77,6 +77,57 @@ RSpec.describe CharactersController, type: :request do
       get game_character_path(game, character)
       expect(response).to have_http_status(:ok)
     end
+
+    it "shows player email prefix when user has no display name" do
+      player_no_name = create(:user)
+      create(:game_member, game: game, user: player_no_name)
+      char = create(:character, game: game, user: player_no_name)
+      sign_in(gm)
+      get game_character_path(game, char)
+      expect(response.body).to include(player_no_name.email.split("@").first)
+    end
+
+    it "shows player display name when set" do
+      player.user_profile.update!(display_name: "Elrond Half-Elven")
+      char = create(:character, game: game, user: player)
+      sign_in(gm)
+      get game_character_path(game, char)
+      expect(response.body).to include("Elrond Half-Elven")
+    end
+
+    it "shows version editor display name in version history" do
+      char = create(:character, game: game, user: player)
+      player.user_profile.update!(display_name: "Bilbo Baggins")
+      char.character_versions.create!(content: "v1 content", edited_by: player)
+      sign_in(gm)
+      get game_character_path(game, char)
+      expect(response.body).to include("Bilbo Baggins")
+    end
+
+    it "shows version editor email prefix when editor has no display name" do
+      char = create(:character, game: game, user: player)
+      nameless = create(:user)
+      create(:game_member, game: game, user: nameless)
+      char.character_versions.create!(content: "v2 content", edited_by: nameless)
+      sign_in(gm)
+      get game_character_path(game, char)
+      expect(response.body).to include(nameless.email.split("@").first)
+    end
+
+    it "shows versions in reverse chronological order" do
+      char = create(:character, game: game, user: player)
+      editor_old = create(:user, :with_profile)
+      editor_old.user_profile.update!(display_name: "Early Editor Aardvark")
+      create(:game_member, game: game, user: editor_old)
+      editor_new = create(:user, :with_profile)
+      editor_new.user_profile.update!(display_name: "Recent Editor Zebra")
+      create(:game_member, game: game, user: editor_new)
+      char.character_versions.create!(content: "v1", edited_by: editor_old, created_at: 2.days.ago)
+      char.character_versions.create!(content: "v2", edited_by: editor_new, created_at: 1.day.ago)
+      sign_in(gm)
+      get game_character_path(game, char)
+      expect(response.body.index("Recent Editor Zebra")).to be < response.body.index("Early Editor Aardvark")
+    end
   end
 
   describe "GET /games/:game_id/characters/:id/edit" do

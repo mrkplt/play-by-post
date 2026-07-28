@@ -1,0 +1,16 @@
+.git
+.github
+.gitignore
+log/*
+tmp/*
+storage/*
+spec/
+tests/
+sorbet/
+node_modules/
+.bundle
+.env*
+README*
+*.md
+app/assets/builds/*
+public/assets

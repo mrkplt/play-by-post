@@ -38,6 +38,19 @@ class ProfilesController < ApplicationController
   end
 
   sig { void }
+  def generate_rss_token
+    current_user.rss_token&.destroy
+    current_user.create_rss_token!
+    redirect_to profile_path, notice: "RSS token generated."
+  end
+
+  sig { void }
+  def revoke_rss_token
+    current_user.rss_token&.destroy
+    redirect_to profile_path, notice: "RSS token revoked."
+  end
+
+  sig { void }
   def export_all
     if GameExportRequest.rate_limited?(current_user, nil)
       redirect_to profile_path, alert: "An all-games export was requested recently. Please wait 24 hours before requesting another."

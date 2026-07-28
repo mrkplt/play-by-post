@@ -37,7 +37,7 @@
       <tbody>
         <% @members.each do |member| %>
           <tr data-member-id="<%= member.user_id %>">
-            <td><%= member.user.display_name || "—" %></td>
+            <td><%= @member_display_names[member.user_id] %></td>
             <td><%= member.user.email %></td>
             <td><span class="inline-block px-2 py-0.5 rounded-full text-xs font-semibold <%= member.game_master? ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-800' %>"><%= member.game_master? ? "GM" : "Player" %></span></td>
             <td><span class="inline-block px-2 py-0.5 rounded-full text-xs font-semibold <%= member.removed? ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800' %>"><%= member.status.capitalize %></span></td>

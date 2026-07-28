@@ -2,13 +2,3 @@
   /* Prevent oversized images in post content */
   .post-content img { @apply max-w-full h-auto block; }
 }
-
-@keyframes unread-aura-fade {
-  0%, 25% { box-shadow: 0 0 14px 4px rgba(202, 138, 4, 0.45); }
-  100% { box-shadow: none; }
-}
-
-.post-unread-aura {
-  animation: unread-aura-fade 4s ease-out forwards;
-  border-radius: 4px;
-}

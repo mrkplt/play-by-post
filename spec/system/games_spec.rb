@@ -21,6 +21,15 @@ RSpec.describe "Games", type: :feature do
       expect(page).to have_text("GM")
     end
 
+    it "lists games in alphabetical order" do
+      create(:game_member, :game_master, game: create(:game, name: "Zebra Campaign"), user: gm)
+      create(:game_member, :game_master, game: create(:game, name: "Alpha Campaign"), user: gm)
+
+      visit root_path
+
+      expect(page.body).to match(/Alpha Campaign.*Zebra Campaign/m)
+    end
+
     it "shows active scene count" do
       game = create(:game)
       create(:game_member, :game_master, game: game, user: gm)
@@ -43,6 +52,72 @@ RSpec.describe "Games", type: :feature do
       expect(page).to have_link("Aldric the Bold")
     end
 
+    it "shows +N more indicator when player has multiple characters, linking the first" do
+      game = create(:game)
+      create(:game_member, :game_master, game: game, user: gm)
+      create(:character, game: game, user: gm, name: "Aldric the Bold")
+      create(:character, game: game, user: gm, name: "Mira Ashveil")
+      create(:character, game: game, user: gm, name: "Torven Coldstone")
+
+      visit root_path
+
+      expect(page).to have_link("Aldric the Bold")
+      expect(page).to have_text("+2 more")
+      expect(page).not_to have_link("Mira Ashveil")
+      expect(page).not_to have_link("Torven Coldstone")
+    end
+
+    it "does not show +N more indicator when player has only one character" do
+      game = create(:game)
+      create(:game_member, :game_master, game: game, user: gm)
+      create(:character, game: game, user: gm, name: "Aldric the Bold")
+
+      visit root_path
+
+      expect(page).not_to have_text("more")
+    end
+
+    it "does not count other players' characters toward the +N more indicator" do
+      game = create(:game)
+      create(:game_member, :game_master, game: game, user: gm)
+      create(:character, game: game, user: gm, name: "Aldric the Bold")
+      other_player = create(:user, :with_profile)
+      create(:game_member, game: game, user: other_player)
+      create(:character, game: game, user: other_player, name: "Mira Ashveil")
+      create(:character, game: game, user: other_player, name: "Torven Coldstone")
+
+      visit root_path
+
+      expect(page).to have_link("Aldric the Bold")
+      expect(page).not_to have_text("more")
+    end
+
+    it "does not count archived characters toward the primary character or +N more" do
+      game = create(:game)
+      create(:game_member, :game_master, game: game, user: gm)
+      create(:character, game: game, user: gm, name: "Active Knight")
+      create(:character, :archived, game: game, user: gm, name: "Retired Mage")
+
+      visit root_path
+
+      expect(page).to have_link("Active Knight")
+      expect(page).not_to have_text("more")
+    end
+
+    it "shows new activity indicator only for the game with new posts" do
+      active_game = create(:game, name: "Active Game")
+      quiet_game = create(:game, name: "Quiet Game")
+      create(:game_member, :game_master, game: active_game, user: gm)
+      create(:game_member, :game_master, game: quiet_game, user: gm)
+      scene = create(:scene, game: active_game)
+      gm.user_profile.update!(last_login_at: 1.hour.ago)
+      create(:post, scene: scene, user: gm)
+
+      visit root_path
+
+      expect(page).to have_css("[data-new-activity='true']", count: 1)
+    end
+
     it "shows 'Former' badge for removed players" do
       game = create(:game)
       create(:game_member, game: game, user: gm, role: "player", status: "removed")
@@ -59,6 +134,30 @@ RSpec.describe "Games", type: :feature do
       visit root_path
 
       expect(page).not_to have_text("Hidden Game")
+    end
+
+    it "shows new activity indicator when posts exist since last login" do
+      game = create(:game)
+      create(:game_member, :game_master, game: game, user: gm)
+      scene = create(:scene, game: game)
+      gm.user_profile.update!(last_login_at: 1.hour.ago)
+      create(:post, scene: scene, user: gm)
+
+      visit root_path
+
+      expect(page).to have_css("[data-new-activity='true']")
+    end
+
+    it "does not show new activity indicator when no posts since last login" do
+      game = create(:game)
+      create(:game_member, :game_master, game: game, user: gm)
+      scene = create(:scene, game: game)
+      gm.user_profile.update!(last_login_at: 1.hour.ago)
+      create(:post, scene: scene, user: gm, created_at: 2.hours.ago)
+
+      visit root_path
+
+      expect(page).not_to have_css("[data-new-activity='true']")
     end
   end
 
@@ -156,6 +255,35 @@ RSpec.describe "Games", type: :feature do
       visit game_path(game)
 
       expect(page).to have_link("All Scenes")
+    end
+
+    it "shows Manage Files link for GM" do
+      visit game_path(game)
+
+      expect(page).to have_link("Manage Files", href: game_game_files_path(game))
+    end
+
+    it "shows View Files link for non-GM players" do
+      player = create(:user, :with_profile)
+      create(:game_member, game: game, user: player)
+
+      sign_in_as(player)
+      visit game_path(game)
+
+      expect(page).to have_link("View Files", href: game_game_files_path(game))
+      expect(page).not_to have_link("Manage Files")
+    end
+
+    it "removed member can access game files" do
+      player = create(:user, :with_profile)
+      create(:game_member, game: game, user: player, status: "removed")
+
+      sign_in_as(player)
+      visit game_game_files_path(game)
+
+      expect(page).to have_current_path(game_game_files_path(game))
+      expect(page).to have_css("h1", text: "Game Files")
+      expect(page).to have_text("No files uploaded yet.")
     end
 
     it "shows parent and children links on active scene cards" do
