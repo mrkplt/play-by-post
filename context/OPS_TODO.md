@@ -17,8 +17,14 @@ worth prioritizing first are **network security** and **service restoration**
 - Pi server rebuild documentation (so the host itself can be rebuilt from scratch)
 
 ## Telemetry
-- App-layer telemetry: error tracking, performance monitoring (Rails)
+- App-layer telemetry: error tracking (in progress — Sentry SDK reporting to self-hosted GlitchTip), performance monitoring (Rails)
 - Infrastructure-layer telemetry: container/host performance monitoring
+
+## Known bugs
+- Fix the file upload issue
+
+## Deployment
+- Automatic deploys of master (webhook into Coolify, probably)
 
 ## Monitoring / alerting
 - Alerting/on-call routing (someone gets notified when errors spike or jobs back up)
