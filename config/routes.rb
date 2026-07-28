@@ -1,4 +1,6 @@
 Rails.application.routes.draw do
+  get "/debug-glitchtip" => proc { raise "Test GlitchTip error!" } if Rails.env.production?
+
   # Resend inbound email webhook (custom ActionMailbox ingress)
   post "/mail/inbound" =>
     "action_mailbox/ingresses/resend/inbound_emails#create",
