@@ -24,11 +24,16 @@ worth prioritizing first are **network security** and **service restoration**
 - Fix the file upload issue
 
 ## Deployment
-- Automatic deploys of master — implemented: the build-image workflow POSTs to the app's
-  `/webhooks/deploy` relay after pushing the image, which forwards to Coolify over the
-  internal network (Coolify is not internet-exposed). Requires the `DEPLOY_WEBHOOK_URL` /
+- Automatic deploys of master — **done, verified end to end**: the build-image workflow POSTs
+  to the app's `/webhooks/deploy` relay after pushing the image, which forwards to Coolify over
+  the internal network (Coolify is not internet-exposed). Requires the `DEPLOY_WEBHOOK_URL` /
   `DEPLOY_WEBHOOK_SECRET` GitHub secrets and the `deploy_webhook_secret` / `coolify.*`
   credentials — see `docs/CONFIGURATION.md`.
+  - Gotcha: the compose services set `pull_policy: always` so Coolify pulls the fresh image
+    rather than redeploying a cached `:latest` (ref coolify discussion #7498).
+  - Gotcha: Coolify's API allowlist matches the proxy's source IP, not the caller's; scope
+    "Allowed IPs for API Access" to the coolify-proxy subnets (`172.20.0.0/16`), not the
+    worker's own `/24`.
 
 ## Monitoring / alerting
 - Alerting/on-call routing (someone gets notified when errors spike or jobs back up)
