@@ -17,7 +17,7 @@ worth prioritizing first are **network security** and **service restoration**
 - Pi server rebuild documentation (so the host itself can be rebuilt from scratch)
 
 ## Telemetry
-- App-layer telemetry: error tracking (in progress — Sentry SDK reporting to self-hosted GlitchTip), performance monitoring (Rails)
+- App-layer telemetry: error tracking (**done** — Sentry SDK reporting to self-hosted GlitchTip, verified live), performance monitoring (Rails) still todo
 - Infrastructure-layer telemetry: container/host performance monitoring
 
 ## Known bugs
@@ -44,5 +44,6 @@ worth prioritizing first are **network security** and **service restoration**
 - Disk space alerting (SQLite volume, R2 usage)
 
 ## Issue / product tracking
-- Bug tracking / error tracking
+- Bug tracking / error tracking — runtime error capture done (GlitchTip); issue triage /
+  product-side bug management still todo
 - Feature tracking / product management

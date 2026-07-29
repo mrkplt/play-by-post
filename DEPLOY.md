@@ -1,7 +1,7 @@
 # Deploying play-by-post to PiHost (Coolify)
 
-Target: **PiHost** — Raspberry Pi 4, 8GB, aarch64, Debian 13, at `10.0.0.192`.
-Coolify dashboard: `http://10.0.0.192:8000` (LAN only, plain HTTP).
+Target: **PiHost** — Raspberry Pi 4, 8GB, aarch64, Debian 13, at `10.0.0.233`.
+Coolify dashboard: `http://10.0.0.233:8000` (LAN only, plain HTTP).
 
 Model: **build off-device, pull on the Pi.** Images are built by GitHub Actions and
 pulled from GHCR. Do not build on the Pi — its USB-SATA bridge runs without command
@@ -67,7 +67,11 @@ Verify on the Pi:
 ## 3. Deploy
 
 Coolify -> **Project -> + Add Resource -> Docker Compose Empty**, then paste the contents
-of `docker-compose.coolify.yml`.
+of `docker-compose.yml`.
+
+Both services set **`pull_policy: always`**. Without it, Coolify redeploys the cached
+`:latest` layer instead of pulling the new digest from GHCR, so a "successful" deploy can
+silently run stale code (ref: coollabsio/coolify discussion #7498).
 
 Set the environment variables in the Coolify UI — never commit them.
 
@@ -114,12 +118,65 @@ in `config/routes.rb`). `curl` is installed in the image's base stage, so the ch
 Assign a domain/host in the Coolify UI for the `web` service. Traefik routes to it by
 hostname on ports 80/443.
 
-**Let's Encrypt HTTP-01 cannot validate against a private address** (10.0.0.192) — the CA
+**Let's Encrypt HTTP-01 cannot validate against a private address** (10.0.0.233) — the CA
 cannot reach the host from the internet. Options:
 
 - **LAN-only over HTTP** — simplest, fits the current posture.
 - **DNS-01 challenge** against a domain you control — real certificates, no inbound ports.
 - **Tunnel** (e.g. Cloudflare Tunnel) if the app genuinely needs public reachability.
+
+---
+
+## 6. Automatic deploys of master
+
+After the image is built and pushed, `build-image.yml` triggers a redeploy automatically —
+no manual step per merge. The chain:
+
+    merge to master
+      -> build-image.yml builds + pushes image to GHCR
+      -> workflow POSTs to https://<app-host>/webhooks/deploy  (Authorization: Bearer <secret>)
+      -> Webhooks::DeployController verifies the secret, enqueues CoolifyDeployJob (202)
+      -> CoolifyDeployJob GETs Coolify's API deploy URL over the internal network
+      -> Coolify pulls the fresh image (pull_policy: always) and swaps containers
+
+**Why the relay exists:** Coolify's API is not exposed to the internet, so GitHub cannot call
+it directly. The app *is* internet-facing and can reach Coolify internally, so it relays the
+trigger. Source: `app/controllers/webhooks/deploy_controller.rb`, `app/jobs/coolify_deploy_job.rb`.
+
+**Required configuration** (all in [docs/CONFIGURATION.md](docs/CONFIGURATION.md)):
+
+- GitHub Actions secrets: `DEPLOY_WEBHOOK_URL` (the `/webhooks/deploy` URL) and
+  `DEPLOY_WEBHOOK_SECRET`.
+- Rails credentials: `deploy_webhook_secret` (must equal the GitHub secret, byte-for-byte),
+  and `coolify.deploy_url` / `coolify.token`.
+
+**Gotchas learned in setup:**
+
+- The shared secret lives in two systems (GitHub secret + Rails credential) and must match
+  exactly. A trailing newline (from `echo` instead of `printf %s`) causes a silent 401. The
+  workflow's `Trigger deploy` step returning 401 means secret mismatch; 404 means the running
+  app predates the relay route (stale image — see `pull_policy` above).
+- Coolify's **API allowlist matches the proxy's source IP, not the caller's.** Scope
+  "Allowed IPs for API Access" to the coolify-proxy subnets (`172.20.0.0/16`), not the
+  worker container's own `/24`, or every call 403s with "You are not allowed to access the API".
+- Changing `deploy_webhook_secret` requires a redeploy to take effect (credentials are read at
+  boot), and that first redeploy must be triggered manually — the deploy that ships the new
+  secret can't be triggered by it.
+
+---
+
+## 7. Error tracking (GlitchTip)
+
+Unhandled exceptions report to a self-hosted **GlitchTip** instance (Sentry-protocol
+compatible) via the `sentry-ruby` / `sentry-rails` SDKs. Initialization is DSN-gated in
+`config/initializers/sentry.rb`: it only runs when `glitchtip.dsn` (credentials) or
+`GLITCHTIP_DSN` (env fallback) is set, so local dev and CI report nothing.
+
+Verify it initialized in the running container:
+
+    docker compose -p <service> exec web \
+      sh -c 'RAILS_ENV=production bin/rails runner "puts Sentry.initialized?"'
+    # true = SDK live and reporting to the configured DSN
 
 ---
 
