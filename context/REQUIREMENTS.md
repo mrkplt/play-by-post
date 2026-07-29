@@ -334,6 +334,21 @@ For technology stack, domain model, codebase conventions, and development workfl
 
 ---
 
+## Error Tracking
+
+- Unhandled exceptions are reported via the Sentry SDK (`sentry-ruby`, `sentry-rails`) to a self-hosted GlitchTip instance, which speaks the Sentry protocol
+- Reporting is DSN-gated: `Sentry.init` only runs when `glitchtip.dsn` (credentials) or `GLITCHTIP_DSN` (env var fallback) is present, so local development and CI run without a configured DSN and without reporting errors anywhere
+- No PII scrubbing beyond the SDK's defaults is configured; do not log request bodies or user-supplied content into breadcrumbs
+
+## Deployment
+
+- After the GitHub Actions build workflow pushes a new production image (on `master`), it POSTs to the app's deploy relay endpoint (`POST /webhooks/deploy`) with a shared bearer secret
+- The relay exists because Coolify (the deployment orchestrator) is not exposed to the internet; the app is internet-facing and can reach Coolify over the internal network, so it forwards the deploy trigger on GitHub's behalf
+- The relay is authenticated by a constant-time comparison against the `deploy_webhook_secret` credential; a missing or mismatched secret is rejected with 401 and no relay occurs
+- On a valid request the relay enqueues a background job that issues an authorized GET to Coolify's per-app deploy URL (`coolify.deploy_url` / `coolify.token` credentials); the HTTP response to GitHub is immediate (`202 Accepted`) and the forward is retried on failure
+
+---
+
 ## Design Assumptions
 
 - All players are adults who are not cheating; no roll resolution system is needed

@@ -65,6 +65,7 @@ matcher:
     - SceneSummaryService
     # Controllers
     - ActionMailbox::Ingresses::Resend::InboundEmailsController
+    - Webhooks::DeployController
     - SceneSummariesController
     - GameExportsController
     - ScenesController
@@ -83,6 +84,7 @@ matcher:
     - PostDigestJob
     - ExportJob
     - SceneSummaryJob
+    - CoolifyDeployJob
     # Mailers
     - NotificationMailer
     - InvitationMailer

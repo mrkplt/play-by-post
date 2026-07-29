@@ -17,8 +17,18 @@ worth prioritizing first are **network security** and **service restoration**
 - Pi server rebuild documentation (so the host itself can be rebuilt from scratch)
 
 ## Telemetry
-- App-layer telemetry: error tracking, performance monitoring (Rails)
+- App-layer telemetry: error tracking (in progress — Sentry SDK reporting to self-hosted GlitchTip), performance monitoring (Rails)
 - Infrastructure-layer telemetry: container/host performance monitoring
+
+## Known bugs
+- Fix the file upload issue
+
+## Deployment
+- Automatic deploys of master — implemented: the build-image workflow POSTs to the app's
+  `/webhooks/deploy` relay after pushing the image, which forwards to Coolify over the
+  internal network (Coolify is not internet-exposed). Requires the `DEPLOY_WEBHOOK_URL` /
+  `DEPLOY_WEBHOOK_SECRET` GitHub secrets and the `deploy_webhook_secret` / `coolify.*`
+  credentials — see `docs/CONFIGURATION.md`.
 
 ## Monitoring / alerting
 - Alerting/on-call routing (someone gets notified when errors spike or jobs back up)
