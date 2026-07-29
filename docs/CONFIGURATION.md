@@ -129,7 +129,10 @@ Stored in `config/credentials/production.yml.enc`. Edit with
 | `storage.endpoint` | `config/storage.yml` | Yes — `https://<account_id>.r2.cloudflarestorage.com` |
 | `storage.region` | `config/storage.yml` | Optional — defaults to `auto` |
 | `resend_inbound_domain` | `app/mailers/notification_mailer.rb:55` | Optional — falls back to `APP_HOST` |
-| `glitchtip_dsn` | `config/initializers/sentry.rb:6` | Optional — DSN for the self-hosted GlitchTip instance; falls back to `GLITCHTIP_DSN` env var; error reporting is disabled entirely if both are unset |
+| `glitchtip.dsn` | `config/initializers/sentry.rb:6` | Optional — DSN for the self-hosted GlitchTip instance; falls back to `GLITCHTIP_DSN` env var; error reporting is disabled entirely if both are unset |
+| `deploy_webhook_secret` | `app/controllers/webhooks/deploy_controller.rb` | Optional — shared bearer secret GitHub Actions sends to `POST /webhooks/deploy`; must equal the `DEPLOY_WEBHOOK_SECRET` GitHub Actions secret. If unset, the deploy relay rejects all callers |
+| `coolify.deploy_url` | `app/jobs/coolify_deploy_job.rb` | Optional — Coolify's per-app deploy URL (`http://<internal-host>:<port>/api/v1/deploy?uuid=<app-uuid>`), reachable over the internal network. Required for auto-deploy |
+| `coolify.token` | `app/jobs/coolify_deploy_job.rb` | Optional — Coolify API token sent as `Authorization: Bearer`. Required for auto-deploy |
 | `secret_key_base` | Rails internal (no explicit read site) | Yes — this is the live source. Do **not** also set the `SECRET_KEY_BASE` env var; it would override this, and divergence invalidates all signed cookies |
 
 Verified present as of this writing: `openrouter_api_key`, `resend_api_key`,

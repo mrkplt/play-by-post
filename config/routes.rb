@@ -6,6 +6,11 @@ Rails.application.routes.draw do
     "action_mailbox/ingresses/resend/inbound_emails#create",
     as: :rails_resend_inbound_emails
 
+  # Deploy relay: GitHub Actions posts here after a new image is built; we
+  # forward the trigger to Coolify over the internal network (Coolify is not
+  # exposed to the internet).
+  post "/webhooks/deploy" => "webhooks/deploy#create", as: :deploy_webhook
+
   if Rails.env.development?
     mount LetterOpenerWeb::Engine, at: "/letter_opener"
   end

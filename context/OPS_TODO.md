@@ -24,7 +24,11 @@ worth prioritizing first are **network security** and **service restoration**
 - Fix the file upload issue
 
 ## Deployment
-- Automatic deploys of master (webhook into Coolify, probably)
+- Automatic deploys of master — implemented: the build-image workflow POSTs to the app's
+  `/webhooks/deploy` relay after pushing the image, which forwards to Coolify over the
+  internal network (Coolify is not internet-exposed). Requires the `DEPLOY_WEBHOOK_URL` /
+  `DEPLOY_WEBHOOK_SECRET` GitHub secrets and the `deploy_webhook_secret` / `coolify.*`
+  credentials — see `docs/CONFIGURATION.md`.
 
 ## Monitoring / alerting
 - Alerting/on-call routing (someone gets notified when errors spike or jobs back up)
