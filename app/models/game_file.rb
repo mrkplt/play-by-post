@@ -21,7 +21,7 @@ class GameFile < ApplicationRecord
 
   IMAGE_TYPES = T.let(%w[image/jpeg image/png image/gif image/webp].freeze, T::Array[String])
 
-  MAX_SIZE = T.let(25.megabytes, Integer)
+  MAX_SIZE = T.let(50.megabytes, Integer)
 
   validates :filename, presence: true
   validate :acceptable_file
@@ -59,7 +59,7 @@ class GameFile < ApplicationRecord
     return unless file.attached?
 
     unless T.must(file.byte_size) <= MAX_SIZE
-      errors.add(:file, "must be less than 25MB")
+      errors.add(:file, "must be less than 50MB")
     end
 
     unless ALLOWED_TYPES.include?(file.content_type)

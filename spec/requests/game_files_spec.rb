@@ -61,6 +61,30 @@ RSpec.describe GameFilesController, type: :request do
       end
     end
 
+    context "with a file over the size limit" do
+      it "renders the validation error instead of failing silently" do
+        sign_in(gm)
+        uploaded = Rack::Test::UploadedFile.new(StringIO.new("x" * (51 * 1024 * 1024)), "application/pdf", original_filename: "big.pdf")
+        expect {
+          post game_game_files_path(game), params: { game_file: { file: uploaded } }
+        }.not_to change(GameFile, :count)
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(response.body).to include("must be less than 50MB")
+      end
+    end
+
+    context "with a disallowed file type" do
+      it "renders the validation error instead of failing silently" do
+        sign_in(gm)
+        uploaded = Rack::Test::UploadedFile.new(StringIO.new("content"), "application/zip", original_filename: "archive.zip")
+        expect {
+          post game_game_files_path(game), params: { game_file: { file: uploaded } }
+        }.not_to change(GameFile, :count)
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(response.body).to include("must be a PDF, Word doc, text, markdown, or image file")
+      end
+    end
+
     context "as player" do
       it "is redirected with alert" do
         sign_in(player)

@@ -11,6 +11,7 @@ class GameFilesController < ApplicationController
   def index
     @game_files = @game.game_files.includes(file_attachment: :blob).order(created_at: :desc)
     @is_gm = @game.game_master?(current_user)
+    @game_file = @game.game_files.new
   end
 
   sig { void }

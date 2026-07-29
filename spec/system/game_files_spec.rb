@@ -218,6 +218,22 @@ RSpec.describe "Game Files", type: :feature do
 
       expect(page).to have_text("Please select a file to upload.")
     end
+
+    it "shows a validation error when the file exceeds the size limit" do
+      sign_in_as(gm)
+      oversized_path = Rails.root.join("tmp/oversized_upload_test.pdf")
+      File.binwrite(oversized_path, "x" * (51 * 1024 * 1024))
+
+      begin
+        visit game_game_files_path(game)
+        attach_file "game_file[file]", oversized_path
+        click_on "Upload"
+
+        expect(page).to have_text("must be less than 50MB")
+      ensure
+        File.delete(oversized_path) if File.exist?(oversized_path)
+      end
+    end
   end
 
   describe "banned user access" do
