@@ -33,7 +33,10 @@ Email previews are available at `http://localhost:3000/letter_opener` in develop
 ## Deployment
 
 Self-hosted on Coolify. Images are built by GitHub Actions and pulled from GHCR;
-builds do not run on the deployment host. See [DEPLOY.md](DEPLOY.md) for the runbook.
+builds do not run on the deployment host. Merges to `master` **deploy automatically**:
+the build workflow triggers a redeploy through an in-app webhook relay (Coolify is not
+internet-exposed). Errors report to a self-hosted GlitchTip instance. See
+[DEPLOY.md](DEPLOY.md) for the runbook.
 
 **Production stack:**
 - Build: Docker, via `.github/workflows/build-image.yml` (arm64)
