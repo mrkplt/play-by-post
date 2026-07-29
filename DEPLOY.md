@@ -213,11 +213,3 @@ file, and copying `production.sqlite3` without its `-wal` sidecar loses recent c
 
 Only the primary database needs backing up. `production_cache` and `production_queue`
 are regenerable — Solid Cache holds nothing durable and the queue is transient.
-
----
-
-## Known issue in the existing CI
-
-`.github/workflows/ci.yml` triggers on `push: branches: [ main ]`, but this repository's
-default branch is **`master`**. Those jobs will not run on pushes to master. The new
-`build-image.yml` targets `master` deliberately. Worth reconciling `ci.yml` separately.
