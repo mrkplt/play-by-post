@@ -1,6 +1,7 @@
 services:
   web:
     image: ghcr.io/mrkplt/play-by-post:latest
+    pull_policy: always
     environment:
       RAILS_ENV: production
       DATABASE_PATH: /data
@@ -21,6 +22,7 @@ services:
 
   worker:
     image: ghcr.io/mrkplt/play-by-post:latest
+    pull_policy: always
     command: ["bundle", "exec", "rake", "solid_queue:start"]
     environment:
       RAILS_ENV: production
