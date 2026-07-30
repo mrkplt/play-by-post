@@ -318,15 +318,23 @@ RSpec.describe "Scenes", type: :feature do
       expect(page).to have_text("Notifications muted")
       expect(NotificationPreference.muted?(scene, gm)).to be true
 
+      # Inspect enqueued jobs under the :test adapter, then restore the global
+      # adapter — leaving it as :test leaks into later feature specs and turns
+      # their deliver_later mail (e.g. the magic-link sign-in) into no-ops.
+      original_adapter = ActiveJob::Base.queue_adapter
       ActiveJob::Base.queue_adapter = :test
-      PostDigestJob.perform_now
+      begin
+        PostDigestJob.perform_now
 
-      digest_jobs = ActiveJob::Base.queue_adapter.enqueued_jobs.select { |j|
-        j["job_class"] == "ActionMailer::MailDeliveryJob" &&
-        j["arguments"]&.first == "NotificationMailer" &&
-        j["arguments"]&.second == "post_digest"
-      }
-      expect(digest_jobs).to be_empty
+        digest_jobs = ActiveJob::Base.queue_adapter.enqueued_jobs.select { |j|
+          j["job_class"] == "ActionMailer::MailDeliveryJob" &&
+          j["arguments"]&.first == "NotificationMailer" &&
+          j["arguments"]&.second == "post_digest"
+        }
+        expect(digest_jobs).to be_empty
+      ensure
+        ActiveJob::Base.queue_adapter = original_adapter
+      end
     end
   end
 
