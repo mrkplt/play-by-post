@@ -254,8 +254,14 @@ For technology stack, domain model, codebase conventions, and development workfl
 - "Export All Games" on the profile page bundles all non-banned games into a single zip archive
 - Exports are assembled in the background via `ExportJob` (Solid Queue)
 - Delivery: a 7-day signed Active Storage download link sent via `ExportMailer#export_ready`
-- Rate limit: one export request per user per game per 24-hour rolling window; all-games has its own independent 24-hour limit
-- Rate limits are tracked in the `game_export_requests` table
+- Requests are unlimited and the export button is always enabled; processing is throttled to at most one successful export per user per game per 24-hour rolling window (all-games is tracked independently as `game: nil`)
+- The **receipt** — a `GameExportRequest` with `succeeded_at` set within the 24-hour window and its archive still attached — is the source of truth for the flow:
+  - If a valid receipt exists, a new request **resends** that export's existing download link (`ExportDelivery.email_download_link`) instead of reprocessing
+  - If not, a new export is processed; on success `succeeded_at` is stamped (the receipt is written). A failed export leaves `succeeded_at` nil, so it never blocks or throttles a retry
+  - Receipt expiry (24 hours) governs: after the window a new request reprocesses a fresh export even if the old 7-day link is still valid
+- The game and profile pages show a passive "Last export: X ago" notice (from the receipt's `succeeded_at`) beside the always-enabled button; nothing is shown when no valid receipt exists
+- Clicking the export button submits immediately — no confirmation dialog — and the acknowledgment ("Export requested — you'll receive an email shortly.") renders on screen via the standard flash notice; delivery-window and link-expiry details are shown as static helper text next to the button instead
+- `succeeded_at` is indexed `(game_id, succeeded_at desc)` so the receipt lookup is a fast indexed read
 - If a job fails, `ExportMailer#export_failed` is sent and the job re-raises (for retry by Solid Queue)
 - Archive structure: `{game-slug}-export-{date}/README.md`, `files_manifest.md`, `scenes/NNN-{slug}/scene_info.md`, `scenes/NNN-{slug}/posts.md`, `characters/{slug}/current_sheet.md`, `characters/{slug}/version_history/vNNN-{date}.md`
 - Drafts are excluded from posts; binary game files are excluded (a manifest is included)

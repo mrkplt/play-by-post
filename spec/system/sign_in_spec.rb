@@ -36,7 +36,18 @@ RSpec.describe "Sign in", type: :feature do
     fill_in "Email address", with: user.email
     click_on "Send sign-in link"
 
-    mail = ActionMailer::Base.deliveries.last
+    # The magic link is delivered via deliver_later; in a feature spec the job
+    # runs in the Puma server thread, so the delivery can land just after the
+    # click returns. Wait for it rather than reading deliveries once.
+    mail = nil
+    Timeout.timeout(Capybara.default_max_wait_time) do
+      loop do
+        mail = ActionMailer::Base.deliveries.find { |m| m.to.include?(user.email) }
+        break if mail
+        sleep 0.05
+      end
+    end
+
     expect(mail.to).to include(user.email)
     expect(mail.body.encoded).to match(/magic_link/)
   end

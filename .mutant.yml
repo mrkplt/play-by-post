@@ -61,6 +61,7 @@ matcher:
     - Ui::GlowComponent
     # Services
     - AttachmentUploader
+    - ExportDelivery
     - EmailContentExtractor
     - GameExportService
     - MarkdownRenderer
