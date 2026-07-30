@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+#
+# Centralized docs-only check for CI. Exits 0 (true) when every file changed vs
+# the base is documentation — *.md, *.txt, or anything under context/ — and
+# exits 1 (false) otherwise. This is the single source of truth for the
+# docs-only short-circuit; CI wraps its checks with bin/ci-run, which calls this.
+#
+# Base ref:
+#   - Pull request: origin/$GITHUB_BASE_REF (the target branch)
+#   - Push:         $GITHUB_EVENT_BEFORE (the previous tip)
+#   - Local:        origin/master
+#
+# Fails OPEN: if the base can't be resolved or the diff can't be computed, it
+# reports NOT docs-only (exit 1), so real work is never skipped by accident.
+
+set -euo pipefail
+
+if [[ "${GITHUB_EVENT_NAME:-}" == "pull_request" && -n "${GITHUB_BASE_REF:-}" ]]; then
+  git fetch --no-tags --depth=1 origin "$GITHUB_BASE_REF" >/dev/null 2>&1 || true
+  base="origin/${GITHUB_BASE_REF}"
+elif [[ -n "${GITHUB_EVENT_BEFORE:-}" ]]; then
+  base="${GITHUB_EVENT_BEFORE}"
+else
+  base="origin/master"
+fi
+
+# Fail open: no resolvable base → treat as "not docs-only" so CI runs.
+if [[ -z "$base" ]] || ! git rev-parse --verify --quiet "$base" >/dev/null 2>&1; then
+  echo "docs-only: base '$base' not resolvable — treating as code change." >&2
+  exit 1
+fi
+
+changed="$(git diff --name-only "${base}...HEAD" 2>/dev/null || true)"
+
+# No changes vs base → nothing to skip for; treat as code (fail open).
+if [[ -z "$changed" ]]; then
+  echo "docs-only: no diff vs '$base' — treating as code change." >&2
+  exit 1
+fi
+
+# Any path that is NOT *.md, *.txt, or under context/ makes this a code change.
+if grep -qvE '(\.md$|\.txt$|^context/)' <<<"$changed"; then
+  exit 1
+fi
+
+echo "docs-only: every changed file is documentation." >&2
+exit 0
