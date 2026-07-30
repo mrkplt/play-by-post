@@ -31,4 +31,5 @@ Posts form the narrative thread within a scene. They support markdown, images, O
 
 ### File & Image Constraints
 - Post and scene images: JPG, PNG, GIF, WEBP -- 10 MB limit
-- Game files: PDF, DOC, DOCX, TXT, MD, JPG, PNG, GIF, WEBP -- 25 MB limit
+- Game files: PDF, DOC, DOCX, TXT, MD, JPG, PNG, GIF, WEBP -- 50 MB limit
+- Game file upload validation errors (oversized or disallowed file type) are displayed inline on the upload form
