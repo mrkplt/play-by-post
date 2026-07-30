@@ -21,12 +21,12 @@ RSpec.describe ExportJob, type: :job do
       allow(GameExportService).to receive(:new).with(user, [ game ]).and_return(service_double)
 
       archive_double = double
-      allow(archive_double).to receive(:attach)
       allow(archive_double).to receive(:blob).and_return(
         double(url: "https://example.com/archive.zip")
       )
       allow(export_request).to receive(:archive).and_return(archive_double)
       allow(GameExportRequest).to receive(:find_by).with(id: export_request.id).and_return(export_request)
+      allow(AttachmentUploader).to receive(:attach)
 
       mailer_double = double(deliver_later: true)
       expect(ExportMailer).to receive(:export_ready).with(
@@ -36,6 +36,10 @@ RSpec.describe ExportJob, type: :job do
       ).and_return(mailer_double)
 
       ExportJob.new.perform(export_request.id)
+
+      expect(AttachmentUploader).to have_received(:attach).with(
+        hash_including(kind: "export", user: user, game: game, export_scope: game.name)
+      )
     end
 
     it "attaches the archive with a slug-based filename" do
@@ -45,16 +49,17 @@ RSpec.describe ExportJob, type: :job do
 
       allow(GameExportService).to receive(:new).and_return(instance_double(GameExportService, call: "zip"))
       archive_double = double
-      blob_double = double(url: "https://example.com/x.zip")
-      allow(archive_double).to receive(:blob).and_return(blob_double)
-      allow(archive_double).to receive(:attach) do |args|
-        expect(args[:filename]).to match(/\Athe-lost-realm-export-\d{4}-\d{2}-\d{2}\.zip\z/)
-      end
+      allow(archive_double).to receive(:blob).and_return(double(url: "https://example.com/x.zip"))
       allow(request).to receive(:archive).and_return(archive_double)
       allow(GameExportRequest).to receive(:find_by).with(id: request.id).and_return(request)
       allow(ExportMailer).to receive(:export_ready).and_return(double(deliver_later: true))
+      allow(AttachmentUploader).to receive(:attach)
 
       ExportJob.new.perform(request.id)
+
+      expect(AttachmentUploader).to have_received(:attach) do |args|
+        expect(args[:original_filename]).to match(/\Athe-lost-realm-export-\d{4}-\d{2}-\d{2}\.zip\z/)
+      end
     end
 
     it "does nothing if the request record does not exist" do
@@ -88,11 +93,11 @@ RSpec.describe ExportJob, type: :job do
 
       it "exports all active and removed games, excluding banned" do
         archive_double = double
-        allow(archive_double).to receive(:attach)
         allow(archive_double).to receive(:blob).and_return(double(url: "https://example.com/all.zip"))
         allow(all_games_request).to receive(:archive).and_return(archive_double)
         allow(GameExportRequest).to receive(:find_by).with(id: all_games_request.id).and_return(all_games_request)
         allow(ExportMailer).to receive(:export_ready).and_return(double(deliver_later: true))
+        allow(AttachmentUploader).to receive(:attach)
 
         expect(GameExportService).to receive(:new) do |_user, games|
           expect(games).to include(game, game2, removed_game)
@@ -103,18 +108,21 @@ RSpec.describe ExportJob, type: :job do
         ExportJob.new.perform(all_games_request.id)
       end
 
-      it "uses all-games filename" do
+      it "uses all-games filename and scope" do
         archive_double = double
         allow(archive_double).to receive(:blob).and_return(double(url: "https://example.com/all.zip"))
-        allow(archive_double).to receive(:attach) do |args|
-          expect(args[:filename]).to match(/\Aall-games-export-\d{4}-\d{2}-\d{2}\.zip\z/)
-        end
         allow(all_games_request).to receive(:archive).and_return(archive_double)
         allow(GameExportRequest).to receive(:find_by).with(id: all_games_request.id).and_return(all_games_request)
         allow(GameExportService).to receive(:new).and_return(instance_double(GameExportService, call: "zip"))
         allow(ExportMailer).to receive(:export_ready).and_return(double(deliver_later: true))
+        allow(AttachmentUploader).to receive(:attach)
 
         ExportJob.new.perform(all_games_request.id)
+
+        expect(AttachmentUploader).to have_received(:attach) do |args|
+          expect(args[:original_filename]).to match(/\Aall-games-export-\d{4}-\d{2}-\d{2}\.zip\z/)
+          expect(args[:export_scope]).to eq("all-games")
+        end
       end
     end
   end

@@ -22,7 +22,14 @@ class GameFilesController < ApplicationController
     end
 
     @game_file = @game.game_files.new(filename: uploaded_file.original_filename)
-    @game_file.file.attach(uploaded_file)
+    AttachmentUploader.attach(
+      attachment: @game_file.file,
+      attachable: uploaded_file,
+      kind: "game_file",
+      user: current_user,
+      game: @game,
+      original_filename: uploaded_file.original_filename
+    )
 
     if @game_file.save
       redirect_to game_game_files_path(@game), notice: "File uploaded."

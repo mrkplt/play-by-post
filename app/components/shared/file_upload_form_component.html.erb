@@ -1,0 +1,18 @@
+<div class="bg-white border border-slate-200 rounded-lg p-5 mb-4">
+  <h3 class="mt-0">Upload File</h3>
+  <% if error? %>
+    <p class="px-4 py-3 rounded mb-4 text-sm bg-red-50 text-red-800"><%= error_message %></p>
+  <% end %>
+  <%= form_with url: upload_url, multipart: true,
+                data: { controller: "file-size", file_size_max_bytes_value: max_bytes } do |f| %>
+    <div class="mb-4">
+      <label class="block mb-1 text-sm font-medium text-slate-700">File</label>
+      <input type="file" name="game_file[file]" accept=".pdf,.doc,.docx,.txt,.md,.jpg,.jpeg,.png,.gif,.webp"
+             data-file-size-target="input" data-action="change->file-size#check"
+             class="block max-w-md text-sm text-slate-700 border border-slate-300 rounded px-3 py-2 cursor-pointer bg-white file:mr-3 file:py-1 file:px-3 file:rounded file:border-0 file:text-sm file:font-medium file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200">
+      <p class="text-xs text-slate-400 mt-1 mb-0">PDF, Word, text, markdown, or image. Max <%= max_megabytes %>MB.</p>
+      <p data-file-size-target="warning" class="hidden text-sm text-red-800 mt-2 mb-0" role="alert"></p>
+    </div>
+    <%= f.submit "Upload", data: { file_size_target: "submit" }, class: "px-5 py-2 bg-slate-500 text-white rounded text-base cursor-pointer hover:bg-slate-600 inline-block no-underline disabled:opacity-50 disabled:cursor-not-allowed" %>
+  <% end %>
+</div>

@@ -33,6 +33,7 @@ class ScenesController < ApplicationController
   sig { void }
   def create
     @scene = @game.scenes.new(scene_params)
+    attach_image(@scene)
 
     if @scene.save
       add_participants
@@ -203,6 +204,21 @@ class ScenesController < ApplicationController
 
   sig { returns(ActionController::Parameters) }
   def scene_params
-    params.require(:scene).permit(:title, :private, :parent_scene_id, :image)
+    params.require(:scene).permit(:title, :private, :parent_scene_id)
+  end
+
+  sig { params(scene: Scene).void }
+  def attach_image(scene)
+    image = params.dig(:scene, :image)
+    return unless image.respond_to?(:original_filename)
+
+    AttachmentUploader.attach(
+      attachment: scene.image,
+      attachable: image,
+      kind: "scene_image",
+      user: current_user,
+      game: @game,
+      original_filename: image.original_filename
+    )
   end
 end

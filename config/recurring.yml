@@ -3,3 +3,7 @@ production:
     class: PostDigestJob
     schedule: "0 8 * * *"  # Daily at 8am UTC
     queue: default
+  export_cleanup:
+    class: ExportCleanupJob
+    schedule: "0 4 * * *"  # Daily at 4am UTC
+    queue: default

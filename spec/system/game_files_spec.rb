@@ -218,6 +218,25 @@ RSpec.describe "Game Files", type: :feature do
 
       expect(page).to have_text("Please select a file to upload.")
     end
+
+    it "warns client-side and disables submit when the file is over the size limit" do
+      oversized = Tempfile.new([ "oversized", ".pdf" ])
+      oversized.write("x" * (GameFile::MAX_SIZE + 1024))
+      oversized.flush
+
+      begin
+        sign_in_as(gm)
+        visit game_game_files_path(game)
+
+        attach_file "game_file[file]", oversized.path
+
+        expect(page).to have_text("over the 50 MB limit")
+        expect(page).to have_button("Upload", disabled: true)
+      ensure
+        oversized.close
+        oversized.unlink
+      end
+    end
   end
 
   describe "banned user access" do
