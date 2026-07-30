@@ -93,7 +93,7 @@ class GamesController < ApplicationController
     @characters = @game.characters.active.visible_to(current_user, @game).includes(:user).order(:name)
     @character_owner_names = @characters.each_with_object({}) { |c, h| h[c.id] = UserPresenter.new(c.user).display_name_or_email }
     @game_files = @game.game_files.includes(file_attachment: :blob).order(created_at: :desc)
-    @export_rate_limited = GameExportRequest.rate_limited?(current_user, @game)
+    @export_receipt = GameExportRequest.valid_receipt_for(current_user, @game)
   end
 
   sig { void }

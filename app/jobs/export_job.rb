@@ -36,12 +36,12 @@ class ExportJob < ApplicationJob
       export_scope: export_scope(game)
     )
 
-    download_url = request.archive.blob.url(
-      expires_in: 7.days,
-      disposition: :attachment
-    )
+    # Record the receipt only after a successful attach: this is what gates
+    # resend-vs-reprocess and drives the "last export" display. A failed export
+    # leaves succeeded_at nil, so it never blocks a retry.
+    request.mark_succeeded!
 
-    T.unsafe(ExportMailer).export_ready(user, download_url: download_url, game: game).deliver_later
+    ExportDelivery.email_download_link(request)
   rescue StandardError => e
     Rails.logger.error("ExportJob failed for request #{request_id}: #{e.message}")
     failed_request = GameExportRequest.find_by(id: request_id)

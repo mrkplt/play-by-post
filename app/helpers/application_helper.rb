@@ -1,6 +1,8 @@
 # typed: true
 
 module ApplicationHelper
+  extend T::Sig
+
   def icon(name, library: Icons.config.default_library, **html_options)
     icon = Icons::Icon.new(name: name, library: library, arguments: html_options)
     svg = icon.svg
@@ -19,5 +21,11 @@ module ApplicationHelper
 
   def render_markdown(text)
     MarkdownRenderer.render(text)
+  end
+
+  # Passive "last export" text shown beside the (always-enabled) export button.
+  sig { params(receipt: GameExportRequest).returns(String) }
+  def last_export_notice(receipt)
+    "Last export: #{T.unsafe(self).time_ago_in_words(T.must(receipt.succeeded_at))} ago"
   end
 end

@@ -139,16 +139,31 @@ RSpec.describe ProfilesController, type: :request do
       expect(request.game).to be_nil
     end
 
-    it "blocks a second all-games export within 24 hours" do
+    it "resends the existing link instead of reprocessing when a valid all-games receipt exists" do
+      sign_in(user)
+      receipt = create(:game_export_request, :all_games, user: user, succeeded_at: 1.hour.ago)
+      receipt.archive.attach(io: StringIO.new("zip"), filename: "all.zip", content_type: "application/zip")
+
+      expect {
+        post export_all_profile_path
+      }.to have_enqueued_job(ActionMailer::MailDeliveryJob)
+      expect {
+        post export_all_profile_path
+      }.not_to have_enqueued_job(ExportJob)
+      expect(GameExportRequest.where(game: nil).count).to eq(1)
+
+      expect(response).to redirect_to(profile_path)
+      expect(flash[:notice]).to match(/export requested/i)
+    end
+
+    it "processes a new all-games export when a recent request never succeeded" do
       sign_in(user)
       create(:game_export_request, :all_games, :recent, user: user)
 
       expect {
         post export_all_profile_path
-      }.not_to change(GameExportRequest, :count)
-
-      expect(response).to redirect_to(profile_path)
-      expect(flash[:alert]).to match(/24 hours/i)
+      }.to change(GameExportRequest, :count).by(1)
+        .and have_enqueued_job(ExportJob)
     end
 
     it "unauthenticated user is redirected" do
