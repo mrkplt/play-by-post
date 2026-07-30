@@ -145,6 +145,23 @@ RSpec.describe AttachmentUploader do
 
       expect(variant.key).to start_with("variants/")
     end
+
+    it "prefixes extracted PDF preview image keys with previews/" do
+      game_file = game.game_files.new(filename: "rules.pdf")
+      described_class.attach(
+        attachment: game_file.file,
+        attachable: {
+          io: File.open(Rails.root.join("spec/fixtures/files/test_document.pdf")),
+          filename: "rules.pdf", content_type: "application/pdf"
+        },
+        kind: "game_file", user: user, game: game, original_filename: "rules.pdf"
+      )
+      game_file.save!
+
+      game_file.file.preview(resize_to_limit: [ 50, 50 ]).processed
+
+      expect(game_file.file.preview_image.key).to start_with("previews/")
+    end
   end
 
   describe ".normalize" do
