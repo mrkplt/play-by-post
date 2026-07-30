@@ -189,17 +189,41 @@ jobs:
       - name: Run quality gate
         run: bin/quality-metrics --check
 
-  # Build and deploy only after the full CI suite passes, and only for master
-  # pushes and version tags — never for pull requests or other branches.
+  # Build-verification. Runs in PARALLEL with the gate jobs, on every event
+  # (pull requests included), so a broken Dockerfile / assets:precompile is
+  # caught before merge — not only after a master push. It never pushes an
+  # image; publishing is the separate `publish` job below.
   #
-  # Builds a linux/arm64 production image and pushes it to GHCR.
-  # arm64 is required: the deployment target is a Raspberry Pi 4 (aarch64).
-  # An amd64-only image will not run there.
-  #
+  # Builds a linux/arm64 production image (arm64 is required: the deploy target
+  # is a Raspberry Pi 4 / aarch64; an amd64-only image will not run there).
   # Uses ubuntu-24.04-arm runners for native builds — no QEMU emulation.
   build:
     runs-on: ubuntu-24.04-arm
-    needs: [scan_ruby, scan_js, lint, typecheck, test, mutation, quality_gate]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build image (no push)
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          platforms: linux/arm64
+          push: false
+          # Warm the shared cache from master pushes only, so PR builds don't
+          # thrash it; every build reads from it.
+          cache-from: type=gha
+          cache-to: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/master') && 'type=gha,mode=max' || '' }}
+
+  # Publish + deploy. Only after EVERY gate and the build have passed, and only
+  # for master pushes / version tags — never for pull requests. Reuses the gha
+  # cache warmed by `build`, so this rebuild is fast.
+  publish:
+    runs-on: ubuntu-24.04-arm
+    needs: [scan_ruby, scan_js, lint, typecheck, test, mutation, quality_gate, build]
     if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/v'))
 
     permissions:
