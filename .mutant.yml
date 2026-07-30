@@ -47,6 +47,7 @@ matcher:
     - Shared::SceneSummaryEntryComponent
     - Shared::SceneSummaryFormComponent
     - Shared::SceneSummaryIndexPageComponent
+    - Shared::FileUploadFormComponent
     - Shared::GalleryComponent
     - Shared::NavShellComponent
     - Shared::PostComposerComponent

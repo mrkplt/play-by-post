@@ -138,7 +138,8 @@ For technology stack, domain model, codebase conventions, and development workfl
 
 ### File & Image Constraints
 - Post and scene images: JPG, PNG, GIF, WEBP — 10 MB limit
-- Game files: PDF, DOC, DOCX, TXT, MD, JPG, PNG, GIF, WEBP — 25 MB limit
+- Game files: PDF, DOC, DOCX, TXT, MD, JPG, PNG, GIF, WEBP — 50 MB limit
+- When a game file upload is rejected (too large, wrong type, etc.), the upload form redisplays with the validation error shown to the GM
 
 ---
 

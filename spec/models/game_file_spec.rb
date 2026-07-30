@@ -13,16 +13,16 @@ RSpec.describe GameFile, type: :model do
       expect(game_file).to be_valid
     end
 
-    it "rejects files over 25MB" do
+    it "rejects files over 50MB" do
       game_file = build(:game_file)
-      game_file.file.attach(io: StringIO.new("x" * (26 * 1024 * 1024)), filename: "big.pdf", content_type: "application/pdf")
+      game_file.file.attach(io: StringIO.new("x" * (GameFile::MAX_SIZE + 1)), filename: "big.pdf", content_type: "application/pdf")
       expect(game_file).not_to be_valid
-      expect(game_file.errors[:file]).to include("must be less than 25MB")
+      expect(game_file.errors[:file]).to include("must be less than 50MB")
     end
 
-    it "allows a file exactly 25MB" do
+    it "allows a file exactly 50MB" do
       game_file = build(:game_file)
-      game_file.file.attach(io: StringIO.new("x" * 25.megabytes), filename: "exact.pdf", content_type: "application/pdf")
+      game_file.file.attach(io: StringIO.new("x" * GameFile::MAX_SIZE), filename: "exact.pdf", content_type: "application/pdf")
       expect(game_file).to be_valid
     end
 
