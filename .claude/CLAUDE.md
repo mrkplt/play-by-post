@@ -162,6 +162,50 @@ Enforced by `bin/quality-metrics --check` against `quality_baseline.json`:
 
 **Updating the baseline:** After an intentional quality improvement run `bin/quality-metrics --save`.
 
+### Quality tooling: field notes
+
+Hard-won specifics for actually clearing the gates. Read this before touching upload/attachment code, controllers, or anything that trips mutation.
+
+**Running the tools (the sequence that matches CI):**
+- Tests + coverage must run *before* `--check`; SimpleCov writes `coverage/`. A **mutation run overwrites nothing useful for line coverage** — if you run `mutant` last, re-run `bundle exec rspec` before `bin/quality-metrics --check` or every changed file reports `0.0%` line coverage (false failure).
+- Mutation for CI/gate: `bundle exec mutant run --usage opensource --jobs 4 --since origin/master > tmp/mutant_output.txt 2>&1` then `bin/quality-metrics --record-mutant tmp/mutant_output.txt` then `bin/quality-metrics --check`. CI runs the mutation step with `|| true`, so alive mutants don't fail the build directly — the **`mutation_coverage` floor (currently 83.66) in `--check` is what blocks**.
+- The pre-push hook (`.git/hooks/pre-push` → `bin/pre-push`) runs the *entire* pipeline incl. mutation, so `git push` legitimately takes several minutes. Run it backgrounded; it is not hung.
+- `mutant` runs with `--jobs > 1` against SQLite can emit spurious `SQLite3::BusyException: database is locked` "neutral" failures. Re-run single-job (`--jobs 1 <Subject>`) to confirm a mutant is genuinely alive before chasing it.
+
+**ERB gate (bites every view edit):**
+- Inline Tailwind in a `.erb` **fails** the CSS-statements check. Move markup into a `Shared::*`/`Ui::*` ViewComponent (CSS is allowed/tracked there). RuboCop does not lint `.erb`, so `bin/rubocop <file.erb>` reports false syntax "offenses" — ignore; the real gate is `bin/quality-metrics`.
+- `||` fallbacks, ternaries, and local assigns in ERB **output tags** fail the ERB-logic check. Extract to a presenter/component Ruby method (e.g. `error_message` returning `a || b`).
+
+**Mutation blast radius (a feature, not a trap):**
+- `--since origin/master` pulls **every mutation of every subject in a file you touched** into scope — including pre-existing gaps. Adding a one-line method to `PostsController`/`ScenesController` surfaced their legacy coverage (74% / 65%) and it counted against the aggregate. **This is good:** it exposes untested code exactly when you are in a position to test it, and every file dragged in makes the whole system more reliable. Make the edit the task needs and **write tests to lift the whole subject above the floor** — do not shy away from a necessary change, minimize touched files to duck the gate, or contort the code to keep a file out of scope. Lifting those two controllers to 92% / 95% was the point, not a cost. **Always add a new class to `.mutant.yml` first** or it is silently unmeasured.
+
+**Killing mutants with tests — patterns that worked here:**
+- *Read the `evil:` diff* in the mutant output to see the exact mutation; that tells you what assertion is missing.
+- **Comparison / boundary** (`..` vs `...`, `<=` vs `<`): add a test at the *exact* cutoff. E.g. a record at `7.days.ago` must be deleted (kills `...`), one at `7.days.ago + 1.second` must survive.
+- **Delegation with derived args** (a job/controller calling `Service.attach(kind:, user:, …)`): `allow(Service).to receive(:attach)` then `expect(...).to have_received(:attach).with(hash_including(...))` or a block asserting specific keys. Kills argument-construction mutants *and* dodges the Sorbet-double problem below.
+- **`.compact` / nil-omission:** assert both that a provided optional key is present *and* `contain_exactly(...)` for the all-nil case.
+- **String vs Time:** ActiveSupport's `Time#==` coerces strings, so `expect(x).to eq("…Z")` does **not** catch a dropped `.iso8601`. Assert the class too: `be_a(String).and eq("…Z")`.
+- **Redundancy is a real finding:** a `nil`-replacement mutant surviving a whole line often means the line is redundant. Here `request.archive.purge if attached?` was redundant because `has_one_attached` defaults to `dependent: :purge_later` — deleting the line (relying on `destroy`) both simplified the code and killed the mutant.
+- **Equivalent mutants** (`Time.current.utc` when app TZ is already UTC; `is_a?(Hash)` vs `instance_of?(Hash)`; stripping a pure `T.must` Sorbet assertion) cannot be killed without contrived input. Leave them if the aggregate stays above floor; this codebase kills via tests rather than `# mutant:disable`, so only disable as a last resort with justification.
+
+**Sorbet + sorbet-runtime + specs:**
+- `sig`-typed methods **reject RSpec doubles at runtime** (`TypeError: expected X got RSpec::Mocks::Double`). Type params that receive mocks (attachments, services) as `T.untyped`, or stub at the collaborator boundary.
+- New gem ⇒ `bundle exec tapioca gem <name>` for its RBI (Timecop needed this). **Tapioca may also delete unrelated RBIs** as it reconciles the gem set — `git checkout --` those back and keep only the intended new RBI.
+- `config/initializers/*` doing metaprogramming (`prepend`, `class_eval`) are `# typed: false` and are **not** gate-checked for sigil/coverage — the safe home for framework patches.
+
+**The gates do NOT run `assets:precompile` — the Docker build does, and it's a different boot context.** Every CI gate (rspec, mutation, sorbet, brakeman) runs in `test`/dev with credentials present. The `build` job runs `SECRET_KEY_BASE_DUMMY=1 rails assets:precompile` in an image with **no master key**, so `Rails.application.credentials` is empty and any config that resolves the R2/S3 service gets a **nil bucket** → `aws-sdk-s3` aborts with `ArgumentError: missing required option :name`. A `config.to_prepare` block that references `ActiveStorage::VariantWithRecord` (or otherwise touches the storage service) runs during precompile and triggers exactly this — passing all gates but breaking master's container build. Guard such boot-time AS/service code with `unless ENV["SECRET_KEY_BASE_DUMMY"]`, and before merging attachment/initializer changes sanity-check locally: `mv config/credentials/production.{key,yml.enc} /tmp/ && SECRET_KEY_BASE_DUMMY=1 RAILS_ENV=production bin/rails assets:precompile` (must exit 0; then move them back).
+
+**Libraries / techniques established:**
+- **Time-travel in specs: `Timecop`** (`Timecop.freeze do … end`), in the `:test` group. Do **not** use `ActiveSupport::Testing::TimeHelpers` — it is not mixed in (`freeze_time`/`travel_to` are undefined). Test env uses the `:inline` ActiveJob adapter, so `:purge_later` and other `perform_later` calls run synchronously.
+- **Active Storage — prefer public API over patching `Blob`:** `attach`'s documented `key:` argument controls the storage folder/prefix but is only forwarded on the **Hash/io** attachable branch (not `UploadedFile`). To set key + custom metadata uniformly, build the blob with `ActiveStorage::Blob.create_and_upload!(key:, io:, filename:, content_type:, metadata: { custom: {...} })` then `attach(blob)`. `custom_metadata` lives at `blob.metadata[:custom]` and the S3 service maps it to `x-amz-meta-*`. For `VariantWithRecord` thumbnails (no controller in the path), the variant image is attached from a Hash, so merge a `key:` into that Hash via a small `prepend` on `create_or_find_record` — no `Blob#key` override needed. R2 has **no object tagging** and lifecycle rules filter by **prefix + age only**, so custom metadata is for legibility, not automation.
+
+**CI/CD topology — build-verify runs on PRs; publish/deploy is master-only:**
+- The **`build`** job builds the linux/arm64 image **on every event including PRs, in parallel with the gates, with `push: false`** — so a broken Dockerfile / `assets:precompile` is caught **before merge**. It publishes nothing.
+- The separate **`publish`** job (`needs:` all gates + `build`, `if:` master/tag push) is the only thing that pushes to GHCR and triggers the Coolify deploy, so an image ships only when *everything* is green on master. (Historically these were one master-only `build` job that `SKIPPED` on PRs, which let a precompile break reach master and require a hotfix — hence the split.)
+- Still run the local no-credentials precompile check (above) for fast local confidence, but the PR `build` job now catches it in CI too.
+- **`master` is squash-merge + delete-branch.** After merge the PR's individual commits are **not** ancestors of `master` (it's a single squash commit), and the source branch ref is **deleted** — pushing another commit to that branch afterward fails with `cannot lock ref … unable to resolve reference`. Land follow-ups on a **fresh branch off the updated `origin/master`** (`git fetch` first); `git diff origin/master..HEAD` will then show only your true delta even after a squash.
+- **The pre-push hook runs the entire pipeline including ~3-4 min of mutation**, so `git push` is genuinely slow. Let it run to completion uninterrupted — killing it mid-mutation leaves the ref unpushed (`[remote rejected]`/nothing sent). `--no-verify` is blocked by policy here; don't reach for it. When a push and a background job race, the push captures the ref at push time, so a commit made *after* you start the push won't be included — verify `git ls-remote` vs local HEAD and re-push if you're ahead.
+
 ---
 
 ## Conventions

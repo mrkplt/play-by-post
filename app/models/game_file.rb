@@ -59,7 +59,7 @@ class GameFile < ApplicationRecord
     return unless file.attached?
 
     unless T.must(file.byte_size) <= MAX_SIZE
-      errors.add(:file, "must be less than 50MB")
+      errors.add(:file, "must be less than #{MAX_SIZE / 1.megabyte}MB")
     end
 
     unless ALLOWED_TYPES.include?(file.content_type)

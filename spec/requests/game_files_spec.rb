@@ -62,11 +62,13 @@ RSpec.describe GameFilesController, type: :request do
     end
 
     context "with a file over the size limit" do
-      it "renders the validation error instead of failing silently" do
+      it "re-renders the form with the size error shown" do
         sign_in(gm)
-        uploaded = Rack::Test::UploadedFile.new(StringIO.new("x" * (51 * 1024 * 1024)), "application/pdf", original_filename: "big.pdf")
+        oversized = Rack::Test::UploadedFile.new(
+          StringIO.new("x" * (GameFile::MAX_SIZE + 1)), "application/pdf", original_filename: "big.pdf"
+        )
         expect {
-          post game_game_files_path(game), params: { game_file: { file: uploaded } }
+          post game_game_files_path(game), params: { game_file: { file: oversized } }
         }.not_to change(GameFile, :count)
         expect(response).to have_http_status(:unprocessable_content)
         expect(response.body).to include("must be less than 50MB")

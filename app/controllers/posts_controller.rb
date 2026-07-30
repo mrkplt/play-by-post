@@ -57,6 +57,8 @@ class PostsController < ApplicationController
       @post.user = current_user
     end
 
+    attach_image(@post)
+
     if @post.save
       @post_presenter = PostPresenter.new(@post, scene_participants: @scene.scene_participants.includes(:character, :user).to_a)
       respond_to do |format|
@@ -118,6 +120,21 @@ class PostsController < ApplicationController
 
   sig { returns(ActionController::Parameters) }
   def post_params
-    params.require(:post).permit(:content, :is_ooc, :image)
+    params.require(:post).permit(:content, :is_ooc)
+  end
+
+  sig { params(post: Post).void }
+  def attach_image(post)
+    image = params.dig(:post, :image)
+    return unless image.respond_to?(:original_filename)
+
+    AttachmentUploader.attach(
+      attachment: post.image,
+      attachable: image,
+      kind: "post_image",
+      user: current_user,
+      game: @game,
+      original_filename: image.original_filename
+    )
   end
 end

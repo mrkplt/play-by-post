@@ -47,6 +47,7 @@ matcher:
     - Shared::SceneSummaryEntryComponent
     - Shared::SceneSummaryFormComponent
     - Shared::SceneSummaryIndexPageComponent
+    - Shared::FileUploadFormComponent
     - Shared::GalleryComponent
     - Shared::NavShellComponent
     - Shared::PostComposerComponent
@@ -59,6 +60,7 @@ matcher:
     - Ui::ButtonComponent
     - Ui::GlowComponent
     # Services
+    - AttachmentUploader
     - EmailContentExtractor
     - GameExportService
     - MarkdownRenderer
@@ -83,6 +85,7 @@ matcher:
     # Jobs
     - PostDigestJob
     - ExportJob
+    - ExportCleanupJob
     - SceneSummaryJob
     - CoolifyDeployJob
     # Mailers

@@ -139,7 +139,15 @@ For technology stack, domain model, codebase conventions, and development workfl
 ### File & Image Constraints
 - Post and scene images: JPG, PNG, GIF, WEBP — 10 MB limit
 - Game files: PDF, DOC, DOCX, TXT, MD, JPG, PNG, GIF, WEBP — 50 MB limit
-- Game file upload validation errors (oversized or disallowed file type) are displayed inline on the upload form
+- When a game file upload is rejected (too large, wrong type, etc.), the upload form redisplays with the validation error shown to the GM
+- The game-file upload form warns client-side and disables submission when the selected file exceeds the size limit, before any upload is attempted
+
+### Storage Namespacing & Metadata
+- All new uploads are stored under a per-kind key prefix in the object store: `game_files/`, `exports/`, `scene_images/`, `post_images/`; derived assets (thumbnails, PDF previews) are stored under `variants/`. Existing objects keep their original keys.
+- Each new primary upload carries R2 Custom Metadata (S3 `x-amz-meta-*`), set once at upload: `kind`, `game-id`, `user-id`, `uploaded-at`, `original-filename`, and `export-scope` (exports only). Metadata is for object legibility/debugging and does not drive automated behaviour.
+
+### Export Retention
+- Export archives are retained for 7 days. A daily background job deletes export requests older than 7 days and purges their archive from storage, matching the 7-day validity of the signed download link.
 
 ---
 
