@@ -8,13 +8,16 @@ class GameExportsController < ApplicationController
 
   sig { void }
   def create
-    if GameExportRequest.rate_limited?(current_user, @game)
-      redirect_to game_path(@game), alert: "An export was requested recently. Please wait 24 hours before requesting another."
-      return
-    end
+    receipt = GameExportRequest.valid_receipt_for(current_user, @game)
 
-    request = GameExportRequest.create!(user: current_user, game: @game)
-    ExportJob.perform_later(request.id)
+    if receipt
+      # A successful export already exists within the receipt window — resend its
+      # download link instead of reprocessing.
+      ExportDelivery.email_download_link(receipt)
+    else
+      request = GameExportRequest.create!(user: current_user, game: @game)
+      ExportJob.perform_later(request.id)
+    end
 
     redirect_to game_path(@game), notice: "Export requested — you'll receive an email shortly."
   end

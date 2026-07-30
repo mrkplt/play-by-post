@@ -212,4 +212,15 @@ RSpec.describe ApplicationHelper, type: :helper do
       expect(result).to be_html_safe
     end
   end
+
+  describe "#last_export_notice" do
+    it "renders a 'Last export: X ago' notice from the receipt's succeeded_at" do
+      user = create(:user, :with_profile)
+      game = create(:game)
+      receipt = create(:game_export_request, user: user, game: game, succeeded_at: 3.hours.ago)
+
+      expect(helper.last_export_notice(receipt)).to match(/\ALast export: .+ ago\z/)
+      expect(helper.last_export_notice(receipt)).to include("hours")
+    end
+  end
 end

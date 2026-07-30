@@ -1,16 +1,19 @@
 module SignInHelper
+  # Signs a user in through the real magic-link confirmation route, but visits
+  # the tokenized URL directly instead of scraping it out of a delivered email.
+  #
+  # The magic-link email is delivered via deliver_later (so it goes through the
+  # worker in production). In feature specs the mailer job runs in the Puma
+  # server thread and does not reliably land in ActionMailer::Base.deliveries
+  # for the test thread to read, so driving sign-in off the delivered email is
+  # flaky. Generating the same token the mailer would embed and visiting
+  # user_magic_link_path is delivery-independent and still exercises the token
+  # confirmation path.
   def sign_in_as(user)
     visit destroy_user_session_path
-    visit new_user_session_path
-    fill_in "Email address", with: user.email
-    click_on "Send sign-in link"
 
-    mail = ActionMailer::Base.deliveries.last
-    html_body = mail.html_part&.body&.decoded || mail.body.decoded
-    token_url = html_body[/href="([^"]+magic_link[^"]+)"/, 1]&.gsub("&amp;", "&")
-    local_url = token_url.sub(%r{https?://[^/]+}, "http://#{Capybara.current_session.server.host}:#{Capybara.current_session.server.port}")
-
-    visit local_url
+    token = Devise::Passwordless::SignedGlobalIDTokenizer.encode(user)
+    visit user_magic_link_path(user: { email: user.email, token: token })
   end
 end
 

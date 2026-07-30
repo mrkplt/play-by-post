@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_04_30_232933) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_30_113920) do
   create_table "action_mailbox_inbound_emails", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "message_checksum", null: false
@@ -84,8 +84,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_30_232933) do
   create_table "game_export_requests", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.integer "game_id"
+    t.datetime "succeeded_at"
     t.datetime "updated_at", null: false
     t.integer "user_id", null: false
+    t.index ["game_id", "succeeded_at"], name: "index_game_export_requests_on_game_id_and_succeeded_at", order: { succeeded_at: :desc }
     t.index ["game_id"], name: "index_game_export_requests_on_game_id"
     t.index ["user_id", "game_id"], name: "index_game_export_requests_on_user_id_and_game_id"
     t.index ["user_id"], name: "index_game_export_requests_on_user_id"

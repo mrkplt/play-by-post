@@ -31,23 +31,39 @@ RSpec.describe GameExportsController, type: :request do
         expect(flash[:notice]).to match(/export requested/i)
       end
 
-      it "blocks a second request within 24 hours" do
-        create(:game_export_request, :recent, user: player, game: game)
+      it "resends the existing link instead of reprocessing when a valid receipt exists" do
+        receipt = create(:game_export_request, user: player, game: game, succeeded_at: 1.hour.ago)
+        receipt.archive.attach(io: StringIO.new("zip"), filename: "e.zip", content_type: "application/zip")
 
         expect {
           post game_export_path(game)
-        }.not_to change(GameExportRequest, :count)
+        }.to have_enqueued_job(ActionMailer::MailDeliveryJob)
+        expect {
+          post game_export_path(game)
+        }.not_to have_enqueued_job(ExportJob)
+        expect(GameExportRequest.count).to eq(1)
 
         expect(response).to redirect_to(game_path(game))
-        expect(flash[:alert]).to match(/24 hours/i)
+        expect(flash[:notice]).to match(/export requested/i)
       end
 
-      it "allows a request after the rate-limit window expires" do
-        create(:game_export_request, :old, user: player, game: game)
+      it "processes a new export when the last success is outside the receipt window" do
+        stale = create(:game_export_request, user: player, game: game, succeeded_at: 25.hours.ago)
+        stale.archive.attach(io: StringIO.new("zip"), filename: "e.zip", content_type: "application/zip")
 
         expect {
           post game_export_path(game)
         }.to change(GameExportRequest, :count).by(1)
+          .and have_enqueued_job(ExportJob)
+      end
+
+      it "processes a new export when a recent request never succeeded" do
+        create(:game_export_request, :recent, user: player, game: game)
+
+        expect {
+          post game_export_path(game)
+        }.to change(GameExportRequest, :count).by(1)
+          .and have_enqueued_job(ExportJob)
       end
     end
 
