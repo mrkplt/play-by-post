@@ -60,6 +60,7 @@ matcher:
     - Ui::ButtonComponent
     - Ui::GlowComponent
     # Services
+    - AttachmentUploader
     - EmailContentExtractor
     - GameExportService
     - MarkdownRenderer
@@ -84,6 +85,7 @@ matcher:
     # Jobs
     - PostDigestJob
     - ExportJob
+    - ExportCleanupJob
     - SceneSummaryJob
     - CoolifyDeployJob
     # Mailers

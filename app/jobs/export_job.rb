@@ -26,10 +26,14 @@ class ExportJob < ApplicationJob
     zip_data = GameExportService.new(user, games).call
     filename = archive_filename(game)
 
-    request.archive.attach(
-      io: StringIO.new(zip_data),
-      filename: filename,
-      content_type: "application/zip"
+    AttachmentUploader.attach(
+      attachment: request.archive,
+      attachable: { io: StringIO.new(zip_data), filename: filename, content_type: "application/zip" },
+      kind: "export",
+      user: user,
+      game: game,
+      original_filename: filename,
+      export_scope: export_scope(game)
     )
 
     download_url = request.archive.blob.url(
@@ -57,5 +61,10 @@ class ExportJob < ApplicationJob
     else
       "all-games-export-#{date}.zip"
     end
+  end
+
+  sig { params(game: T.nilable(Game)).returns(String) }
+  def export_scope(game)
+    game ? game.name : "all-games"
   end
 end
