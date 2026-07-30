@@ -176,8 +176,8 @@ Hard-won specifics for actually clearing the gates. Read this before touching up
 - Inline Tailwind in a `.erb` **fails** the CSS-statements check. Move markup into a `Shared::*`/`Ui::*` ViewComponent (CSS is allowed/tracked there). RuboCop does not lint `.erb`, so `bin/rubocop <file.erb>` reports false syntax "offenses" — ignore; the real gate is `bin/quality-metrics`.
 - `||` fallbacks, ternaries, and local assigns in ERB **output tags** fail the ERB-logic check. Extract to a presenter/component Ruby method (e.g. `error_message` returning `a || b`).
 
-**Mutation blast radius (the expensive trap):**
-- `--since origin/master` pulls **every mutation of every subject in a file you touched** into scope — including pre-existing gaps. Adding a one-line method to `PostsController`/`ScenesController` dragged their legacy coverage (74% / 65%) into the aggregate and sank the global floor. Two fixes: minimize which files you touch, or write tests to lift the whole subject. **Always add the new class to `.mutant.yml` first** or it is silently unmeasured.
+**Mutation blast radius (a feature, not a trap):**
+- `--since origin/master` pulls **every mutation of every subject in a file you touched** into scope — including pre-existing gaps. Adding a one-line method to `PostsController`/`ScenesController` surfaced their legacy coverage (74% / 65%) and it counted against the aggregate. **This is good:** it exposes untested code exactly when you are in a position to test it, and every file dragged in makes the whole system more reliable. Make the edit the task needs and **write tests to lift the whole subject above the floor** — do not shy away from a necessary change, minimize touched files to duck the gate, or contort the code to keep a file out of scope. Lifting those two controllers to 92% / 95% was the point, not a cost. **Always add a new class to `.mutant.yml` first** or it is silently unmeasured.
 
 **Killing mutants with tests — patterns that worked here:**
 - *Read the `evil:` diff* in the mutant output to see the exact mutation; that tells you what assertion is missing.
