@@ -18,6 +18,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
@@ -26,7 +28,7 @@ jobs:
           bundler-cache: true
 
       - name: Scan for common Rails security vulnerabilities using static analysis
-        run: bin/brakeman --no-pager
+        run: bin/ci-run bin/brakeman --no-pager
 
   scan_js:
     runs-on: ubuntu-latest
@@ -34,6 +36,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
@@ -42,13 +46,15 @@ jobs:
           bundler-cache: true
 
       - name: Scan for security vulnerabilities in JavaScript dependencies
-        run: bin/importmap audit
+        run: bin/ci-run bin/importmap audit
 
   lint:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
@@ -57,13 +63,15 @@ jobs:
           bundler-cache: true
 
       - name: Lint code for consistent style
-        run: bin/rubocop -f github
+        run: bin/ci-run bin/rubocop -f github
 
   typecheck:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
@@ -72,7 +80,7 @@ jobs:
           bundler-cache: true
 
       - name: Type check with Sorbet
-        run: bundle exec srb tc
+        run: bin/ci-run bundle exec srb tc
 
   test:
     runs-on: ubuntu-latest
@@ -83,6 +91,8 @@ jobs:
 
       - name: Checkout code
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
@@ -104,7 +114,18 @@ jobs:
         env:
           RAILS_ENV: test
           PLAYWRIGHT_CLI_EXECUTABLE_PATH: ./node_modules/.bin/playwright
-        run: bundle exec rspec
+        run: bin/ci-run bundle exec rspec
+
+      # On a docs-only change rspec is skipped, so no coverage is produced. Stub
+      # the artifact files the downstream quality_gate expects, keeping the
+      # artifact chain intact without special-casing later jobs.
+      - name: Stub coverage artifacts on docs-only change
+        run: |
+          if bin/docs-only; then
+            mkdir -p coverage
+            echo '{}' > coverage/.last_run.json
+            echo '{}' > coverage/.resultset.json
+          fi
 
       - name: Upload coverage data
         uses: actions/upload-artifact@v7
@@ -147,8 +168,15 @@ jobs:
         env:
           RAILS_ENV: test
         run: |
-          bundle exec mutant run --usage opensource --jobs 4 --since origin/master 2>&1 | tee tmp/mutant_output.txt || true
-          bin/quality-metrics --record-mutant tmp/mutant_output.txt
+          if bin/docs-only; then
+            echo "==> Docs-only change: skipping mutation testing."
+            mkdir -p tmp
+            echo "Docs-only change — mutation skipped." > tmp/mutant_output.txt
+            echo '{"coverage":100.0,"mutations":0,"kills":0,"alive":0}' > tmp/mutant_result.json
+          else
+            bundle exec mutant run --usage opensource --jobs 4 --since origin/master 2>&1 | tee tmp/mutant_output.txt || true
+            bin/quality-metrics --record-mutant tmp/mutant_output.txt
+          fi
 
       - name: Upload mutant results
         uses: actions/upload-artifact@v7
@@ -187,7 +215,7 @@ jobs:
           path: tmp/
 
       - name: Run quality gate
-        run: bin/quality-metrics --check
+        run: bin/ci-run bin/quality-metrics --check
 
   # Build-verification. Runs in PARALLEL with the gate jobs, on every event
   # (pull requests included), so a broken Dockerfile / assets:precompile is
@@ -203,11 +231,20 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Detect docs-only change
+        id: docs
+        run: |
+          if bin/docs-only; then echo "skip=true" >> "$GITHUB_OUTPUT"; else echo "skip=false" >> "$GITHUB_OUTPUT"; fi
 
       - name: Set up Docker Buildx
+        if: steps.docs.outputs.skip != 'true'
         uses: docker/setup-buildx-action@v4
 
       - name: Build image (no push)
+        if: steps.docs.outputs.skip != 'true'
         uses: docker/build-push-action@v7
         with:
           context: .
@@ -233,11 +270,20 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Detect docs-only change
+        id: docs
+        run: |
+          if bin/docs-only; then echo "skip=true" >> "$GITHUB_OUTPUT"; else echo "skip=false" >> "$GITHUB_OUTPUT"; fi
 
       - name: Set up Docker Buildx
+        if: steps.docs.outputs.skip != 'true'
         uses: docker/setup-buildx-action@v4
 
       - name: Log in to GHCR
+        if: steps.docs.outputs.skip != 'true'
         uses: docker/login-action@v4
         with:
           registry: ${{ env.REGISTRY }}
@@ -246,6 +292,7 @@ jobs:
 
       - name: Extract metadata
         id: meta
+        if: steps.docs.outputs.skip != 'true'
         uses: docker/metadata-action@v6
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
@@ -256,6 +303,7 @@ jobs:
             type=raw,value=latest,enable={{is_default_branch}}
 
       - name: Build and push
+        if: steps.docs.outputs.skip != 'true'
         uses: docker/build-push-action@v7
         with:
           context: .
@@ -267,6 +315,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Summary
+        if: steps.docs.outputs.skip != 'true'
         run: |
           echo "### Image pushed" >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
@@ -276,9 +325,10 @@ jobs:
 
       # Coolify is not exposed to the internet, so we trigger the deploy through
       # the app's internet-facing relay endpoint, which forwards to Coolify over
-      # the internal network. Only on master pushes (not tags / manual runs).
+      # the internal network. Only on master pushes (not tags / manual runs), and
+      # never for a docs-only change (nothing new to deploy).
       - name: Trigger deploy
-        if: github.ref == 'refs/heads/master'
+        if: github.ref == 'refs/heads/master' && steps.docs.outputs.skip != 'true'
         run: |
           curl --fail --silent --show-error \
             --request POST "${{ secrets.DEPLOY_WEBHOOK_URL }}" \

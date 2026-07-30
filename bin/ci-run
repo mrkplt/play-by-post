@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+#
+# Wraps a CI check so it short-circuits to success on a docs-only change.
+#
+#   bin/ci-run bin/rubocop -f github
+#   bin/ci-run bundle exec rspec
+#
+# If bin/docs-only reports the change is documentation only, this prints a
+# notice and exits 0 (the check "passes" without running) — so the CI job still
+# reports green and required status checks stay satisfied. Otherwise it execs
+# the wrapped command unchanged.
+
+set -euo pipefail
+
+if bin/docs-only; then
+  echo "==> Docs-only change: skipping \`$*\` (reported as success)."
+  exit 0
+fi
+
+exec "$@"
