@@ -24,12 +24,10 @@ RSpec.describe "Game Exports", type: :feature do
         expect(page).not_to have_button("Export Game", disabled: true)
       end
 
-      it "clicking Export Game and confirming shows a success notice" do
+      it "clicking Export Game shows a success notice without a confirmation dialog" do
         visit game_path(game)
 
-        accept_confirm do
-          click_button "Export Game"
-        end
+        click_button "Export Game"
 
         expect(page).to have_text("Export requested — you'll receive an email shortly.")
       end
@@ -87,12 +85,10 @@ RSpec.describe "Game Exports", type: :feature do
       expect(page).not_to have_button("Export All Games", disabled: true)
     end
 
-    it "clicking Export All Games and confirming shows a success notice" do
+    it "clicking Export All Games shows a success notice without a confirmation dialog" do
       visit profile_path
 
-      accept_confirm do
-        click_button "Export All Games"
-      end
+      click_button "Export All Games"
 
       expect(page).to have_text("Export requested — you'll receive an email shortly.")
     end
