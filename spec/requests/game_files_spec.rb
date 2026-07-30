@@ -27,6 +27,30 @@ RSpec.describe GameFilesController, type: :request do
       get game_game_files_path(game)
       expect(response).to have_http_status(:redirect)
     end
+
+    it "shows the upload form to the GM" do
+      sign_in(gm)
+      get game_game_files_path(game)
+      expect(response.body).to include("Upload File")
+    end
+
+    it "hides the upload form from a player" do
+      sign_in(player)
+      get game_game_files_path(game)
+      expect(response.body).not_to include("Upload File")
+    end
+
+    it "orders files newest first" do
+      sign_in(gm)
+      older = create(:game_file, game: game, filename: "older.pdf", created_at: 2.days.ago)
+      older.file.attach(io: StringIO.new("x"), filename: "older.pdf", content_type: "application/pdf")
+      newer = create(:game_file, game: game, filename: "newer.pdf", created_at: 1.day.ago)
+      newer.file.attach(io: StringIO.new("x"), filename: "newer.pdf", content_type: "application/pdf")
+
+      get game_game_files_path(game)
+
+      expect(response.body.index("newer.pdf")).to be < response.body.index("older.pdf")
+    end
   end
 
   describe "POST /games/:game_id/game_files" do
