@@ -146,21 +146,35 @@ RSpec.describe AttachmentUploader do
       expect(variant.key).to start_with("variants/")
     end
 
-    it "prefixes extracted PDF preview image keys with previews/" do
+    it "prefixes extracted preview image keys with previews/" do
+      # Drive Preview#process with a stubbed previewer that yields a fake
+      # extracted image, so the test does not depend on a system PDF previewer
+      # (poppler/mupdf) being installed in CI — it exercises only our key wrap.
       game_file = game.game_files.new(filename: "rules.pdf")
       described_class.attach(
         attachment: game_file.file,
         attachable: {
-          io: File.open(Rails.root.join("spec/fixtures/files/test_document.pdf")),
+          io: StringIO.new("%PDF-1.4 fake"),
           filename: "rules.pdf", content_type: "application/pdf"
         },
         kind: "game_file", user: user, game: game, original_filename: "rules.pdf"
       )
       game_file.save!
 
-      game_file.file.preview(resize_to_limit: [ 50, 50 ]).processed
+      blob = game_file.file.blob
+      preview = ActiveStorage::Preview.new(blob, resize_to_limit: [ 50, 50 ])
+      fake_previewer = double("previewer")
+      allow(fake_previewer).to receive(:preview) do |**_opts, &block|
+        block.call(
+          io: File.open(Rails.root.join("spec/fixtures/files/test_image.png")),
+          filename: "rules.png", content_type: "image/png"
+        )
+      end
+      allow(preview).to receive(:previewer).and_return(fake_previewer)
 
-      expect(game_file.file.preview_image.key).to start_with("previews/")
+      preview.send(:process)
+
+      expect(blob.preview_image.key).to start_with("previews/")
     end
   end
 
