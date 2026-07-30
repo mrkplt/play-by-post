@@ -34,12 +34,15 @@ RSpec.describe "Game Exports", type: :feature do
         expect(page).to have_text("Export requested — you'll receive an email shortly.")
       end
 
-      it "shows a disabled Export Game button when rate limited" do
-        create(:game_export_request, :recent, user: user, game: game)
+      it "keeps the Export Game button enabled and shows a last-export notice when a receipt exists" do
+        receipt = create(:game_export_request, user: user, game: game, succeeded_at: 2.hours.ago)
+        receipt.archive.attach(io: StringIO.new("zip"), filename: "e.zip", content_type: "application/zip")
 
         visit game_path(game)
 
-        expect(page).to have_button("Export Game", disabled: true)
+        expect(page).to have_button("Export Game")
+        expect(page).not_to have_button("Export Game", disabled: true)
+        expect(page).to have_text(/Last export: .+ ago/)
       end
     end
 
@@ -94,12 +97,15 @@ RSpec.describe "Game Exports", type: :feature do
       expect(page).to have_text("Export requested — you'll receive an email shortly.")
     end
 
-    it "shows a disabled Export All Games button when rate limited" do
-      create(:game_export_request, :recent, :all_games, user: user)
+    it "keeps the Export All Games button enabled and shows a last-export notice when a receipt exists" do
+      receipt = create(:game_export_request, :all_games, user: user, succeeded_at: 2.hours.ago)
+      receipt.archive.attach(io: StringIO.new("zip"), filename: "all.zip", content_type: "application/zip")
 
       visit profile_path
 
-      expect(page).to have_button("Export All Games", disabled: true)
+      expect(page).to have_button("Export All Games")
+      expect(page).not_to have_button("Export All Games", disabled: true)
+      expect(page).to have_text(/Last export: .+ ago/)
     end
   end
 end
