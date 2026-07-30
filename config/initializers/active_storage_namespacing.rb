@@ -15,12 +15,21 @@
 # metadata.
 #
 # Existing blobs keep their original flat keys — this affects new uploads only.
+#
+# Guarded by SECRET_KEY_BASE_DUMMY: that env var marks the `assets:precompile`
+# run in the Docker build image, where no credentials (and thus no storage
+# bucket) are configured. Referencing ActiveStorage::VariantWithRecord there
+# forces the R2/S3 service to resolve a nil bucket and aborts the build with
+# `ArgumentError: missing required option :name`. Variants are never produced
+# during asset precompilation, so skipping the prepend in that context is safe.
 
-Rails.application.config.to_prepare do
-  ActiveStorage::VariantWithRecord.prepend(Module.new do
-    def create_or_find_record(image:)
-      key = "variants/#{ActiveStorage::Blob.generate_unique_secure_token(length: ActiveStorage::Blob::MINIMUM_TOKEN_LENGTH)}"
-      super(image: image.merge(key: key))
-    end
-  end)
+unless ENV["SECRET_KEY_BASE_DUMMY"]
+  Rails.application.config.to_prepare do
+    ActiveStorage::VariantWithRecord.prepend(Module.new do
+      def create_or_find_record(image:)
+        key = "variants/#{ActiveStorage::Blob.generate_unique_secure_token(length: ActiveStorage::Blob::MINIMUM_TOKEN_LENGTH)}"
+        super(image: image.merge(key: key))
+      end
+    end)
+  end
 end
