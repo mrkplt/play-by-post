@@ -7,10 +7,7 @@
             class: "px-5 py-2 bg-slate-500 text-white rounded text-base cursor-pointer hover:bg-slate-600 inline-block" %>
     </div>
   </div>
-  <p class="text-xs text-slate-400 mb-1">You'll receive an email with a download link within a few minutes; the link expires after 7 days.</p>
-  <% if @export_all_receipt %>
-    <p class="text-xs text-slate-400 mb-4"><%= last_export_notice(@export_all_receipt) %></p>
-  <% end %>
+  <p class="text-xs text-slate-400 mb-4"><%= export_all_games_notice(@export_all_receipt) %></p>
 
   <div class="bg-white border border-slate-200 rounded-lg p-5 mb-4">
     <div class="mb-4">
