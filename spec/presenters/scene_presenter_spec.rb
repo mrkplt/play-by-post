@@ -98,6 +98,26 @@ RSpec.describe ScenePresenter do
     end
   end
 
+  describe "#participant_summary" do
+    it "pluralizes for zero participants" do
+      s = create(:scene)
+      expect(described_class.new(s).participant_summary).to eq("0 participants")
+    end
+
+    it "singularizes for one participant" do
+      s = create(:scene)
+      create(:scene_participant, scene: s)
+      expect(described_class.new(s).participant_summary).to eq("1 participant")
+    end
+
+    it "pluralizes for several participants" do
+      s = create(:scene)
+      create(:scene_participant, scene: s)
+      create(:scene_participant, scene: s)
+      expect(described_class.new(s).participant_summary).to eq("2 participants")
+    end
+  end
+
   describe "delegation" do
     it "delegates resolved? to the model" do
       allow(scene).to receive(:resolved?).and_return(true)

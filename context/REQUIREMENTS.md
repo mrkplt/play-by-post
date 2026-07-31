@@ -16,13 +16,24 @@ For technology stack, domain model, codebase conventions, and development workfl
 
 ---
 
+## Navigation & Layout (mobile-first redesign)
+
+- The interface is mobile-first: each screen is a full-bleed frame with a dark header bar over a light body. Dark surface `#2b2d31` (header bars) / `#1a1b1e` (nav drawer); gold accent `#c8a96e`. All colours, radii, and greys are defined once as Tailwind `@theme` tokens and consumed by ViewComponents — no per-screen hex.
+- **Global navigation is a slide-in drawer** opened by the hamburger (☰) in each screen's header. The drawer has a fixed profile chip (avatar + display name + "View Profile") at the top, a scrollable list of the player's games in the middle, and pinned "Account Settings" / "Sign Out" at the bottom. Only the games list scrolls; the header and footer stay fixed.
+  - Each drawer game row shows a status icon: a crown (♛) for games the viewer GMs, a moon (☾) for a former/removed game, or a plain marker for an ordinary player game. The current game's row is highlighted. Banned games never appear.
+- **Icon tap targets** (hamburger, gear, back, OOC checkbox) are sized to a 44px-tall touch target minimum.
+- **Attention glow**: interactive cards/rows carry two distinct states — a persistent gold glow (`is-hot`) that is data-driven ("this has unread/new activity") and a lighter hover glow (affordance, "this is clickable"). These are separate states, not one effect at two opacities.
+- The UI is built component-first: a shared `MobileFrameComponent` scaffold (header / body / footer slots), `Ui::*` primitives (Avatar, ToggleSwitch, SectionLabel, SettingsRow, IconButton, PillTabs, Badge), and `Shared::*` composed components (GameHeader, NavDrawer, GameCard, SceneCard, RosterRow, PostItem, PostComposer). Screens are assembled purely by composing these components.
+
+---
+
 ## Player Dashboard
 
-- Landing page after login shows all games the player belongs to
-- Each game card shows: game name, player's primary character name (linked to sheet), number of active scenes, and a "new activity" indicator if anything changed since last login
-- Players with multiple characters see their primary character name with a "+N" count for additional characters
-- Clicking a game navigates to the game view
-- Removed players see their game with a "Former" indicator
+- Landing page after login shows all games the player belongs to, as cards, on a light body under a "Your Games" header (gold title, hamburger to open the drawer). A pinned "+ New Game" button sits in the footer.
+- Each game card shows: game name (with a crown ♛ when the viewer is GM of that game), the player's primary character name as text, number of active scenes, and a persistent attention glow if anything changed since last login
+- Players with multiple characters see their primary character name with a "+N" suffix for additional characters
+- Clicking a game card navigates to the game view
+- Removed players see their game with a dormant treatment: a blue tint, a moon (☾) indicator, and "Not currently active" instead of a scene count
 - Banned players do not see the game at all
 
 ---
@@ -39,25 +50,27 @@ For technology stack, domain model, codebase conventions, and development workfl
 
 ## Player Profile
 
-- Each user has a profile page showing their display name and list of games with their role
-- Profile is accessible from the navbar
-- Users can edit their display name from the profile page
+- Reached from the nav drawer's "Account Settings" / "View Profile". Uses the settings-row pattern under a back-arrow header.
+- Sections: Display Name (with Edit), Account (email; a "Hide OOC by default" toggle bound to the profile-level `hide_ooc` preference), RSS Feed Token (rotate/revoke, or generate), and Export ("Export All Games" with a last-export notice)
+- Users can edit their display name from the edit page
+- The Profile page deliberately does **not** list the player's games — that list lives in the nav drawer, to avoid duplication
 
 ---
 
 ## Game View
 
-- Shows the game name and description
-- Character roster listing all characters and their owning players, visible to all participants
-- Inactive characters hidden by default from the roster; accessible via a filter or toggle
-- Active (unresolved) scenes listed prominently, most recent first
-- Resolved scenes in a separate paginated list (10 per page, chronological descending)
-- Game files section shows a compact file list with a link to the full gallery; non-GM members have a "View Files" link (not just GM)
-- GM sees player management controls (invite, remove, ban)
+- The game area is a single page (`games#show`) with three **pill tabs in the dark header — Scenes / Roster / Files — switched client-side** (no page navigation). The header shows a hamburger (opens the nav drawer), a GM crown (only when the viewer is GM), the game title, and a gear (Player Management, GM-only). The active tab is deep-linkable via the URL hash.
+- **Scenes tab**: active (unresolved) scenes as cards showing just title + participant count (plus parent/child links where threaded), most recent first, with an attention glow on scenes with new activity. Below: an "In Active Scenes" roster preview (the GM as a person with a crown, then characters and the scene they're in — never a banned player), a "New Scene" action (GM), and an "Export Game" row (any non-banned member; shows the last-export notice).
+- **Roster tab**: a search field, the character list (avatar, name, "Played by {player}"; a removed player's row is dimmed with a "Removed" badge), a "New Character" action, a "N inactive characters hidden" note, and — GM only — a "Banned · GM only" section (blue-tinted, each row with an Unban action). Inactive (archived) characters are hidden by default.
+- **Files tab**: the file gallery (see Game-Level File Store). GM sees the upload form.
+- The gear is shown/enabled only for the GM and opens Player Management.
 
 ---
 
 ## Player Management
+
+- Reached by the GM via the gear (⚙) in the game header. Uses the settings-row pattern under a back-arrow header, with sections: Invite a Player (email + Invite), Pending Invitations (email + "Sent X ago" + Resend/Cancel), Members (name + character + Remove/Ban, where Remove is neutral and Ban is red and carries its own more serious confirmation), and Game Preferences (an "AI Scene Summaries" toggle switch)
+- GM-only: non-GM members are redirected away
 
 ### Invitations
 - GM invites players by email
@@ -72,8 +85,8 @@ For technology stack, domain model, codebase conventions, and development workfl
 - Removed players can view their own character sheet (read-only)
 - Removed players cannot post, create scenes, or be added to new scenes
 - Removed players no longer receive notifications
-- The game remains on the removed player's dashboard with a "Former" indicator
-- The character roster shows a "Removed" status for the player
+- The game remains on the removed player's dashboard with a dormant "Former" treatment (blue tint, moon ☾ icon, "Not currently active"); it also appears in the nav drawer with a moon icon
+- The character roster shows a "Removed" badge on the player's row (dimmed)
 
 ### Player Banning (adversarial, GM's discretion)
 - GM can ban a player — distinct from removal, with a separate confirmation that communicates permanent access revocation
@@ -124,11 +137,13 @@ For technology stack, domain model, codebase conventions, and development workfl
 
 ## Scene View & Posts
 
-- Posts are flat within a scene (linear thread, not nested replies)
-- Each post shows: author display name, timestamp, markdown-rendered body, optional image
-- Posts can be marked Out-of-Character (OOC); OOC posts are visually distinct
-- OOC posts can be filtered out of the scene view
-- Users can hide OOC posts entirely via a profile-level preference (hide_ooc)
+- Posts are long-form and flat within a scene (linear thread, not nested replies), rendered forum/manuscript-style: each post is a full-width card with the author's avatar monogram, name, and timestamp floated to one side so the (often multi-paragraph) body wraps around them. The GM's avatar is dark; players' are gold.
+- Each post shows: author display name, timestamp, markdown-rendered body (≥16px for readability), optional image
+- Posts can be marked Out-of-Character (OOC); OOC posts are visually **quiet** — a light blue tint (same family as the retired/removed tint) with a compact "OUT OF CHARACTER" label and slightly smaller text — not a loud banner
+- Posts with unread/new activity carry the persistent attention glow
+- The scene header carries a **"Hide OOC" toggle switch**; toggling it hides OOC posts in-page and persists to the profile-level `hide_ooc` preference
+- Users can hide OOC posts entirely via a profile-level preference (hide_ooc), surfaced as a toggle on the Profile page
+- The composer ("Post a Reply") has a markdown textarea (≥16px to avoid iOS auto-zoom), a real OOC checkbox (18px box + label) and Attach control as comfortably-sized tap targets, and a gold "POST" button
 - Post authors can edit their post within 10 minutes of creation; the edit window is enforced server-side
 - Edit link is visible only while the edit window is open
 - Posts support a draft state — a post can be saved as a draft before publishing

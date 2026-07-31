@@ -20,4 +20,15 @@ class UserPresenter < BasePresenter
     query = query.limit(limit) if limit
     query
   end
+
+  # Games the nav drawer lists: every membership except banned (banned games
+  # disappear entirely), each paired with its membership so the drawer can pick
+  # the right status icon (GM crown / former moon / plain). Ordered by name.
+  sig { returns(T::Array[GameMember]) }
+  def drawer_memberships
+    @model.game_members
+      .where.not(status: "banned")
+      .includes(:game)
+      .sort_by { |m| m.game&.name.to_s }
+  end
 end

@@ -6,19 +6,23 @@ export default class extends Controller {
   open() {
     this.sidebarTarget.dataset.open = ""
     this.backdropTarget.hidden = false
-    this.toggleTarget.hidden = true
+    if (this.hasToggleTarget) this.toggleTarget.hidden = true
   }
 
   close() {
     delete this.sidebarTarget.dataset.open
     this.backdropTarget.hidden = true
-    this.toggleTarget.hidden = false
+    if (this.hasToggleTarget) this.toggleTarget.hidden = false
   }
 
   closeOnOutside(event) {
-    if (window.innerWidth >= 768) return
     if (!this.sidebarTarget.contains(event.target)) {
       this.close()
     }
   }
+
+  closeOnEscape(event) {
+    if (event.key === "Escape") this.close()
+  }
 }
+

@@ -3,10 +3,7 @@ require "rails_helper"
 RSpec.describe Shared::SceneCardComponent, type: :component do
   let(:game) { build_stubbed(:game) }
   let(:scene) do
-    build_stubbed(:scene,
-      game: game,
-      title: "The Tavern",
-      updated_at: 2.days.ago)
+    build_stubbed(:scene, game: game, title: "The Tavern", updated_at: 2.days.ago)
   end
   let(:presenter) { ScenePresenter.new(scene) }
 
@@ -20,9 +17,7 @@ RSpec.describe Shared::SceneCardComponent, type: :component do
   before do
     allow(scene).to receive(:child_scenes).and_return([])
     allow(scene).to receive(:parent_scene).and_return(nil)
-    allow(scene).to receive(:scene_participants).and_return(
-      double(includes: [])
-    )
+    allow(scene).to receive(:scene_participants).and_return(double(count: 3))
   end
 
   it "renders the scene title" do
@@ -33,41 +28,50 @@ RSpec.describe Shared::SceneCardComponent, type: :component do
     expect(rendered_component).to have_css("a", text: "The Tavern")
   end
 
-  it "does not show private badge for public scene" do
-    expect(rendered_component).not_to have_css("[data-variant=yellow]")
+  it "shows the participant count" do
+    expect(rendered_component).to have_text("3 participants")
   end
 
-  context "when private" do
-    let(:scene) { build_stubbed(:scene, :private, game: game, title: "Secret Lair", updated_at: 1.day.ago) }
+  it "singularizes a lone participant" do
+    allow(scene).to receive(:scene_participants).and_return(double(count: 1))
+    expect(rendered_component).to have_text("1 participant")
+  end
 
-    before do
-      allow(scene).to receive(:child_scenes).and_return([])
-      allow(scene).to receive(:parent_scene).and_return(nil)
-      allow(scene).to receive(:scene_participants).and_return(
-        double(includes: [])
-      )
-    end
+  it "does not glow by default" do
+    expect(rendered_component).not_to have_css(".is-hot")
+  end
 
-    it "shows the private badge" do
-      expect(rendered_component).to have_css("[data-variant=yellow]", text: "Private")
-    end
+  it "glows when hot" do
+    render_inline(described_class.new(scene: presenter, game: game, hot: true))
+    expect(page).to have_css("div.attn-item.is-hot")
+  end
+
+  it "reports hot? state" do
+    expect(described_class.new(scene: presenter, game: game, hot: true).hot?).to be true
+    expect(described_class.new(scene: presenter, game: game).hot?).to be false
   end
 
   context "when the scene has a parent" do
     let(:parent) { build_stubbed(:scene, game: game, title: "Parent Scene") }
-    let(:scene) { build_stubbed(:scene, game: game, title: "Child Scene", updated_at: 1.day.ago) }
 
     before do
-      allow(scene).to receive(:child_scenes).and_return([])
       allow(scene).to receive(:parent_scene).and_return(parent)
-      allow(scene).to receive(:scene_participants).and_return(
-        double(includes: [])
-      )
-      allow(parent).to receive(:resolved?).and_return(false)
     end
 
-    it "shows the parent scene link" do
+    it "shows the parent scene title" do
       expect(rendered_component).to have_text("Parent Scene")
+    end
+  end
+
+  context "when the scene has children in this game" do
+    let(:child) { build_stubbed(:scene, game: game, title: "Child Scene") }
+
+    before do
+      allow(scene).to receive(:child_scenes).and_return([ child ])
+    end
+
+    it "lists the child scene" do
+      expect(rendered_component).to have_text("Child Scene")
     end
   end
 end

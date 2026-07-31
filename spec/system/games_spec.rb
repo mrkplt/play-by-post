@@ -8,17 +8,17 @@ RSpec.describe "Games", type: :feature do
   describe "dashboard" do
     it "shows empty state when user has no games" do
       expect(page).to have_text("You're not in any games yet")
-      expect(page).to have_link("Create a game")
+      expect(page).to have_link("+ New Game", href: new_game_path)
     end
 
-    it "lists games the user belongs to" do
+    it "lists games the user belongs to, crowning GM games" do
       game = create(:game, name: "The Lost Realm")
       create(:game_member, :game_master, game: game, user: gm)
 
       visit root_path
 
-      expect(page).to have_text("The Lost Realm")
-      expect(page).to have_text("GM")
+      card = within(".app-body") { find("a", text: "The Lost Realm") }
+      expect(card).to have_css("svg")
     end
 
     it "lists games in alphabetical order" do
@@ -42,17 +42,17 @@ RSpec.describe "Games", type: :feature do
       expect(page).to have_text("2 active scenes")
     end
 
-    it "shows player's character name linked to sheet" do
+    it "shows the player's primary character name on the card" do
       game = create(:game)
       create(:game_member, :game_master, game: game, user: gm)
       create(:character, game: game, user: gm, name: "Aldric the Bold")
 
       visit root_path
 
-      expect(page).to have_link("Aldric the Bold")
+      expect(page).to have_text("Aldric the Bold")
     end
 
-    it "shows +N more indicator when player has multiple characters, linking the first" do
+    it "shows +N indicator when player has multiple characters, naming the first" do
       game = create(:game)
       create(:game_member, :game_master, game: game, user: gm)
       create(:character, game: game, user: gm, name: "Aldric the Bold")
@@ -61,10 +61,9 @@ RSpec.describe "Games", type: :feature do
 
       visit root_path
 
-      expect(page).to have_link("Aldric the Bold")
-      expect(page).to have_text("+2 more")
-      expect(page).not_to have_link("Mira Ashveil")
-      expect(page).not_to have_link("Torven Coldstone")
+      expect(page).to have_text("Aldric the Bold +2")
+      expect(page).not_to have_text("Mira Ashveil")
+      expect(page).not_to have_text("Torven Coldstone")
     end
 
     it "does not show +N more indicator when player has only one character" do
@@ -118,13 +117,13 @@ RSpec.describe "Games", type: :feature do
       expect(page).to have_css("[data-new-activity='true']", count: 1)
     end
 
-    it "shows 'Former' badge for removed players" do
+    it "shows a dormant indicator for removed (former) players" do
       game = create(:game)
       create(:game_member, game: game, user: gm, role: "player", status: "removed")
 
       visit root_path
 
-      expect(page).to have_text("Former")
+      expect(page).to have_text("Not currently active")
     end
 
     it "does not show games for banned players" do
@@ -163,25 +162,24 @@ RSpec.describe "Games", type: :feature do
 
   describe "game creation" do
     it "creates a game and lands on the game view" do
-      click_on "Create a game"
+      click_on "+ New Game"
       fill_in "Name", with: "Shadows of the Rift"
       fill_in "Description (optional)", with: "A dark fantasy adventure"
       click_on "Create game"
 
       expect(page).to have_text("Shadows of the Rift")
-      expect(page).to have_text("A dark fantasy adventure")
     end
 
-    it "makes the creator the GM" do
-      click_on "Create a game"
+    it "makes the creator the GM (header shows the player-management gear)" do
+      click_on "+ New Game"
       fill_in "Name", with: "New Campaign"
       click_on "Create game"
 
-      expect(page).to have_link(href: edit_game_path(Game.last))
+      expect(page).to have_link(href: game_player_management_path(Game.last))
     end
 
     it "requires a name" do
-      click_on "Create a game"
+      click_on "+ New Game"
       click_on "Create game"
 
       expect(page).to have_text("can't be blank")
@@ -209,30 +207,31 @@ RSpec.describe "Games", type: :feature do
       expect(page).not_to have_text("Prologue")
     end
 
-    it "shows the character roster" do
+    it "shows the character roster in the roster panel" do
       player = create(:user, :with_profile)
       create(:game_member, game: game, user: player)
       create(:character, game: game, user: player, name: "Thornwall")
 
       visit game_path(game)
+      find("button[data-tab='roster']").click
 
       expect(page).to have_text("Thornwall")
     end
 
-    it "shows edit settings link for GM" do
+    it "shows the player-management gear for GM" do
       visit game_path(game)
 
-      expect(page).to have_link(href: edit_game_path(game))
+      expect(page).to have_link(href: game_player_management_path(game))
     end
 
-    it "does not show edit settings link for non-GM" do
+    it "does not show the player-management gear for non-GM" do
       player = create(:user, :with_profile)
       create(:game_member, game: game, user: player)
 
       sign_in_as(player)
       visit game_path(game)
 
-      expect(page).not_to have_link(href: edit_game_path(game))
+      expect(page).not_to have_link(href: game_player_management_path(game))
     end
 
     it "shows New Scene button for GM" do
@@ -251,27 +250,27 @@ RSpec.describe "Games", type: :feature do
       expect(page).not_to have_link("New Scene")
     end
 
-    it "shows All Scenes link" do
+    it "exposes a Files tab in the game header" do
       visit game_path(game)
 
-      expect(page).to have_link("All Scenes")
+      expect(page).to have_css("button[data-tab='files']", text: "Files")
     end
 
-    it "shows Manage Files link for GM" do
+    it "GM sees the file upload form in the Files panel" do
       visit game_path(game)
 
-      expect(page).to have_link("Manage Files", href: game_game_files_path(game))
+      # The Files panel is present in the DOM (toggled client-side).
+      expect(page).to have_css("input[type='file']", visible: :all)
     end
 
-    it "shows View Files link for non-GM players" do
+    it "non-GM players do not see the upload form" do
       player = create(:user, :with_profile)
       create(:game_member, game: game, user: player)
 
       sign_in_as(player)
       visit game_path(game)
 
-      expect(page).to have_link("View Files", href: game_game_files_path(game))
-      expect(page).not_to have_link("Manage Files")
+      expect(page).not_to have_css("input[type='file']", visible: :all)
     end
 
     it "removed member can access game files" do
@@ -282,7 +281,7 @@ RSpec.describe "Games", type: :feature do
       visit game_game_files_path(game)
 
       expect(page).to have_current_path(game_game_files_path(game))
-      expect(page).to have_css("h1", text: "Game Files")
+      expect(page).to have_css("h1", text: "Files")
       expect(page).to have_text("No files uploaded yet.")
     end
 
@@ -305,8 +304,7 @@ RSpec.describe "Games", type: :feature do
     before { create(:game_member, :game_master, game: game, user: gm) }
 
     it "GM can access the edit page" do
-      visit game_path(game)
-      find("a[href='#{edit_game_path(game)}']").click
+      visit edit_game_path(game)
 
       expect(page).to have_current_path(edit_game_path(game))
       expect(page).to have_field("Name", with: "Test Campaign")
@@ -320,7 +318,6 @@ RSpec.describe "Games", type: :feature do
 
       expect(page).to have_current_path(game_path(game))
       expect(page).to have_text("Updated Campaign")
-      expect(page).to have_text("An updated description")
     end
 
     it "GM can access manage players from edit page" do

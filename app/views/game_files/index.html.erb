@@ -1,19 +1,18 @@
-<nav class="text-sm mb-4 text-slate-500">
-  <%= link_to "Games", root_path %> &rsaquo;
-  <%= link_to @game.name, game_path(@game) %> &rsaquo;
-  Game Files
-</nav>
+<% content_for :active_game_id, @game.id %>
 
-<div class="flex items-center justify-between mb-4">
-  <h1 class="m-0 text-xl font-semibold">Game Files</h1>
-</div>
+<%= render Shared::MobileFrameComponent.new do |frame| %>
+  <% frame.with_header do %>
+    <%= render Shared::PageHeaderComponent.new(title: "Files", leading: :back, back_href: game_path(@game)) %>
+  <% end %>
 
-<% if @is_gm %>
-  <%= render Shared::FileUploadFormComponent.new(game: @game, game_file: @game_file) %>
-<% end %>
+  <% if @is_gm %>
+    <%= render Shared::FileUploadFormComponent.new(game: @game, game_file: @game_file) %>
+  <% end %>
 
-<% if @game_files.empty? %>
-  <p class="text-slate-400">No files uploaded yet.</p>
-<% else %>
-  <%= render Shared::GalleryComponent.new(game_files: @game_files.to_a, game: @game, is_gm: @is_gm) %>
+  <% if @game_files.empty? %>
+    <p class="text-muted-2 text-sm">No files uploaded yet.</p>
+  <% else %>
+    <%= render Ui::SectionLabelComponent.new do %>Newest first<% end %>
+    <%= render Shared::GalleryComponent.new(game_files: @game_files.to_a, game: @game, is_gm: @is_gm) %>
+  <% end %>
 <% end %>

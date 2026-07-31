@@ -1,69 +1,46 @@
 require "rails_helper"
 
-RSpec.describe "Sidebar", type: :feature do
+# The global nav drawer (opened by the hamburger). Replaces the old persistent
+# sidebar. The drawer markup is always present in the DOM (slid off-screen via
+# CSS transform), so these assertions use visible: :all rather than opening it.
+RSpec.describe "Nav drawer", type: :feature do
   let(:user) { create(:user, :with_profile) }
 
   describe "when not logged in" do
-    it "does not render the sidebar" do
+    it "does not render the drawer" do
       visit root_path
-
-      expect(page).not_to have_css("aside.sidebar")
-    end
-
-    it "does not show user section" do
-      visit root_path
-
-      expect(page).not_to have_css(".sidebar-user")
+      expect(page).not_to have_css("aside.nav-drawer", visible: :all)
     end
   end
 
   describe "when logged in" do
     before { sign_in_as(user) }
 
-    it "renders the sidebar" do
+    it "renders the drawer" do
       visit root_path
-
-      expect(page).to have_css("aside.sidebar")
+      expect(page).to have_css("aside.nav-drawer", visible: :all)
     end
 
-    it "shows the Play by Post brand link" do
+    it "shows the user's display name and View Profile" do
       visit root_path
-
-      within "aside.sidebar" do
-        expect(page).to have_link("Play by Post", href: root_path)
-      end
-    end
-
-    it "shows the My Games nav link" do
-      visit root_path
-
-      within "aside.sidebar" do
-        expect(page).to have_link("My Games", href: root_path)
-      end
-    end
-
-    it "shows the user's display name" do
-      visit root_path
-
-      within "aside.sidebar" do
+      within("aside.nav-drawer", visible: :all) do
         expect(page).to have_text(user.user_profile.display_name)
+        expect(page).to have_text("View Profile")
       end
     end
 
-    it "shows a sign out link" do
+    it "shows Account Settings and Sign Out" do
       visit root_path
-
-      within "aside.sidebar" do
-        expect(page).to have_link("Sign out")
+      within("aside.nav-drawer", visible: :all) do
+        expect(page).to have_link("Account Settings", href: profile_path, visible: :all)
+        expect(page).to have_link("Sign Out", visible: :all)
       end
     end
 
-    it "shows a profile settings link" do
+    it "opens when the hamburger is clicked" do
       visit root_path
-
-      within "aside.sidebar" do
-        expect(page).to have_link(href: profile_path)
-      end
+      find("button[aria-label='Open navigation']").click
+      expect(page).to have_css("aside.nav-drawer[data-open]", visible: :all)
     end
 
     describe "game list" do
@@ -73,38 +50,33 @@ RSpec.describe "Sidebar", type: :feature do
       before do
         create(:game_member, user: user, game: game_one)
         create(:game_member, user: user, game: game_two)
-        create(:scene, game: game_one, updated_at: 2.days.ago)
-        create(:scene, game: game_two, updated_at: 1.hour.ago)
       end
 
       it "lists the user's games" do
         visit root_path
-
-        within "aside.sidebar" do
-          expect(page).to have_link("Dragon Campaign")
-          expect(page).to have_link("Space Opera")
+        within("aside.nav-drawer", visible: :all) do
+          expect(page).to have_link("Dragon Campaign", visible: :all)
+          expect(page).to have_link("Space Opera", visible: :all)
         end
       end
 
-      it "orders games by most recent scene activity" do
-        visit root_path
-
-        within "aside.sidebar nav" do
-          links = page.all("a.sidebar-link").map(&:text).map(&:strip).reject(&:empty?)
-          space_index = links.index { |t| t.include?("Space Opera") }
-          dragon_index = links.index { |t| t.include?("Dragon Campaign") }
-          expect(space_index).to be < dragon_index
-        end
-      end
-
-      it "does not list games where the user is removed" do
+      it "lists former (removed) games too, with a moon indicator" do
         removed_game = create(:game, name: "Old Adventure")
         create(:game_member, :removed, user: user, game: removed_game)
 
         visit root_path
+        within("aside.nav-drawer", visible: :all) do
+          expect(page).to have_link("Old Adventure", visible: :all)
+        end
+      end
 
-        within "aside.sidebar" do
-          expect(page).not_to have_link("Old Adventure")
+      it "never lists banned games" do
+        banned_game = create(:game, name: "Forbidden")
+        create(:game_member, :banned, user: user, game: banned_game)
+
+        visit root_path
+        within("aside.nav-drawer", visible: :all) do
+          expect(page).not_to have_link("Forbidden", visible: :all)
         end
       end
 
@@ -113,10 +85,9 @@ RSpec.describe "Sidebar", type: :feature do
         create(:game_member, :game_master, user: user, game: gm_game)
 
         visit root_path
-
-        within "aside.sidebar" do
-          gm_link = find("a.sidebar-link", text: /GM Game/)
-          expect(gm_link).to have_css("svg")
+        within("aside.nav-drawer", visible: :all) do
+          gm_link = find("a", text: /GM Game/, visible: :all)
+          expect(gm_link).to have_css("svg", visible: :all)
         end
       end
     end

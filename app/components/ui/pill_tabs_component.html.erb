@@ -1,0 +1,15 @@
+<nav class="flex gap-1.5 items-center flex-wrap">
+  <% tabs.each do |tab| %>
+    <% if switch? %>
+      <button type="button" class="<%= tab_classes(tab) %>"
+              data-game-tabs-target="tab"
+              data-tab="<%= panel_name(tab) %>"
+              data-action="click->game-tabs#switch"
+              aria-current="<%= aria_current(tab) %>">
+        <%= tab.label %>
+      </button>
+    <% else %>
+      <%= link_to tab.label, tab.href, class: tab_classes(tab), "aria-current": aria_current(tab) %>
+    <% end %>
+  <% end %>
+</nav>

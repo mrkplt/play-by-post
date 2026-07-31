@@ -12,9 +12,9 @@ RSpec.describe "Player Management", type: :feature do
   end
 
   describe "player management page" do
-    it "GM can access player management" do
-      visit edit_game_path(game)
-      click_on "Manage Players"
+    it "GM can access player management via the game header gear" do
+      visit game_path(game)
+      find("a[aria-label='Player management']").click
 
       expect(page).to have_text(player.display_name)
     end
@@ -31,7 +31,7 @@ RSpec.describe "Player Management", type: :feature do
     it "GM can invite a player by email" do
       visit game_player_management_path(game)
       find("input[name='invitation[email]']").fill_in with: "newplayer@example.com"
-      click_on "Send Invitation"
+      click_on "Invite"
 
       expect(page).to have_text("Invitation sent")
     end
@@ -39,7 +39,7 @@ RSpec.describe "Player Management", type: :feature do
     it "invitation email is sent" do
       visit game_player_management_path(game)
       find("input[name='invitation[email]']").fill_in with: "invited@example.com"
-      click_on "Send Invitation"
+      click_on "Invite"
 
       expect(ActionMailer::Base.deliveries.map(&:to).flatten).to include("invited@example.com")
     end
@@ -58,19 +58,19 @@ RSpec.describe "Player Management", type: :feature do
     it "GM can remove a player" do
       visit game_player_management_path(game)
 
-      within("tr[data-member-id='#{player.id}']") do
+      within(:xpath, "//div[contains(@class,'items-center')][.//span[normalize-space()='#{player.display_name}']]") do
         click_on "Remove"
       end
 
       expect(game.member_for(player).reload.status).to eq("removed")
     end
 
-    it "removed player sees the game with Former badge" do
+    it "removed player sees the game as not currently active on the dashboard" do
       game.member_for(player).update!(status: "removed")
       sign_in_as(player)
       visit root_path
 
-      expect(page).to have_text("Former")
+      expect(page).to have_text("Not currently active")
     end
 
     it "removed player gets read-only access to scenes" do
@@ -91,7 +91,7 @@ RSpec.describe "Player Management", type: :feature do
 
       visit game_player_management_path(game)
 
-      expect(page).to have_text("Pending Invitations")
+      expect(page).to have_text(/pending invitations/i)
       expect(page).to have_text("pending@example.com")
     end
 
@@ -100,7 +100,7 @@ RSpec.describe "Player Management", type: :feature do
 
       visit game_player_management_path(game)
 
-      within("tr", text: "todelete@example.com") do
+      within(:xpath, "//div[contains(@class,'items-center')][.//span[normalize-space()='todelete@example.com']]") do
         click_on "Cancel"
       end
 
@@ -110,23 +110,16 @@ RSpec.describe "Player Management", type: :feature do
     end
   end
 
-  describe "player status badges" do
-    it "shows Removed status for removed players" do
-      game.member_for(player).update!(status: "removed")
-
-      visit game_player_management_path(game)
-
-      within("tr[data-member-id='#{player.id}']") do
-        expect(page).to have_text("Removed")
-      end
-    end
-
-    it "banned players do not appear in the player management list" do
+  describe "player status" do
+    it "removed players remain listed but banned players do not" do
+      removed = create(:user, :with_profile)
+      create(:game_member, :removed, game: game, user: removed)
       game.member_for(player).update!(status: "banned")
 
       visit game_player_management_path(game)
 
-      expect(page).not_to have_css("tr[data-member-id='#{player.id}']")
+      expect(page).to have_text(removed.display_name)
+      expect(page).not_to have_text(player.display_name)
     end
   end
 
@@ -134,7 +127,7 @@ RSpec.describe "Player Management", type: :feature do
     it "GM can ban a player" do
       visit game_player_management_path(game)
 
-      within("tr[data-member-id='#{player.id}']") do
+      within(:xpath, "//div[contains(@class,'items-center')][.//span[normalize-space()='#{player.display_name}']]") do
         click_on "Ban"
       end
 

@@ -21,6 +21,13 @@ class ScenePresenter < BasePresenter
       .join(", ")
   end
 
+  # "N participants" — the only meta a scene card shows in the redesign.
+  sig { returns(String) }
+  def participant_summary
+    count = @model.scene_participants.count
+    "#{count} #{count == 1 ? 'participant' : 'participants'}"
+  end
+
   sig { returns(String) }
   def formatted_created_at
     @model.created_at.strftime("%b %-d, %Y %l:%M%P")

@@ -14,6 +14,7 @@ RSpec.describe "Characters", type: :feature do
     it "player can create their own character" do
       sign_in_as(player)
       visit game_path(game)
+      find("button[data-tab='roster']").click
       click_on "New Character"
 
       fill_in "Name", with: "Sable Nightwhisper"
@@ -27,6 +28,7 @@ RSpec.describe "Characters", type: :feature do
     it "GM can create a character on behalf of a player" do
       sign_in_as(gm)
       visit game_path(game)
+      find("button[data-tab='roster']").click
       click_on "New Character"
 
       fill_in "Name", with: "NPC Guard"
@@ -116,6 +118,7 @@ RSpec.describe "Characters", type: :feature do
 
       sign_in_as(gm)
       visit game_path(game)
+      find("button[data-tab='roster']").click
 
       expect(page).to have_text("Active Hero")
       expect(page).not_to have_text("Retired Hero")
@@ -129,6 +132,7 @@ RSpec.describe "Characters", type: :feature do
 
       sign_in_as(player)
       visit game_path(game)
+      find("button[data-tab='roster']").click
 
       expect(page).to have_text("Player Char")
     end
@@ -142,6 +146,7 @@ RSpec.describe "Characters", type: :feature do
 
       sign_in_as(player)
       visit game_path(game)
+      find("button[data-tab='roster']").click
 
       expect(page).to have_text("My Char")
       expect(page).not_to have_text("Other Char")
@@ -200,6 +205,7 @@ RSpec.describe "Characters", type: :feature do
 
       sign_in_as(other_player)
       visit game_path(game)
+      find("button[data-tab='roster']").click
 
       expect(page).not_to have_text("Secret Character")
     end
@@ -209,6 +215,7 @@ RSpec.describe "Characters", type: :feature do
 
       sign_in_as(player)
       visit game_path(game)
+      find("button[data-tab='roster']").click
 
       expect(page).to have_text("Secret Character")
     end
@@ -218,6 +225,7 @@ RSpec.describe "Characters", type: :feature do
 
       sign_in_as(gm)
       visit game_path(game)
+      find("button[data-tab='roster']").click
 
       expect(page).to have_text("Secret Character")
     end

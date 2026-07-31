@@ -1,9 +1,29 @@
-@keyframes ui-glow-fade {
-  0%, 25% { box-shadow: 0 0 14px 4px rgba(202, 138, 4, 0.45); }
-  100% { box-shadow: none; }
-}
+@layer components {
+  /*
+   * Attention glow — two distinct states on one visual language (per redesign spec):
+   *   .attn-item.is-hot  → persistent, data-driven "this needs your attention" (unread/new activity)
+   *   .attn-item:hover   → lighter affordance "this is clickable", for ANY interactive item
+   * Diablo-loot-highlight inspired. Gold accent.
+   */
+  .attn-item {
+    transition: box-shadow 0.25s ease, border-color 0.25s ease, transform 0.25s ease;
+  }
+  .attn-item.is-hot {
+    box-shadow: 0 0 0 1px rgba(200, 169, 110, 0.55), 0 0 22px 5px rgba(200, 169, 110, 0.38);
+    border-color: var(--color-accent) !important;
+  }
+  .attn-item:hover {
+    box-shadow: 0 0 0 1px rgba(200, 169, 110, 0.3), 0 0 16px 2px rgba(200, 169, 110, 0.28);
+    transform: translateY(-1px);
+  }
 
-.ui-glow {
-  animation: ui-glow-fade 4s ease-out forwards;
-  border-radius: 4px;
+  /* Legacy one-shot glow kept for existing turbo-stream inserts */
+  @keyframes ui-glow-fade {
+    0%, 25% { box-shadow: 0 0 14px 4px rgba(200, 169, 110, 0.45); }
+    100% { box-shadow: none; }
+  }
+  .ui-glow {
+    animation: ui-glow-fade 4s ease-out forwards;
+    border-radius: var(--radius-card);
+  }
 }

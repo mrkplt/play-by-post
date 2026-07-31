@@ -1,95 +1,130 @@
-<%= render(Ui::BreadcrumbComponent.new) do %>
-  <%= link_to "Games", root_path %> &rsaquo;
-  <%= @game.name %>
-  <% if @is_gm %>
-    <%= link_to edit_game_path(@game), class: "md:hidden hover:opacity-75 inline-flex align-middle ml-1" do %>
-      <%= icon "settings-01", class: "w-3.5 h-3.5 text-ink" %>
-    <% end %>
-  <% end %>
-<% end %>
+<% content_for :active_game_id, @game.id %>
 
-<div class="hidden md:flex items-center gap-3 mb-6">
-  <h1 class="text-3xl font-bold m-0 leading-none"><%= @game.name %></h1>
-  <% if @is_gm %>
-    <%= link_to edit_game_path(@game), class: "hover:opacity-75" do %>
-      <%= icon "settings-01", class: "w-4 h-4 text-ink" %>
+<div data-controller="game-tabs">
+  <%= render Shared::MobileFrameComponent.new do |frame| %>
+    <% frame.with_header do %>
+      <%= render Shared::GameHeaderComponent.new(
+            game: @game, title: @game.name, is_gm: @is_gm, active_tab: :scenes, show_gear: true) %>
     <% end %>
-  <% end %>
-</div>
-<% if @game.description.present? %>
-  <p><%= @game.description %></p>
-<% end %>
 
-<!-- Character Roster -->
-<div class="mb-10">
-  <div class="flex items-center justify-between mb-4">
-    <h2 class="m-0 text-xl font-semibold">Characters</h2>
-    <%= link_to "New Character", new_game_character_path(@game), class: "px-5 py-2 bg-slate-500 text-white rounded text-base cursor-pointer hover:bg-slate-600 inline-block no-underline" %>
-  </div>
-  <% if @characters.empty? %>
-    <p class="text-slate-400">No characters yet.</p>
-  <% else %>
-    <div class="flex flex-wrap gap-3">
-      <% @characters.each do |character| %>
-        <div class="bg-white border border-slate-200 rounded-lg flex-1 min-w-40 max-w-64 p-3">
-          <div class="font-semibold">
-            <%= link_to character.name, game_character_path(@game, character) %>
-          </div>
-          <div class="text-xs text-slate-500 mt-0.5">
-            <%= @character_owner_names[character.id] %>
-          </div>
+    <%# ===== Scenes panel ===== %>
+    <section data-game-tabs-target="panel" data-panel="scenes" class="flex flex-col gap-3">
+      <%= render Ui::SectionLabelComponent.new do %>Active Scenes<% end %>
+      <% if @active_scenes.empty? %>
+        <p class="text-muted-2 text-sm">No active scenes.</p>
+      <% else %>
+        <div>
+          <% @active_scenes.each do |scene| %>
+            <%= render Shared::SceneCardComponent.new(scene: scene, game: @game, hot: @hot_scene_ids.include?(scene.id)) %>
+          <% end %>
         </div>
       <% end %>
-    </div>
-  <% end %>
-</div>
 
-<!-- Active Scenes -->
-<div class="mb-10">
-  <div class="flex items-center justify-between mb-4">
-    <h2 class="m-0 text-xl font-semibold">Active Scenes</h2>
-    <div class="flex gap-2">
-      <%= link_to "All Scenes", game_scenes_path(@game), class: "px-5 py-2 bg-slate-500 text-white rounded text-base cursor-pointer hover:bg-slate-600 inline-block no-underline" %>
       <% if @is_gm %>
-        <%= link_to "New Scene", new_game_scene_path(@game), class: "px-5 py-2 bg-slate-500 text-white rounded text-base cursor-pointer hover:bg-slate-600 inline-block no-underline" %>
+        <%= link_to "New Scene", new_game_scene_path(@game),
+              class: "block w-full text-center bg-accent text-accent-ink rounded-control py-2.5 font-bold text-[13px] no-underline" %>
       <% end %>
-    </div>
-  </div>
-  <% if @active_scenes.empty? %>
-    <p class="text-slate-400">No active scenes.</p>
-  <% else %>
-    <% @active_scenes.each do |scene| %>
-      <%= render Shared::SceneCardComponent.new(scene: scene, game: @game) %>
-    <% end %>
-  <% end %>
-</div>
 
-<!-- Export -->
-<div class="mb-10">
-  <div class="flex items-center justify-between mb-4">
-    <h2 class="m-0 text-xl font-semibold">Export</h2>
-    <%= button_to "Export Game", game_export_path(@game), method: :post,
-          class: "px-5 py-2 bg-slate-500 text-white rounded text-base cursor-pointer hover:bg-slate-600 inline-block" %>
-  </div>
-  <p class="text-sm text-slate-500">Download a zip archive of all scenes, posts, characters, and a file manifest. You'll receive an email with a download link within a few minutes; the link expires after 7 days.</p>
-  <% if @export_receipt %>
-    <p class="text-xs text-slate-400 mt-1"><%= last_export_notice(@export_receipt) %></p>
-  <% end %>
-</div>
+      <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do %>In Active Scenes<% end %>
+      <div class="bg-card border border-card-border rounded-card overflow-hidden">
+        <%= render Shared::RosterRowComponent.new(
+              name: @gm_name, subtitle: "Running this game",
+              avatar_tone: :dark, crown: @is_gm, last: @roster_preview.empty?) %>
+        <% @roster_preview.each_with_index do |row, i| %>
+          <%= render Shared::RosterRowComponent.new(
+                name: row[:name], subtitle: row[:scene],
+                avatar_tone: :gold, last: i == @roster_preview.length - 1) %>
+        <% end %>
+      </div>
 
-<!-- Game Files -->
-<div class="mb-10">
-  <div class="flex items-center justify-between mb-4">
-    <h2 class="m-0 text-xl font-semibold">Game Files</h2>
-    <% if @is_gm %>
-      <%= link_to "Manage Files", game_game_files_path(@game), class: "px-5 py-2 bg-slate-500 text-white rounded text-base cursor-pointer hover:bg-slate-600 inline-block no-underline" %>
-    <% else %>
-      <%= link_to "View Files", game_game_files_path(@game), class: "px-5 py-2 bg-slate-500 text-white rounded text-base cursor-pointer hover:bg-slate-600 inline-block no-underline" %>
-    <% end %>
-  </div>
-  <% if @game_files.empty? %>
-    <p class="text-slate-400 text-sm">No files uploaded yet.</p>
-  <% else %>
-    <%= render Shared::GalleryComponent.new(game_files: @game_files.to_a, game: @game, is_gm: @is_gm) %>
+      <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do %>Export<% end %>
+      <div class="bg-card border border-card-border rounded-card px-3.5">
+        <%= render Ui::SettingsRowComponent.new(label: "This game", sub: @export_notice, last: true) do %>
+          <%= button_to "Export Game", game_export_path(@game), method: :post,
+                class: "text-[11px] font-bold text-accent bg-transparent border-0 cursor-pointer p-0" %>
+        <% end %>
+      </div>
+    </section>
+
+    <%# ===== Roster panel ===== %>
+    <section data-game-tabs-target="panel" data-panel="roster" class="flex flex-col gap-3" hidden>
+      <div data-controller="roster-filter">
+        <div class="flex items-center gap-1.5 border border-[#d8d5cd] rounded-control px-2.5 py-2 bg-card mb-3">
+          <span class="text-[13px] text-muted-2">&#128269;</span>
+          <input type="text" placeholder="Search characters or players"
+                 data-roster-filter-target="query" data-action="input->roster-filter#filter"
+                 class="flex-1 text-[13px] text-ink bg-transparent border-0 outline-none placeholder:text-muted-2">
+        </div>
+
+        <div class="flex items-center justify-between">
+          <%= render Ui::SectionLabelComponent.new do %>Characters<% end %>
+          <%= link_to "New Character", new_game_character_path(@game), class: "text-[11px] font-bold text-accent no-underline" %>
+        </div>
+        <% if @roster_characters.empty? %>
+          <p class="text-muted-2 text-sm">No characters yet.</p>
+        <% else %>
+          <div class="bg-card border border-card-border rounded-card overflow-hidden mt-1">
+            <% @roster_characters.each_with_index do |row, i| %>
+              <div data-roster-filter-target="row" data-roster-name="<%= row[:filter_key] %>">
+                <%= render Shared::RosterRowComponent.new(
+                      name: row[:character].name,
+                      subtitle: "Played by #{row[:owner_name]}",
+                      avatar_tone: row[:avatar_tone],
+                      dimmed: row[:removed],
+                      last: i == @roster_characters.length - 1) do %>
+                  <% if row[:removed] %>
+                    <%= render Ui::BadgeComponent.new(variant: :slate) { "Removed" } %>
+                  <% end %>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
+        <% end %>
+
+        <% if @inactive_count.positive? %>
+          <p class="text-[11px] text-muted-2 text-center mt-3">
+            <%= pluralize(@inactive_count, "inactive character") %> hidden
+          </p>
+        <% end %>
+
+        <% if @is_gm && @banned_members.any? %>
+          <%= render Ui::SectionLabelComponent.new(html_class: "mt-3") do %>Banned &middot; GM only<% end %>
+          <div class="bg-tint-blue-bg border border-tint-blue-border rounded-card overflow-hidden opacity-85 mt-1">
+            <% @banned_members.each_with_index do |member, i| %>
+              <%= render Shared::RosterRowComponent.new(
+                    name: @banned_names[member.user_id],
+                    subtitle: "Played by #{@banned_names[member.user_id]}",
+                    avatar_tone: :blue,
+                    name_class: "text-tint-blue-strong",
+                    subtitle_class: "text-tint-blue-soft",
+                    last: i == @banned_members.length - 1) do %>
+                <%= form_with url: game_player_management_game_member_path(@game, member), method: :patch, class: "inline" do |f| %>
+                  <%= f.hidden_field :status, value: "active" %>
+                  <%= f.submit "Unban", class: "text-[11px] font-bold text-danger-soft bg-transparent border-0 cursor-pointer p-0" %>
+                <% end %>
+              <% end %>
+            <% end %>
+          </div>
+        <% end %>
+
+        <% if @is_gm %>
+          <%= link_to "Invite Player", game_player_management_path(@game),
+                class: "block w-full text-center bg-accent text-accent-ink rounded-control py-2.5 font-extrabold text-[13px] tracking-[0.02em] no-underline mt-3" %>
+        <% end %>
+      </div>
+    </section>
+
+    <%# ===== Files panel ===== %>
+    <section data-game-tabs-target="panel" data-panel="files" class="flex flex-col gap-3" hidden>
+      <% if @is_gm %>
+        <%= render Shared::FileUploadFormComponent.new(game: @game, game_file: @game_file) %>
+      <% end %>
+      <% if @game_files.empty? %>
+        <p class="text-muted-2 text-sm">No files uploaded yet.</p>
+      <% else %>
+        <%= render Ui::SectionLabelComponent.new do %>Newest first<% end %>
+        <%= render Shared::GalleryComponent.new(game_files: @game_files.to_a, game: @game, is_gm: @is_gm) %>
+      <% end %>
+    </section>
   <% end %>
 </div>

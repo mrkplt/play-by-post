@@ -265,9 +265,14 @@ RSpec.describe "Game Files", type: :feature do
       gf
     end
 
+    def open_files_tab
+      find("button[data-tab='files']").click
+    end
+
     it "displays files as a gallery grid with thumbnails" do
       sign_in_as(player)
       visit game_path(game)
+      open_files_tab
 
       expect(page).to have_css('[data-testid="gallery-grid"]')
       expect(page).to have_css('[data-testid="gallery-card"]', count: 2)
@@ -276,6 +281,7 @@ RSpec.describe "Game Files", type: :feature do
     it "shows filename on each card" do
       sign_in_as(player)
       visit game_path(game)
+      open_files_tab
 
       expect(page).to have_css('[data-testid="gallery-card-filename"]', text: "map.png")
       expect(page).to have_css('[data-testid="gallery-card-filename"]', text: "notes.txt")
@@ -284,6 +290,7 @@ RSpec.describe "Game Files", type: :feature do
     it "shows placeholder for non-thumbnailable files" do
       sign_in_as(player)
       visit game_path(game)
+      open_files_tab
 
       expect(page).to have_css('[data-testid="gallery-card-placeholder"]', text: "TXT")
     end
@@ -291,6 +298,7 @@ RSpec.describe "Game Files", type: :feature do
     it "opens lightbox with download button when clicking a card" do
       sign_in_as(player)
       visit game_path(game)
+      open_files_tab
 
       find('[data-testid="gallery-card"]', match: :first).click
       within '[data-testid="lightbox"]' do
@@ -298,16 +306,16 @@ RSpec.describe "Game Files", type: :feature do
       end
     end
 
-    it "shows Manage Files link for GM" do
+    it "exposes a Files tab to the GM" do
       sign_in_as(gm)
       visit game_path(game)
-      expect(page).to have_link("Manage Files")
+      expect(page).to have_css("button[data-tab='files']", text: "Files")
     end
 
-    it "shows View Files link for non-GM member" do
+    it "exposes a Files tab to non-GM members" do
       sign_in_as(player)
       visit game_path(game)
-      expect(page).to have_link("View Files")
+      expect(page).to have_css("button[data-tab='files']", text: "Files")
     end
   end
 end

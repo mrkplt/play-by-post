@@ -5,13 +5,48 @@
 @import "../../components/shared/post_composer_component.css";
 
 @theme {
+  /* Ink & canvas */
   --color-ink: #1a1a1a;
   --color-canvas: #fafafa;
-  --color-sidebar-bg: #2b2d31;
+
+  /* Dark surfaces (header bars, drawer) */
+  --color-sidebar-bg: #2b2d31;      /* header bars */
+  --color-drawer-bg: #1a1b1e;       /* nav drawer / darkest surface */
   --color-sidebar-text: #cdd1d9;
   --color-sidebar-border: #3d3f45;
   --color-sidebar-hover: #3a3c42;
+  --color-pill-idle: #3a3c42;       /* inactive pill tab background */
+
+  /* Accent (gold) */
   --color-accent: #c8a96e;
+  --color-accent-ink: #1a1a1a;      /* text on gold surfaces */
+
+  /* Light card surfaces */
+  --color-card: #ffffff;
+  --color-card-border: #e8e6e1;
+  --color-card-divider: #f0eee9;
+
+  /* Muted greys */
+  --color-muted: #8a8d94;           /* labels, meta */
+  --color-muted-2: #9aa0ab;         /* tertiary meta */
+  --color-body-ink: #2a2a2a;        /* post body text */
+  --color-row-ink: #5c5e63;         /* row secondary text */
+
+  /* Sodalite/azurite blue — retired / OOC / banned tint */
+  --color-tint-blue-bg: #e6ebf4;
+  --color-tint-blue-border: #c7d2e6;
+  --color-tint-blue-strong: #2a4570;
+  --color-tint-blue-soft: #4d6690;
+
+  /* Danger (ban / cancel / unban) */
+  --color-danger: #9c3a3a;
+  --color-danger-soft: #7a3a3a;
+
+  /* Radii */
+  --radius-control: 8px;            /* buttons / inputs */
+  --radius-card: 10px;              /* cards */
+  --radius-post: 12px;              /* post cards */
+  --radius-pill: 20px;              /* pills / badges */
 }
 
 @layer base {

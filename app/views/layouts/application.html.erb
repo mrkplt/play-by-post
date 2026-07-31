@@ -9,22 +9,15 @@
     <%= javascript_importmap_tags %>
   </head>
   <body>
-    <div data-controller="sidebar">
+    <div data-controller="sidebar" data-action="keydown@window->sidebar#closeOnEscape">
       <% if user_signed_in? %>
-        <%= render Shared::NavShellComponent.new(current_user: current_user) %>
+        <%= render Shared::NavShellComponent.new(current_user: current_user, active_game_id: content_for(:active_game_id).presence&.to_i) %>
       <% end %>
 
       <!-- Main -->
-      <div class="<%= user_signed_in? ? 'main-with-sidebar' : '' %>">
-        <main class="content-area">
-          <% if notice.present? %>
-            <p class="px-4 py-3 rounded mb-4 text-sm bg-green-100 text-green-800"><%= notice %></p>
-          <% end %>
-          <% if alert.present? %>
-            <p class="px-4 py-3 rounded mb-4 text-sm bg-red-50 text-red-800"><%= alert %></p>
-          <% end %>
-          <%= yield %>
-        </main>
+      <div>
+        <%= render Ui::FlashComponent.new(notice: notice, alert: alert) %>
+        <%= yield %>
       </div>
     </div>
   <script>

@@ -12,11 +12,13 @@
     </div>
   <% end %>
 
-  <div class="mb-4">
+  <%= render Ui::SectionLabelComponent.new(html_class: "mb-2") do %>Post a Reply<% end %>
+
+  <div class="mb-3">
     <%= f.text_area :content, rows: 5,
         value: @draft&.content.to_s,
-        placeholder: "Write your post...",
-        class: "markdown-editor w-full px-3 py-2 border border-slate-300 rounded text-base",
+        placeholder: "Write your post... (markdown)",
+        class: "markdown-editor w-full px-2.5 py-2 border border-[#d8d5cd] rounded-control text-base font-mono",
         data: {
           markdown_preview_target: "input",
           post_draft_target: "content",
@@ -24,26 +26,29 @@
         } %>
   </div>
 
-  <div data-markdown-preview-target="preview" class="markdown-base post-content border border-slate-200 rounded-lg px-3 py-3 mb-3 min-h-12 bg-slate-50"></div>
+  <div data-markdown-preview-target="preview" class="markdown-base post-content border border-card-border rounded-control px-3 py-3 mb-3 min-h-12 bg-canvas empty:hidden"></div>
 
   <% unless @game.images_disabled? %>
     <div class="mb-2">
-      <%= f.label :image, "Image (optional)", class: "block font-medium mb-1 text-sm text-slate-600" %>
+      <%= f.label :image, "Image (optional)", class: "block font-medium mb-1 text-sm text-row-ink" %>
       <%= f.file_field :image, accept: "image/jpeg,image/png,image/gif,image/webp",
-          class: "block max-w-md text-sm text-slate-700 border border-slate-300 rounded px-3 py-2 cursor-pointer bg-white file:mr-3 file:py-1 file:px-3 file:rounded file:border-0 file:text-sm file:font-medium file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200" %>
-      <p class="text-xs text-slate-400 mt-0.5">JPEG, PNG, GIF, or WebP. Max 10MB.</p>
+          class: "block max-w-md text-sm text-row-ink border border-[#d8d5cd] rounded-control px-3 py-2 cursor-pointer bg-white file:mr-3 file:py-1 file:px-3 file:rounded file:border-0 file:text-sm file:font-medium file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200" %>
+      <p class="text-xs text-muted-2 mt-0.5">JPEG, PNG, GIF, or WebP. Max 10MB.</p>
     </div>
   <% end %>
 
-  <div class="flex flex-wrap items-center gap-x-4 gap-y-2" data-testid="composer-actions">
-    <%= f.submit "Post", class: "flex-1 px-5 py-2 bg-slate-500 text-white rounded text-base cursor-pointer hover:bg-slate-600 no-underline", style: "min-height: 44px;" %>
-    <label class="text-sm cursor-pointer shrink-0">
-      <%= f.check_box :is_ooc %> Out of character
-    </label>
-    <label class="text-sm cursor-pointer shrink-0 flex items-center gap-1">
-      <input type="checkbox" data-post-draft-target="saveAsDraftToggle" data-action="change->post-draft#toggleSaveAsDraft">
-      Save as draft
-    </label>
-    <span data-post-draft-target="status" class="text-xs text-slate-400 hidden"></span>
+  <div class="flex justify-between items-center flex-wrap gap-2" data-testid="composer-actions">
+    <div class="flex gap-2 items-center">
+      <label class="flex items-center gap-[7px] text-[13px] text-row-ink font-semibold px-2.5 py-2 rounded-control cursor-pointer">
+        <%= f.check_box :is_ooc, class: "w-[18px] h-[18px] accent-accent" %>
+        OOC
+      </label>
+      <label class="flex items-center gap-1.5 text-[13px] text-row-ink font-semibold px-2.5 py-2 rounded-control cursor-pointer">
+        <input type="checkbox" class="w-[18px] h-[18px] accent-accent" data-post-draft-target="saveAsDraftToggle" data-action="change->post-draft#toggleSaveAsDraft">
+        Save as draft
+      </label>
+      <span data-post-draft-target="status" class="text-xs text-muted-2 hidden"></span>
+    </div>
+    <%= f.submit "POST", class: "bg-accent text-accent-ink border-0 rounded-control px-5 py-2.5 font-extrabold text-[13px] tracking-[0.02em] cursor-pointer", style: "min-height: 44px;" %>
   </div>
 <% end %>

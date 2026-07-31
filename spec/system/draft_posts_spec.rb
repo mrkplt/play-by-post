@@ -38,7 +38,7 @@ RSpec.describe "Draft posts", type: :feature do
     sign_in_as(player)
     visit game_scene_path(game, scene)
 
-    click_button "Post"
+    click_button "POST"
 
     expect(page).to have_text("Ready to post")
     expect(Post.published.count).to eq(1)

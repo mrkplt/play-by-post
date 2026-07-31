@@ -10,6 +10,15 @@ RSpec.describe Ui::BadgeComponent, type: :component do
     expect(rendered { "Former" }).to have_css("span.bg-slate-100.text-slate-600", text: "Former")
   end
 
+  it "defaults the variant to :gray" do
+    expect(described_class.new.classes).to eq("#{Ui::BadgeComponent::BASE} #{Ui::BadgeComponent::VARIANTS.fetch(:gray)}")
+  end
+
+  it "composes classes as BASE + variant" do
+    expect(described_class.new(variant: :green).classes)
+      .to eq("#{Ui::BadgeComponent::BASE} #{Ui::BadgeComponent::VARIANTS.fetch(:green)}")
+  end
+
   it "renders the content block" do
     expect(rendered { "Active" }).to have_css("span", text: "Active")
   end
@@ -41,6 +50,18 @@ RSpec.describe Ui::BadgeComponent, type: :component do
 
     it "blue applies blue background and text" do
       expect(rendered(variant: :blue) { "GM" }).to have_css("span.bg-blue-100.text-blue-800")
+    end
+
+    it "slate applies the dark-surface slate tint" do
+      expect(rendered(variant: :slate) { "Removed" }).to have_css("span.uppercase.tracking-\\[0\\.03em\\]", text: "Removed")
+    end
+
+    it "danger applies the dark-surface danger tint" do
+      expect(rendered(variant: :danger) { "Banned" }).to have_css("span.text-\\[\\#e28a8a\\]", text: "Banned")
+    end
+
+    it "goldish applies the dark-surface gold tint" do
+      expect(rendered(variant: :goldish) { "GM" }).to have_css("span.text-\\[\\#e2c48a\\]", text: "GM")
     end
   end
 end

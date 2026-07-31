@@ -108,7 +108,6 @@ RSpec.describe "Scenes", type: :feature do
 
     it "creates a quick scene inheriting the parent" do
       visit game_scene_path(game, scene)
-      find("button[title='Scene actions']").click
       click_on "Quick Scene"
 
       fill_in "Title", with: "Continuation"
@@ -123,7 +122,6 @@ RSpec.describe "Scenes", type: :feature do
       visit game_scene_path(game, scene)
 
       if page.has_button?("Scene actions", wait: 1)
-        find("button[title='Scene actions']").click
         expect(page).not_to have_link("Quick Scene")
       end
     end
@@ -195,7 +193,6 @@ RSpec.describe "Scenes", type: :feature do
     it "GM sees Quick Scene, New Scene, Edit Participants, and End Scene" do
       sign_in_as(gm)
       visit game_scene_path(game, scene)
-      find("button[title='Scene actions']").click
 
       expect(page).to have_link("Quick Scene")
       expect(page).to have_link("New Scene")
@@ -208,7 +205,6 @@ RSpec.describe "Scenes", type: :feature do
       visit game_scene_path(game, scene)
 
       if page.has_button?("Scene actions", wait: 1)
-        find("button[title='Scene actions']").click
         expect(page).not_to have_link("Quick Scene")
         expect(page).not_to have_link("New Scene")
         expect(page).not_to have_link("Edit Participants")
@@ -236,7 +232,6 @@ RSpec.describe "Scenes", type: :feature do
       create(:character, game: game, user: player, name: "Vex")
       sign_in_as(gm)
       visit game_scene_path(game, scene)
-      find("button[title='Scene actions']").click
       click_on "Edit Participants"
 
       expect(page).to have_text("Vex")
@@ -253,7 +248,6 @@ RSpec.describe "Scenes", type: :feature do
 
     it "GM can resolve a scene with outcome text" do
       visit game_scene_path(game, scene)
-      find("button[title='Scene actions']").click
       click_on "End Scene"
       fill_in "Outcome (optional)", with: "The party defeated the dragon."
       click_on "Confirm — End Scene"
@@ -295,12 +289,10 @@ RSpec.describe "Scenes", type: :feature do
 
     it "can mute and unmute notifications for a scene" do
       visit game_scene_path(game, scene)
-      find("button[title='Scene actions']").click
       click_on "Mute notifications"
 
       expect(page).to have_text("Notifications muted")
 
-      find("button[title='Scene actions']").click
       click_on "Unmute notifications"
 
       expect(page).to have_text("Notifications enabled")
@@ -312,7 +304,6 @@ RSpec.describe "Scenes", type: :feature do
       create(:post, scene: scene, user: player, content: "New activity while GM away")
 
       visit game_scene_path(game, scene)
-      find("button[title='Scene actions']").click
       click_on "Mute notifications"
 
       expect(page).to have_text("Notifications muted")
