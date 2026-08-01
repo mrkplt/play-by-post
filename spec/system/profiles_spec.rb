@@ -7,7 +7,7 @@ RSpec.describe "Profiles", type: :feature do
 
   it "user can update their display name" do
     visit profile_path
-    click_on "Edit Profile"
+    click_on "Edit"
 
     fill_in "Display name", with: "Aldric the Bold"
     click_on "Save"
@@ -15,13 +15,18 @@ RSpec.describe "Profiles", type: :feature do
     expect(page).to have_text("Aldric the Bold")
   end
 
-  it "display name is shown in the sidebar" do
-    expect(page).to have_text(user.display_name)
+  it "display name is shown in the nav drawer" do
+    visit profile_path
+    within("aside.nav-drawer", visible: :all) do
+      expect(page).to have_text(user.display_name)
+    end
   end
 
-  it "sidebar user name links to profile show" do
-    click_on user.display_name
-    expect(page).to have_current_path(profile_path)
+  it "the drawer profile chip links to the profile page" do
+    visit root_path
+    within("aside.nav-drawer", visible: :all) do
+      expect(page).to have_link("View Profile", href: profile_path, visible: :all)
+    end
   end
 
   describe "hide OOC preference" do
@@ -35,12 +40,10 @@ RSpec.describe "Profiles", type: :feature do
       create(:post, scene: scene, user: user, content: "In character action.")
     end
 
-    it "profile shows current hide OOC status" do
+    it "profile shows the hide-OOC default toggle" do
       visit profile_path
-
-      expect(page).to have_xpath(
-        "//div[normalize-space()='Hide OOC Posts']/following-sibling::div[normalize-space()='No']"
-      )
+      expect(page).to have_text("Hide OOC by default")
+      expect(page).to have_css("[role='switch']")
     end
 
     it "OOC posts are hidden on scene load when hide_ooc is enabled" do
@@ -52,10 +55,9 @@ RSpec.describe "Profiles", type: :feature do
       expect(page).not_to have_css('[data-testid="ooc-post"]', visible: true)
     end
 
-    it "toggling hide OOC via scene menu hides OOC posts on the page" do
+    it "toggling Hide OOC in the scene header hides OOC posts" do
       visit game_scene_path(game, scene)
-      find("button[title='Scene actions']").click
-      click_on "Hide OOC posts"
+      find("button[aria-label='Toggle out-of-character posts']").click
 
       expect(page).not_to have_css('[data-testid="ooc-post"]', visible: true)
       expect(page).to have_text("In character action.")
@@ -70,19 +72,16 @@ RSpec.describe "Profiles", type: :feature do
       expect(page).to have_text(user.email)
     end
 
-    it "shows game list with role badges" do
-      game = create(:game, name: "Test Campaign")
-      create(:game_member, :game_master, game: game, user: user)
-
+    it "does not have its own games section (games live in the nav drawer)" do
       visit profile_path
 
-      expect(page).to have_text("Test Campaign")
-      expect(page).to have_text("GM")
+      # The old profile had a "My Games" section; the redesign removed it.
+      expect(page).not_to have_css(".app-body", text: "My Games")
     end
 
     it "edit link navigates to edit page" do
       visit profile_path
-      click_on "Edit Profile"
+      click_on "Edit"
 
       expect(page).to have_current_path(edit_profile_path)
     end

@@ -11,7 +11,7 @@ RSpec.describe GamesController, type: :request do
   end
 
   describe "GET /" do
-    it "lists only the current user's non-banned games in name order with role badges" do
+    it "lists only the current user's non-banned games in name order, crowning GM games" do
       alpha_game = create(:game, name: "Alpha Quest")
       zeta_game = create(:game, name: "Zeta Quest")
       banned_game = create(:game, name: "Hidden Game")
@@ -25,16 +25,18 @@ RSpec.describe GamesController, type: :request do
       sign_in(gm)
       get root_path
 
-      alpha_card = %(<a class="text-base font-bold no-underline" href="#{game_path(alpha_game)}">Alpha Quest</a>)
-      zeta_card = %(<a class="text-base font-bold no-underline" href="#{game_path(zeta_game)}">Zeta Quest</a>)
-
+      doc = Nokogiri::HTML.parse(response.body)
       expect(response).to have_http_status(:ok)
-      expect(response.body).to include(alpha_card, zeta_card)
+      expect(response.body).to include("Alpha Quest", "Zeta Quest")
       expect(response.body).not_to include("Hidden Game")
       expect(response.body).not_to include("Other User Game")
-      expect(response.body.index(alpha_card)).to be < response.body.index(zeta_card)
-      expect(response.body).to include(%(data-variant="green">Player</span>))
-      expect(response.body).to include(%(data-variant="blue">GM</span>))
+      expect(response.body.index("Alpha Quest")).to be < response.body.index("Zeta Quest")
+
+      # GM game card carries a crown; the plain player card does not.
+      zeta_card = doc.at_xpath("//a[@href='#{game_path(zeta_game)}']")
+      alpha_card = doc.at_xpath("//a[@href='#{game_path(alpha_game)}']")
+      expect(zeta_card.css("svg, img").count).to be >= 1
+      expect(alpha_card.css("svg, img").count).to eq(0)
     end
 
     it "shows the primary character link and active scene count for each dashboard item" do
@@ -59,7 +61,7 @@ RSpec.describe GamesController, type: :request do
       get root_path
 
       expect(response.body).to include("First Knight")
-      expect(response.body).to include("+2 more")
+      expect(response.body).to include("+2")
       expect(response.body).not_to include("Third Wizard")
     end
 
@@ -112,12 +114,12 @@ RSpec.describe GamesController, type: :request do
       get root_path
 
       doc = Nokogiri::HTML.parse(response.body)
-      recent_wrapper = doc.at_xpath("//a[@href='#{game_path(recent_game)}']/ancestor::div[@data-new-activity='true']")
-      old_wrapper = doc.at_xpath("//a[@href='#{game_path(game)}']/ancestor::div[@data-new-activity='true']")
+      recent_card = doc.at_xpath("//a[@href='#{game_path(recent_game)}' and @data-new-activity='true']")
+      old_card = doc.at_xpath("//a[@href='#{game_path(game)}' and @data-new-activity='true']")
 
       expect(doc.css("[data-new-activity='true']").count).to eq(1)
-      expect(recent_wrapper).not_to be_nil
-      expect(old_wrapper).to be_nil
+      expect(recent_card).not_to be_nil
+      expect(old_card).to be_nil
     end
 
     it "does not show a new activity flag when the user has no last login timestamp" do
@@ -343,6 +345,62 @@ RSpec.describe GamesController, type: :request do
       newer_pos = response.body.index("Newer Scene Title")
       expect(newer_pos).to be < older_pos
     end
+
+    it "shows the GM by display name in the roster preview with 'Running this game'" do
+      gm.user_profile.update!(display_name: "Gandalf the Grey")
+      sign_in(gm)
+      get game_path(game)
+      expect(response.body).to include("Gandalf the Grey")
+      expect(response.body).to include("Running this game")
+    end
+
+    it "falls back to 'GM' in the roster preview when no GM record resolves a name" do
+      gm.user_profile.update!(display_name: nil)
+      sign_in(gm)
+      get game_path(game)
+      expect(response.body).to include("Running this game")
+    end
+
+    it "lists a participating character and its scene in the roster preview" do
+      char = create(:character, game: game, user: player, name: "Aragorn")
+      scene = create(:scene, game: game, title: "The Council")
+      create(:scene_participant, scene: scene, user: player, character: char)
+      sign_in(gm)
+      get game_path(game)
+      expect(response.body).to include("Aragorn")
+      expect(response.body).to include("The Council")
+    end
+
+    it "glows a scene with activity since last login but not an older one" do
+      login_as(gm, scope: :user, run_callbacks: false)
+      gm.user_profile.update!(last_login_at: 1.hour.ago)
+
+      hot = create(:scene, game: game, title: "Hot Scene")
+      create(:scene_participant, scene: hot, user: gm)
+      create(:post, scene: hot, user: gm, created_at: 5.minutes.ago)
+
+      cold = create(:scene, game: game, title: "Cold Scene")
+      create(:scene_participant, scene: cold, user: gm)
+      create(:post, scene: cold, user: gm, created_at: 2.days.ago)
+
+      get game_path(game)
+      doc = Nokogiri::HTML.parse(response.body)
+      hot_card = doc.at_xpath("//a[normalize-space()='Hot Scene']/ancestor-or-self::*[contains(@class,'is-hot')]")
+      cold_card = doc.at_xpath("//a[normalize-space()='Cold Scene']/ancestor-or-self::*[contains(@class,'is-hot')]")
+      expect(hot_card).not_to be_nil
+      expect(cold_card).to be_nil
+    end
+
+    it "does not glow any scene when the user has never logged in" do
+      login_as(gm, scope: :user, run_callbacks: false)
+      gm.user_profile.update!(last_login_at: nil)
+      scene = create(:scene, game: game, title: "Some Scene")
+      create(:scene_participant, scene: scene, user: gm)
+      create(:post, scene: scene, user: gm)
+
+      get game_path(game)
+      expect(response.body).not_to include("is-hot")
+    end
   end
 
   describe "PATCH /games/:id/toggle_sheets_hidden" do
@@ -390,7 +448,7 @@ RSpec.describe GamesController, type: :request do
       sign_in(gm)
       patch toggle_ai_summaries_enabled_game_path(game)
       expect(game.reload.ai_summaries_enabled?).to be true
-      expect(response).to redirect_to(edit_game_path(game))
+      expect(response).to redirect_to(game_player_management_path(game))
       expect(flash[:notice]).to match(/enabled/i)
     end
 
@@ -399,7 +457,7 @@ RSpec.describe GamesController, type: :request do
       sign_in(gm)
       patch toggle_ai_summaries_enabled_game_path(game)
       expect(game.reload.ai_summaries_enabled?).to be false
-      expect(response).to redirect_to(edit_game_path(game))
+      expect(response).to redirect_to(game_player_management_path(game))
       expect(flash[:notice]).to match(/disabled/i)
     end
 

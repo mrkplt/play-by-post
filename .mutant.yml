@@ -55,10 +55,23 @@ matcher:
     - Shared::SceneCardComponent
     - Shared::SidebarComponent
     - Shared::TreeNodeComponent
+    - Shared::GameHeaderComponent
+    - Shared::NavDrawerComponent
+    - Shared::GameCardComponent
+    - Shared::RosterRowComponent
+    - Shared::PageHeaderComponent
+    - Shared::MobileFrameComponent
     - Ui::BadgeComponent
     - Ui::BreadcrumbComponent
     - Ui::ButtonComponent
     - Ui::GlowComponent
+    - Ui::AvatarComponent
+    - Ui::SectionLabelComponent
+    - Ui::ToggleSwitchComponent
+    - Ui::IconButtonComponent
+    - Ui::SettingsRowComponent
+    - Ui::PillTabsComponent
+    - Ui::FlashComponent
     # Services
     - AttachmentUploader
     - ExportDelivery

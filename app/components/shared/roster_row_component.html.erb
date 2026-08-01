@@ -1,0 +1,13 @@
+<div class="<%= row_classes %>">
+  <%= render Ui::AvatarComponent.new(name: name, tone: avatar_tone, size: :sm) %>
+  <div class="flex flex-col flex-1 min-w-0">
+    <span class="<%= name_classes %>">
+      <% if crown? %>
+        <%= helpers.icon "crown-03", class: "w-[13px] h-[13px] text-accent flex-shrink-0" %>
+      <% end %>
+      <span class="truncate"><%= name %></span>
+    </span>
+    <span class="<%= subtitle_classes %>"><%= subtitle %></span>
+  </div>
+  <div class="flex-shrink-0"><%= content %></div>
+</div>

@@ -1,0 +1,19 @@
+<%= link_to game_path(game), class: card_classes, data: link_data do %>
+  <div class="flex items-center gap-1.5">
+    <% if former? %>
+      <span class="text-[13px] text-tint-blue-strong" aria-hidden="true">&#9790;</span>
+    <% end %>
+    <% if show_crown? %>
+      <%= helpers.icon "crown-03", class: "w-[13px] h-[13px] text-accent flex-shrink-0" %>
+    <% end %>
+    <span class="<%= name_classes %>"><%= game.name %></span>
+  </div>
+
+  <% if character_label %>
+    <div class="<%= character_classes %>"><%= character_label %></div>
+  <% end %>
+
+  <div class="mt-1">
+    <span class="<%= meta_classes %>"><%= meta_text %></span>
+  </div>
+<% end %>

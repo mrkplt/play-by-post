@@ -1,0 +1,15 @@
+<div class="app-frame">
+  <% if header? %>
+    <%= header %>
+  <% end %>
+
+  <div class="app-body">
+    <%= content %>
+  </div>
+
+  <% if footer? %>
+    <footer class="border-t border-card-border bg-card px-4 py-3 sticky bottom-0">
+      <%= footer %>
+    </footer>
+  <% end %>
+</div>

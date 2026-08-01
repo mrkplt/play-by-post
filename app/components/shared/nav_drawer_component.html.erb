@@ -1,0 +1,41 @@
+<div class="w-[270px] max-w-[85vw] h-full bg-drawer-bg flex flex-col py-4 overflow-hidden">
+  <%# Profile chip — fixed %>
+  <%= link_to profile_path, class: "flex items-center gap-2.5 px-[18px] pb-3.5 mb-1.5 border-b border-sidebar-bg no-underline flex-shrink-0" do %>
+    <%= render Ui::AvatarComponent.new(name: display_name, size: :lg) %>
+    <span class="flex flex-col">
+      <span class="text-white text-[13px] font-bold"><%= display_name %></span>
+      <span class="text-muted text-[11px]">View Profile</span>
+    </span>
+  <% end %>
+
+  <%= render Ui::SectionLabelComponent.new(html_class: "px-[18px] mb-0.5 flex-shrink-0 !text-[10px] tracking-[0.06em]") do %>
+    Your Games
+  <% end %>
+
+  <%# Games list — the only scrollable region %>
+  <nav class="flex-1 overflow-y-auto min-h-0">
+    <% memberships.each do |member| %>
+      <%= link_to game_path(member.game_id), class: row_classes(member) do %>
+        <span class="w-[18px] text-center flex-shrink-0 text-[15px]">
+          <% case status_icon(member) %>
+          <% when :crown %>
+            <%= helpers.icon "crown-03", class: "w-4 h-4 text-accent inline" %>
+          <% when :moon %>
+            <span class="text-tint-blue-soft">&#9790;</span>
+          <% else %>
+            <span class="text-muted">&#9633;</span>
+          <% end %>
+        </span>
+        <span class="<%= name_classes(member) %>">
+          <%= game_name(member) %>
+        </span>
+      <% end %>
+    <% end %>
+  </nav>
+
+  <%# Account footer — pinned %>
+  <div class="border-t border-sidebar-bg px-[18px] pt-2.5 flex flex-col flex-shrink-0">
+    <%= link_to "Account Settings", profile_path, class: "text-[13px] text-sidebar-text py-2 no-underline" %>
+    <%= link_to "Sign Out", destroy_user_session_path, class: "text-[13px] text-sidebar-text py-2 no-underline" %>
+  </div>
+</div>

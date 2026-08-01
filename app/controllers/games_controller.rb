@@ -39,6 +39,9 @@ class GamesController < ApplicationController
         active_scene_count: active_scenes,
         primary_character: primary_character,
         additional_character_count: additional_character_count,
+        character_label: character_label_for(primary_character, additional_character_count),
+        is_gm: membership.game_master?,
+        former: membership.removed?,
         new_activity: games_with_new_activity.include?(game.id)
       }
     end
@@ -76,7 +79,7 @@ class GamesController < ApplicationController
   # mutant:disable
   def toggle_ai_summaries_enabled
     @game.update!(ai_summaries_enabled: !@game.ai_summaries_enabled?)
-    redirect_to edit_game_path(@game), notice: @game.ai_summaries_enabled? ? "AI scene summaries enabled." : "AI scene summaries disabled."
+    redirect_to game_player_management_path(@game), notice: @game.ai_summaries_enabled? ? "AI scene summaries enabled." : "AI scene summaries disabled."
   end
 
   sig { void }
@@ -90,10 +93,36 @@ class GamesController < ApplicationController
     @active_scenes = raw_scenes.map { |s| ScenePresenter.new(s) }
 
     @is_gm = @game.game_master?(current_user)
-    @characters = @game.characters.active.visible_to(current_user, @game).includes(:user).order(:name)
-    @character_owner_names = @characters.each_with_object({}) { |c, h| h[c.id] = UserPresenter.new(c.user).display_name_or_email }
+    @gm_name = gm_display_name
+    @roster_preview = roster_preview_rows(raw_scenes)
+    @hot_scene_ids = hot_scene_ids(raw_scenes)
+
+    # Roster tab
+    characters = @game.characters.active.visible_to(current_user, @game).includes(:user).order(:name).to_a
+    removed_user_ids = @game.game_members.where(status: "removed").pluck(:user_id).to_set
+    @roster_characters = characters.map do |c|
+      owner_name = UserPresenter.new(c.user).display_name_or_email
+      removed = removed_user_ids.include?(c.user_id)
+      {
+        character: c,
+        owner_name: owner_name,
+        removed: removed,
+        avatar_tone: removed ? :muted : :gold,
+        filter_key: "#{c.name} #{owner_name}".downcase
+      }
+    end
+    @inactive_count = @game.characters.archived.visible_to(current_user, @game).count
+    @banned_members = @is_gm ? @game.game_members.where(status: "banned").includes(:user).to_a : []
+    @banned_names = @banned_members.each_with_object({}) do |m, h|
+      h[m.user_id] = UserPresenter.new(m.user).display_name_or_email
+    end
+
+    # Files tab
     @game_files = @game.game_files.includes(file_attachment: :blob).order(created_at: :desc)
+    @game_file = @game.game_files.new
+
     @export_receipt = GameExportRequest.valid_receipt_for(current_user, @game)
+    @export_notice = @export_receipt ? T.unsafe(view_context).last_export_notice(@export_receipt) : nil
   end
 
   sig { void }
@@ -110,6 +139,45 @@ class GamesController < ApplicationController
   end
 
   private
+
+  # "Vex Marrowgate +1" — primary character plus a count of the rest, or nil
+  # when the player has no character in the game.
+  sig { params(primary: T.nilable(Character), extra: Integer).returns(T.nilable(String)) }
+  def character_label_for(primary, extra)
+    return nil if primary.nil?
+
+    extra.positive? ? "#{primary.name} +#{extra}" : primary.name
+  end
+
+  sig { returns(String) }
+  def gm_display_name
+    gm = @game.game_members.game_masters.includes(:user).first&.user
+    gm ? UserPresenter.new(gm).display_name_or_email : "GM"
+  end
+
+  # The "In Active Scenes" roster preview: the GM, then each character
+  # participating in an active scene paired with that scene's title. Banned
+  # players are already excluded from scene participation.
+  sig { params(scenes: T::Array[Scene]).returns(T::Array[T::Hash[Symbol, String]]) }
+  def roster_preview_rows(scenes)
+    rows = scenes.flat_map do |scene|
+      scene.scene_participants.filter_map do |sp|
+        next unless sp.character
+
+        { name: T.must(sp.character).name, scene: scene.title }
+      end
+    end
+    rows.uniq { |r| r[:name] }.first(5)
+  end
+
+  # Scenes with activity since the viewer last logged in get the attention glow.
+  sig { params(scenes: T::Array[Scene]).returns(T::Set[Integer]) }
+  def hot_scene_ids(scenes)
+    last_login = current_user.user_profile&.last_login_at
+    return Set.new unless last_login
+
+    Set.new(scenes.select { |s| s.last_activity_at.to_i > last_login.to_i }.map(&:id))
+  end
 
   sig { void }
   def set_game

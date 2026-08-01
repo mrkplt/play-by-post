@@ -36,18 +36,16 @@ RSpec.describe "Tablet GM dashboard", type: :feature do
     expect(result).to be true
   end
 
-  it "sidebar is always visible at 768px (no hamburger animation)" do
+  it "the nav drawer opens from the hamburger at 768px" do
     visit game_path(game)
-    sidebar_transform = page.evaluate_script(
-      "window.getComputedStyle(document.querySelector('aside.sidebar')).transform"
-    )
-    # At 768px (md breakpoint), sidebar should be visible (not translated)
-    expect(sidebar_transform).to eq("none")
+    find("button[aria-label='Open navigation']").click
+    expect(page).to have_css("aside.nav-drawer[data-open]", visible: :all)
   end
 
   it "no functionality is hidden based solely on screen size" do
     visit game_path(game)
-    expect(page).to have_link(href: edit_game_path(game))
+    # GM reaches player management via the header gear, and can start a scene.
+    expect(page).to have_link(href: game_player_management_path(game))
     expect(page).to have_link("New Scene")
   end
 end

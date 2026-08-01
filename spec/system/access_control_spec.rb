@@ -14,12 +14,12 @@ RSpec.describe "Access control for removed/banned players", type: :feature do
       create(:game_member, :removed, game: game, user: player)
     end
 
-    it "sees game on dashboard with Former badge" do
+    it "sees game on dashboard marked not currently active" do
       sign_in_as(player)
       visit root_path
 
       expect(page).to have_text(game.name)
-      expect(page).to have_text("Former")
+      expect(page).to have_text("Not currently active")
     end
 
     it "can view the game page" do

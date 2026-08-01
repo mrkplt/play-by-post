@@ -18,8 +18,8 @@ RSpec.describe "Posts", type: :feature do
 
     it "participant can post in a scene" do
       visit game_scene_path(game, scene)
-      fill_in "Write your post...", with: "The door creaks open slowly."
-      click_on "Post"
+      fill_in "Write your post... (markdown)", with: "The door creaks open slowly."
+      click_on "POST"
 
       expect(page).to have_text("The door creaks open slowly.")
       expect(page).to have_text(player.display_name)
@@ -27,9 +27,9 @@ RSpec.describe "Posts", type: :feature do
 
     it "can mark a post as OOC" do
       visit game_scene_path(game, scene)
-      fill_in "Write your post...", with: "Anyone want to reschedule?"
-      check "Out of character"
-      click_on "Post"
+      fill_in "Write your post... (markdown)", with: "Anyone want to reschedule?"
+      check "OOC"
+      click_on "POST"
 
       expect(page).to have_text("OOC")
       expect(page).to have_text("Anyone want to reschedule?")
@@ -50,8 +50,8 @@ RSpec.describe "Posts", type: :feature do
     it "author can edit their post within the edit window" do
       sign_in_as(player)
       visit game_scene_path(game, scene)
-      fill_in "Write your post...", with: "Orginal typo here."
-      click_on "Post"
+      fill_in "Write your post... (markdown)", with: "Orginal typo here."
+      click_on "POST"
 
       click_on "Edit"
       find("textarea").fill_in with: "Original text here."
@@ -98,12 +98,11 @@ RSpec.describe "Posts", type: :feature do
       expect(page).to have_css('[data-testid="ooc-post"]')
     end
 
-    it "Hide OOC posts menu item hides OOC posts" do
+    it "the Hide OOC header toggle hides OOC posts" do
       sign_in_as(player)
       visit game_scene_path(game, scene)
 
-      find("button[title='Scene actions']").click
-      click_on "Hide OOC posts"
+      find("button[aria-label='Toggle out-of-character posts']").click
 
       expect(page).to have_text("In character text.")
       expect(page).not_to have_css('[data-testid="ooc-post"]', visible: true)
