@@ -1,6 +1,6 @@
 require "rails_helper"
 
-RSpec.describe User, type: :model, db: true do
+RSpec.describe User, type: :model do
   describe "#display_name" do
     it "returns display_name from user_profile when profile exists" do
       user = create(:user, :with_profile)
@@ -14,14 +14,16 @@ RSpec.describe User, type: :model, db: true do
   end
 
   describe "associations" do
-    it "has many game_members" do
+    it "has many game_members", db: true do
+
       user = create(:user)
       game = create(:game)
       member = create(:game_member, user: user, game: game)
       expect(user.game_members).to include(member)
     end
 
-    it "has many games through game_members" do
+    it "has many games through game_members", db: true do
+
       user = create(:user)
       game = create(:game)
       create(:game_member, user: user, game: game)
@@ -37,7 +39,8 @@ RSpec.describe User, type: :model, db: true do
       ActiveJob::Base.queue_adapter = original_adapter
     end
 
-    it "enqueues the magic link email via Active Job (worker), not inline" do
+    it "enqueues the magic link email via Active Job (worker), not inline", db: true do
+
       user = create(:user, :with_profile)
 
       expect {

@@ -1,6 +1,6 @@
 require "rails_helper"
 
-RSpec.describe EmailContentExtractor, db: true do
+RSpec.describe EmailContentExtractor do
   let(:raw_body) { "Hello, this is my reply.\n\nOn Mon, Jan 1, 2024, someone wrote:\n> Original message" }
 
   describe "#extract" do
@@ -206,31 +206,37 @@ RSpec.describe EmailContentExtractor, db: true do
           allow(response_double).to receive(:body).and_return(api_response)
         end
 
-        it "creates an AiUsage record" do
+        it "creates an AiUsage record", db: true do
+
           expect { described_class.new(raw_body).extract }.to change(AiUsage, :count).by(1)
         end
 
-        it "records the correct feature" do
+        it "records the correct feature", db: true do
+
           described_class.new(raw_body).extract
           expect(AiUsage.last.feature).to eq("inbound_email")
         end
 
-        it "records the model returned by the API" do
+        it "records the model returned by the API", db: true do
+
           described_class.new(raw_body).extract
           expect(AiUsage.last.model_used).to eq("google/gemma-3-4b-it:free")
         end
 
-        it "records input token count" do
+        it "records input token count", db: true do
+
           described_class.new(raw_body).extract
           expect(AiUsage.last.input_tokens).to eq(150)
         end
 
-        it "records output token count" do
+        it "records output token count", db: true do
+
           described_class.new(raw_body).extract
           expect(AiUsage.last.output_tokens).to eq(30)
         end
 
-        it "falls back to the MODEL constant when response omits model" do
+        it "falls back to the MODEL constant when response omits model", db: true do
+
           allow(response_double).to receive(:body).and_return(
             {
               "choices" => [ { "message" => { "content" => "reply" } } ],

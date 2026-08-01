@@ -1,6 +1,6 @@
 require "rails_helper"
 
-RSpec.describe SceneSummaryService, db: true do
+RSpec.describe SceneSummaryService do
   let(:game) { create(:game) }
   let(:gm) { create(:user, :with_profile) }
   let(:scene) { create(:scene, :resolved, game: game, title: "The Dungeon", description: "Dark and spooky") }
@@ -85,7 +85,8 @@ RSpec.describe SceneSummaryService, db: true do
         SceneSummaryService.new(scene).call
       end
 
-      it "labels OOC posts with [OOC]" do
+      it "labels OOC posts with [OOC]", db: true do
+
         player = create(:user, :with_profile)
         create(:game_member, game: game, user: player)
         create(:post, scene: scene, user: player, content: "dice roll ignored", is_ooc: true, draft: false)
@@ -132,7 +133,8 @@ RSpec.describe SceneSummaryService, db: true do
         SceneSummaryService.new(scene_no_desc).call
       end
 
-      it "uses the author's display_name in post lines" do
+      it "uses the author's display_name in post lines", db: true do
+
         player = create(:user, :with_profile)
         create(:game_member, game: game, user: player)
         player.user_profile.update!(display_name: "Conan the Barbarian")
@@ -146,7 +148,8 @@ RSpec.describe SceneSummaryService, db: true do
         SceneSummaryService.new(scene).call
       end
 
-      it "limits posts to MAX_POSTS" do
+      it "limits posts to MAX_POSTS", db: true do
+
         player = create(:user, :with_profile)
         create(:game_member, game: game, user: player)
         stub_const("SceneSummaryService::MAX_POSTS", 2)

@@ -1,8 +1,9 @@
 require "rails_helper"
 
-RSpec.describe PostRead, type: :model, db: true do
+RSpec.describe PostRead, type: :model do
   describe "validations" do
-    it "requires uniqueness of post per user" do
+    it "requires uniqueness of post per user", db: true do
+
       existing = create(:post_read)
       duplicate = build(:post_read, post: existing.post, user: existing.user)
       expect(duplicate).not_to be_valid
@@ -21,7 +22,8 @@ RSpec.describe PostRead, type: :model, db: true do
     let(:post) { create(:post) }
     let(:user) { create(:user) }
 
-    it "creates a PostRead record" do
+    it "creates a PostRead record", db: true do
+
       expect { PostRead.mark!(post, user) }.to change(PostRead, :count).by(1)
     end
 

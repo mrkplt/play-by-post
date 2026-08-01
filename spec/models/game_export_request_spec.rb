@@ -1,6 +1,6 @@
 require "rails_helper"
 
-RSpec.describe GameExportRequest, type: :model, db: true do
+RSpec.describe GameExportRequest, type: :model do
   let(:user) { create(:user, :with_profile) }
   let(:game) { create(:game) }
 
@@ -11,7 +11,8 @@ RSpec.describe GameExportRequest, type: :model, db: true do
   end
 
   describe ".valid_receipt_for" do
-    it "returns a successful export whose archive is present, within the window" do
+    it "returns a successful export whose archive is present, within the window", db: true do
+
       request = receipt(succeeded_at: 1.hour.ago, game: game)
       expect(described_class.valid_receipt_for(user, game)).to eq(request)
     end
@@ -31,7 +32,8 @@ RSpec.describe GameExportRequest, type: :model, db: true do
       expect(described_class.valid_receipt_for(user, game)).to be_nil
     end
 
-    it "returns the receipt with the most recent succeeded_at, not first/last inserted" do
+    it "returns the receipt with the most recent succeeded_at, not first/last inserted", db: true do
+
       # The winner (most recent succeeded_at) sits in the MIDDLE by id, so
       # neither an id-asc nor id-desc scan returns it — only ordering by
       # succeeded_at desc does. This kills a dropped `.order(succeeded_at: :desc)`.
@@ -65,7 +67,8 @@ RSpec.describe GameExportRequest, type: :model, db: true do
   end
 
   describe "#mark_succeeded!" do
-    it "sets succeeded_at to now" do
+    it "sets succeeded_at to now", db: true do
+
       request = create(:game_export_request, user: user, game: game, succeeded_at: nil)
       freeze = Time.utc(2026, 7, 30, 12, 0, 0)
       Timecop.freeze(freeze) { request.mark_succeeded! }

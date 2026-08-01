@@ -1,11 +1,12 @@
 require "rails_helper"
 
-RSpec.describe NotificationPreference, type: :model, db: true do
+RSpec.describe NotificationPreference, type: :model do
   let(:scene) { create(:scene) }
   let(:user) { create(:user) }
 
   describe ".muted?" do
-    it "returns true when user has muted the scene" do
+    it "returns true when user has muted the scene", db: true do
+
       create(:notification_preference, scene: scene, user: user, muted: true)
       expect(described_class.muted?(scene, user)).to be true
     end
@@ -39,7 +40,8 @@ RSpec.describe NotificationPreference, type: :model, db: true do
       expect(pref).to be_persisted
     end
 
-    it "unmutes when already muted" do
+    it "unmutes when already muted", db: true do
+
       create(:notification_preference, scene: scene, user: user, muted: true)
       pref = described_class.toggle!(scene, user)
       expect(pref.muted).to be false
@@ -58,12 +60,14 @@ RSpec.describe NotificationPreference, type: :model, db: true do
       expect(pref.user).to eq(user)
     end
 
-    it "persists the change" do
+    it "persists the change", db: true do
+
       described_class.toggle!(scene, user)
       expect(described_class.find_by(scene: scene, user: user).muted).to be true
     end
 
-    it "does not create duplicate records" do
+    it "does not create duplicate records", db: true do
+
       described_class.toggle!(scene, user)
       described_class.toggle!(scene, user)
       expect(described_class.where(scene: scene, user: user).count).to eq(1)

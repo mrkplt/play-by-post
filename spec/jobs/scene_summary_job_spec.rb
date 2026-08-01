@@ -1,6 +1,6 @@
 require "rails_helper"
 
-RSpec.describe SceneSummaryJob, type: :job, db: true do
+RSpec.describe SceneSummaryJob, type: :job do
   let(:game) { create(:game) }
   let(:scene) { create(:scene, :resolved, game: game) }
 
@@ -26,7 +26,8 @@ RSpec.describe SceneSummaryJob, type: :job, db: true do
       allow(SceneSummaryService).to receive(:new).with(scene).and_return(service_double)
     end
 
-    it "creates a SceneSummary for the scene" do
+    it "creates a SceneSummary for the scene", db: true do
+
       expect { described_class.new.perform(scene.id) }.to change(SceneSummary, :count).by(1)
       summary = SceneSummary.find_by!(scene: scene)
       expect(summary.body).to eq("A heroic tale.")
@@ -38,7 +39,8 @@ RSpec.describe SceneSummaryJob, type: :job, db: true do
       expect(summary.edited_by_id).to be_nil
     end
 
-    it "upserts on re-run (does not create duplicate)" do
+    it "upserts on re-run (does not create duplicate)", db: true do
+
       described_class.new.perform(scene.id)
       new_result = SceneSummaryService::Result.new(
         body: "Updated tale.",
@@ -53,7 +55,8 @@ RSpec.describe SceneSummaryJob, type: :job, db: true do
       expect(SceneSummary.find_by!(scene: scene).body).to eq("Updated tale.")
     end
 
-    it "resets edited_at and edited_by_id to nil when upserting over an existing edited summary" do
+    it "resets edited_at and edited_by_id to nil when upserting over an existing edited summary", db: true do
+
       user = create(:user, :with_profile)
       create(:game_member, game: game, user: user)
       scene.create_scene_summary!(body: "Old text.", edited_at: Time.current, edited_by: user)
@@ -71,7 +74,8 @@ RSpec.describe SceneSummaryJob, type: :job, db: true do
       expect { described_class.new.perform(0) }.not_to change(SceneSummary, :count)
     end
 
-    it "logs and swallows ConfigurationError" do
+    it "logs and swallows ConfigurationError", db: true do
+
       allow(SceneSummaryService).to receive(:new).and_raise(SceneSummaryService::ConfigurationError, "no key")
       expect(Rails.logger).to receive(:error).with(/no key/)
       expect { described_class.new.perform(scene.id) }.not_to raise_error

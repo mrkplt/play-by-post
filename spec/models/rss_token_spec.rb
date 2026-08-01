@@ -1,6 +1,6 @@
 require "rails_helper"
 
-RSpec.describe RssToken, type: :model, db: true do
+RSpec.describe RssToken, type: :model do
   describe "associations" do
     it "belongs to user" do
       user = create(:user)
@@ -14,7 +14,8 @@ RSpec.describe RssToken, type: :model, db: true do
       expect(build(:rss_token)).to be_valid
     end
 
-    it "requires token uniqueness" do
+    it "requires token uniqueness", db: true do
+
       existing = create(:rss_token)
       duplicate = build(:rss_token, token: existing.token)
       expect(duplicate).not_to be_valid
@@ -38,14 +39,16 @@ RSpec.describe RssToken, type: :model, db: true do
   end
 
   describe "#regenerate!" do
-    it "replaces the token with a new unique value" do
+    it "replaces the token with a new unique value", db: true do
+
       token_record = create(:rss_token)
       old_token = token_record.token
       token_record.regenerate!
       expect(token_record.reload.token).not_to eq(old_token)
     end
 
-    it "generates a valid 64-char hex token" do
+    it "generates a valid 64-char hex token", db: true do
+
       token_record = create(:rss_token)
       token_record.regenerate!
       expect(token_record.reload.token).to match(/\A[0-9a-f]{64}\z/)

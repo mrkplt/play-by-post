@@ -1,6 +1,6 @@
 require "rails_helper"
 
-RSpec.describe Invitation, type: :model, db: true do
+RSpec.describe Invitation, type: :model do
   describe "validations" do
     it "requires an email" do
       expect(build(:invitation, email: nil)).not_to be_valid
@@ -30,14 +30,16 @@ RSpec.describe Invitation, type: :model, db: true do
   end
 
   describe "#accept!" do
-    it "sets accepted_at" do
+    it "sets accepted_at", db: true do
+
       invitation = create(:invitation)
       expect(invitation.accepted_at).to be_nil
       invitation.accept!
       expect(invitation.reload.accepted_at).to be_present
     end
 
-    it "persists the change" do
+    it "persists the change", db: true do
+
       invitation = create(:invitation)
       invitation.accept!
       expect(invitation.reload.accepted_at).to be_present

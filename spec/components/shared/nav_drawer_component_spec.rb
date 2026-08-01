@@ -1,6 +1,6 @@
 require "rails_helper"
 
-RSpec.describe Shared::NavDrawerComponent, type: :component, db: true do
+RSpec.describe Shared::NavDrawerComponent, type: :component do
   let(:user) { create(:user, email: "dana@example.com") }
   let(:gm_game) { create(:game, name: "Sunken Archive") }
   let(:player_game) { create(:game, name: "Ashwood") }
@@ -26,7 +26,8 @@ RSpec.describe Shared::NavDrawerComponent, type: :component, db: true do
     expect(r).to have_text("View Profile")
   end
 
-  it "lists the GM, player, and former games" do
+  it "lists the GM, player, and former games", db: true do
+
     r = rendered
     expect(r).to have_text("Sunken Archive")
     expect(r).to have_text("Ashwood")
@@ -37,7 +38,8 @@ RSpec.describe Shared::NavDrawerComponent, type: :component, db: true do
     expect(rendered).not_to have_text("Hidden")
   end
 
-  it "highlights the active game row" do
+  it "highlights the active game row", db: true do
+
     expect(rendered(active_game_id: player_game.id)).to have_css("a.bg-sidebar-bg", text: "Ashwood")
   end
 
@@ -45,17 +47,20 @@ RSpec.describe Shared::NavDrawerComponent, type: :component, db: true do
     expect(rendered(active_game_id: player_game.id)).not_to have_css("a.bg-sidebar-bg", text: "Sunken Archive")
   end
 
-  it "picks the crown icon for a GM game" do
+  it "picks the crown icon for a GM game", db: true do
+
     member = user.game_members.find_by(game: gm_game)
     expect(described_class.new(current_user: user).status_icon(member)).to eq(:crown)
   end
 
-  it "picks the moon icon for a removed game" do
+  it "picks the moon icon for a removed game", db: true do
+
     member = user.game_members.find_by(game: former_game)
     expect(described_class.new(current_user: user).status_icon(member)).to eq(:moon)
   end
 
-  it "picks the plain icon for an ordinary player game" do
+  it "picks the plain icon for an ordinary player game", db: true do
+
     member = user.game_members.find_by(game: player_game)
     expect(described_class.new(current_user: user).status_icon(member)).to eq(:plain)
   end
@@ -66,7 +71,8 @@ RSpec.describe Shared::NavDrawerComponent, type: :component, db: true do
     expect(r).to have_text("Sign Out")
   end
 
-  it "marks a row active only for the matching game" do
+  it "marks a row active only for the matching game", db: true do
+
     c = described_class.new(current_user: user, active_game_id: player_game.id)
     member = user.game_members.find_by(game: player_game)
     other = user.game_members.find_by(game: gm_game)
@@ -74,13 +80,15 @@ RSpec.describe Shared::NavDrawerComponent, type: :component, db: true do
     expect(c.active?(other)).to be false
   end
 
-  it "treats no active_game_id as no active row" do
+  it "treats no active_game_id as no active row", db: true do
+
     c = described_class.new(current_user: user)
     member = user.game_members.find_by(game: player_game)
     expect(c.active?(member)).to be false
   end
 
-  it "highlights the active row's class string but not others" do
+  it "highlights the active row's class string but not others", db: true do
+
     c = described_class.new(current_user: user, active_game_id: player_game.id)
     active_member = user.game_members.find_by(game: player_game)
     idle_member = user.game_members.find_by(game: gm_game)
@@ -88,13 +96,15 @@ RSpec.describe Shared::NavDrawerComponent, type: :component, db: true do
     expect(c.row_classes(idle_member)).not_to include("bg-sidebar-bg")
   end
 
-  it "exposes the game name" do
+  it "exposes the game name", db: true do
+
     c = described_class.new(current_user: user)
     member = user.game_members.find_by(game: gm_game)
     expect(c.game_name(member)).to eq("Sunken Archive")
   end
 
-  it "emphasizes the active row's name and mutes others" do
+  it "emphasizes the active row's name and mutes others", db: true do
+
     c = described_class.new(current_user: user, active_game_id: player_game.id)
     active_member = user.game_members.find_by(game: player_game)
     idle_member = user.game_members.find_by(game: gm_game)
@@ -103,7 +113,8 @@ RSpec.describe Shared::NavDrawerComponent, type: :component, db: true do
     expect(c.name_classes(idle_member)).not_to include("font-bold")
   end
 
-  it "excludes banned games from drawer_memberships" do
+  it "excludes banned games from drawer_memberships", db: true do
+
     names = UserPresenter.new(user).drawer_memberships.map { |m| m.game.name }
     expect(names).to contain_exactly("Sunken Archive", "Ashwood", "Nightfall")
   end

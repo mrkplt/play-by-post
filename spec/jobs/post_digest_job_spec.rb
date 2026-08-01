@@ -1,6 +1,6 @@
 require "rails_helper"
 
-RSpec.describe PostDigestJob, type: :job, db: true do
+RSpec.describe PostDigestJob, type: :job do
   let(:game) { create(:game) }
   let(:gm) { create(:user, :with_profile) }
   let(:player) { create(:user, :with_profile) }
@@ -18,7 +18,8 @@ RSpec.describe PostDigestJob, type: :job, db: true do
     ActiveJob::Base.queue_adapter = original_adapter
   end
 
-  it "sends digest to participant who hasn't visited in 24+ hours with recent posts from others" do
+  it "sends digest to participant who hasn't visited in 24+ hours with recent posts from others", db: true do
+
     create(:scene_participant, scene: scene, user: gm, last_visited_at: 2.days.ago)
     create(:scene_participant, scene: scene, user: player)
     post = create(:post, scene: scene, user: player, content: "New activity")
@@ -40,7 +41,8 @@ RSpec.describe PostDigestJob, type: :job, db: true do
     expect(params[2].first["_aj_globalid"]).to include("Post/#{post.id}")
   end
 
-  it "does not send to muted participant but still sends to others" do
+  it "does not send to muted participant but still sends to others", db: true do
+
     third_player = create(:user, :with_profile)
     create(:game_member, game: game, user: third_player)
     create(:scene_participant, scene: scene, user: gm, last_visited_at: 2.days.ago)
@@ -89,7 +91,8 @@ RSpec.describe PostDigestJob, type: :job, db: true do
     }).to be_empty
   end
 
-  it "sends digest to participant who has never visited (nil last_visited_at)" do
+  it "sends digest to participant who has never visited (nil last_visited_at)", db: true do
+
     create(:scene_participant, scene: scene, user: gm, last_visited_at: nil)
     create(:scene_participant, scene: scene, user: player)
     create(:post, scene: scene, user: player, content: "New activity")

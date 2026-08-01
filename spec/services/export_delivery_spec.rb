@@ -1,6 +1,6 @@
 require "rails_helper"
 
-RSpec.describe ExportDelivery, db: true do
+RSpec.describe ExportDelivery do
   let(:user) { create(:user, :with_profile) }
   let(:game) { create(:game) }
 
@@ -18,7 +18,8 @@ RSpec.describe ExportDelivery, db: true do
   end
 
   describe ".email_download_link" do
-    it "enqueues an export_ready mail for the request's user" do
+    it "enqueues an export_ready mail for the request's user", db: true do
+
       request = request_with_archive
 
       expect {

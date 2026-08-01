@@ -1,6 +1,6 @@
 require "rails_helper"
 
-RSpec.describe AttachmentUploader, db: true do
+RSpec.describe AttachmentUploader do
   let(:game) { create(:game) }
   let(:user) { create(:user, :with_profile) }
 
@@ -129,7 +129,8 @@ RSpec.describe AttachmentUploader, db: true do
   end
 
   describe "derived variant assets" do
-    it "prefixes variant blob keys with variants/" do
+    it "prefixes variant blob keys with variants/", db: true do
+
       game_file = game.game_files.new(filename: "map.png")
       described_class.attach(
         attachment: game_file.file,

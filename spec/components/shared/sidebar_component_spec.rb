@@ -1,6 +1,6 @@
 require "rails_helper"
 
-RSpec.describe Shared::SidebarComponent, type: :component, db: true do
+RSpec.describe Shared::SidebarComponent, type: :component do
   subject(:component) { described_class.new(current_user: current_user) }
 
   def rendered_component
@@ -69,7 +69,8 @@ RSpec.describe Shared::SidebarComponent, type: :component, db: true do
       let(:current_user) { build_stubbed(:user) }
       let(:member) { build_stubbed(:game_member, role: :game_master) }
 
-      it "returns true" do
+      it "returns true", db: true do
+
         allow(game).to receive(:member_for).with(current_user).and_return(member)
         expect(component.game_master_in?(game)).to eq(true)
       end

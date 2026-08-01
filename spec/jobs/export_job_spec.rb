@@ -1,6 +1,6 @@
 require "rails_helper"
 
-RSpec.describe ExportJob, type: :job, db: true do
+RSpec.describe ExportJob, type: :job do
   let(:user) { create(:user, :with_profile) }
   let(:game) { create(:game) }
   let!(:game_member) { create(:game_member, :game_master, game: game, user: user) }
@@ -19,7 +19,8 @@ RSpec.describe ExportJob, type: :job, db: true do
       allow(ExportMailer).to receive(:export_ready).and_return(double(deliver_later: true))
     end
 
-    it "attaches a real archive, stamps the receipt, and emails a download link" do
+    it "attaches a real archive, stamps the receipt, and emails a download link", db: true do
+
       ExportJob.new.perform(export_request.id)
 
       export_request.reload
@@ -31,7 +32,8 @@ RSpec.describe ExportJob, type: :job, db: true do
       )
     end
 
-    it "builds the export from only the requested game" do
+    it "builds the export from only the requested game", db: true do
+
       other_game = create(:game)
       create(:game_member, :game_master, game: other_game, user: user)
 
@@ -40,7 +42,8 @@ RSpec.describe ExportJob, type: :job, db: true do
       ExportJob.new.perform(export_request.id)
     end
 
-    it "for an all-games request, includes active and removed games but not banned" do
+    it "for an all-games request, includes active and removed games but not banned", db: true do
+
       active = create(:game); removed = create(:game); banned = create(:game)
       create(:game_member, game: active, user: user, status: "active")
       create(:game_member, :removed, game: removed, user: user)
@@ -58,7 +61,8 @@ RSpec.describe ExportJob, type: :job, db: true do
   end
 
   describe "#perform" do
-    it "builds zip via GameExportService, attaches to request, and sends export_ready mail" do
+    it "builds zip via GameExportService, attaches to request, and sends export_ready mail", db: true do
+
       zip_double = "fake-zip-data"
       service_double = instance_double(GameExportService, call: zip_double)
 
@@ -87,7 +91,8 @@ RSpec.describe ExportJob, type: :job, db: true do
       expect(export_request.reload.succeeded_at).to be_present
     end
 
-    it "does not set succeeded_at when the export fails" do
+    it "does not set succeeded_at when the export fails", db: true do
+
       allow_any_instance_of(GameExportService).to receive(:call).and_raise(StandardError, "boom")
       allow(ExportMailer).to receive(:export_failed).and_return(double(deliver_later: true))
 
@@ -123,7 +128,8 @@ RSpec.describe ExportJob, type: :job, db: true do
       ExportJob.new.perform(0)
     end
 
-    it "sends export_failed mail and re-raises on StandardError" do
+    it "sends export_failed mail and re-raises on StandardError", db: true do
+
       allow_any_instance_of(GameExportService).to receive(:call).and_raise(StandardError, "zip failed")
 
       mailer_double = double(deliver_later: true)
@@ -144,7 +150,8 @@ RSpec.describe ExportJob, type: :job, db: true do
         create(:game_member, :banned, game: banned_game, user: user)
       end
 
-      it "exports all active and removed games, excluding banned" do
+      it "exports all active and removed games, excluding banned", db: true do
+
         archive_double = double
         allow(archive_double).to receive(:blob).and_return(double(url: "https://example.com/all.zip"))
         allow(all_games_request).to receive(:archive).and_return(archive_double)

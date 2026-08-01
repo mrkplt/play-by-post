@@ -1,6 +1,6 @@
 require "rails_helper"
 
-RSpec.describe ExportCleanupJob, type: :job, db: true do
+RSpec.describe ExportCleanupJob, type: :job do
   let(:user) { create(:user, :with_profile) }
   let(:game) { create(:game) }
 
@@ -11,21 +11,24 @@ RSpec.describe ExportCleanupJob, type: :job, db: true do
   end
 
   describe "#perform" do
-    it "destroys export requests older than the retention window" do
+    it "destroys export requests older than the retention window", db: true do
+
       old = create(:game_export_request, user: user, game: game, created_at: 8.days.ago)
 
       expect { ExportCleanupJob.new.perform }.to change(GameExportRequest, :count).by(-1)
       expect(GameExportRequest.exists?(old.id)).to be(false)
     end
 
-    it "keeps export requests within the retention window" do
+    it "keeps export requests within the retention window", db: true do
+
       recent = create(:game_export_request, user: user, game: game, created_at: 6.days.ago)
 
       expect { ExportCleanupJob.new.perform }.not_to change(GameExportRequest, :count)
       expect(GameExportRequest.exists?(recent.id)).to be(true)
     end
 
-    it "keeps a request just inside the retention boundary" do
+    it "keeps a request just inside the retention boundary", db: true do
+
       Timecop.freeze do
         boundary = create(:game_export_request, user: user, game: game, created_at: 7.days.ago + 1.second)
 

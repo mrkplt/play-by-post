@@ -1,6 +1,6 @@
 require "rails_helper"
 
-RSpec.describe Post, type: :model, db: true do
+RSpec.describe Post, type: :model do
   describe "validations" do
     it "requires content for published posts" do
       expect(build(:post, content: nil, draft: false)).not_to be_valid
@@ -14,7 +14,8 @@ RSpec.describe Post, type: :model, db: true do
       expect(build(:post, :draft)).to be_valid
     end
 
-    it "enforces one draft per user per scene" do
+    it "enforces one draft per user per scene", db: true do
+
       existing = create(:post, :draft)
       duplicate = build(:post, :draft, scene: existing.scene, user: existing.user)
       expect(duplicate).not_to be_valid
@@ -32,12 +33,14 @@ RSpec.describe Post, type: :model, db: true do
     let!(:published_post) { create(:post, draft: false) }
     let!(:draft_post) { create(:post, :draft) }
 
-    it ".published excludes drafts" do
+    it ".published excludes drafts", db: true do
+
       expect(Post.published).to include(published_post)
       expect(Post.published).not_to include(draft_post)
     end
 
-    it ".drafts excludes published posts" do
+    it ".drafts excludes published posts", db: true do
+
       expect(Post.drafts).to include(draft_post)
       expect(Post.drafts).not_to include(published_post)
     end
@@ -125,7 +128,8 @@ RSpec.describe Post, type: :model, db: true do
       let(:scene) { create(:scene, game: game) }
       let(:post) { create(:post, user: author, scene: scene, created_at: 5.minutes.ago) }
 
-      it "returns true for the author within the window" do
+      it "returns true for the author within the window", db: true do
+
         expect(post.editable_by?(author)).to be true
       end
 
@@ -133,7 +137,8 @@ RSpec.describe Post, type: :model, db: true do
         expect(post.editable_by?(other_user)).to be false
       end
 
-      it "returns false after the window has passed" do
+      it "returns false after the window has passed", db: true do
+
         old_post = create(:post, user: author, scene: scene, created_at: 11.minutes.ago)
         expect(old_post.editable_by?(author)).to be false
       end
@@ -143,7 +148,8 @@ RSpec.describe Post, type: :model, db: true do
       let(:game) { create(:game, post_edit_window_minutes: nil) }
       let(:scene) { create(:scene, game: game) }
 
-      it "returns true for the author regardless of age" do
+      it "returns true for the author regardless of age", db: true do
+
         old_post = create(:post, user: author, scene: scene, created_at: 1.year.ago)
         expect(old_post.editable_by?(author)).to be true
       end
@@ -160,11 +166,13 @@ RSpec.describe Post, type: :model, db: true do
       let(:game) { create(:game, post_edit_window_minutes: 10) }
       let(:scene) { create(:scene, game: game) }
 
-      it "returns true for a recent post" do
+      it "returns true for a recent post", db: true do
+
         expect(create(:post, scene: scene, created_at: 1.minute.ago).within_edit_window?).to be true
       end
 
-      it "returns false for a post past the window" do
+      it "returns false for a post past the window", db: true do
+
         expect(create(:post, scene: scene, created_at: 11.minutes.ago).within_edit_window?).to be false
       end
     end
@@ -173,7 +181,8 @@ RSpec.describe Post, type: :model, db: true do
       let(:game) { create(:game, post_edit_window_minutes: nil) }
       let(:scene) { create(:scene, game: game) }
 
-      it "returns true regardless of post age" do
+      it "returns true regardless of post age", db: true do
+
         expect(create(:post, scene: scene, created_at: 1.year.ago).within_edit_window?).to be true
       end
     end

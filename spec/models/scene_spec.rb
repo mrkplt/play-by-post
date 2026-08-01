@@ -1,6 +1,6 @@
 require "rails_helper"
 
-RSpec.describe Scene, type: :model, db: true do
+RSpec.describe Scene, type: :model do
   describe "validations" do
     it "is valid with required attributes" do
       expect(build(:scene)).to be_valid
@@ -80,13 +80,15 @@ RSpec.describe Scene, type: :model, db: true do
       expect(scene.last_activity_at).to eq(scene.created_at)
     end
 
-    it "returns the most recent post created_at" do
+    it "returns the most recent post created_at", db: true do
+
       create(:post, scene: scene, created_at: 2.hours.ago)
       latest = create(:post, scene: scene, created_at: 1.hour.ago)
       expect(scene.last_activity_at).to eq(latest.created_at)
     end
 
-    it "uses in-memory posts when loaded" do
+    it "uses in-memory posts when loaded", db: true do
+
       create(:post, scene: scene, created_at: 1.hour.ago)
       loaded_scene = Scene.includes(:posts).find(scene.id)
       expect(loaded_scene.last_activity_at).to eq(loaded_scene.posts.first.created_at)
@@ -97,7 +99,8 @@ RSpec.describe Scene, type: :model, db: true do
     let(:scene) { create(:scene) }
     let(:user) { create(:user) }
 
-    it "returns true when user is a participant" do
+    it "returns true when user is a participant", db: true do
+
       scene.scene_participants.create!(user: user)
       expect(scene.participant?(user)).to be true
     end
@@ -110,17 +113,20 @@ RSpec.describe Scene, type: :model, db: true do
   end
 
   describe "scopes" do
-    it ".active selects rows with a null resolved_at" do
+    it ".active selects rows with a null resolved_at", db: true do
+
       expect(Scene.active.to_sql).to include(%q{"scenes"."resolved_at" IS NULL})
     end
 
-    it ".resolved selects rows with a non-null resolved_at" do
+    it ".resolved selects rows with a non-null resolved_at", db: true do
+
       expect(Scene.resolved.to_sql).to include(%q{"scenes"."resolved_at" IS NOT NULL})
     end
   end
 
   describe "associations" do
-    it "has many child_scenes" do
+    it "has many child_scenes", db: true do
+
       parent = create(:scene)
       child1 = create(:scene, parent_scene: parent, game: parent.game)
       child2 = create(:scene, parent_scene: parent, game: parent.game)
@@ -133,7 +139,8 @@ RSpec.describe Scene, type: :model, db: true do
       expect(child.parent_scene).to eq(parent)
     end
 
-    it "nullifies child parent_scene_id when parent is destroyed" do
+    it "nullifies child parent_scene_id when parent is destroyed", db: true do
+
       parent = create(:scene)
       child = create(:scene, parent_scene: parent, game: parent.game)
       parent.destroy

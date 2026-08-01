@@ -1,8 +1,9 @@
 require "rails_helper"
 
-RSpec.describe SceneParticipant, type: :model, db: true do
+RSpec.describe SceneParticipant, type: :model do
   describe "#display_name" do
-    it "returns the character name when character is present" do
+    it "returns the character name when character is present", db: true do
+
       character = create(:character, name: "Gandalf")
       participant = create(:scene_participant, character: character, user: character.user)
       expect(participant.display_name).to eq("Gandalf")
@@ -20,7 +21,8 @@ RSpec.describe SceneParticipant, type: :model, db: true do
       expect(participant.display_name).to eq(user.email)
     end
 
-    it "prefers character name over user display name" do
+    it "prefers character name over user display name", db: true do
+
       user = create(:user, :with_profile)
       character = create(:character, name: "Frodo", user: user)
       participant = create(:scene_participant, user: user, character: character)

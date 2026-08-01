@@ -1,6 +1,6 @@
 require "rails_helper"
 
-RSpec.describe AiUsage, type: :model, db: true do
+RSpec.describe AiUsage, type: :model do
   describe "validations" do
     it "is valid with valid attributes" do
       expect(build(:ai_usage)).to be_valid
@@ -41,7 +41,8 @@ RSpec.describe AiUsage, type: :model, db: true do
   end
 
   describe ".for_feature" do
-    it "returns records matching the given feature" do
+    it "returns records matching the given feature", db: true do
+
       email_usage = create(:ai_usage, feature: "inbound_email")
       create(:ai_usage, feature: "scene_summary")
 

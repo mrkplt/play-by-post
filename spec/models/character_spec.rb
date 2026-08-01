@@ -1,6 +1,6 @@
 require "rails_helper"
 
-RSpec.describe Character, type: :model, db: true do
+RSpec.describe Character, type: :model do
   describe "validations" do
     it "requires a name" do
       expect(build(:character, name: nil)).not_to be_valid
@@ -12,18 +12,21 @@ RSpec.describe Character, type: :model, db: true do
   end
 
   describe "version snapshots" do
-    it "creates a version on save" do
+    it "creates a version on save", db: true do
+
       character = create(:character)
       expect(character.character_versions.count).to eq(1)
     end
 
-    it "creates a new version on each update" do
+    it "creates a new version on each update", db: true do
+
       character = create(:character)
       character.update!(content: "Updated content")
       expect(character.character_versions.count).to eq(2)
     end
 
-    it "records Current.user as edited_by when set" do
+    it "records Current.user as edited_by when set", db: true do
+
       gm = create(:user)
       Current.user = gm
       character = create(:character)
@@ -31,7 +34,8 @@ RSpec.describe Character, type: :model, db: true do
       Current.user = nil
     end
 
-    it "falls back to character owner when Current.user is nil" do
+    it "falls back to character owner when Current.user is nil", db: true do
+
       Current.user = nil
       character = create(:character)
       expect(character.character_versions.last.edited_by_id).to eq(character.user_id)
@@ -51,7 +55,8 @@ RSpec.describe Character, type: :model, db: true do
       expect(Character.visible_to(viewer, game).to_sql).to eq(Character.all.to_sql)
     end
 
-    it "when sheets_hidden, a non-GM is restricted to their own characters" do
+    it "when sheets_hidden, a non-GM is restricted to their own characters", db: true do
+
       allow(game).to receive(:game_master?).with(viewer).and_return(false)
       allow(game).to receive(:sheets_hidden?).and_return(true)
 
@@ -60,7 +65,8 @@ RSpec.describe Character, type: :model, db: true do
       expect(sql).not_to include(%{"characters"."hidden"})
     end
 
-    it "when sheets_hidden is false, unhidden characters and the viewer's own are visible" do
+    it "when sheets_hidden is false, unhidden characters and the viewer's own are visible", db: true do
+
       allow(game).to receive(:game_master?).with(viewer).and_return(false)
       allow(game).to receive(:sheets_hidden?).and_return(false)
 
@@ -84,15 +90,18 @@ RSpec.describe Character, type: :model, db: true do
       create(:game_member, game: game, user: other)
     end
 
-    it "returns true for the owner" do
+    it "returns true for the owner", db: true do
+
       expect(character.editable_by?(owner, game)).to be true
     end
 
-    it "returns true for the GM" do
+    it "returns true for the GM", db: true do
+
       expect(character.editable_by?(gm_user, game)).to be true
     end
 
-    it "returns false for another player" do
+    it "returns false for another player", db: true do
+
       expect(character.editable_by?(other, game)).to be false
     end
   end

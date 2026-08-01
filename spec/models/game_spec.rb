@@ -1,6 +1,6 @@
 require "rails_helper"
 
-RSpec.describe Game, type: :model, db: true do
+RSpec.describe Game, type: :model do
   describe "validations" do
     it "requires a name" do
       game = build(:game, name: nil)
@@ -28,7 +28,8 @@ RSpec.describe Game, type: :model, db: true do
       create(:game_member, game: game, user: player_user)
     end
 
-    it "returns true for the GM" do
+    it "returns true for the GM", db: true do
+
       expect(game.game_master?(gm_user)).to be true
     end
 
@@ -51,7 +52,8 @@ RSpec.describe Game, type: :model, db: true do
     let(:game) { create(:game) }
     let(:user) { create(:user) }
 
-    it "returns true for active members" do
+    it "returns true for active members", db: true do
+
       create(:game_member, game: game, user: user, status: "active")
       expect(game.active_member?(user)).to be true
     end
