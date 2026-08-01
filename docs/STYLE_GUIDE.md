@@ -103,14 +103,14 @@ status list — the failing job is named for the thing that failed:
 | Check (CI job) | Rule |
 |---|---|
 | **`design_tokens`** (`bin/check-design-tokens`) | no raw hex in ERB class utilities (`bg-[#…]`); use a `@theme` token. Fails itself on any violation. |
-| **`mutant_registration`** (`bin/check-mutant-registration`) | every `Ui::*`/`Shared::*`/presenter is in `.mutant.yml`. Fails itself if any is missing. |
+| **`mutant_registration`** (`bin/check-mutant-coverage`) | every concrete `app/` class (components, presenters, models, …) is in `.mutant.yml`. Fails itself if any is missing. |
 | **`lint` / `typecheck`** | RuboCop / Sorbet |
 | **`quality_gate`** (`bin/quality-metrics --check`) | evaluates *produced* outcomes vs baseline: coverage (≥80% line / ≥70% branch on changed files, mutation floor), view-CSS-must-not-increase, ERB-logic-must-not-increase, presenter-method ceiling, Sorbet sigils |
 
 The two static checks are **standalone executables** that own their pass/fail
 (`exit 1` on violation) — they don't route through `quality_gate`, which is
 reserved for evaluating expensive-to-produce numbers (coverage, mutation). Run
-them locally any time: `bin/check-design-tokens`, `bin/check-mutant-registration`.
+them locally any time: `bin/check-design-tokens`, `bin/check-mutant-coverage`.
 
 **When you add a component:** create it under `Ui::*`/`Shared::*`, add a spec, a
 Lookbook preview in `spec/components/previews/`, and register its constant in

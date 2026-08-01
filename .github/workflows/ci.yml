@@ -112,7 +112,7 @@ jobs:
           ruby-version: .ruby-version
 
       - name: Check mutation registration
-        run: bin/ci-run bin/check-mutant-registration
+        run: bin/ci-run bin/check-mutant-coverage
 
   test:
     runs-on: ubuntu-latest
