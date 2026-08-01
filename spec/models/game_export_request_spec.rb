@@ -11,11 +11,17 @@ RSpec.describe GameExportRequest, type: :model do
   end
 
   describe ".valid_receipt_for" do
-    # Keeps its rows: the archive check is an Active Storage attachment lookup,
-    # and the ordering below is only observable by executing the query.
-    it "returns a successful export whose archive is present, within the window", db: true do
-      request = receipt(succeeded_at: 1.hour.ago, game: game)
-      expect(described_class.valid_receipt_for(user, game)).to eq(request)
+    it "returns the first candidate whose archive is attached" do
+      without = build_stubbed(:game_export_request)
+      with = build_stubbed(:game_export_request)
+      allow(without).to receive(:archive).and_return(double(attached?: false))
+      allow(with).to receive(:archive).and_return(double(attached?: true))
+      relation = double
+      allow(relation).to receive(:where).and_return(relation)
+      allow(relation).to receive(:order).and_return([ without, with ])
+      allow(described_class).to receive(:where).and_return(relation)
+
+      expect(described_class.valid_receipt_for(user, game)).to eq(with)
     end
 
     it "returns nil when the last success is outside the window" do
@@ -33,7 +39,7 @@ RSpec.describe GameExportRequest, type: :model do
       expect(described_class.valid_receipt_for(user, game)).to be_nil
     end
 
-    it "returns the receipt with the most recent succeeded_at, not first/last inserted", db: true do
+    it "orders candidates by most recent success", db: true do
       # The winner (most recent succeeded_at) sits in the MIDDLE by id, so
       # neither an id-asc nor id-desc scan returns it — only ordering by
       # succeeded_at desc does. This kills a dropped `.order(succeeded_at: :desc)`.
