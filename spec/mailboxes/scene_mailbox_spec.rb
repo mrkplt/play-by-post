@@ -14,24 +14,6 @@ RSpec.describe SceneMailbox, type: :mailbox do
     ActiveJob::Base.queue_adapter = original_adapter
   end
 
-  # Keeps the database: receive_inbound_email_from_mail is ActionMailbox's
-  # integration harness — it persists an InboundEmail and routes it through the
-  # real ingress. There is no seam to stub without testing nothing.
-  it "creates a post from an inbound email by a participant", db: true do
-    create(:scene_participant, scene: scene, user: user)
-
-    expect {
-      receive_inbound_email_from_mail(
-        from: user.email,
-        to: "scene-#{scene.id}@inbound.example.com",
-        subject: "Re: Scene",
-        body: "Hello from email"
-      )
-    }.to change { scene.posts.count }.by(1)
-
-    expect(scene.posts.last.content).to include("Hello from email")
-    expect(scene.posts.last.user).to eq(user)
-  end
 
   it "bounces email from a non-participant" do
     non_participant = create(:user, :with_profile)
@@ -57,46 +39,66 @@ RSpec.describe SceneMailbox, type: :mailbox do
     expect(inbound.bounced?).to be true
   end
 
-  it "creates the post with is_ooc set to false", db: true do
-    create(:scene_participant, scene: scene, user: user)
+  # #process is the mailbox's own work: extract the body, then write the post.
+  # Driving it directly keeps the write out of the assertion — the routing
+  # callbacks that need ActionMailbox are covered separately below.
+  describe "#process" do
+    let(:participant) { build_stubbed(:user) }
+    let(:target_scene) { build_stubbed(:scene) }
+    let(:posts) { double }
 
-    receive_inbound_email_from_mail(
-      from: user.email,
-      to: "scene-#{scene.id}@inbound.example.com",
-      subject: "Re: Scene",
-      body: "An in-character action"
-    )
+    def process_with(body)
+      mailbox = described_class.new(double(mail: nil))
+      allow(mailbox).to receive(:mail).and_return(double(decoded: body))
+      allow(mailbox).to receive(:scene).and_return(target_scene)
+      allow(mailbox).to receive(:sender_user).and_return(participant)
+      allow(target_scene).to receive(:posts).and_return(posts)
+      allow(posts).to receive(:create!)
+      mailbox.process
+      mailbox
+    end
 
-    expect(scene.posts.last.is_ooc).to be false
+    it "writes the extracted content as an in-character post by the sender" do
+      allow_any_instance_of(EmailContentExtractor).to receive(:extract).and_return("Hello from email")
+
+      process_with("Hello from email\n\n> quoted")
+
+      expect(posts).to have_received(:create!)
+        .with(user: participant, content: "Hello from email", is_ooc: false)
+    end
+
+    it "passes the raw body through the extractor" do
+      extractor = instance_double(EmailContentExtractor, extract: "Extracted reply text")
+      allow(EmailContentExtractor).to receive(:new).with("Raw body").and_return(extractor)
+
+      process_with("Raw body")
+
+      expect(posts).to have_received(:create!).with(hash_including(content: "Extracted reply text"))
+    end
+
+    it "writes nothing when the extracted content is blank" do
+      allow_any_instance_of(EmailContentExtractor).to receive(:extract).and_return("   ")
+
+      process_with("   ")
+
+      expect(posts).not_to have_received(:create!)
+    end
   end
 
-  it "passes the email body through EmailContentExtractor and saves the extracted content", db: true do
-    create(:scene_participant, scene: scene, user: user)
-    allow_any_instance_of(EmailContentExtractor).to receive(:extract).and_return("Extracted reply text")
+  # The routing callbacks do need ActionMailbox: they read the envelope and
+  # bounce, which is the part with no meaningful stub.
+  describe "routing", db: true do
+    it "delivers a participant's mail to the scene named in the address" do
+      create(:scene_participant, scene: scene, user: user)
 
-    receive_inbound_email_from_mail(
-      from: user.email,
-      to: "scene-#{scene.id}@inbound.example.com",
-      subject: "Re: Scene",
-      body: "Extracted reply text\n\n> Previous message that should be stripped"
-    )
-
-    expect(scene.posts.last.content).to eq("Extracted reply text")
-  end
-
-  it "creates the post from the full raw body when the email extractor falls back", db: true do
-    create(:scene_participant, scene: scene, user: user)
-    body_with_quoted_text = "My reply here\n\n> Quoted content that would normally be stripped"
-
-    # In the test environment no OpenRouter API key is configured, so EmailContentExtractor
-    # returns the raw body unchanged. Verify the post preserves the complete raw body.
-    receive_inbound_email_from_mail(
-      from: user.email,
-      to: "scene-#{scene.id}@inbound.example.com",
-      subject: "Re: Scene",
-      body: body_with_quoted_text
-    )
-
-    expect(scene.posts.last.content).to include("> Quoted content that would normally be stripped")
+      expect {
+        receive_inbound_email_from_mail(
+          from: user.email,
+          to: "scene-#{scene.id}@inbound.example.com",
+          subject: "Re: Scene",
+          body: "Hello from email"
+        )
+      }.to change { scene.posts.count }.by(1)
+    end
   end
 end

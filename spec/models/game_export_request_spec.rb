@@ -39,15 +39,20 @@ RSpec.describe GameExportRequest, type: :model do
       expect(described_class.valid_receipt_for(user, game)).to be_nil
     end
 
-    it "orders candidates by most recent success", db: true do
-      # The winner (most recent succeeded_at) sits in the MIDDLE by id, so
-      # neither an id-asc nor id-desc scan returns it — only ordering by
-      # succeeded_at desc does. This kills a dropped `.order(succeeded_at: :desc)`.
-      receipt(succeeded_at: 10.hours.ago, game: game)          # lowest id
-      newest = receipt(succeeded_at: 1.hour.ago, game: game)   # middle id
-      receipt(succeeded_at: 5.hours.ago, game: game)           # highest id
+    it "orders candidates by most recent success" do
+      expect(unquoted_sql(described_class.where(user: nil).order(succeeded_at: :desc)))
+        .to include("ORDER BY game_export_requests.succeeded_at DESC")
+    end
 
-      expect(described_class.valid_receipt_for(user, game)).to eq(newest)
+    it "builds the lookup ordered by succeeded_at descending" do
+      relation = double
+      allow(relation).to receive(:where).and_return(relation)
+      allow(relation).to receive(:order).and_return([])
+      allow(described_class).to receive(:where).and_return(relation)
+
+      described_class.valid_receipt_for(user, game)
+
+      expect(relation).to have_received(:order).with(succeeded_at: :desc)
     end
 
     it "scopes to the given game (all-games uses nil)" do

@@ -36,7 +36,7 @@ RSpec.describe ExportJob, type: :job do
   end
 
   describe "#perform" do
-    it "builds zip via GameExportService, attaches to request, and sends export_ready mail", db: true do
+    it "builds zip via GameExportService, attaches to request, and sends export_ready mail" do
       zip_double = "fake-zip-data"
       service_double = instance_double(GameExportService, call: zip_double)
 
@@ -47,6 +47,7 @@ RSpec.describe ExportJob, type: :job do
         double(url: "https://example.com/archive.zip")
       )
       allow(export_request).to receive(:archive).and_return(archive_double)
+      allow(export_request).to receive(:mark_succeeded!)
       allow(GameExportRequest).to receive(:find_by).with(id: export_request.id).and_return(export_request)
       allow(AttachmentUploader).to receive(:attach)
 
@@ -62,15 +63,17 @@ RSpec.describe ExportJob, type: :job do
       expect(AttachmentUploader).to have_received(:attach).with(
         hash_including(kind: "export", user: user, game: game, export_scope: game.name)
       )
-      expect(export_request.reload.succeeded_at).to be_present
+      expect(export_request).to have_received(:mark_succeeded!)
     end
 
-    it "does not set succeeded_at when the export fails", db: true do
+    it "does not stamp the receipt when the export fails" do
       allow_any_instance_of(GameExportService).to receive(:call).and_raise(StandardError, "boom")
       allow(ExportMailer).to receive(:export_failed).and_return(double(deliver_later: true))
+      allow(export_request).to receive(:mark_succeeded!)
+      allow(GameExportRequest).to receive(:find_by).with(id: export_request.id).and_return(export_request)
 
       expect { ExportJob.new.perform(export_request.id) }.to raise_error(StandardError)
-      expect(export_request.reload.succeeded_at).to be_nil
+      expect(export_request).not_to have_received(:mark_succeeded!)
     end
 
     it "attaches the archive with a slug-based filename" do
@@ -101,8 +104,9 @@ RSpec.describe ExportJob, type: :job do
       ExportJob.new.perform(0)
     end
 
-    it "sends export_failed mail and re-raises on StandardError", db: true do
+    it "sends export_failed mail and re-raises on StandardError" do
       allow_any_instance_of(GameExportService).to receive(:call).and_raise(StandardError, "zip failed")
+      allow(GameExportRequest).to receive(:find_by).with(id: export_request.id).and_return(export_request)
 
       mailer_double = double(deliver_later: true)
       expect(ExportMailer).to receive(:export_failed).with(user, game: game).and_return(mailer_double)
