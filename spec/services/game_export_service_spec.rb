@@ -356,8 +356,8 @@ RSpec.describe GameExportService do
     end
 
     describe "#characters_for" do
-      let(:game) { build_stubbed(:game) }
-      let(:scene) { build_stubbed(:scene) }
+      let(:export_game) { build_stubbed(:game) }
+      let(:export_scene) { build_stubbed(:scene) }
 
       before do
         participants = chain
@@ -366,14 +366,14 @@ RSpec.describe GameExportService do
 
         owned = chain
         allow(owned).to receive(:pluck).and_return([ 9 ])
-        allow(game).to receive(:characters).and_return(double(where: owned))
+        allow(export_game).to receive(:characters).and_return(double(where: owned))
 
         @found = chain
         allow(Character).to receive(:where).and_return(@found)
       end
 
       it "combines participant characters with the viewer's own, deduped and ordered" do
-        service.send(:characters_for, game, [ scene ])
+        service.send(:characters_for, export_game, [ export_scene ])
 
         expect(Character).to have_received(:where).with(id: [ 7, 9 ])
         expect(@found).to have_received(:includes).with(:user, :character_versions)
@@ -381,9 +381,9 @@ RSpec.describe GameExportService do
       end
 
       it "ignores participants with no character" do
-        service.send(:characters_for, game, [ scene ])
+        service.send(:characters_for, export_game, [ export_scene ])
 
-        expect(SceneParticipant).to have_received(:where).with(scene_id: [ scene.id ])
+        expect(SceneParticipant).to have_received(:where).with(scene_id: [ export_scene.id ])
       end
     end
   end
