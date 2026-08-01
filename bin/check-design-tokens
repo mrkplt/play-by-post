@@ -1,0 +1,49 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Design-token adherence check (self-contained; owns its own pass/fail).
+#
+# Raw hex colours in Tailwind arbitrary-value class utilities (e.g. bg-[#c8a96e])
+# inside ERB templates bypass the @theme design tokens. Every colour must be a
+# named token (bg-accent, text-tint-blue-strong, …).
+#
+# Scope: ERB templates in app/views and app/components only — matching the
+# CSS/ERB gates. Component Ruby classes (Badge/Avatar tone tables) are the
+# sanctioned home for the raw palette and are intentionally not scanned.
+#
+# Exits 0 when clean, 1 when any violation is found.
+
+PROJECT_ROOT = File.expand_path("..", __dir__)
+
+# Static class="..." / class='...' attribute values (stops at < so ERB
+# interpolations are excluded).
+CSS_CLASS_ATTR_RE = /\bclass=["']([^"'<>\n]*)["']/
+RAW_HEX_CLASS_RE = /\b(?:bg|text|border|from|via|to|ring|fill|stroke|decoration|outline|shadow|accent|caret)-\[#[0-9a-fA-F]{3,8}\]/
+
+erb_files = Dir.glob(File.join(PROJECT_ROOT, "app/views/**/*.html.erb")) +
+            Dir.glob(File.join(PROJECT_ROOT, "app/components/**/*.html.erb"))
+
+violations = []
+erb_files.each do |file|
+  content = File.read(file, encoding: "utf-8")
+  hits = []
+  content.scan(CSS_CLASS_ATTR_RE) { |m| hits.concat(m[0].scan(RAW_HEX_CLASS_RE)) }
+  next if hits.empty?
+
+  violations << { file: file.delete_prefix("#{PROJECT_ROOT}/"), hits: hits }
+rescue Encoding::InvalidByteSequenceError, Encoding::UndefinedConversionError
+  # skip non-UTF-8 files
+end
+
+if violations.empty?
+  puts "[OK] design tokens: no raw hex colours in ERB class utilities"
+  exit 0
+end
+
+count = violations.sum { |v| v[:hits].size }
+warn "[FAIL] design tokens: #{count} raw hex colour(s) in ERB class utilities."
+warn "       Replace with a named @theme token (e.g. bg-[#c8a96e] -> bg-accent)."
+violations.each do |v|
+  warn "  #{v[:file]}: #{v[:hits].uniq.join(', ')}"
+end
+exit 1

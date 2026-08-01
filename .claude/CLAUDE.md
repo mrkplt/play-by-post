@@ -157,14 +157,18 @@ Enforced by `bin/quality-metrics --check` against `quality_baseline.json`:
 | Each changed file — Sorbet sigil | `true`, `strict`, or `strong` |
 | View CSS statements (`app/views/*.erb`) | must not increase (push markup into components) |
 | ERB logic (ternary / `\|\|` / local-assign, views + component templates) | must not increase (extract to presenter/component method) |
-| `raw_hex_class_violations` (raw hex in ERB class utilities) | ceiling 0 — use a `@theme` token |
-| `mutant_registration_violations` (component/presenter missing from `.mutant.yml`) | ceiling 0 |
+
+**Two static checks are their own CI jobs** (not part of `quality_gate`), so a failure is identifiable directly from the status list:
+- **`design_tokens`** (`bin/check-design-tokens`) — no raw hex in ERB class utilities (`bg-[#…]`); use a `@theme` token. Fails itself on any violation.
+- **`mutant_registration`** (`bin/check-mutant-registration`) — every `Ui::*`/`Shared::*`/presenter must be in `.mutant.yml`. Fails itself if any is missing.
+
+Each is a self-contained executable that owns its pass/fail (`exit 1` on violation). Run locally any time; they don't route through `quality_gate` (which is reserved for evaluating expensive-to-produce coverage/mutation numbers against the baseline).
 
 **Design system:** the UI is component-driven and token-based — see `docs/STYLE_GUIDE.md`. Colours/radii are `@theme` tokens in `app/assets/tailwind/application.css`; browse the component gallery at **`/lookbook`** (dev). Screens compose `Shared::MobileFrameComponent` + a header + `Ui::*`/`Shared::*` components; don't hand-write bespoke screen markup or raw hex.
 
 **Blast radius:** The gate checks every file touched by the branch vs `origin/master`, not just files you intended to change. Any edit to a file that lacks a sigil or has insufficient coverage will fail the gate. Fix both immediately when touching such a file.
 
-**Mutation registration (now gated):** Every new component/presenter must be added to `.mutant.yml` under `matcher.subjects` using its exact Ruby constant (e.g. `Shared::PostItemComponent`, `PostPresenter`). The `mutant_registration_violations` gate fails the build if a `Ui::*`/`Shared::*`/presenter class is missing — no longer just silently unmeasured.
+**Mutation registration:** Every new component/presenter must be added to `.mutant.yml` under `matcher.subjects` using its exact Ruby constant (e.g. `Shared::PostItemComponent`, `PostPresenter`). The `mutant_registration` CI job fails the build if a `Ui::*`/`Shared::*`/presenter class is missing — no longer just silently unmeasured.
 
 **Updating the baseline:** After an intentional quality improvement run `bin/quality-metrics --save`.
 

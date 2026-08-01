@@ -82,6 +82,38 @@ jobs:
       - name: Type check with Sorbet
         run: bin/ci-run bundle exec srb tc
 
+  design_tokens:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: .ruby-version
+
+      - name: Check design-token adherence
+        run: bin/ci-run bin/check-design-tokens
+
+  mutant_registration:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: .ruby-version
+
+      - name: Check mutation registration
+        run: bin/ci-run bin/check-mutant-registration
+
   test:
     runs-on: ubuntu-latest
 

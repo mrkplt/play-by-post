@@ -37,17 +37,10 @@ CHANGED_FILE_LINE_THRESHOLD = 80.0 # minimum line coverage for changed files
 CHANGED_FILE_BRANCH_THRESHOLD = 70.0 # minimum branch coverage for changed files
 REQUIRED_SORBET_SIGILS = %w[true strict strong].freeze
 
-METRIC_KEYS = %w[line_coverage branch_coverage sorbet_typed_pct mutation_coverage css_in_components_pct presenter_method_violations raw_hex_class_violations mutant_registration_violations].freeze
+METRIC_KEYS = %w[line_coverage branch_coverage sorbet_typed_pct mutation_coverage css_in_components_pct presenter_method_violations].freeze
 FLOOR_METRICS = %w[mutation_coverage css_in_components_pct].freeze
 # Ceiling metrics track counts where lower is better; the baseline is a maximum.
-CEILING_METRICS = %w[presenter_method_violations raw_hex_class_violations mutant_registration_violations].freeze
-
-# Per-metric remediation hint shown when a ceiling metric fails.
-CEILING_HINTS = {
-  "presenter_method_violations" => "new model methods only called from views/mailers must be moved to a presenter",
-  "raw_hex_class_violations" => "replace raw hex Tailwind utilities (e.g. bg-[#c8a96e]) in ERB with a named @theme token (bg-accent)",
-  "mutant_registration_violations" => "add the new component/presenter constant to .mutant.yml matcher.subjects so it is mutation-tested"
-}.freeze
+CEILING_METRICS = %w[presenter_method_violations].freeze
 EXCLUDED_MODEL_BASENAMES = %w[application_record.rb current.rb].freeze
 
 # Indicators of logic in ERB templates that belongs in presenters or component Ruby classes.
@@ -230,75 +223,6 @@ def collect_presenter_violations
   }
 end
 
-# --- Design-token adherence ---------------------------------------------------
-# Raw hex colours in Tailwind arbitrary-value class utilities (e.g. bg-[#c8a96e])
-# inside ERB templates bypass the @theme design tokens. Every colour should be a
-# named token (bg-accent, text-tint-blue-strong, …). This gate counts such
-# occurrences in app/views and app/components ERB and enforces a ceiling so the
-# count can only ratchet down.
-#
-# Scope note: matches the CSS/ERB gates — ERB templates only. Component Ruby
-# classes (e.g. Badge/Avatar tone tables) are the sanctioned home for the raw
-# palette and are intentionally not scanned.
-RAW_HEX_CLASS_RE = /\b(?:bg|text|border|from|via|to|ring|fill|stroke|decoration|outline|shadow|accent|caret)-\[#[0-9a-fA-F]{3,8}\]/
-
-def raw_hex_violations_in_content(content)
-  count = 0
-  content.scan(CSS_CLASS_ATTR_RE) { |m| count += m[0].scan(RAW_HEX_CLASS_RE).size }
-  count
-end
-
-def collect_token_violations
-  erb_files = Dir.glob(File.join(PROJECT_ROOT, "app/views/**/*.html.erb")) +
-              Dir.glob(File.join(PROJECT_ROOT, "app/components/**/*.html.erb"))
-  details = []
-  total = 0
-  erb_files.each do |file|
-    content = File.read(file, encoding: "utf-8")
-    n = raw_hex_violations_in_content(content)
-    next if n.zero?
-
-    total += n
-    details << { "file" => file.delete_prefix("#{PROJECT_ROOT}/"), "count" => n }
-  rescue Encoding::InvalidByteSequenceError, Encoding::UndefinedConversionError
-    # skip non-UTF-8 files
-  end
-  { "raw_hex_class_violations" => total, "_raw_hex_violation_details" => details }
-end
-
-# --- Mutation registration ----------------------------------------------------
-# Every ViewComponent (Ui::*, Shared::*) and presenter should be listed in
-# .mutant.yml's matcher.subjects, or it is silently unmeasured by mutation
-# testing. This gate counts app classes that are missing and enforces a ceiling.
-def mutant_registered_subjects
-  yaml = File.read(File.join(PROJECT_ROOT, ".mutant.yml"), encoding: "utf-8")
-  yaml.scan(/^\s*-\s+([A-Z][A-Za-z0-9_:]+)\s*$/).flatten.to_set
-end
-
-# Derive the Ruby constant from a component/presenter file path
-# (app/components/ui/badge_component.rb -> Ui::BadgeComponent).
-def constant_for_path(path)
-  rel = path.sub(%r{\Aapp/(?:components|presenters)/}, "").sub(/\.rb\z/, "")
-  rel.split("/").map { |seg| seg.split("_").map(&:capitalize).join }.join("::")
-end
-
-def collect_mutant_registration_violations
-  registered = mutant_registered_subjects
-  candidates = Dir.glob(File.join(PROJECT_ROOT, "app/components/**/*.rb")) +
-               Dir.glob(File.join(PROJECT_ROOT, "app/presenters/**/*.rb"))
-  missing = []
-  candidates.each do |file|
-    rel = file.delete_prefix("#{PROJECT_ROOT}/")
-    base = File.basename(file)
-    # Skip abstract base classes that carry no mutations of their own.
-    next if %w[application_component.rb base_presenter.rb].include?(base)
-
-    const = constant_for_path(rel)
-    missing << const unless registered.include?(const)
-  end
-  { "mutant_registration_violations" => missing.size, "_mutant_registration_details" => missing.sort }
-end
-
 def collect_metrics
   metrics = {}
 
@@ -343,12 +267,6 @@ def collect_metrics
 
   # --- Presenter method violations ---
   metrics.merge!(collect_presenter_violations)
-
-  # --- Design-token adherence ---
-  metrics.merge!(collect_token_violations)
-
-  # --- Mutation registration ---
-  metrics.merge!(collect_mutant_registration_violations)
 
   metrics
 end
@@ -397,12 +315,6 @@ def display_metrics(metrics)
   if metrics["presenter_method_violations"]
     total = metrics["_presenter_method_total"] || "?"
     puts "  Presenter violations: #{metrics['presenter_method_violations']} of #{total} public model methods"
-  end
-  if metrics["raw_hex_class_violations"]
-    puts "  Raw-hex token viol.:  #{metrics['raw_hex_class_violations']} (raw hex in ERB class utilities)"
-  end
-  if metrics["mutant_registration_violations"]
-    puts "  Unregistered mutants: #{metrics['mutant_registration_violations']} (components/presenters missing from .mutant.yml)"
   end
 end
 
@@ -668,8 +580,8 @@ def check_against_baseline(metrics, baseline)
       puts "  [#{status}] #{key}: #{current_int}#{direction} (ceiling: #{previous_int})"
 
       if failed
-        hint = CEILING_HINTS.fetch(key, "reduce the violation count")
-        failures << "#{key}: #{current_int} violations exceeds ceiling of #{previous_int}; #{hint}"
+        failures << "#{key}: #{current_int} violations exceeds ceiling of #{previous_int}; " \
+                    "new model methods only called from views/mailers must be moved to a presenter"
       end
     elsif FLOOR_METRICS.include?(key)
       # Floor metrics use the baseline value as a minimum.  The current value
