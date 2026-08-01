@@ -21,6 +21,9 @@ RSpec.describe UserPresenter do
     end
   end
 
+  # Keeps the database: this is a left_joins/group/MAX query ordered by
+  # COALESCE(MAX(scenes.updated_at), games.created_at), and whether that
+  # fallback ordering is right can only be shown by executing it.
   describe "#games_by_recent_activity", db: true do
     let(:user) { create(:user) }
 

@@ -290,6 +290,10 @@ RSpec.describe GameExportService do
         expect(zip_data).not_to be_empty
       end
 
+      # These keep the database deliberately: they assert zip assembly itself —
+      # entry paths, per-membership scene selection, multi-game roots and slug
+      # disambiguation — which is exactly what #call integrates. Every content
+      # builder feeding it is covered above without a connection.
       it "includes README.md", db: true do
         entries = zip_entries(zip_data)
         expect(entries).to include(a_string_matching(%r{README\.md$}))

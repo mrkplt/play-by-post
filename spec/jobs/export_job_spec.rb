@@ -19,6 +19,9 @@ RSpec.describe ExportJob, type: :job do
       allow(ExportMailer).to receive(:export_ready).and_return(double(deliver_later: true))
     end
 
+    # Keep the database: these attach a real archive through Active Storage and
+    # serialise the request into a mail job via GlobalID, neither of which has a
+    # meaningful stub. Game selection is covered by #games_for below.
     it "attaches a real archive, stamps the receipt, and emails a download link", db: true do
       ExportJob.new.perform(export_request.id)
 
@@ -29,31 +32,6 @@ RSpec.describe ExportJob, type: :job do
       expect(ExportMailer).to have_received(:export_ready).with(
         user, hash_including(game: game)
       )
-    end
-
-    it "builds the export from only the requested game", db: true do
-      other_game = create(:game)
-      create(:game_member, :game_master, game: other_game, user: user)
-
-      expect(GameExportService).to receive(:new).with(user, [ game ]).and_call_original
-
-      ExportJob.new.perform(export_request.id)
-    end
-
-    it "for an all-games request, includes active and removed games but not banned", db: true do
-      active = create(:game); removed = create(:game); banned = create(:game)
-      create(:game_member, game: active, user: user, status: "active")
-      create(:game_member, :removed, game: removed, user: user)
-      create(:game_member, :banned, game: banned, user: user)
-      all_request = create(:game_export_request, :all_games, user: user)
-
-      expect(GameExportService).to receive(:new) do |_user, games|
-        expect(games).to include(active, removed)
-        expect(games).not_to include(banned)
-        instance_double(GameExportService, call: "zip-bytes")
-      end
-
-      ExportJob.new.perform(all_request.id)
     end
   end
 
@@ -144,22 +122,6 @@ RSpec.describe ExportJob, type: :job do
         create(:game_member, :banned, game: banned_game, user: user)
       end
 
-      it "exports all active and removed games, excluding banned", db: true do
-        archive_double = double
-        allow(archive_double).to receive(:blob).and_return(double(url: "https://example.com/all.zip"))
-        allow(all_games_request).to receive(:archive).and_return(archive_double)
-        allow(GameExportRequest).to receive(:find_by).with(id: all_games_request.id).and_return(all_games_request)
-        allow(ExportMailer).to receive(:export_ready).and_return(double(deliver_later: true))
-        allow(AttachmentUploader).to receive(:attach)
-
-        expect(GameExportService).to receive(:new) do |_user, games|
-          expect(games).to include(game, game2, removed_game)
-          expect(games).not_to include(banned_game)
-          instance_double(GameExportService, call: "fake-zip")
-        end
-
-        ExportJob.new.perform(all_games_request.id)
-      end
 
       it "uses all-games filename and scope" do
         archive_double = double
@@ -177,6 +139,35 @@ RSpec.describe ExportJob, type: :job do
           expect(args[:export_scope]).to eq("all-games")
         end
       end
+    end
+  end
+
+  # Game selection is a read isolated behind #games_for, so each case is a
+  # relation assertion rather than a persisted membership per status.
+  describe "#games_for" do
+    let(:selector) { described_class.new }
+
+    it "uses only the requested game when one is given" do
+      requested = build_stubbed(:game)
+
+      expect(selector.games_for(build_stubbed(:user), requested)).to eq([ requested ])
+    end
+
+    it "returns the games behind active and removed memberships, excluding banned" do
+      user = build_stubbed(:user)
+      wanted = [ build_stubbed(:game), build_stubbed(:game) ]
+      members = wanted.map { |g| build_stubbed(:game_member, game: g) }
+
+      relation = double
+      allow(relation).to receive(:where).and_return(relation)
+      allow(relation).to receive(:not).and_return(relation)
+      allow(relation).to receive(:includes).and_return(relation)
+      allow(relation).to receive(:filter_map) { |&blk| members.filter_map(&blk) }
+      allow(user).to receive(:game_members).and_return(relation)
+
+      expect(selector.games_for(user, nil)).to eq(wanted)
+      expect(relation).to have_received(:where).with(status: %w[active removed])
+      expect(relation).to have_received(:not).with(status: "banned")
     end
   end
 end

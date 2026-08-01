@@ -129,6 +129,7 @@ RSpec.describe AttachmentUploader do
   end
 
   describe "derived variant assets" do
+    # Keeps the database: exercises real Active Storage blob and variant keys.
     it "prefixes variant blob keys with variants/", db: true do
       game_file = game.game_files.new(filename: "map.png")
       described_class.attach(

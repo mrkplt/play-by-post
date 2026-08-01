@@ -5,6 +5,20 @@ class ExportJob < ApplicationJob
 
   queue_as :default
 
+  # Which games the export covers: the one requested, or every game the user is
+  # still associated with (banned memberships drop out entirely). Isolated so the
+  # selection can be asserted without persisting a membership per case.
+  sig { params(user: User, game: T.nilable(Game)).returns(T::Array[Game]) }
+  def games_for(user, game)
+    return [ game ] if game
+
+    user.game_members
+        .where(status: %w[active removed])
+        .where.not(status: "banned")
+        .includes(:game)
+        .filter_map(&:game)
+  end
+
   sig { params(request_id: Integer).void }
   def perform(request_id)
     request = GameExportRequest.find_by(id: request_id)
@@ -13,17 +27,7 @@ class ExportJob < ApplicationJob
     user = T.must(request.user)
     game = request.game
 
-    games = if game
-      [ game ]
-    else
-      user.game_members
-          .where(status: %w[active removed])
-          .where.not(status: "banned")
-          .includes(:game)
-          .filter_map(&:game)
-    end
-
-    zip_data = GameExportService.new(user, games).call
+    zip_data = GameExportService.new(user, games_for(user, game)).call
     filename = archive_filename(game)
 
     AttachmentUploader.attach(

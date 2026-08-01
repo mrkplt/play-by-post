@@ -18,6 +18,8 @@ RSpec.describe ExportDelivery do
   end
 
   describe ".email_download_link" do
+    # Keeps the database: the mail job serialises the request through GlobalID
+    # and reads its Active Storage archive.
     it "enqueues an export_ready mail for the request's user", db: true do
       request = request_with_archive
 

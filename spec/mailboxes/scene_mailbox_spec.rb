@@ -14,8 +14,10 @@ RSpec.describe SceneMailbox, type: :mailbox do
     ActiveJob::Base.queue_adapter = original_adapter
   end
 
+  # Keeps the database: receive_inbound_email_from_mail is ActionMailbox's
+  # integration harness — it persists an InboundEmail and routes it through the
+  # real ingress. There is no seam to stub without testing nothing.
   it "creates a post from an inbound email by a participant", db: true do
-
     create(:scene_participant, scene: scene, user: user)
 
     expect {
@@ -56,7 +58,6 @@ RSpec.describe SceneMailbox, type: :mailbox do
   end
 
   it "creates the post with is_ooc set to false", db: true do
-
     create(:scene_participant, scene: scene, user: user)
 
     receive_inbound_email_from_mail(
@@ -70,7 +71,6 @@ RSpec.describe SceneMailbox, type: :mailbox do
   end
 
   it "passes the email body through EmailContentExtractor and saves the extracted content", db: true do
-
     create(:scene_participant, scene: scene, user: user)
     allow_any_instance_of(EmailContentExtractor).to receive(:extract).and_return("Extracted reply text")
 
@@ -85,7 +85,6 @@ RSpec.describe SceneMailbox, type: :mailbox do
   end
 
   it "creates the post from the full raw body when the email extractor falls back", db: true do
-
     create(:scene_participant, scene: scene, user: user)
     body_with_quoted_text = "My reply here\n\n> Quoted content that would normally be stripped"
 
