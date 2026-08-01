@@ -1,6 +1,6 @@
 require "rails_helper"
 
-RSpec.describe SceneParticipant, type: :model do
+RSpec.describe SceneParticipant, type: :model, db: true do
   describe "#display_name" do
     it "returns the character name when character is present" do
       character = create(:character, name: "Gandalf")

@@ -1,6 +1,6 @@
 require "rails_helper"
 
-RSpec.describe User, type: :model do
+RSpec.describe User, type: :model, db: true do
   describe "#display_name" do
     it "returns display_name from user_profile when profile exists" do
       user = create(:user, :with_profile)

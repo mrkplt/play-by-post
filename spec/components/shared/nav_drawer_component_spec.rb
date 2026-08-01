@@ -1,6 +1,6 @@
 require "rails_helper"
 
-RSpec.describe Shared::NavDrawerComponent, type: :component do
+RSpec.describe Shared::NavDrawerComponent, type: :component, db: true do
   let(:user) { create(:user, email: "dana@example.com") }
   let(:gm_game) { create(:game, name: "Sunken Archive") }
   let(:player_game) { create(:game, name: "Ashwood") }

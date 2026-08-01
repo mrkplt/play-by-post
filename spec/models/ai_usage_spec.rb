@@ -1,6 +1,6 @@
 require "rails_helper"
 
-RSpec.describe AiUsage, type: :model do
+RSpec.describe AiUsage, type: :model, db: true do
   describe "validations" do
     it "is valid with valid attributes" do
       expect(build(:ai_usage)).to be_valid

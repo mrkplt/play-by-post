@@ -1,6 +1,6 @@
 require "rails_helper"
 
-RSpec.describe Character, type: :model do
+RSpec.describe Character, type: :model, db: true do
   describe "validations" do
     it "requires a name" do
       expect(build(:character, name: nil)).not_to be_valid

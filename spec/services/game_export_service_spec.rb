@@ -1,7 +1,7 @@
 require "rails_helper"
 require "zip"
 
-RSpec.describe GameExportService do
+RSpec.describe GameExportService, db: true do
   let(:gm_user) { create(:user, :with_profile) }
   let(:player_user) { create(:user, :with_profile) }
   let(:game) { create(:game, name: "Test Game", description: "A test game.") }

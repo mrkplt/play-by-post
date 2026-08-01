@@ -21,7 +21,7 @@ RSpec.describe UserPresenter do
     end
   end
 
-  describe "#games_by_recent_activity" do
+  describe "#games_by_recent_activity", db: true do
     let(:user) { create(:user) }
 
     subject(:presenter) { described_class.new(user) }
@@ -102,7 +102,7 @@ RSpec.describe UserPresenter do
     end
   end
 
-  describe "#drawer_memberships" do
+  describe "#drawer_memberships", db: true do
     let(:real_user) { create(:user) }
     let(:gm_game) { create(:game, name: "Beta") }
     let(:player_game) { create(:game, name: "Alpha") }

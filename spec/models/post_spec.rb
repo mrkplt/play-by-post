@@ -1,6 +1,6 @@
 require "rails_helper"
 
-RSpec.describe Post, type: :model do
+RSpec.describe Post, type: :model, db: true do
   describe "validations" do
     it "requires content for published posts" do
       expect(build(:post, content: nil, draft: false)).not_to be_valid

@@ -1,6 +1,6 @@
 require "rails_helper"
 
-RSpec.describe PostDigestJob, type: :job do
+RSpec.describe PostDigestJob, type: :job, db: true do
   let(:game) { create(:game) }
   let(:gm) { create(:user, :with_profile) }
   let(:player) { create(:user, :with_profile) }

@@ -1,6 +1,6 @@
 require "rails_helper"
 
-RSpec.describe Invitation, type: :model do
+RSpec.describe Invitation, type: :model, db: true do
   describe "validations" do
     it "requires an email" do
       expect(build(:invitation, email: nil)).not_to be_valid

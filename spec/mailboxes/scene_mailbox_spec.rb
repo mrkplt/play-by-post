@@ -1,6 +1,6 @@
 require "rails_helper"
 
-RSpec.describe SceneMailbox, type: :mailbox do
+RSpec.describe SceneMailbox, type: :mailbox, db: true do
   include ActionMailbox::TestHelper
 
   let(:game) { create(:game) }

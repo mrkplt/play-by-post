@@ -1,6 +1,6 @@
 require "rails_helper"
 
-RSpec.describe Game, type: :model do
+RSpec.describe Game, type: :model, db: true do
   describe "validations" do
     it "requires a name" do
       game = build(:game, name: nil)

@@ -1,6 +1,6 @@
 require "rails_helper"
 
-RSpec.describe RssToken, type: :model do
+RSpec.describe RssToken, type: :model, db: true do
   describe "associations" do
     it "belongs to user" do
       user = create(:user)

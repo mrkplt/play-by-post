@@ -1,6 +1,6 @@
 require "rails_helper"
 
-RSpec.describe AttachmentUploader do
+RSpec.describe AttachmentUploader, db: true do
   let(:game) { create(:game) }
   let(:user) { create(:user, :with_profile) }
 

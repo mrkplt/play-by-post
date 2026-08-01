@@ -1,6 +1,6 @@
 require "rails_helper"
 
-RSpec.describe PostRead, type: :model do
+RSpec.describe PostRead, type: :model, db: true do
   describe "validations" do
     it "requires uniqueness of post per user" do
       existing = create(:post_read)

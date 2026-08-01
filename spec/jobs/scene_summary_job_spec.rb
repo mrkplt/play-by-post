@@ -1,6 +1,6 @@
 require "rails_helper"
 
-RSpec.describe SceneSummaryJob, type: :job do
+RSpec.describe SceneSummaryJob, type: :job, db: true do
   let(:game) { create(:game) }
   let(:scene) { create(:scene, :resolved, game: game) }
 

@@ -1,6 +1,6 @@
 require "rails_helper"
 
-RSpec.describe EmailContentExtractor do
+RSpec.describe EmailContentExtractor, db: true do
   let(:raw_body) { "Hello, this is my reply.\n\nOn Mon, Jan 1, 2024, someone wrote:\n> Original message" }
 
   describe "#extract" do

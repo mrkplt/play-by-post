@@ -1,6 +1,6 @@
 require "rails_helper"
 
-RSpec.describe NotificationPreference, type: :model do
+RSpec.describe NotificationPreference, type: :model, db: true do
   let(:scene) { create(:scene) }
   let(:user) { create(:user) }
 

@@ -1,6 +1,6 @@
 require "rails_helper"
 
-RSpec.describe Scene, type: :model do
+RSpec.describe Scene, type: :model, db: true do
   describe "validations" do
     it "is valid with required attributes" do
       expect(build(:scene)).to be_valid

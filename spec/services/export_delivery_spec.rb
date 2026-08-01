@@ -1,6 +1,6 @@
 require "rails_helper"
 
-RSpec.describe ExportDelivery do
+RSpec.describe ExportDelivery, db: true do
   let(:user) { create(:user, :with_profile) }
   let(:game) { create(:game) }
 

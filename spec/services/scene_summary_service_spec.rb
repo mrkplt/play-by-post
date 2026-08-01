@@ -1,6 +1,6 @@
 require "rails_helper"
 
-RSpec.describe SceneSummaryService do
+RSpec.describe SceneSummaryService, db: true do
   let(:game) { create(:game) }
   let(:gm) { create(:user, :with_profile) }
   let(:scene) { create(:scene, :resolved, game: game, title: "The Dungeon", description: "Dark and spooky") }

@@ -1,6 +1,6 @@
 require "rails_helper"
 
-RSpec.describe ExportCleanupJob, type: :job do
+RSpec.describe ExportCleanupJob, type: :job, db: true do
   let(:user) { create(:user, :with_profile) }
   let(:game) { create(:game) }
 

@@ -1,6 +1,6 @@
 require "rails_helper"
 
-RSpec.describe ExportJob, type: :job do
+RSpec.describe ExportJob, type: :job, db: true do
   let(:user) { create(:user, :with_profile) }
   let(:game) { create(:game) }
   let!(:game_member) { create(:game_member, :game_master, game: game, user: user) }

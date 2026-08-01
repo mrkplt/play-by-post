@@ -1,6 +1,6 @@
 require "rails_helper"
 
-RSpec.describe GameExportRequest, type: :model do
+RSpec.describe GameExportRequest, type: :model, db: true do
   let(:user) { create(:user, :with_profile) }
   let(:game) { create(:game) }
 

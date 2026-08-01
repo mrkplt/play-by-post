@@ -1,6 +1,6 @@
 require "rails_helper"
 
-RSpec.describe Shared::SidebarComponent, type: :component do
+RSpec.describe Shared::SidebarComponent, type: :component, db: true do
   subject(:component) { described_class.new(current_user: current_user) }
 
   def rendered_component
