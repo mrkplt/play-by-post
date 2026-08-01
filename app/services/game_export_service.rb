@@ -53,11 +53,22 @@ class GameExportService
     write_characters(zip, prefix, game, scenes)
   end
 
+  # Which scenes a membership exports. Pure decision — the query below just
+  # applies it, so the rule can be asserted without persisting scenes.
+  sig { params(membership: GameMember).returns(Symbol) }
+  def scene_selection_for(membership)
+    return :all if membership.game_master?
+    return :participating if membership.removed?
+
+    :visible
+  end
+
   sig { params(game: Game, membership: GameMember).returns(T::Array[Scene]) }
   def export_scenes_for(game, membership)
-    if membership.game_master?
+    case scene_selection_for(membership)
+    when :all
       game.scenes.includes(:parent_scene, scene_participants: %i[user character], posts: :user).to_a
-    elsif membership.removed?
+    when :participating
       game.scenes
           .joins(:scene_participants)
           .where(scene_participants: { user_id: @user.id })

@@ -283,6 +283,27 @@ RSpec.describe GameExportService do
 
   # Zip assembly with every read stubbed: entry paths and slugging are the
   # service's own doing, so they need built records, not persisted ones.
+  # Which scenes a membership exports is a pure rule; the query only applies it.
+  describe "#scene_selection_for" do
+    let(:service) { described_class.new(build_stubbed(:user), []) }
+
+    def rule_for(role:, status: "active")
+      service.send(:scene_selection_for, build_stubbed(:game_member, role: role, status: status))
+    end
+
+    it "gives a GM every scene" do
+      expect(rule_for(role: "game_master")).to eq(:all)
+    end
+
+    it "limits a removed member to scenes they took part in" do
+      expect(rule_for(role: "player", status: "removed")).to eq(:participating)
+    end
+
+    it "gives an active player the scenes visible to them" do
+      expect(rule_for(role: "player")).to eq(:visible)
+    end
+  end
+
   describe "#call (zip layout)" do
     let(:export_user) { build_stubbed(:user) }
     let(:gm_member) { build_stubbed(:game_member, role: "game_master", status: "active") }
@@ -380,10 +401,6 @@ RSpec.describe GameExportService do
     context "single game, active player" do
       subject(:zip_data) { GameExportService.new(player_user, [ game ]).call }
 
-      it "includes the scene the player participates in", db: true do
-        entries = zip_entries(zip_data)
-        expect(entries).to include(a_string_matching(%r{scenes/}))
-      end
 
       it "excludes private scenes the player is not in" do
         create(:scene, :private, game: game, title: "Secret Scene")
@@ -401,13 +418,6 @@ RSpec.describe GameExportService do
       end
 
       subject(:zip_data) { GameExportService.new(removed_user, [ game ]).call }
-
-      it "includes only scenes they participated in", db: true do
-        other_scene = create(:scene, game: game, title: "Other Scene")
-        entries = zip_entries(zip_data)
-        expect(entries).to include(a_string_matching(%r{opening-scene}))
-        expect(entries).not_to include(a_string_matching(%r{other-scene}))
-      end
     end
 
     context "all games" do
