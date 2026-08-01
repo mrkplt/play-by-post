@@ -1,0 +1,49 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Mutation-registration check (self-contained; owns its own pass/fail).
+#
+# Every ViewComponent (Ui::*, Shared::*) and presenter must be listed in
+# .mutant.yml's matcher.subjects, or it is silently unmeasured by mutation
+# testing. This check fails if any is missing.
+#
+# Exits 0 when clean, 1 when any component/presenter is unregistered.
+
+PROJECT_ROOT = File.expand_path("..", __dir__)
+
+require "set"
+
+def registered_subjects
+  yaml = File.read(File.join(PROJECT_ROOT, ".mutant.yml"), encoding: "utf-8")
+  yaml.scan(/^\s*-\s+([A-Z][A-Za-z0-9_:]+)\s*$/).flatten.to_set
+end
+
+# app/components/ui/badge_component.rb -> Ui::BadgeComponent
+def constant_for_path(path)
+  rel = path.sub(%r{\Aapp/(?:components|presenters)/}, "").sub(/\.rb\z/, "")
+  rel.split("/").map { |seg| seg.split("_").map(&:capitalize).join }.join("::")
+end
+
+registered = registered_subjects
+candidates = Dir.glob(File.join(PROJECT_ROOT, "app/components/**/*.rb")) +
+             Dir.glob(File.join(PROJECT_ROOT, "app/presenters/**/*.rb"))
+
+missing = []
+candidates.each do |file|
+  base = File.basename(file)
+  # Abstract base classes carry no mutations of their own.
+  next if %w[application_component.rb base_presenter.rb].include?(base)
+
+  const = constant_for_path(file.delete_prefix("#{PROJECT_ROOT}/"))
+  missing << const unless registered.include?(const)
+end
+
+if missing.empty?
+  puts "[OK] mutant registration: all components/presenters are in .mutant.yml"
+  exit 0
+end
+
+warn "[FAIL] mutant registration: #{missing.size} component/presenter(s) missing from .mutant.yml."
+warn "       Add each constant under matcher.subjects so it is mutation-tested:"
+missing.sort.each { |c| warn "  - #{c}" }
+exit 1

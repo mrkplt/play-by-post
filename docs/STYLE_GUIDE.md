@@ -96,22 +96,22 @@ component.
 
 ## 4. How adherence is enforced
 
-`bin/quality-metrics --check` runs on every PR and push (and in the local
-`bin/pre-push` hook). It fails the build on:
+Enforcement runs on every PR and push (and in the local `bin/pre-push` hook).
+Each check is its **own CI job**, so a failure is identifiable directly from the
+status list — the failing job is named for the thing that failed:
 
-| Gate | Rule |
+| Check (CI job) | Rule |
 |---|---|
-| **View CSS statements** | inline Tailwind must not increase in `app/views/*.erb` → pushes markup into components |
-| **ERB logic** | ternaries / `\|\|` / local-assigns must not increase in any `.erb` (views *and* component templates) |
-| **`raw_hex_class_violations`** | ceiling of 0 — raw hex in ERB class utilities fails; use a token |
-| **`mutant_registration_violations`** | ceiling of 0 — a `Ui::*`/`Shared::*`/presenter class missing from `.mutant.yml` fails |
-| **Sorbet sigil** | every touched `app/`/`lib/`/`config/initializers` file needs `# typed: true`+ |
-| **Coverage** | changed files ≥80% line / ≥70% branch; global mutation floor |
+| **`design_tokens`** (`bin/check-design-tokens`) | no raw hex in ERB class utilities (`bg-[#…]`); use a `@theme` token. Fails itself on any violation. |
+| **`mutant_registration`** (`bin/check-mutant-registration`) | every `Ui::*`/`Shared::*`/presenter is in `.mutant.yml`. Fails itself if any is missing. |
+| **`lint` / `typecheck`** | RuboCop / Sorbet |
+| **`quality_gate`** (`bin/quality-metrics --check`) | evaluates *produced* outcomes vs baseline: coverage (≥80% line / ≥70% branch on changed files, mutation floor), view-CSS-must-not-increase, ERB-logic-must-not-increase, presenter-method ceiling, Sorbet sigils |
 
-Ceiling metrics live in `quality_baseline.json` and can only **ratchet down**
-(`check_baseline_integrity` blocks raising them). To adopt an intentional
-improvement, lower the ceiling and run `bin/quality-metrics --save`.
+The two static checks are **standalone executables** that own their pass/fail
+(`exit 1` on violation) — they don't route through `quality_gate`, which is
+reserved for evaluating expensive-to-produce numbers (coverage, mutation). Run
+them locally any time: `bin/check-design-tokens`, `bin/check-mutant-registration`.
 
 **When you add a component:** create it under `Ui::*`/`Shared::*`, add a spec, a
 Lookbook preview in `spec/components/previews/`, and register its constant in
-`.mutant.yml` (the registration gate will fail the build otherwise).
+`.mutant.yml` (the `mutant_registration` job fails the build otherwise).
