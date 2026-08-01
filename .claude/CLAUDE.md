@@ -10,6 +10,34 @@ Play-by-Post TTRPG — Rails 8 app for asynchronous tabletop RPGs. GMs and playe
 
 ---
 
+## Working With the Owner
+
+The owner has many years of production Rails experience. Treat their direction as
+decisions, not opening positions.
+
+- **A directive is not a prompt for alternatives.** Suggesting is fine and wanted —
+  say the concern in a sentence or two, then *do what was asked*. Substituting your
+  own approach, doing a smaller adjacent thing, or quietly not doing it is not an
+  acceptable response to disagreement.
+- **If you think they are wrong, research it — do not assert.** Every time that has
+  gone badly here, the cause was a confident claim from memory instead of a
+  five-minute check:
+  - "The database isn't the bottleneck, it's 9%" — measured `sql.active_record`,
+    which only counts driver time. `factory_bot.run_factory` showed `create` was
+    **43%**. Wrong by ~3×, and it was used to refuse a refactor.
+  - "Overriding `save` won't cover `create`/`update`" — a five-line probe showed it
+    does. Used to avoid a change that was explicitly requested.
+  - "Scopes need real rows or the mutants survive" — a `to_sql` assertion kills the
+    same mutants. Never tested before arguing.
+  - Proposed `parallel_tests` as the "good choice" — already rejected for timing
+    problems, and the evidence was in this file.
+- **Bring the measurement, not the opinion.** If a claim would change what gets
+  built, it needs a probe, a benchmark, or a diff behind it before it is stated.
+- **Re-stating a concern after it has been heard is second-guessing.** Once they
+  have responded to a concern, it is settled. Proceed.
+
+---
+
 ## Technology Stack
 
 | Concern | Technology |
