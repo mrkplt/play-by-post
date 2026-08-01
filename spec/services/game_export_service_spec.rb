@@ -281,6 +281,87 @@ RSpec.describe GameExportService do
     end
   end
 
+  # Zip assembly with every read stubbed: entry paths and slugging are the
+  # service's own doing, so they need built records, not persisted ones.
+  describe "#call (zip layout)" do
+    let(:export_user) { build_stubbed(:user) }
+    let(:gm_member) { build_stubbed(:game_member, role: "game_master", status: "active") }
+
+    def build_service(games, scenes: [], characters: [], versions: [])
+      games.each { |g| allow(g).to receive(:member_for).with(export_user).and_return(gm_member) }
+      described_class.new(export_user, games).tap do |service|
+        allow(service).to receive(:export_scenes_for).and_return(scenes)
+        allow(service).to receive(:members_for).and_return([])
+        allow(service).to receive(:files_for).and_return([])
+        allow(service).to receive(:participants_for).and_return([])
+        allow(service).to receive(:published_posts_for).and_return([])
+        allow(service).to receive(:characters_for).and_return(characters)
+        allow(service).to receive(:versions_for).and_return(versions)
+      end
+    end
+
+    def entries_for(...) = zip_entries(build_service(...).call)
+
+    let(:one_game) { [ build_stubbed(:game, name: "Sunken Archive") ] }
+
+    it "writes a README and a files manifest" do
+      entries = entries_for(one_game)
+
+      expect(entries).to include(a_string_matching(%r{README\.md$}))
+      expect(entries).to include(a_string_matching(%r{files_manifest\.md$}))
+    end
+
+    it "writes scene info and posts per scene" do
+      entries = entries_for(one_game, scenes: [ build_stubbed(:scene, title: "Opening Scene") ])
+
+      expect(entries).to include(a_string_matching(%r{scenes/001-opening-scene/scene_info\.md$}))
+      expect(entries).to include(a_string_matching(%r{scenes/001-opening-scene/posts\.md$}))
+    end
+
+    it "roots a single-game export at the game slug" do
+      expect(entries_for(one_game).first).to start_with("sunken-archive-export-")
+    end
+
+    it "numbers scenes and disambiguates duplicate titles" do
+      entries = entries_for(one_game, scenes: [ build_stubbed(:scene, title: "Ambush"),
+                                                build_stubbed(:scene, title: "Ambush") ])
+
+      expect(entries).to include(a_string_matching(%r{scenes/001-ambush/}))
+      expect(entries).to include(a_string_matching(%r{scenes/002-ambush-2/}))
+    end
+
+    it "writes a sheet per character" do
+      entries = entries_for(one_game, characters: [ build_stubbed(:character, name: "Aria") ])
+
+      expect(entries).to include(a_string_matching(%r{characters/aria/current_sheet\.md$}))
+    end
+
+    it "writes a file per character version" do
+      character = build_stubbed(:character, name: "Aria")
+      version = build_stubbed(:character_version, created_at: Time.utc(2026, 5, 6),
+                                                  edited_by: build_stubbed(:user))
+
+      entries = entries_for(one_game, characters: [ character ], versions: [ version ])
+
+      expect(entries).to include(a_string_matching(%r{characters/aria/version_history/v001-2026-05-06\.md$}))
+    end
+
+    context "with several games" do
+      let(:games) { [ build_stubbed(:game, name: "Alpha"), build_stubbed(:game, name: "Beta") ] }
+
+      it "roots the export at all-games-export" do
+        expect(entries_for(games).first).to start_with("all-games-export-")
+      end
+
+      it "gives each game its own directory" do
+        entries = entries_for(games)
+
+        expect(entries).to include(a_string_matching(%r{all-games-export-[\d-]+/alpha/}))
+        expect(entries).to include(a_string_matching(%r{all-games-export-[\d-]+/beta/}))
+      end
+    end
+  end
+
   describe "#call" do
     context "single game, GM" do
       subject(:zip_data) { GameExportService.new(gm_user, [ game ]).call }
@@ -294,51 +375,6 @@ RSpec.describe GameExportService do
       # entry paths, per-membership scene selection, multi-game roots and slug
       # disambiguation — which is exactly what #call integrates. Every content
       # builder feeding it is covered above without a connection.
-      it "includes README.md", db: true do
-        entries = zip_entries(zip_data)
-        expect(entries).to include(a_string_matching(%r{README\.md$}))
-      end
-
-      it "includes files_manifest.md", db: true do
-        entries = zip_entries(zip_data)
-        expect(entries).to include(a_string_matching(%r{files_manifest\.md$}))
-      end
-
-      it "includes scene info and posts", db: true do
-        entries = zip_entries(zip_data)
-        expect(entries).to include(a_string_matching(%r{scenes/001-opening-scene/scene_info\.md$}))
-        expect(entries).to include(a_string_matching(%r{scenes/001-opening-scene/posts\.md$}))
-      end
-
-      it "uses game name slug as the root directory", db: true do
-        entries = zip_entries(zip_data)
-        expect(entries.first).to start_with("test-game-export-")
-      end
-
-      it "includes character files when characters exist", db: true do
-        character = create(:character, game: game, user: player_user, name: "Aria")
-        participant.update!(character: character)
-        entries = zip_entries(GameExportService.new(gm_user, [ game ]).call)
-        expect(entries).to include(a_string_matching(%r{characters/aria/current_sheet\.md$}))
-      end
-
-
-
-
-
-
-
-
-      it "includes version history files for characters", db: true do
-        character = create(:character, game: game, user: player_user, name: "Versioned")
-        participant.update!(character: character)
-        # Character gets a snapshot on create; update triggers another version
-        character.update!(content: "Updated sheet")
-        zip_data2 = GameExportService.new(gm_user, [ game ]).call
-        entries = zip_entries(zip_data2)
-        version_entries = entries.select { |e| e.include?("version_history") }
-        expect(version_entries.size).to be >= 2
-      end
     end
 
     context "single game, active player" do
@@ -382,17 +418,6 @@ RSpec.describe GameExportService do
       end
 
       subject(:zip_data) { GameExportService.new(player_user, [ game, game2 ]).call }
-
-      it "uses all-games-export as root directory", db: true do
-        entries = zip_entries(zip_data)
-        expect(entries.first).to start_with("all-games-export-")
-      end
-
-      it "includes both games", db: true do
-        entries = zip_entries(zip_data)
-        expect(entries).to include(a_string_matching(%r{test-game/}))
-        expect(entries).to include(a_string_matching(%r{second-game/}))
-      end
     end
 
     context "when user is not a member" do
@@ -406,15 +431,6 @@ RSpec.describe GameExportService do
     end
 
     context "slug disambiguation" do
-      it "disambiguates scenes with duplicate titles", db: true do
-        create(:scene, game: game, title: "Opening Scene")
-        zip_data = GameExportService.new(gm_user, [ game ]).call
-        entries = zip_entries(zip_data)
-        scene_dirs = entries.select { |e| e.include?("/scenes/") && e.end_with?("scene_info.md") }
-        expect(scene_dirs.size).to eq(2)
-        slugs = scene_dirs.map { |e| e.split("/scenes/").last.split("/").first }
-        expect(slugs.uniq.size).to eq(2)
-      end
     end
   end
 end
