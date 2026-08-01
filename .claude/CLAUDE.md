@@ -160,7 +160,7 @@ Enforced by `bin/quality-metrics --check` against `quality_baseline.json`:
 
 **Two static checks are their own CI jobs** (not part of `quality_gate`), so a failure is identifiable directly from the status list:
 - **`design_tokens`** (`bin/check-design-tokens`) — no raw hex in ERB class utilities (`bg-[#…]`); use a `@theme` token. Fails itself on any violation.
-- **`mutant_registration`** (`bin/check-mutant-registration`) — every `Ui::*`/`Shared::*`/presenter must be in `.mutant.yml`. Fails itself if any is missing.
+- **`mutant_registration`** (`bin/check-mutant-coverage`) — every concrete `app/` class (components, presenters, models, …) must be in `.mutant.yml`. Fails itself if any is missing.
 
 Each is a self-contained executable that owns its pass/fail (`exit 1` on violation). Run locally any time; they don't route through `quality_gate` (which is reserved for evaluating expensive-to-produce coverage/mutation numbers against the baseline).
 
