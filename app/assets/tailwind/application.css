@@ -25,6 +25,7 @@
   --color-card: #ffffff;
   --color-card-border: #e8e6e1;
   --color-card-divider: #f0eee9;
+  --color-input-border: #d8d5cd;   /* warm border on text inputs / textareas */
 
   /* Muted greys */
   --color-muted: #8a8d94;           /* labels, meta */
