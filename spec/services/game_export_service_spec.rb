@@ -30,6 +30,57 @@ RSpec.describe GameExportService do
     nil
   end
 
+  # README rendering is string building over a member list and a scene list.
+  # Stubbing the one read (#members_for) lets it be exercised with built records
+  # instead of a persisted game, its members, and a zip round-trip.
+  describe "#readme_content" do
+    let(:exported_game) { build_stubbed(:game, name: "Test Game", description: "A test game.") }
+    let(:service) { described_class.new(build_stubbed(:user), [ exported_game ]) }
+
+    def member(display_name:, role: "player", status: "active")
+      user = build_stubbed(:user)
+      allow(user).to receive(:display_name).and_return(display_name)
+      build_stubbed(:game_member, user: user, role: role, status: status, game: exported_game)
+    end
+
+    def readme(members: [], scenes: [])
+      allow(service).to receive(:members_for).with(exported_game).and_return(members)
+      service.send(:readme_content, exported_game, scenes)
+    end
+
+    it "lists a game master as GM" do
+      content = readme(members: [ member(display_name: "Dana", role: "game_master") ])
+
+      expect(content).to include("| Dana | GM | Active |")
+    end
+
+    it "labels a removed member as Former" do
+      content = readme(members: [ member(display_name: "Gus", status: "removed") ])
+
+      expect(content).to include("Former")
+    end
+
+    it "counts unresolved scenes as active" do
+      content = readme(scenes: [ build_stubbed(:scene), build_stubbed(:scene) ])
+
+      expect(content).to include("- Active: 2")
+      expect(content).to include("- Resolved: 0")
+    end
+
+    it "counts resolved scenes separately" do
+      content = readme(scenes: [ build_stubbed(:scene), build_stubbed(:scene, :resolved) ])
+
+      expect(content).to include("- Active: 1")
+      expect(content).to include("- Resolved: 1")
+    end
+
+    it "falls back when the description is blank" do
+      allow(exported_game).to receive(:description).and_return("")
+
+      expect(readme).to include("_No description._")
+    end
+  end
+
   describe "#call" do
     context "single game, GM" do
       subject(:zip_data) { GameExportService.new(gm_user, [ game ]).call }
@@ -40,32 +91,27 @@ RSpec.describe GameExportService do
       end
 
       it "includes README.md", db: true do
-
         entries = zip_entries(zip_data)
         expect(entries).to include(a_string_matching(%r{README\.md$}))
       end
 
       it "includes files_manifest.md", db: true do
-
         entries = zip_entries(zip_data)
         expect(entries).to include(a_string_matching(%r{files_manifest\.md$}))
       end
 
       it "includes scene info and posts", db: true do
-
         entries = zip_entries(zip_data)
         expect(entries).to include(a_string_matching(%r{scenes/001-opening-scene/scene_info\.md$}))
         expect(entries).to include(a_string_matching(%r{scenes/001-opening-scene/posts\.md$}))
       end
 
       it "uses game name slug as the root directory", db: true do
-
         entries = zip_entries(zip_data)
         expect(entries.first).to start_with("test-game-export-")
       end
 
       it "includes posts content in posts.md", db: true do
-
         entries = zip_entries(zip_data)
         posts_path = entries.find { |e| e.end_with?("posts.md") }
         content = zip_file_content(zip_data, posts_path)
@@ -73,7 +119,6 @@ RSpec.describe GameExportService do
       end
 
       it "excludes draft posts", db: true do
-
         create(:post, :draft, scene: scene, user: gm_user)
         entries = zip_entries(zip_data)
         posts_path = entries.find { |e| e.end_with?("posts.md") }
@@ -83,52 +128,13 @@ RSpec.describe GameExportService do
       end
 
       it "includes character files when characters exist", db: true do
-
         character = create(:character, game: game, user: player_user, name: "Aria")
         participant.update!(character: character)
         entries = zip_entries(GameExportService.new(gm_user, [ game ]).call)
         expect(entries).to include(a_string_matching(%r{characters/aria/current_sheet\.md$}))
       end
 
-      it "includes README with member roster", db: true do
-
-        entries = zip_entries(zip_data)
-        readme_path = entries.find { |e| e.end_with?("README.md") }
-        content = zip_file_content(zip_data, readme_path)
-        expect(content).to include("GM")
-        expect(content).to include(gm_user.display_name)
-      end
-
-      it "includes scene count in README", db: true do
-
-        entries = zip_entries(zip_data)
-        readme_path = entries.find { |e| e.end_with?("README.md") }
-        content = zip_file_content(zip_data, readme_path)
-        expect(content).to include("Active: 1")
-      end
-
-      it "includes resolved scene count in README", db: true do
-
-        create(:scene, :resolved, game: game, title: "Old Scene")
-        zip_data2 = GameExportService.new(gm_user, [ game ]).call
-        entries = zip_entries(zip_data2)
-        readme_path = entries.find { |e| e.end_with?("README.md") }
-        content = zip_file_content(zip_data2, readme_path)
-        expect(content).to include("Resolved: 1")
-      end
-
-      it "labels removed members as Former in README", db: true do
-
-        removed_user = create(:user, :with_profile)
-        create(:game_member, :removed, game: game, user: removed_user)
-        entries = zip_entries(zip_data)
-        readme_path = entries.find { |e| e.end_with?("README.md") }
-        content = zip_file_content(zip_data, readme_path)
-        expect(content).to include("Former")
-      end
-
       it "includes resolved scene status and date in scene_info.md", db: true do
-
         resolved = create(:scene, :resolved, game: game, title: "Done Scene", resolution: "All ends well.")
         zip_data2 = GameExportService.new(gm_user, [ game ]).call
         entries = zip_entries(zip_data2)
@@ -139,7 +145,6 @@ RSpec.describe GameExportService do
       end
 
       it "includes parent scene in scene_info.md", db: true do
-
         child = create(:scene, :with_parent, game: game, title: "Child Scene")
         zip_data2 = GameExportService.new(gm_user, [ game ]).call
         entries = zip_entries(zip_data2)
@@ -149,7 +154,6 @@ RSpec.describe GameExportService do
       end
 
       it "shows no description fallback in scene_info.md when description is blank", db: true do
-
         scene.update!(description: "")
         zip_data2 = GameExportService.new(gm_user, [ game ]).call
         entries = zip_entries(zip_data2)
@@ -159,7 +163,6 @@ RSpec.describe GameExportService do
       end
 
       it "labels OOC posts in posts.md", db: true do
-
         create(:post, :ooc, scene: scene, user: gm_user, content: "OOC message")
         zip_data2 = GameExportService.new(gm_user, [ game ]).call
         entries = zip_entries(zip_data2)
@@ -169,7 +172,6 @@ RSpec.describe GameExportService do
       end
 
       it "marks edited posts with (edited) in posts.md", db: true do
-
         create(:post, :edited, scene: scene, user: gm_user, content: "Edited post")
         zip_data2 = GameExportService.new(gm_user, [ game ]).call
         entries = zip_entries(zip_data2)
@@ -179,7 +181,6 @@ RSpec.describe GameExportService do
       end
 
       it "shows no posts fallback when scene has no published posts", db: true do
-
         scene2 = create(:scene, game: game, title: "Empty Scene")
         zip_data2 = GameExportService.new(gm_user, [ game ]).call
         entries = zip_entries(zip_data2)
@@ -189,7 +190,6 @@ RSpec.describe GameExportService do
       end
 
       it "notes hidden and archived character attributes in current_sheet.md", db: true do
-
         # Use gm_user's own characters so they appear in user_char_ids
         hidden_char = create(:character, :hidden, game: game, user: gm_user, name: "Ghost")
         archived_char = create(:character, :archived, game: game, user: gm_user, name: "Retired")
@@ -206,7 +206,6 @@ RSpec.describe GameExportService do
       end
 
       it "includes version history files for characters", db: true do
-
         character = create(:character, game: game, user: player_user, name: "Versioned")
         participant.update!(character: character)
         # Character gets a snapshot on create; update triggers another version
@@ -218,7 +217,6 @@ RSpec.describe GameExportService do
       end
 
       it "includes files manifest with no-files message when no game files exist", db: true do
-
         entries = zip_entries(zip_data)
         manifest_path = entries.find { |e| e.end_with?("files_manifest.md") }
         content = zip_file_content(zip_data, manifest_path)
@@ -226,7 +224,6 @@ RSpec.describe GameExportService do
       end
 
       it "includes files manifest with file list when game files exist", db: true do
-
         gf = create(:game_file, game: game, filename: "rules.pdf", content_type: "application/pdf", byte_size: 2_048_000)
         gf.file.attach(io: StringIO.new("pdf content"), filename: "rules.pdf", content_type: "application/pdf")
         zip_data2 = GameExportService.new(gm_user, [ game ]).call
@@ -238,7 +235,6 @@ RSpec.describe GameExportService do
       end
 
       it "shows KB size for medium files in manifest", db: true do
-
         gf = create(:game_file, game: game, filename: "notes.txt", content_type: "text/plain", byte_size: 2_048)
         gf.file.attach(io: StringIO.new("notes"), filename: "notes.txt", content_type: "text/plain")
         zip_data2 = GameExportService.new(gm_user, [ game ]).call
@@ -249,7 +245,6 @@ RSpec.describe GameExportService do
       end
 
       it "shows 'unknown' size for game files without an attachment", db: true do
-
         create(:game_file, game: game, filename: "missing.pdf")
         zip_data2 = GameExportService.new(gm_user, [ game ]).call
         entries = zip_entries(zip_data2)
@@ -259,7 +254,6 @@ RSpec.describe GameExportService do
       end
 
       it "shows bytes for small files in manifest", db: true do
-
         gf = create(:game_file, game: game, filename: "tiny.txt", content_type: "text/plain", byte_size: 500)
         gf.file.attach(io: StringIO.new("x"), filename: "tiny.txt", content_type: "text/plain")
         zip_data2 = GameExportService.new(gm_user, [ game ]).call
@@ -270,7 +264,6 @@ RSpec.describe GameExportService do
       end
 
       it "uses 'untitled' slug for a scene whose title produces an empty slug", db: true do
-
         create(:scene, game: game, title: "!!! @@@")
         zip_data2 = GameExportService.new(gm_user, [ game ]).call
         entries = zip_entries(zip_data2)
@@ -282,7 +275,6 @@ RSpec.describe GameExportService do
       subject(:zip_data) { GameExportService.new(player_user, [ game ]).call }
 
       it "includes the scene the player participates in", db: true do
-
         entries = zip_entries(zip_data)
         expect(entries).to include(a_string_matching(%r{scenes/}))
       end
@@ -305,7 +297,6 @@ RSpec.describe GameExportService do
       subject(:zip_data) { GameExportService.new(removed_user, [ game ]).call }
 
       it "includes only scenes they participated in", db: true do
-
         other_scene = create(:scene, game: game, title: "Other Scene")
         entries = zip_entries(zip_data)
         expect(entries).to include(a_string_matching(%r{opening-scene}))
@@ -323,13 +314,11 @@ RSpec.describe GameExportService do
       subject(:zip_data) { GameExportService.new(player_user, [ game, game2 ]).call }
 
       it "uses all-games-export as root directory", db: true do
-
         entries = zip_entries(zip_data)
         expect(entries.first).to start_with("all-games-export-")
       end
 
       it "includes both games", db: true do
-
         entries = zip_entries(zip_data)
         expect(entries).to include(a_string_matching(%r{test-game/}))
         expect(entries).to include(a_string_matching(%r{second-game/}))
@@ -348,7 +337,6 @@ RSpec.describe GameExportService do
 
     context "slug disambiguation" do
       it "disambiguates scenes with duplicate titles", db: true do
-
         create(:scene, game: game, title: "Opening Scene")
         zip_data = GameExportService.new(gm_user, [ game ]).call
         entries = zip_entries(zip_data)
