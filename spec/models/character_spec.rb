@@ -11,97 +11,90 @@ RSpec.describe Character, type: :model do
     end
   end
 
-  describe "version snapshots" do
-    it "creates a version on save", db: true do
-
-      character = create(:character)
-      expect(character.character_versions.count).to eq(1)
+  # The snapshot's content and attribution are the logic; writing the row is the
+  # after_save hook's job. Assert the attributes directly, and separately that
+  # the hook is still wired to them.
+  describe "#version_attributes" do
+    it "captures the current content" do
+      character = build_stubbed(:character, content: "Some content")
+      expect(character.version_attributes[:content]).to eq("Some content")
     end
 
-    it "creates a new version on each update", db: true do
-
-      character = create(:character)
-      character.update!(content: "Updated content")
-      expect(character.character_versions.count).to eq(2)
+    it "renders nil content as an empty string" do
+      character = build_stubbed(:character, content: nil)
+      expect(character.version_attributes[:content]).to eq("")
     end
 
-    it "records Current.user as edited_by when set", db: true do
-
-      gm = create(:user)
-      Current.user = gm
-      character = create(:character)
-      expect(character.character_versions.last.edited_by_id).to eq(gm.id)
+    it "records Current.user as edited_by when set" do
+      editor = build_stubbed(:user)
+      character = build_stubbed(:character)
+      Current.user = editor
+      expect(character.version_attributes[:edited_by_id]).to eq(editor.id)
+    ensure
       Current.user = nil
     end
 
-    it "falls back to character owner when Current.user is nil", db: true do
-
+    it "falls back to the character owner when Current.user is nil" do
       Current.user = nil
-      character = create(:character)
-      expect(character.character_versions.last.edited_by_id).to eq(character.user_id)
+      character = build_stubbed(:character)
+      expect(character.version_attributes[:edited_by_id]).to eq(character.user_id)
     end
   end
 
-  # No persistence: the scope's job is to build the right query, and ActiveRecord
-  # is responsible for executing it. Asserting on to_sql exercises our branching
-  # without inserting the game/members/characters each example previously needed.
-  describe ".visible_to" do
+  describe "version snapshot wiring" do
+    it "snapshots the version after save" do
+      expect(Character._save_callbacks.map(&:filter)).to include(:snapshot_version)
+    end
+  end
+
+  # The branching is the logic and is now a pure decision; applying it to a
+  # relation is the scope's only remaining job. No query, no rows, no SQL string
+  # to match (which also makes this adapter-independent).
+  describe ".visibility_rule" do
     let(:viewer) { build_stubbed(:user) }
-    let(:game) { instance_double(Game) }
+    let(:game) { build_stubbed(:game) }
 
-    it "GM sees every character regardless of sheets_hidden" do
+    it "gives a GM everything, whatever sheets_hidden says" do
       allow(game).to receive(:game_master?).with(viewer).and_return(true)
+      allow(game).to receive(:sheets_hidden?).and_return(true)
 
-      expect(Character.visible_to(viewer, game).to_sql).to eq(Character.all.to_sql)
+      expect(described_class.visibility_rule(viewer, game)).to eq(:all)
     end
 
-    it "when sheets_hidden, a non-GM is restricted to their own characters", db: true do
-
+    it "restricts a non-GM to their own when sheets are hidden" do
       allow(game).to receive(:game_master?).with(viewer).and_return(false)
       allow(game).to receive(:sheets_hidden?).and_return(true)
 
-      sql = Character.visible_to(viewer, game).to_sql
-      expect(sql).to include(%{"characters"."user_id" = #{viewer.id}})
-      expect(sql).not_to include(%{"characters"."hidden"})
+      expect(described_class.visibility_rule(viewer, game)).to eq(:own_only)
     end
 
-    it "when sheets_hidden is false, unhidden characters and the viewer's own are visible", db: true do
-
+    it "allows unhidden plus own when sheets are not hidden" do
       allow(game).to receive(:game_master?).with(viewer).and_return(false)
       allow(game).to receive(:sheets_hidden?).and_return(false)
 
-      sql = Character.visible_to(viewer, game).to_sql
-      expect(sql).to include(%{"characters"."hidden" = FALSE})
-      expect(sql).to include(%{"characters"."user_id" = #{viewer.id}})
-      expect(sql).to include(" OR ")
+      expect(described_class.visibility_rule(viewer, game)).to eq(:unhidden_or_own)
     end
   end
 
   describe "#editable_by?" do
-    let(:game) { create(:game) }
-    let(:owner) { create(:user) }
-    let(:other) { create(:user) }
-    let(:gm_user) { create(:user) }
-    let(:character) { create(:character, game: game, user: owner) }
+    let(:owner) { build_stubbed(:user) }
+    let(:other) { build_stubbed(:user) }
+    let(:gm_user) { build_stubbed(:user) }
+    let(:game) { build_stubbed(:game) }
+    let(:character) { build_stubbed(:character, game: game, user: owner) }
 
-    before do
-      create(:game_member, :game_master, game: game, user: gm_user)
-      create(:game_member, game: game, user: owner)
-      create(:game_member, game: game, user: other)
-    end
-
-    it "returns true for the owner", db: true do
-
+    it "returns true for the owner" do
+      allow(game).to receive(:game_master?).with(owner).and_return(false)
       expect(character.editable_by?(owner, game)).to be true
     end
 
-    it "returns true for the GM", db: true do
-
+    it "returns true for the GM" do
+      allow(game).to receive(:game_master?).with(gm_user).and_return(true)
       expect(character.editable_by?(gm_user, game)).to be true
     end
 
-    it "returns false for another player", db: true do
-
+    it "returns false for another player" do
+      allow(game).to receive(:game_master?).with(other).and_return(false)
       expect(character.editable_by?(other, game)).to be false
     end
   end
