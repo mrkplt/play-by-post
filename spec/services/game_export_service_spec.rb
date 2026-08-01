@@ -81,6 +81,206 @@ RSpec.describe GameExportService do
     end
   end
 
+  # posts.md and files_manifest.md are string building over a list. Stub the one
+  # read each needs and they exercise every branch without a persisted graph or
+  # a zip round-trip.
+  describe "#posts_content" do
+    let(:exported_scene) { build_stubbed(:scene) }
+    let(:service) { described_class.new(build_stubbed(:user), []) }
+
+    def post_double(content: "Hello world!", author: "Alice", ooc: false, edited: nil)
+      double(
+        user: double(display_name: author, email: "alice@example.com"),
+        created_at: Time.utc(2026, 1, 1, 12, 0),
+        last_edited_at: edited,
+        is_ooc?: ooc,
+        content: content
+      )
+    end
+
+    def posts_md(posts)
+      allow(service).to receive(:published_posts_for).with(exported_scene).and_return(posts)
+      service.send(:posts_content, exported_scene)
+    end
+
+    it "renders the post body and author" do
+      content = posts_md([ post_double ])
+
+      expect(content).to include("Hello world!")
+      expect(content).to include("## Alice — 2026-01-01 12:00 UTC")
+    end
+
+    it "falls back to the email when the author has no display name" do
+      expect(posts_md([ post_double(author: "") ])).to include("alice@example.com")
+    end
+
+    it "shows a fallback when there are no published posts" do
+      expect(posts_md([])).to eq("_No posts yet._\n")
+    end
+
+    it "labels OOC posts" do
+      expect(posts_md([ post_double(ooc: true) ])).to include("[Out of Character]")
+    end
+
+    it "marks edited posts" do
+      expect(posts_md([ post_double(edited: Time.utc(2026, 1, 2)) ])).to include("(edited)")
+    end
+
+    it "does not mark unedited posts" do
+      expect(posts_md([ post_double ])).not_to include("(edited)")
+    end
+  end
+
+  describe "#files_manifest_content" do
+    let(:exported_game) { build_stubbed(:game) }
+    let(:service) { described_class.new(build_stubbed(:user), [ exported_game ]) }
+
+    def file_double(filename: "rules.pdf", content_type: "application/pdf", byte_size: 500, attached: true)
+      double(
+        file: double(attached?: attached),
+        byte_size: byte_size,
+        created_at: Time.utc(2026, 1, 1),
+        filename: filename,
+        content_type: content_type
+      )
+    end
+
+    def manifest(files)
+      allow(service).to receive(:files_for).with(exported_game).and_return(files)
+      service.send(:files_manifest_content, exported_game)
+    end
+
+    it "reports when no files have been uploaded" do
+      expect(manifest([])).to include("_No files uploaded._")
+    end
+
+    it "lists a file with its name and type" do
+      content = manifest([ file_double ])
+
+      expect(content).to include("rules.pdf")
+      expect(content).to include("application/pdf")
+    end
+
+    it "shows MB for large files" do
+      expect(manifest([ file_double(byte_size: 2_048_000) ])).to include("MB")
+    end
+
+    it "shows KB for medium files" do
+      expect(manifest([ file_double(byte_size: 2_048) ])).to include("KB")
+    end
+
+    it "shows bytes for small files" do
+      expect(manifest([ file_double(byte_size: 500) ])).to include(" B")
+    end
+
+    it "shows unknown when the attachment is missing" do
+      expect(manifest([ file_double(attached: false) ])).to include("unknown")
+    end
+  end
+
+  describe "#scene_info_content" do
+    let(:service) { described_class.new(build_stubbed(:user), []) }
+
+    def info(scene, participants: [])
+      allow(service).to receive(:participants_for).with(scene).and_return(participants)
+      service.send(:scene_info_content, scene)
+    end
+
+    it "marks an unresolved scene active" do
+      expect(info(build_stubbed(:scene))).to include("**Status:** Active")
+    end
+
+    it "marks a resolved scene resolved and dates it" do
+      resolved_at = Time.utc(2026, 3, 4)
+      scene = build_stubbed(:scene, :resolved, resolved_at: resolved_at)
+
+      content = info(scene)
+
+      expect(content).to include("**Status:** Resolved")
+      expect(content).to include("**Resolved:** 2026-03-04")
+    end
+
+    it "names the parent scene when there is one" do
+      parent = build_stubbed(:scene, title: "The Tavern")
+      scene = build_stubbed(:scene, parent_scene: parent)
+
+      content = info(scene)
+
+      expect(content).to include("## Parent Scene")
+      expect(content).to include("The Tavern")
+    end
+
+    it "omits the parent section when there is no parent" do
+      expect(info(build_stubbed(:scene, parent_scene: nil))).not_to include("## Parent Scene")
+    end
+
+    it "falls back when the description is blank" do
+      expect(info(build_stubbed(:scene, description: ""))).to include("_No description._")
+    end
+
+    it "lists participants with their character" do
+      character = build_stubbed(:character, name: "Aria")
+      user = build_stubbed(:user)
+      allow(user).to receive(:display_name).and_return("Dana")
+      sp = build_stubbed(:scene_participant, user: user, character: character)
+
+      expect(info(build_stubbed(:scene), participants: [ sp ])).to include("| Dana | Aria |")
+    end
+
+    it "dashes the character column for a participant without one" do
+      user = build_stubbed(:user)
+      allow(user).to receive(:display_name).and_return("Gus")
+      sp = build_stubbed(:scene_participant, user: user, character: nil)
+
+      expect(info(build_stubbed(:scene), participants: [ sp ])).to include("| Gus | — |")
+    end
+  end
+
+  describe "#character_sheet_content" do
+    let(:service) { described_class.new(build_stubbed(:user), []) }
+
+    def sheet(character)
+      service.send(:character_sheet_content, character)
+    end
+
+    it "notes a hidden character" do
+      expect(sheet(build_stubbed(:character, :hidden))).to include("**Hidden:** Yes")
+    end
+
+    it "notes an archived character" do
+      expect(sheet(build_stubbed(:character, :archived))).to include("**Archived:** Yes")
+    end
+
+    it "notes an ordinary character as neither" do
+      content = sheet(build_stubbed(:character))
+
+      expect(content).to include("**Hidden:** No")
+      expect(content).to include("**Archived:** No")
+    end
+  end
+
+  describe "#slugify" do
+    let(:service) { described_class.new(build_stubbed(:user), []) }
+
+    def slug(text) = service.send(:slugify, text)
+
+    it "lowercases and hyphenates" do
+      expect(slug("The Sunken Archive")).to eq("the-sunken-archive")
+    end
+
+    it "strips punctuation" do
+      expect(slug("Chapter 1: The End!")).to eq("chapter-1-the-end")
+    end
+
+    it "collapses repeated separators" do
+      expect(slug("a   -  b")).to eq("a-b")
+    end
+
+    it "falls back to untitled when nothing survives" do
+      expect(slug("!!!")).to eq("untitled")
+    end
+  end
+
   describe "#call" do
     context "single game, GM" do
       subject(:zip_data) { GameExportService.new(gm_user, [ game ]).call }
@@ -111,22 +311,6 @@ RSpec.describe GameExportService do
         expect(entries.first).to start_with("test-game-export-")
       end
 
-      it "includes posts content in posts.md", db: true do
-        entries = zip_entries(zip_data)
-        posts_path = entries.find { |e| e.end_with?("posts.md") }
-        content = zip_file_content(zip_data, posts_path)
-        expect(content).to include("Hello world!")
-      end
-
-      it "excludes draft posts", db: true do
-        create(:post, :draft, scene: scene, user: gm_user)
-        entries = zip_entries(zip_data)
-        posts_path = entries.find { |e| e.end_with?("posts.md") }
-        content = zip_file_content(zip_data, posts_path)
-        # Draft posts have no content requirement; ensure only published posts appear
-        expect(content).to include("Hello world!")
-      end
-
       it "includes character files when characters exist", db: true do
         character = create(:character, game: game, user: player_user, name: "Aria")
         participant.update!(character: character)
@@ -134,76 +318,12 @@ RSpec.describe GameExportService do
         expect(entries).to include(a_string_matching(%r{characters/aria/current_sheet\.md$}))
       end
 
-      it "includes resolved scene status and date in scene_info.md", db: true do
-        resolved = create(:scene, :resolved, game: game, title: "Done Scene", resolution: "All ends well.")
-        zip_data2 = GameExportService.new(gm_user, [ game ]).call
-        entries = zip_entries(zip_data2)
-        info_path = entries.find { |e| e.include?("done-scene") && e.end_with?("scene_info.md") }
-        content = zip_file_content(zip_data2, info_path)
-        expect(content).to include("Resolved")
-        expect(content).to include("All ends well.")
-      end
 
-      it "includes parent scene in scene_info.md", db: true do
-        child = create(:scene, :with_parent, game: game, title: "Child Scene")
-        zip_data2 = GameExportService.new(gm_user, [ game ]).call
-        entries = zip_entries(zip_data2)
-        info_path = entries.find { |e| e.include?("child-scene") && e.end_with?("scene_info.md") }
-        content = zip_file_content(zip_data2, info_path)
-        expect(content).to include("## Parent Scene")
-      end
 
-      it "shows no description fallback in scene_info.md when description is blank", db: true do
-        scene.update!(description: "")
-        zip_data2 = GameExportService.new(gm_user, [ game ]).call
-        entries = zip_entries(zip_data2)
-        info_path = entries.find { |e| e.end_with?("scene_info.md") }
-        content = zip_file_content(zip_data2, info_path)
-        expect(content).to include("_No description._")
-      end
 
-      it "labels OOC posts in posts.md", db: true do
-        create(:post, :ooc, scene: scene, user: gm_user, content: "OOC message")
-        zip_data2 = GameExportService.new(gm_user, [ game ]).call
-        entries = zip_entries(zip_data2)
-        posts_path = entries.find { |e| e.end_with?("posts.md") }
-        content = zip_file_content(zip_data2, posts_path)
-        expect(content).to include("[Out of Character]")
-      end
 
-      it "marks edited posts with (edited) in posts.md", db: true do
-        create(:post, :edited, scene: scene, user: gm_user, content: "Edited post")
-        zip_data2 = GameExportService.new(gm_user, [ game ]).call
-        entries = zip_entries(zip_data2)
-        posts_path = entries.find { |e| e.end_with?("posts.md") }
-        content = zip_file_content(zip_data2, posts_path)
-        expect(content).to include("(edited)")
-      end
 
-      it "shows no posts fallback when scene has no published posts", db: true do
-        scene2 = create(:scene, game: game, title: "Empty Scene")
-        zip_data2 = GameExportService.new(gm_user, [ game ]).call
-        entries = zip_entries(zip_data2)
-        posts_path = entries.find { |e| e.include?("empty-scene") && e.end_with?("posts.md") }
-        content = zip_file_content(zip_data2, posts_path)
-        expect(content).to include("_No posts yet._")
-      end
 
-      it "notes hidden and archived character attributes in current_sheet.md", db: true do
-        # Use gm_user's own characters so they appear in user_char_ids
-        hidden_char = create(:character, :hidden, game: game, user: gm_user, name: "Ghost")
-        archived_char = create(:character, :archived, game: game, user: gm_user, name: "Retired")
-        zip_data2 = GameExportService.new(gm_user, [ game ]).call
-        entries = zip_entries(zip_data2)
-
-        ghost_path = entries.find { |e| e.include?("ghost") && e.end_with?("current_sheet.md") }
-        ghost_content = zip_file_content(zip_data2, ghost_path)
-        expect(ghost_content).to include("**Hidden:** Yes")
-
-        retired_path = entries.find { |e| e.include?("retired") && e.end_with?("current_sheet.md") }
-        retired_content = zip_file_content(zip_data2, retired_path)
-        expect(retired_content).to include("**Archived:** Yes")
-      end
 
       it "includes version history files for characters", db: true do
         character = create(:character, game: game, user: player_user, name: "Versioned")
@@ -214,60 +334,6 @@ RSpec.describe GameExportService do
         entries = zip_entries(zip_data2)
         version_entries = entries.select { |e| e.include?("version_history") }
         expect(version_entries.size).to be >= 2
-      end
-
-      it "includes files manifest with no-files message when no game files exist", db: true do
-        entries = zip_entries(zip_data)
-        manifest_path = entries.find { |e| e.end_with?("files_manifest.md") }
-        content = zip_file_content(zip_data, manifest_path)
-        expect(content).to include("_No files uploaded._")
-      end
-
-      it "includes files manifest with file list when game files exist", db: true do
-        gf = create(:game_file, game: game, filename: "rules.pdf", content_type: "application/pdf", byte_size: 2_048_000)
-        gf.file.attach(io: StringIO.new("pdf content"), filename: "rules.pdf", content_type: "application/pdf")
-        zip_data2 = GameExportService.new(gm_user, [ game ]).call
-        entries = zip_entries(zip_data2)
-        manifest_path = entries.find { |e| e.end_with?("files_manifest.md") }
-        content = zip_file_content(zip_data2, manifest_path)
-        expect(content).to include("rules.pdf")
-        expect(content).to include("MB")
-      end
-
-      it "shows KB size for medium files in manifest", db: true do
-        gf = create(:game_file, game: game, filename: "notes.txt", content_type: "text/plain", byte_size: 2_048)
-        gf.file.attach(io: StringIO.new("notes"), filename: "notes.txt", content_type: "text/plain")
-        zip_data2 = GameExportService.new(gm_user, [ game ]).call
-        entries = zip_entries(zip_data2)
-        manifest_path = entries.find { |e| e.end_with?("files_manifest.md") }
-        content = zip_file_content(zip_data2, manifest_path)
-        expect(content).to include("KB")
-      end
-
-      it "shows 'unknown' size for game files without an attachment", db: true do
-        create(:game_file, game: game, filename: "missing.pdf")
-        zip_data2 = GameExportService.new(gm_user, [ game ]).call
-        entries = zip_entries(zip_data2)
-        manifest_path = entries.find { |e| e.end_with?("files_manifest.md") }
-        content = zip_file_content(zip_data2, manifest_path)
-        expect(content).to include("unknown")
-      end
-
-      it "shows bytes for small files in manifest", db: true do
-        gf = create(:game_file, game: game, filename: "tiny.txt", content_type: "text/plain", byte_size: 500)
-        gf.file.attach(io: StringIO.new("x"), filename: "tiny.txt", content_type: "text/plain")
-        zip_data2 = GameExportService.new(gm_user, [ game ]).call
-        entries = zip_entries(zip_data2)
-        manifest_path = entries.find { |e| e.end_with?("files_manifest.md") }
-        content = zip_file_content(zip_data2, manifest_path)
-        expect(content).to include(" B")
-      end
-
-      it "uses 'untitled' slug for a scene whose title produces an empty slug", db: true do
-        create(:scene, game: game, title: "!!! @@@")
-        zip_data2 = GameExportService.new(gm_user, [ game ]).call
-        entries = zip_entries(zip_data2)
-        expect(entries).to include(a_string_matching(%r{-untitled/}))
       end
     end
 
