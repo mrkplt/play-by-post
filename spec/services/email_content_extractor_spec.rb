@@ -206,45 +206,38 @@ RSpec.describe EmailContentExtractor do
           allow(response_double).to receive(:body).and_return(api_response)
         end
 
-        it "creates an AiUsage record", db: true do
-
-          expect { described_class.new(raw_body).extract }.to change(AiUsage, :count).by(1)
-        end
-
-        it "records the correct feature", db: true do
+        it "records usage with the feature, model and token counts" do
+          allow(AiUsage).to receive(:create!)
 
           described_class.new(raw_body).extract
-          expect(AiUsage.last.feature).to eq("inbound_email")
+
+          expect(AiUsage).to have_received(:create!).with(
+            feature: "inbound_email",
+            model_used: "google/gemma-3-4b-it:free",
+            input_tokens: 150,
+            output_tokens: 30
+          )
         end
 
-        it "records the model returned by the API", db: true do
-
-          described_class.new(raw_body).extract
-          expect(AiUsage.last.model_used).to eq("google/gemma-3-4b-it:free")
-        end
-
-        it "records input token count", db: true do
-
-          described_class.new(raw_body).extract
-          expect(AiUsage.last.input_tokens).to eq(150)
-        end
-
-        it "records output token count", db: true do
-
-          described_class.new(raw_body).extract
-          expect(AiUsage.last.output_tokens).to eq(30)
-        end
-
-        it "falls back to the MODEL constant when response omits model", db: true do
-
+        it "falls back to the MODEL constant when the response omits model" do
           allow(response_double).to receive(:body).and_return(
             {
               "choices" => [ { "message" => { "content" => "reply" } } ],
               "usage"   => { "prompt_tokens" => 10, "completion_tokens" => 5 }
             }.to_json
           )
+          allow(AiUsage).to receive(:create!)
+
           described_class.new(raw_body).extract
-          expect(AiUsage.last.model_used).to eq(EmailContentExtractor::MODEL)
+
+          expect(AiUsage).to have_received(:create!)
+            .with(hash_including(model_used: described_class::MODEL))
+        end
+
+        it "swallows a failed usage write" do
+          allow(AiUsage).to receive(:create!).and_raise(StandardError, "boom")
+
+          expect { described_class.new(raw_body).extract }.not_to raise_error
         end
 
         it "still returns the extracted content even when AiUsage.create! raises" do

@@ -1,18 +1,24 @@
 require "rails_helper"
 
 RSpec.describe Shared::NavDrawerComponent, type: :component do
-  let(:user) { create(:user, email: "dana@example.com") }
-  let(:gm_game) { create(:game, name: "Sunken Archive") }
-  let(:player_game) { create(:game, name: "Ashwood") }
-  let(:former_game) { create(:game, name: "Nightfall") }
-  let(:banned_game) { create(:game, name: "Hidden") }
+  let(:user) { build_stubbed(:user, email: "dana@example.com") }
+  let(:gm_game) { build_stubbed(:game, name: "Sunken Archive") }
+  let(:player_game) { build_stubbed(:game, name: "Ashwood") }
+  let(:former_game) { build_stubbed(:game, name: "Nightfall") }
 
+  let(:gm_member) { build_stubbed(:game_member, game: gm_game, user: user, role: "game_master", status: "active") }
+  let(:player_member) { build_stubbed(:game_member, game: player_game, user: user, role: "player", status: "active") }
+  let(:former_member) { build_stubbed(:game_member, game: former_game, user: user, role: "player", status: "removed") }
+
+  # The component wraps its user in a UserPresenter, and the drawer's only read
+  # is #drawer_memberships. Banned games are excluded there, which
+  # UserPresenter's own spec covers.
+  # The component builds its own UserPresenter behind a T.let, which rejects a
+  # double at runtime — so stub the presenter's methods rather than the object.
   before do
-    create(:user_profile, user: user, display_name: "Dana")
-    create(:game_member, game: gm_game, user: user, role: "game_master", status: "active")
-    create(:game_member, game: player_game, user: user, role: "player", status: "active")
-    create(:game_member, game: former_game, user: user, role: "player", status: "removed")
-    create(:game_member, game: banned_game, user: user, role: "player", status: "banned")
+    allow_any_instance_of(UserPresenter).to receive(:display_name_or_email).and_return("Dana")
+    allow_any_instance_of(UserPresenter).to receive(:drawer_memberships)
+      .and_return([ gm_member, player_member, former_member ])
   end
 
   def rendered(active_game_id: nil)
@@ -26,8 +32,7 @@ RSpec.describe Shared::NavDrawerComponent, type: :component do
     expect(r).to have_text("View Profile")
   end
 
-  it "lists the GM, player, and former games", db: true do
-
+  it "lists the GM, player, and former games" do
     r = rendered
     expect(r).to have_text("Sunken Archive")
     expect(r).to have_text("Ashwood")
@@ -38,8 +43,7 @@ RSpec.describe Shared::NavDrawerComponent, type: :component do
     expect(rendered).not_to have_text("Hidden")
   end
 
-  it "highlights the active game row", db: true do
-
+  it "highlights the active game row" do
     expect(rendered(active_game_id: player_game.id)).to have_css("a.bg-sidebar-bg", text: "Ashwood")
   end
 
@@ -47,21 +51,18 @@ RSpec.describe Shared::NavDrawerComponent, type: :component do
     expect(rendered(active_game_id: player_game.id)).not_to have_css("a.bg-sidebar-bg", text: "Sunken Archive")
   end
 
-  it "picks the crown icon for a GM game", db: true do
-
-    member = user.game_members.find_by(game: gm_game)
+  it "picks the crown icon for a GM game" do
+    member = gm_member
     expect(described_class.new(current_user: user).status_icon(member)).to eq(:crown)
   end
 
-  it "picks the moon icon for a removed game", db: true do
-
-    member = user.game_members.find_by(game: former_game)
+  it "picks the moon icon for a removed game" do
+    member = former_member
     expect(described_class.new(current_user: user).status_icon(member)).to eq(:moon)
   end
 
-  it "picks the plain icon for an ordinary player game", db: true do
-
-    member = user.game_members.find_by(game: player_game)
+  it "picks the plain icon for an ordinary player game" do
+    member = player_member
     expect(described_class.new(current_user: user).status_icon(member)).to eq(:plain)
   end
 
@@ -71,51 +72,40 @@ RSpec.describe Shared::NavDrawerComponent, type: :component do
     expect(r).to have_text("Sign Out")
   end
 
-  it "marks a row active only for the matching game", db: true do
-
+  it "marks a row active only for the matching game" do
     c = described_class.new(current_user: user, active_game_id: player_game.id)
-    member = user.game_members.find_by(game: player_game)
-    other = user.game_members.find_by(game: gm_game)
+    member = player_member
+    other = gm_member
     expect(c.active?(member)).to be true
     expect(c.active?(other)).to be false
   end
 
-  it "treats no active_game_id as no active row", db: true do
-
+  it "treats no active_game_id as no active row" do
     c = described_class.new(current_user: user)
-    member = user.game_members.find_by(game: player_game)
+    member = player_member
     expect(c.active?(member)).to be false
   end
 
-  it "highlights the active row's class string but not others", db: true do
-
+  it "highlights the active row's class string but not others" do
     c = described_class.new(current_user: user, active_game_id: player_game.id)
-    active_member = user.game_members.find_by(game: player_game)
-    idle_member = user.game_members.find_by(game: gm_game)
+    active_member = player_member
+    idle_member = gm_member
     expect(c.row_classes(active_member)).to include("bg-sidebar-bg")
     expect(c.row_classes(idle_member)).not_to include("bg-sidebar-bg")
   end
 
-  it "exposes the game name", db: true do
-
+  it "exposes the game name" do
     c = described_class.new(current_user: user)
-    member = user.game_members.find_by(game: gm_game)
+    member = gm_member
     expect(c.game_name(member)).to eq("Sunken Archive")
   end
 
-  it "emphasizes the active row's name and mutes others", db: true do
-
+  it "emphasizes the active row's name and mutes others" do
     c = described_class.new(current_user: user, active_game_id: player_game.id)
-    active_member = user.game_members.find_by(game: player_game)
-    idle_member = user.game_members.find_by(game: gm_game)
+    active_member = player_member
+    idle_member = gm_member
     expect(c.name_classes(active_member)).to include("text-white").and include("font-bold")
     expect(c.name_classes(idle_member)).to include("text-sidebar-text")
     expect(c.name_classes(idle_member)).not_to include("font-bold")
-  end
-
-  it "excludes banned games from drawer_memberships", db: true do
-
-    names = UserPresenter.new(user).drawer_memberships.map { |m| m.game.name }
-    expect(names).to contain_exactly("Sunken Archive", "Ashwood", "Nightfall")
   end
 end

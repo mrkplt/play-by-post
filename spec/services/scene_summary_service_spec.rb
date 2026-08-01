@@ -85,22 +85,6 @@ RSpec.describe SceneSummaryService do
         SceneSummaryService.new(scene).call
       end
 
-      it "labels OOC posts with [OOC]", db: true do
-
-        player = create(:user, :with_profile)
-        create(:game_member, game: game, user: player)
-        create(:post, scene: scene, user: player, content: "dice roll ignored", is_ooc: true, draft: false)
-        create(:post, scene: scene, user: player, content: "sword drawn", is_ooc: false, draft: false)
-
-        expect(client_double).to receive(:chat) do |parameters:|
-          content = parameters[:messages].first[:content]
-          expect(content).to include("[OOC]")
-          expect(content).to include("dice roll ignored")
-          expect(content).to include("sword drawn")
-          api_response
-        end
-        SceneSummaryService.new(scene).call
-      end
 
       it "excludes draft posts" do
         player = create(:user, :with_profile)
@@ -133,39 +117,7 @@ RSpec.describe SceneSummaryService do
         SceneSummaryService.new(scene_no_desc).call
       end
 
-      it "uses the author's display_name in post lines", db: true do
 
-        player = create(:user, :with_profile)
-        create(:game_member, game: game, user: player)
-        player.user_profile.update!(display_name: "Conan the Barbarian")
-        create(:post, scene: scene, user: player, content: "I slash!", is_ooc: false, draft: false)
-
-        expect(client_double).to receive(:chat) do |parameters:|
-          content = parameters[:messages].first[:content]
-          expect(content).to include("Conan the Barbarian")
-          api_response
-        end
-        SceneSummaryService.new(scene).call
-      end
-
-      it "limits posts to MAX_POSTS", db: true do
-
-        player = create(:user, :with_profile)
-        create(:game_member, game: game, user: player)
-        stub_const("SceneSummaryService::MAX_POSTS", 2)
-        create(:post, scene: scene, user: player, content: "post one", draft: false)
-        create(:post, scene: scene, user: player, content: "post two", draft: false)
-        create(:post, scene: scene, user: player, content: "post three", draft: false)
-
-        expect(client_double).to receive(:chat) do |parameters:|
-          content = parameters[:messages].first[:content]
-          expect(content).to include("post one")
-          expect(content).to include("post two")
-          expect(content).not_to include("post three")
-          api_response
-        end
-        SceneSummaryService.new(scene).call
-      end
 
       it "does NOT label in-character posts with [OOC]" do
         player = create(:user, :with_profile)
@@ -198,6 +150,57 @@ RSpec.describe SceneSummaryService do
         result = SceneSummaryService.new(scene).call
         expect(result.body).to eq("")
       end
+    end
+  end
+
+  # Prompt rendering over a post list; #posts_for_prompt is the only read.
+  describe "#prompt" do
+    let(:prompt_scene) { build_stubbed(:scene, description: "A dark tavern") }
+    let(:service) { described_class.new(prompt_scene) }
+
+    def post_double(content:, author: "Dana", ooc: false)
+      double(user: double(display_name: author, email: "d@example.com"), is_ooc?: ooc, content: content)
+    end
+
+    def prompt_for(posts)
+      allow(service).to receive(:posts_for_prompt).and_return(posts)
+      service.send(:prompt)
+    end
+
+    it "labels OOC posts" do
+      content = prompt_for([ post_double(content: "dice roll", ooc: true),
+                             post_double(content: "sword drawn") ])
+
+      expect(content).to include("[OOC] Dana: dice roll")
+      expect(content).to include("Dana: sword drawn")
+      expect(content).not_to include("[OOC] Dana: sword drawn")
+    end
+
+    it "uses the author display name" do
+      expect(prompt_for([ post_double(content: "I slash!", author: "Conan the Barbarian") ]))
+        .to include("Conan the Barbarian: I slash!")
+    end
+
+    it "falls back to the email when there is no display name" do
+      expect(prompt_for([ post_double(content: "hi", author: nil) ])).to include("d@example.com: hi")
+    end
+
+    it "includes the scene description when present" do
+      expect(prompt_for([])).to include("Scene description: A dark tavern")
+    end
+  end
+
+  describe "#posts_for_prompt" do
+    it "caps the number of posts at MAX_POSTS" do
+      scene = build_stubbed(:scene)
+      relation = double
+      allow(scene).to receive(:posts).and_return(relation)
+      allow(relation).to receive_message_chain(:published, :includes, :order, :limit, :to_a).and_return([])
+
+      described_class.new(scene).send(:posts_for_prompt)
+
+      expect(relation.published.includes(:user).order(:created_at))
+        .to have_received(:limit).with(described_class::MAX_POSTS)
     end
   end
 end

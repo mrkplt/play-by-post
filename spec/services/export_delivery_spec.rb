@@ -19,7 +19,6 @@ RSpec.describe ExportDelivery do
 
   describe ".email_download_link" do
     it "enqueues an export_ready mail for the request's user", db: true do
-
       request = request_with_archive
 
       expect {

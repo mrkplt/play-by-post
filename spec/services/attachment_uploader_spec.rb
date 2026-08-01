@@ -130,7 +130,6 @@ RSpec.describe AttachmentUploader do
 
   describe "derived variant assets" do
     it "prefixes variant blob keys with variants/", db: true do
-
       game_file = game.game_files.new(filename: "map.png")
       described_class.attach(
         attachment: game_file.file,
