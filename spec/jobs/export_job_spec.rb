@@ -20,7 +20,6 @@ RSpec.describe ExportJob, type: :job do
     end
 
     it "attaches a real archive, stamps the receipt, and emails a download link", db: true do
-
       ExportJob.new.perform(export_request.id)
 
       export_request.reload
@@ -33,7 +32,6 @@ RSpec.describe ExportJob, type: :job do
     end
 
     it "builds the export from only the requested game", db: true do
-
       other_game = create(:game)
       create(:game_member, :game_master, game: other_game, user: user)
 
@@ -43,7 +41,6 @@ RSpec.describe ExportJob, type: :job do
     end
 
     it "for an all-games request, includes active and removed games but not banned", db: true do
-
       active = create(:game); removed = create(:game); banned = create(:game)
       create(:game_member, game: active, user: user, status: "active")
       create(:game_member, :removed, game: removed, user: user)
@@ -62,7 +59,6 @@ RSpec.describe ExportJob, type: :job do
 
   describe "#perform" do
     it "builds zip via GameExportService, attaches to request, and sends export_ready mail", db: true do
-
       zip_double = "fake-zip-data"
       service_double = instance_double(GameExportService, call: zip_double)
 
@@ -92,7 +88,6 @@ RSpec.describe ExportJob, type: :job do
     end
 
     it "does not set succeeded_at when the export fails", db: true do
-
       allow_any_instance_of(GameExportService).to receive(:call).and_raise(StandardError, "boom")
       allow(ExportMailer).to receive(:export_failed).and_return(double(deliver_later: true))
 
@@ -129,7 +124,6 @@ RSpec.describe ExportJob, type: :job do
     end
 
     it "sends export_failed mail and re-raises on StandardError", db: true do
-
       allow_any_instance_of(GameExportService).to receive(:call).and_raise(StandardError, "zip failed")
 
       mailer_double = double(deliver_later: true)
@@ -151,7 +145,6 @@ RSpec.describe ExportJob, type: :job do
       end
 
       it "exports all active and removed games, excluding banned", db: true do
-
         archive_double = double
         allow(archive_double).to receive(:blob).and_return(double(url: "https://example.com/all.zip"))
         allow(all_games_request).to receive(:archive).and_return(archive_double)

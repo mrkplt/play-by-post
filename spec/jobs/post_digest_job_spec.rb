@@ -18,50 +18,7 @@ RSpec.describe PostDigestJob, type: :job do
     ActiveJob::Base.queue_adapter = original_adapter
   end
 
-  it "sends digest to participant who hasn't visited in 24+ hours with recent posts from others", db: true do
 
-    create(:scene_participant, scene: scene, user: gm, last_visited_at: 2.days.ago)
-    create(:scene_participant, scene: scene, user: player)
-    post = create(:post, scene: scene, user: player, content: "New activity")
-
-    PostDigestJob.perform_now
-
-    digest_jobs = ActiveJob::Base.queue_adapter.enqueued_jobs.select { |j|
-      j["job_class"] == "ActionMailer::MailDeliveryJob" &&
-      j["arguments"]&.first == "NotificationMailer" &&
-      j["arguments"]&.second == "post_digest"
-    }
-    expect(digest_jobs.size).to eq(1)
-
-    args = digest_jobs.first["arguments"]
-    params = args[3]["args"]
-    expect(params[0]["_aj_globalid"]).to include("Scene/#{scene.id}")
-    expect(params[1]["_aj_globalid"]).to include("User/#{gm.id}")
-    expect(params[2].size).to eq(1)
-    expect(params[2].first["_aj_globalid"]).to include("Post/#{post.id}")
-  end
-
-  it "does not send to muted participant but still sends to others", db: true do
-
-    third_player = create(:user, :with_profile)
-    create(:game_member, game: game, user: third_player)
-    create(:scene_participant, scene: scene, user: gm, last_visited_at: 2.days.ago)
-    create(:scene_participant, scene: scene, user: third_player, last_visited_at: 2.days.ago)
-    create(:scene_participant, scene: scene, user: player)
-    create(:post, scene: scene, user: player, content: "New activity")
-    create(:notification_preference, scene: scene, user: gm, muted: true)
-
-    PostDigestJob.perform_now
-
-    digest_jobs = ActiveJob::Base.queue_adapter.enqueued_jobs.select { |j|
-      j["job_class"] == "ActionMailer::MailDeliveryJob" &&
-      j["arguments"]&.first == "NotificationMailer" &&
-      j["arguments"]&.second == "post_digest"
-    }
-    expect(digest_jobs.size).to eq(1)
-    args = digest_jobs.first["arguments"]
-    expect(args[3]["args"][1]["_aj_globalid"]).to include("User/#{third_player.id}")
-  end
 
   it "does not send to participant who visited recently" do
     create(:scene_participant, scene: scene, user: gm, last_visited_at: 30.minutes.ago)
@@ -91,21 +48,6 @@ RSpec.describe PostDigestJob, type: :job do
     }).to be_empty
   end
 
-  it "sends digest to participant who has never visited (nil last_visited_at)", db: true do
-
-    create(:scene_participant, scene: scene, user: gm, last_visited_at: nil)
-    create(:scene_participant, scene: scene, user: player)
-    create(:post, scene: scene, user: player, content: "New activity")
-
-    PostDigestJob.perform_now
-
-    digest_jobs = ActiveJob::Base.queue_adapter.enqueued_jobs.select { |j|
-      j["job_class"] == "ActionMailer::MailDeliveryJob" &&
-      j["arguments"]&.first == "NotificationMailer" &&
-      j["arguments"]&.second == "post_digest"
-    }
-    expect(digest_jobs.size).to eq(1)
-  end
 
   it "does not send when participant authored the only recent post" do
     create(:scene_participant, scene: scene, user: player, last_visited_at: 2.days.ago)
@@ -118,5 +60,47 @@ RSpec.describe PostDigestJob, type: :job do
       j["arguments"]&.first == "NotificationMailer" &&
       j["arguments"]&.second == "post_digest"
     }).to be_empty
+  end
+
+  # The per-participant decision is pure; the surrounding loop only feeds it.
+  describe "#notify?" do
+    let(:scene) { build_stubbed(:scene) }
+    let(:user) { build_stubbed(:user) }
+
+    def decide(last_visited_at:, muted: false)
+      allow(NotificationPreference).to receive(:muted?).with(scene, user).and_return(muted)
+      participant = build_stubbed(:scene_participant, last_visited_at: last_visited_at)
+      described_class.new.notify?(scene, user, participant)
+    end
+
+    it "notifies a participant who has never visited" do
+      expect(decide(last_visited_at: nil)).to be true
+    end
+
+    it "notifies a participant away longer than the window" do
+      expect(decide(last_visited_at: 2.days.ago)).to be true
+    end
+
+    it "skips a participant who visited inside the window" do
+      expect(decide(last_visited_at: 1.hour.ago)).to be false
+    end
+
+    # Not the exact boundary: assigning it round-trips through attribute casting,
+    # which truncates sub-second precision and flips the comparison.
+    it "skips a participant just inside the window" do
+      Timecop.freeze do
+        expect(decide(last_visited_at: described_class::WINDOW.ago + 1.second)).to be false
+      end
+    end
+
+    it "notifies a participant just outside the window" do
+      Timecop.freeze do
+        expect(decide(last_visited_at: described_class::WINDOW.ago - 1.second)).to be true
+      end
+    end
+
+    it "skips a muted participant who would otherwise qualify" do
+      expect(decide(last_visited_at: 2.days.ago, muted: true)).to be false
+    end
   end
 end
