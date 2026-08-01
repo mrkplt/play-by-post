@@ -42,8 +42,30 @@ RSpec.describe Character, type: :model do
   end
 
   describe "version snapshot wiring" do
-    it "snapshots the version after save" do
-      expect(Character._save_callbacks.map(&:filter)).to include(:snapshot_version)
+    it "snapshots on save" do
+      character = build(:character)
+      allow(character).to receive(:snapshot_version)
+
+      character.save
+
+      expect(character).to have_received(:snapshot_version)
+    end
+
+    it "snapshots on save!" do
+      character = build(:character)
+      allow(character).to receive(:snapshot_version)
+
+      character.save!
+
+      expect(character).to have_received(:snapshot_version)
+    end
+
+    it "does not snapshot when the save fails validation" do
+      character = build(:character, name: nil)
+      allow(character).to receive(:snapshot_version)
+
+      expect(character.save).to be false
+      expect(character).not_to have_received(:snapshot_version)
     end
   end
 

@@ -9,8 +9,6 @@ class Character < ApplicationRecord
 
   validates :name, presence: true
 
-  after_save :snapshot_version
-
   scope :active, -> { where(archived_at: nil) }
   scope :archived, -> { where.not(archived_at: nil) }
 
@@ -48,8 +46,26 @@ class Character < ApplicationRecord
     self.user == user || game.game_master?(user)
   end
 
+  # Snapshotting is an explicit consequence of saving rather than an after_save
+  # callback, so the behaviour is readable at the definition instead of in a
+  # callback chain. save/save! are the only paths that need overriding: create
+  # and update route through save, create!/update! through save!, and
+  # touch/update_column bypass both — exactly as after_save did.
+  #
+  # super is wrapped in the transaction so a failed snapshot still rolls the
+  # character back, which is what running inside the callback chain gave us.
+  sig { params(options: T.untyped).returns(T.untyped) }
+  def save(**options)
+    transaction { super.tap { |saved| snapshot_version if saved } }
+  end
+
+  sig { params(options: T.untyped).returns(T.untyped) }
+  def save!(**options)
+    transaction { super.tap { snapshot_version } }
+  end
+
   # The version row this character's current state should produce. Pure — the
-  # after_save hook is the only part that writes, so attribution (Current.user
+  # snapshot writes exactly what this returns, so attribution (Current.user
   # falling back to the owner) can be tested without saving anything.
   sig { returns(T::Hash[Symbol, T.untyped]) }
   def version_attributes
