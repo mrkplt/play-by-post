@@ -14,20 +14,15 @@ RSpec.describe User, type: :model do
   end
 
   describe "associations" do
-    it "has many game_members", db: true do
-
-      user = create(:user)
-      game = create(:game)
-      member = create(:game_member, user: user, game: game)
-      expect(user.game_members).to include(member)
+    it "has many game_members" do
+      expect(User.reflect_on_association(:game_members).macro).to eq(:has_many)
     end
 
-    it "has many games through game_members", db: true do
+    it "has many games through game_members" do
+      association = User.reflect_on_association(:games)
 
-      user = create(:user)
-      game = create(:game)
-      create(:game_member, user: user, game: game)
-      expect(user.games).to include(game)
+      expect(association.macro).to eq(:has_many)
+      expect(association.options[:through]).to eq(:game_members)
     end
   end
 
@@ -39,8 +34,8 @@ RSpec.describe User, type: :model do
       ActiveJob::Base.queue_adapter = original_adapter
     end
 
+    # Genuinely needs a row: the job serialises the user via GlobalID.
     it "enqueues the magic link email via Active Job (worker), not inline", db: true do
-
       user = create(:user, :with_profile)
 
       expect {

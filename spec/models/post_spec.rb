@@ -14,12 +14,12 @@ RSpec.describe Post, type: :model do
       expect(build(:post, :draft)).to be_valid
     end
 
-    it "enforces one draft per user per scene", db: true do
+    it "declares one draft per user per scene" do
+      validator = Post.validators_on(:user_id)
+        .find { |v| v.is_a?(ActiveRecord::Validations::UniquenessValidator) }
 
-      existing = create(:post, :draft)
-      duplicate = build(:post, :draft, scene: existing.scene, user: existing.user)
-      expect(duplicate).not_to be_valid
-      expect(duplicate.errors[:user_id]).to be_present
+      expect(validator.options[:scope]).to eq(:scene_id)
+      expect(validator.options[:if]).to eq(:draft?)
     end
 
     it "allows different users to each have a draft in the same scene" do
@@ -30,19 +30,12 @@ RSpec.describe Post, type: :model do
   end
 
   describe "scopes" do
-    let!(:published_post) { create(:post, draft: false) }
-    let!(:draft_post) { create(:post, :draft) }
-
-    it ".published excludes drafts", db: true do
-
-      expect(Post.published).to include(published_post)
-      expect(Post.published).not_to include(draft_post)
+    it ".published selects only non-drafts" do
+      expect(Post.published.where_values_hash).to eq("draft" => false)
     end
 
-    it ".drafts excludes published posts", db: true do
-
-      expect(Post.drafts).to include(draft_post)
-      expect(Post.drafts).not_to include(published_post)
+    it ".drafts selects only drafts" do
+      expect(Post.drafts.where_values_hash).to eq("draft" => true)
     end
   end
 
@@ -119,71 +112,67 @@ RSpec.describe Post, type: :model do
     end
   end
 
+  # Both predicates read the window through #game, so stubbing that covers every
+  # branch without persisting a game, a scene and a post per example.
   describe "#editable_by?" do
-    let(:author) { create(:user) }
-    let(:other_user) { create(:user) }
+    let(:author) { build_stubbed(:user) }
+    let(:other_user) { build_stubbed(:user) }
+
+    def post_by(author_user, window:, age: 1.minute)
+      post = build_stubbed(:post, user: author_user, created_at: age.ago)
+      allow(post).to receive(:game).and_return(double(edit_window_duration: window))
+      post
+    end
 
     context "with a 10-minute edit window" do
-      let(:game) { create(:game, post_edit_window_minutes: 10) }
-      let(:scene) { create(:scene, game: game) }
-      let(:post) { create(:post, user: author, scene: scene, created_at: 5.minutes.ago) }
+      it "returns true for the author within the window" do
+        expect(post_by(author, window: 10.minutes, age: 5.minutes).editable_by?(author)).to be true
+      end
 
-      it "returns true for the author within the window", db: true do
-
-        expect(post.editable_by?(author)).to be true
+      it "returns false after the window has passed" do
+        expect(post_by(author, window: 10.minutes, age: 11.minutes).editable_by?(author)).to be false
       end
 
       it "returns false for a different user" do
-        expect(post.editable_by?(other_user)).to be false
-      end
-
-      it "returns false after the window has passed", db: true do
-
-        old_post = create(:post, user: author, scene: scene, created_at: 11.minutes.ago)
-        expect(old_post.editable_by?(author)).to be false
+        expect(post_by(author, window: 10.minutes).editable_by?(other_user)).to be false
       end
     end
 
     context "with no edit window set (forever)" do
-      let(:game) { create(:game, post_edit_window_minutes: nil) }
-      let(:scene) { create(:scene, game: game) }
-
-      it "returns true for the author regardless of age", db: true do
-
-        old_post = create(:post, user: author, scene: scene, created_at: 1.year.ago)
-        expect(old_post.editable_by?(author)).to be true
+      it "returns true for the author regardless of age" do
+        expect(post_by(author, window: nil, age: 1.year).editable_by?(author)).to be true
       end
 
       it "still returns false for a different user" do
-        post = create(:post, user: author, scene: scene)
-        expect(post.editable_by?(other_user)).to be false
+        expect(post_by(author, window: nil).editable_by?(other_user)).to be false
       end
     end
   end
 
   describe "#within_edit_window?" do
+    def post_aged(age, window:)
+      post = build_stubbed(:post, created_at: age.ago)
+      allow(post).to receive(:game).and_return(double(edit_window_duration: window))
+      post
+    end
+
     context "with a 10-minute edit window" do
-      let(:game) { create(:game, post_edit_window_minutes: 10) }
-      let(:scene) { create(:scene, game: game) }
-
-      it "returns true for a recent post", db: true do
-
-        expect(create(:post, scene: scene, created_at: 1.minute.ago).within_edit_window?).to be true
+      it "returns true for a recent post" do
+        expect(post_aged(1.minute, window: 10.minutes).within_edit_window?).to be true
       end
 
-      it "returns false for a post past the window", db: true do
+      it "returns false for a post past the window" do
+        expect(post_aged(11.minutes, window: 10.minutes).within_edit_window?).to be false
+      end
 
-        expect(create(:post, scene: scene, created_at: 11.minutes.ago).within_edit_window?).to be false
+      it "returns false exactly at the window boundary" do
+        expect(post_aged(10.minutes, window: 10.minutes).within_edit_window?).to be false
       end
     end
 
     context "with no edit window set (forever)" do
-      let(:game) { create(:game, post_edit_window_minutes: nil) }
-      let(:scene) { create(:scene, game: game) }
-
-      it "returns true regardless of post age", db: true do
-
-        expect(create(:post, scene: scene, created_at: 1.year.ago).within_edit_window?).to be true
+      it "returns true regardless of post age" do
+        expect(post_aged(1.year, window: nil).within_edit_window?).to be true
       end
     end
   end

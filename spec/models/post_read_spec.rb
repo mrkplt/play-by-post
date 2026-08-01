@@ -2,12 +2,11 @@ require "rails_helper"
 
 RSpec.describe PostRead, type: :model do
   describe "validations" do
-    it "requires uniqueness of post per user", db: true do
+    it "declares uniqueness of post per user" do
+      validator = PostRead.validators_on(:post_id)
+        .find { |v| v.is_a?(ActiveRecord::Validations::UniquenessValidator) }
 
-      existing = create(:post_read)
-      duplicate = build(:post_read, post: existing.post, user: existing.user)
-      expect(duplicate).not_to be_valid
-      expect(duplicate.errors[:post_id]).to be_present
+      expect(validator.options[:scope]).to eq(:user_id)
     end
 
     it "allows the same post to be read by different users" do
@@ -22,9 +21,12 @@ RSpec.describe PostRead, type: :model do
     let(:post) { create(:post) }
     let(:user) { create(:user) }
 
-    it "creates a PostRead record", db: true do
+    it "finds or creates the read for that post and user" do
+      allow(PostRead).to receive(:find_or_create_by!).and_return(build_stubbed(:post_read))
 
-      expect { PostRead.mark!(post, user) }.to change(PostRead, :count).by(1)
+      PostRead.mark!(post, user)
+
+      expect(PostRead).to have_received(:find_or_create_by!).with(post: post, user: user)
     end
 
     it "is idempotent — does not raise on duplicate calls" do

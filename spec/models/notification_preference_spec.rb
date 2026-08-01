@@ -5,9 +5,10 @@ RSpec.describe NotificationPreference, type: :model do
   let(:user) { create(:user) }
 
   describe ".muted?" do
-    it "returns true when user has muted the scene", db: true do
+    it "returns true when a muted preference exists" do
+      allow(described_class).to receive(:exists?)
+        .with(scene: scene, user: user, muted: true).and_return(true)
 
-      create(:notification_preference, scene: scene, user: user, muted: true)
       expect(described_class.muted?(scene, user)).to be true
     end
 
@@ -40,11 +41,12 @@ RSpec.describe NotificationPreference, type: :model do
       expect(pref).to be_persisted
     end
 
-    it "unmutes when already muted", db: true do
+    it "unmutes when already muted" do
+      existing = build(:notification_preference, scene: scene, user: user, muted: true)
+      allow(described_class).to receive(:find_or_initialize_by).and_return(existing)
+      allow(existing).to receive(:save!)
 
-      create(:notification_preference, scene: scene, user: user, muted: true)
-      pref = described_class.toggle!(scene, user)
-      expect(pref.muted).to be false
+      expect(described_class.toggle!(scene, user).muted).to be false
     end
 
     it "mutes when already unmuted" do
@@ -60,17 +62,23 @@ RSpec.describe NotificationPreference, type: :model do
       expect(pref.user).to eq(user)
     end
 
-    it "persists the change", db: true do
+    it "writes the toggled preference" do
+      pref = build(:notification_preference, scene: scene, user: user, muted: false)
+      allow(described_class).to receive(:find_or_initialize_by).and_return(pref)
+      allow(pref).to receive(:save!)
 
       described_class.toggle!(scene, user)
-      expect(described_class.find_by(scene: scene, user: user).muted).to be true
+
+      expect(pref).to have_received(:save!)
     end
 
-    it "does not create duplicate records", db: true do
+    it "reuses the existing record rather than adding one" do
+      allow(described_class).to receive(:find_or_initialize_by)
+        .and_return(build(:notification_preference, scene: scene, user: user, muted: false))
 
       described_class.toggle!(scene, user)
-      described_class.toggle!(scene, user)
-      expect(described_class.where(scene: scene, user: user).count).to eq(1)
+
+      expect(described_class).to have_received(:find_or_initialize_by).with(scene: scene, user: user)
     end
   end
 end

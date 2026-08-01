@@ -11,6 +11,8 @@ RSpec.describe GameExportRequest, type: :model do
   end
 
   describe ".valid_receipt_for" do
+    # Keeps its rows: the archive check is an Active Storage attachment lookup,
+    # and the ordering below is only observable by executing the query.
     it "returns a successful export whose archive is present, within the window", db: true do
 
       request = receipt(succeeded_at: 1.hour.ago, game: game)
@@ -67,12 +69,13 @@ RSpec.describe GameExportRequest, type: :model do
   end
 
   describe "#mark_succeeded!" do
-    it "sets succeeded_at to now", db: true do
-
-      request = create(:game_export_request, user: user, game: game, succeeded_at: nil)
+    it "sets succeeded_at to now" do
+      request = build(:game_export_request, user: user, game: game, succeeded_at: nil)
       freeze = Time.utc(2026, 7, 30, 12, 0, 0)
+
       Timecop.freeze(freeze) { request.mark_succeeded! }
-      expect(request.reload.succeeded_at).to be_within(1.second).of(freeze)
+
+      expect(request.succeeded_at).to be_within(1.second).of(freeze)
     end
   end
 end

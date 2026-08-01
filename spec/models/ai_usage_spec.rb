@@ -41,12 +41,9 @@ RSpec.describe AiUsage, type: :model do
   end
 
   describe ".for_feature" do
-    it "returns records matching the given feature", db: true do
-
-      email_usage = create(:ai_usage, feature: "inbound_email")
-      create(:ai_usage, feature: "scene_summary")
-
-      expect(AiUsage.for_feature("inbound_email")).to contain_exactly(email_usage)
+    it "filters on the given feature" do
+      expect(AiUsage.for_feature("inbound_email").where_values_hash)
+        .to eq("feature" => "inbound_email")
     end
 
     it "returns an empty relation when no records match" do

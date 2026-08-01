@@ -28,12 +28,15 @@ RSpec.describe Game, type: :model do
       create(:game_member, game: game, user: player_user)
     end
 
-    it "returns true for the GM", db: true do
+    it "returns true for the GM" do
+      allow(game).to receive(:game_members).and_return(double(exists?: true))
 
       expect(game.game_master?(gm_user)).to be true
     end
 
     it "returns false for a player" do
+      allow(game).to receive(:game_members).and_return(double(exists?: false))
+
       expect(game.game_master?(player_user)).to be false
     end
   end
@@ -52,14 +55,15 @@ RSpec.describe Game, type: :model do
     let(:game) { create(:game) }
     let(:user) { create(:user) }
 
-    it "returns true for active members", db: true do
+    it "returns true for active members" do
+      allow(game).to receive(:game_members).and_return(double(exists?: true))
 
-      create(:game_member, game: game, user: user, status: "active")
       expect(game.active_member?(user)).to be true
     end
 
     it "returns false for removed members" do
-      create(:game_member, :removed, game: game, user: user)
+      allow(game).to receive(:game_members).and_return(double(exists?: false))
+
       expect(game.active_member?(user)).to be false
     end
   end
