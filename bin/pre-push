@@ -35,11 +35,19 @@ bin/brakeman --no-pager || exit 1
 echo "==> Type check (sorbet)"
 bundle exec srb tc || exit 1
 
+# Excluded here, run in CI / bin/full-check:
+#   type:feature — Capybara+Playwright, drives a real browser (~88s)
+#   type:request — issues HTTP through the full Rails stack (~12s); anything
+#                  making an HTTP call belongs in CI, not the commit path.
 # SKIP_COVERAGE: this tier doesn't run quality-metrics --check, so SimpleCov's
 # report would go unread — skipping the instrumentation saves ~9s. It's a
 # default, not a removal: `COVERAGE=1 bin/pre-push` turns the report back on.
-echo "==> Fast tests (rspec, excluding system specs)"
-SKIP_COVERAGE=1 bundle exec rspec --tag ~type:feature || exit 1
+# NB: this must be --exclude-pattern, not two --tag flags. Both tags key on
+# `type`, so `--tag ~type:feature --tag ~type:request` silently keeps the
+# second only and runs the browser specs anyway.
+echo "==> Fast tests (rspec: unit tiers only — no browser, no HTTP)"
+SKIP_COVERAGE=1 bundle exec rspec \
+  --exclude-pattern "spec/system/**/*_spec.rb,spec/requests/**/*_spec.rb" || exit 1
 rm -f storage/test_worker_*.sqlite3
 
 echo "All fast checks passed. Heavy tier (system specs, mutation, quality gate) runs in CI on the PR — or locally via bin/full-check."

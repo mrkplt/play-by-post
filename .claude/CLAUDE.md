@@ -144,10 +144,15 @@ bin/check-mutant-coverage                # 3. Mutation registration check   <0.1
 bin/importmap audit                      # 4. JS security                   ~1s
 bin/brakeman --no-pager                  # 5. Ruby security                 ~6s
 bundle exec srb tc                       # 6. Sorbet type check
-SKIP_COVERAGE=1 bundle exec rspec --tag ~type:feature   # 7. Non-system tests  ~20s
+SKIP_COVERAGE=1 bundle exec rspec \      # 7. Unit tiers only               ~8s
+  --exclude-pattern "spec/system/**/*_spec.rb,spec/requests/**/*_spec.rb"
 ```
 
-`SKIP_COVERAGE=1` (honoured in `spec/spec_helper.rb`) turns SimpleCov off for this tier — it doesn't run `bin/quality-metrics --check`, so the report was being generated and never read. Measured: **29.8s → 20.6s** for that step. `bin/full-check` and CI leave it unset, so `coverage/` is populated for the gate.
+Two things keep step 7 at ~8s (801 examples) instead of ~30s:
+- **No browser, no HTTP.** System specs (`spec/system`, ~88s) and request specs (`spec/requests`, ~12s) are excluded — anything issuing an HTTP call belongs in CI, not the commit path. Both still run in `bin/full-check` and CI, which use a bare `bundle exec rspec`.
+- **`SKIP_COVERAGE=1`** (honoured in `spec/spec_helper.rb`) turns SimpleCov off, worth ~9s. It's a default, not a removal — `COVERAGE=1 bin/pre-push` forces the report back on, and `bin/full-check`/CI leave both unset so `coverage/` is populated for the gate.
+
+**Use `--exclude-pattern`, not two `--tag` flags.** `--tag ~type:feature --tag ~type:request` looks right and silently fails: both exclusions key on `type`, so the second replaces the first and the browser specs run anyway (1011 examples / 93s instead of 801 / 6.6s).
 
 **Heavy tier — system specs (`type: :feature`, Capybara+Playwright: 210 of 1346 examples but ~85% of suite wall time), mutation testing, and `bin/quality-metrics --check`.** This tier runs in CI (`.github/workflows/ci.yml`) as parallel jobs on every PR and push to `master` — CI is the authoritative gate. To run it locally instead of waiting on CI, use **`bin/full-check`** (fast tier + full rspec + mutation + quality gate; expect several minutes). That's a per-situation choice: hook stays fast on every push, `full-check` when you want the complete verdict before opening a PR or CI turnaround is the bottleneck. In CI, mutation runs after tests (`--jobs 8`) and passes its output to `bin/quality-metrics --record-mutant` before the gate.
 
@@ -192,7 +197,8 @@ Hard-won specifics for actually clearing the gates. Read this before touching up
 
 - **DB-backed factories are the single largest cost, and it grows linearly with the suite.** Instrument `factory_bot.run_factory`, **not** `sql.active_record` — SQL execution time (770ms unit / 1.58s request) badly understates the real cost because it excludes ActiveRecord instantiation, validations, callbacks, and association cascades, all of which `build_stubbed` skips. Measured by strategy: `create` **3184ms of the 7.4s unit tier (43%)** and **5212ms of the 11.9s request tier (44%)** — ~8.4s of the ~19s fast tier. Per call: `create` 1.7–2.8ms, `build` 0.65ms, `build_stubbed` 0.42ms.
 - Where the `create` time sits (ms, and share of that directory's runtime): requests 5212 (44%) · models 1018 (53%) · services 961 (53%) · jobs 327 (43%) · components 297 (13%) · mailers 290 (63%) · presenters 183 (37%) · mailboxes 102 · helpers 48.
-- **Convertibility varies sharply — check before rewriting.** Request specs make real HTTP calls whose controllers query the DB, so their 5.2s is *not* convertible. Model specs exercising scopes/validations (`Scene.active`) need persisted rows. Jobs that load by ID need persistence. Presenters, mailers, and components mostly don't — `spec/components` is already largely converted (404 `build_stubbed` vs 174 `create`) and is correspondingly the cheapest big directory at 13%.
+- **Scopes do not need persisted rows — assert on `to_sql`.** A scope's job is to build the right query; executing it is ActiveRecord's job and is already tested upstream. `expect(Scene.active.to_sql).to include(%q{"scenes"."resolved_at" IS NULL})` needs a connection but zero INSERTs, and kills the same mutants the row-based version did — verified against `-> { all }`, a negation flip, and a wrong-column swap, plus all three `Character.visible_to` branches. For a scope taking collaborators, `instance_double(Game)` + `build_stubbed(:user)` covers the branching. Note SQLite renders booleans as `TRUE`/`FALSE` in `to_sql`, not `1`/`0`.
+- Still genuinely needs the database: uniqueness validations, FK constraints, callbacks that re-read, and anything asserting what was actually written. Request specs are moot — they're out of the commit path entirely.
 - The factories themselves are already lean (`:user` is an email sequence; `:game` three scalars — no association cascade by default), so the ~2ms is inherent per-`create` ActiveRecord cost. There is no systemic fix; the only lever is not hitting the DB where a spec doesn't need it.
 - `SORBET_RUNTIME_DEFAULT_CHECKED_LEVEL=never` shaves ~1.4s but disables runtime type checking that legitimately catches errors in specs — **not** enabled; noted so it isn't rediscovered as free.
 

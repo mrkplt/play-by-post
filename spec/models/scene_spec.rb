@@ -110,16 +110,12 @@ RSpec.describe Scene, type: :model do
   end
 
   describe "scopes" do
-    it ".active returns scenes without resolved_at" do
-      active = create(:scene)
-      create(:scene, :resolved)
-      expect(Scene.active).to contain_exactly(active)
+    it ".active selects rows with a null resolved_at" do
+      expect(Scene.active.to_sql).to include(%q{"scenes"."resolved_at" IS NULL})
     end
 
-    it ".resolved returns scenes with resolved_at" do
-      resolved = create(:scene, :resolved)
-      create(:scene)
-      expect(Scene.resolved).to contain_exactly(resolved)
+    it ".resolved selects rows with a non-null resolved_at" do
+      expect(Scene.resolved.to_sql).to include(%q{"scenes"."resolved_at" IS NOT NULL})
     end
   end
 
