@@ -1,4 +1,5 @@
 <%= render Shared::MobileFrameComponent.new do |frame| %>
+  <div class="bg-[#ff0000]"><%# CI-DEMO raw-hex violation %></div>
   <% frame.with_header do %>
     <%= render Shared::PageHeaderComponent.new(title: "Profile", leading: :back, back_href: root_path) %>
   <% end %>
