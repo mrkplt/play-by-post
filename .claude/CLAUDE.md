@@ -134,18 +134,20 @@ Dev only: `/letter_opener` (email preview) · Lookbook (component previews).
 
 Two tiers, split by cost:
 
-**Fast tier — `bin/pre-push` (the push hook, ~30-40s).** Docs-only short-circuit, then static checks and non-system specs:
+**Fast tier — `bin/pre-push` (the push hook, ~30s).** Docs-only short-circuit, then static checks and non-system specs:
 
 ```bash
 bin/docs-only                            # 0. Skip everything on a docs-only diff (mirrors CI's bin/ci-run)
-bin/rubocop                              # 1. Lint (Omakase style)
-bin/check-design-tokens                  # 2. Design-token adherence
-bin/check-mutant-coverage                # 3. Mutation registration check
-bin/importmap audit                      # 4. JS security
-bin/brakeman --no-pager                  # 5. Ruby security
+bin/rubocop                              # 1. Lint (Omakase style)          ~3s
+bin/check-design-tokens                  # 2. Design-token adherence        <0.1s
+bin/check-mutant-coverage                # 3. Mutation registration check   <0.1s
+bin/importmap audit                      # 4. JS security                   ~1s
+bin/brakeman --no-pager                  # 5. Ruby security                 ~6s
 bundle exec srb tc                       # 6. Sorbet type check
-bundle exec rspec --tag ~type:feature    # 7. Non-system tests + SimpleCov coverage
+SKIP_COVERAGE=1 bundle exec rspec --tag ~type:feature   # 7. Non-system tests  ~20s
 ```
+
+`SKIP_COVERAGE=1` (honoured in `spec/spec_helper.rb`) turns SimpleCov off for this tier — it doesn't run `bin/quality-metrics --check`, so the report was being generated and never read. Measured: **29.8s → 20.6s** for that step. `bin/full-check` and CI leave it unset, so `coverage/` is populated for the gate.
 
 **Heavy tier — system specs (`type: :feature`, Capybara+Playwright: 210 of 1346 examples but ~85% of suite wall time), mutation testing, and `bin/quality-metrics --check`.** This tier runs in CI (`.github/workflows/ci.yml`) as parallel jobs on every PR and push to `master` — CI is the authoritative gate. To run it locally instead of waiting on CI, use **`bin/full-check`** (fast tier + full rspec + mutation + quality gate; expect several minutes). That's a per-situation choice: hook stays fast on every push, `full-check` when you want the complete verdict before opening a PR or CI turnaround is the bottleneck. In CI, mutation runs after tests (`--jobs 8`) and passes its output to `bin/quality-metrics --record-mutant` before the gate.
 
@@ -179,6 +181,24 @@ Each is a self-contained executable that owns its pass/fail (`exit 1` on violati
 ### Quality tooling: field notes
 
 Hard-won specifics for actually clearing the gates. Read this before touching upload/attachment code, controllers, or anything that trips mutation.
+
+**Suite profile — where the time actually goes (measured, 1346 examples):**
+
+| Slice | Examples | Time | Per example |
+|-------|----------|------|-------------|
+| System (`type: :feature`, Capybara+Playwright) | 210 | ~88s | ~420ms |
+| Request specs (full Rails stack, no browser) | 335 | ~14.5s | ~43ms |
+| Everything else (models, components, presenters, services, jobs, mailers, helpers) | 801 | ~8.3s | ~10ms |
+
+- **The database is not the bottleneck — don't refactor specs to avoid it.** Instrumenting `sql.active_record` across the fast tier: 770ms of SQL in the 8.3s unit slice (**9.3%**) and 1.58s in the 14.5s request slice (**11%**). `create(:user)` costs 2.3ms vs `build_stubbed(:user)` at 0.16ms, and transactional-fixture rollback is 0.055ms — so converting every `create` in the unit slice to `build_stubbed` would save **under a second** for a ~340-call-site refactor across 8 directories. The remaining ~90% is Ruby: factory construction, ViewComponent rendering, RSpec example overhead, sorbet-runtime `sig` checks, and SimpleCov instrumentation. Turning SimpleCov off (see `SKIP_COVERAGE` above) was worth ~9s; nothing about the DB comes close.
+- Slowest single slice is request specs at 43ms/example — full routing → controller → view render. That's inherent to what they test, not fixable by mocking the DB.
+- `SORBET_RUNTIME_DEFAULT_CHECKED_LEVEL=never` shaves a further ~1.4s but disables runtime type checking that legitimately catches errors in specs — **not** enabled; noted so it isn't rediscovered as free.
+
+**Test DB pollution — the failure mode that looks like broken specs:**
+- `use_transactional_fixtures = true` rolls back each example's own writes but does **nothing** about rows already committed to `storage/test.sqlite3`. Several specs (`Scene.active`, `Scene.resolved`, `Character.visible_to`) assert with `contain_exactly` against the whole table, so **any** pre-existing row fails them.
+- Two ways this bites: `bin/rails db:prepare` on a *fresh* checkout creates the DB and runs `db:seed` into it (4 spec failures immediately), and any `bin/rails runner` script that creates records in `RAILS_ENV=test` commits them permanently (later runs then fail with `UNIQUE constraint failed: users.email` as factory sequences restart at 1 and collide).
+- Fix: `rm -f storage/test.sqlite3* && RAILS_ENV=test bin/rails db:schema:load`. Note `db:schema:load` **fails with a foreign-key error against a populated DB** — delete the file first, don't just reload.
+- A clean fast tier is `1136 examples, 0 failures`; `spec/services/attachment_uploader_spec.rb:132` additionally needs ImageMagick installed (CI apt-installs it).
 
 **Running the tools (the sequence that matches CI):**
 - Tests + coverage must run *before* `--check`; SimpleCov writes `coverage/`. A **mutation run overwrites nothing useful for line coverage** — if you run `mutant` last, re-run `bundle exec rspec` before `bin/quality-metrics --check` or every changed file reports `0.0%` line coverage (false failure).

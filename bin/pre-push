@@ -35,8 +35,10 @@ bin/brakeman --no-pager || exit 1
 echo "==> Type check (sorbet)"
 bundle exec srb tc || exit 1
 
+# SKIP_COVERAGE: this tier doesn't run quality-metrics --check, so SimpleCov's
+# report would go unread — skipping the instrumentation saves ~4.5s.
 echo "==> Fast tests (rspec, excluding system specs)"
-bundle exec rspec --tag ~type:feature || exit 1
+SKIP_COVERAGE=1 bundle exec rspec --tag ~type:feature || exit 1
 rm -f storage/test_worker_*.sqlite3
 
 echo "All fast checks passed. Heavy tier (system specs, mutation, quality gate) runs in CI on the PR — or locally via bin/full-check."

@@ -1,4 +1,8 @@
-unless ENV["MUTANT"]
+# SKIP_COVERAGE is set by bin/pre-push: the fast tier doesn't run
+# bin/quality-metrics --check, so the report it would produce is never read.
+# Instrumenting for it costs ~4.5s of the hook's runtime for nothing. The full
+# runs (bin/full-check, CI) leave it unset so coverage/ is populated for the gate.
+unless ENV["MUTANT"] || ENV["SKIP_COVERAGE"]
   require "simplecov"
   SimpleCov.start "rails" do
     enable_coverage :branch
