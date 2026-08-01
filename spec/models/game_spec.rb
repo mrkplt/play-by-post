@@ -29,13 +29,17 @@ RSpec.describe Game, type: :model do
     end
 
     it "returns true for the GM" do
-      allow(game).to receive(:game_members).and_return(double(exists?: true))
+      members = double
+      allow(members).to receive(:exists?).with(user: gm_user, role: "game_master").and_return(true)
+      allow(game).to receive(:game_members).and_return(members)
 
       expect(game.game_master?(gm_user)).to be true
     end
 
     it "returns false for a player" do
-      allow(game).to receive(:game_members).and_return(double(exists?: false))
+      members = double
+      allow(members).to receive(:exists?).with(user: player_user, role: "game_master").and_return(false)
+      allow(game).to receive(:game_members).and_return(members)
 
       expect(game.game_master?(player_user)).to be false
     end
@@ -56,13 +60,17 @@ RSpec.describe Game, type: :model do
     let(:user) { create(:user) }
 
     it "returns true for active members" do
-      allow(game).to receive(:game_members).and_return(double(exists?: true))
+      members = double
+      allow(members).to receive(:exists?).with(user: user, status: "active").and_return(true)
+      allow(game).to receive(:game_members).and_return(members)
 
       expect(game.active_member?(user)).to be true
     end
 
     it "returns false for removed members" do
-      allow(game).to receive(:game_members).and_return(double(exists?: false))
+      members = double
+      allow(members).to receive(:exists?).with(user: user, status: "active").and_return(false)
+      allow(game).to receive(:game_members).and_return(members)
 
       expect(game.active_member?(user)).to be false
     end

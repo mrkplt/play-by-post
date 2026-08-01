@@ -108,7 +108,9 @@ RSpec.describe Scene, type: :model do
     let(:user) { build_stubbed(:user) }
 
     def membership(exists)
-      allow(scene).to receive(:scene_participants).and_return(double(exists?: exists))
+      participants = double
+      allow(participants).to receive(:exists?).with(user: user).and_return(exists)
+      allow(scene).to receive(:scene_participants).and_return(participants)
       scene.participant?(user)
     end
 

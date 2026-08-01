@@ -284,6 +284,110 @@ RSpec.describe GameExportService do
   # Zip assembly with every read stubbed: entry paths and slugging are the
   # service's own doing, so they need built records, not persisted ones.
   # Which scenes a membership exports is a pure rule; the query only applies it.
+  # The reads are stubbed everywhere above, so nothing else executes their query
+  # chains — cover them directly or every mutation of them survives.
+  describe "reads" do
+    let(:service) { described_class.new(reader, []) }
+    let(:reader) { build_stubbed(:user) }
+
+    def chain
+      double.tap do |c|
+        allow(c).to receive(:includes).and_return(c)
+        allow(c).to receive(:order).and_return(c)
+        allow(c).to receive(:joins).and_return(c)
+        allow(c).to receive(:where).and_return(c)
+        allow(c).to receive(:not).and_return(c)
+        allow(c).to receive(:to_a).and_return([])
+      end
+    end
+
+    it "loads members with their user, ordered by role then status" do
+      game = build_stubbed(:game)
+      c = chain
+      allow(game).to receive(:game_members).and_return(c)
+
+      service.send(:members_for, game)
+
+      expect(c).to have_received(:includes).with(:user)
+      expect(c).to have_received(:order).with(:role, :status)
+    end
+
+    it "loads files with their blob, ordered by filename" do
+      game = build_stubbed(:game)
+      c = chain
+      allow(game).to receive(:game_files).and_return(c)
+
+      service.send(:files_for, game)
+
+      expect(c).to have_received(:includes).with(file_attachment: :blob)
+      expect(c).to have_received(:order).with(:filename)
+    end
+
+    it "loads participants with their user and character" do
+      scene = build_stubbed(:scene)
+      c = chain
+      allow(scene).to receive(:scene_participants).and_return(c)
+
+      service.send(:participants_for, scene)
+
+      expect(c).to have_received(:includes).with(:user, :character)
+    end
+
+    it "loads published posts with their user, oldest first" do
+      scene = build_stubbed(:scene)
+      c = chain
+      allow(scene).to receive(:posts).and_return(double(published: c))
+
+      service.send(:published_posts_for, scene)
+
+      expect(c).to have_received(:includes).with(:user)
+      expect(c).to have_received(:order).with(:created_at)
+    end
+
+    it "loads versions with their editor, oldest first" do
+      character = build_stubbed(:character)
+      c = chain
+      allow(character).to receive(:character_versions).and_return(c)
+
+      service.send(:versions_for, character)
+
+      expect(c).to have_received(:includes).with(:edited_by)
+      expect(c).to have_received(:order).with(:created_at)
+    end
+
+    describe "#characters_for" do
+      let(:game) { build_stubbed(:game) }
+      let(:scene) { build_stubbed(:scene) }
+
+      before do
+        participants = chain
+        allow(participants).to receive(:pluck).and_return([ 7 ])
+        allow(SceneParticipant).to receive(:where).and_return(participants)
+
+        owned = chain
+        allow(owned).to receive(:pluck).and_return([ 9 ])
+        allow(game).to receive(:characters).and_return(double(where: owned))
+
+        @found = chain
+        allow(Character).to receive(:where).and_return(@found)
+      end
+
+      it "combines participant characters with the viewer's own, deduped and ordered" do
+        service.send(:characters_for, game, [ scene ])
+
+        expect(Character).to have_received(:where).with(id: [ 7, 9 ])
+        expect(@found).to have_received(:includes).with(:user, :character_versions)
+        expect(@found).to have_received(:order).with(:name)
+      end
+
+      it "ignores participants with no character" do
+        service.send(:characters_for, game, [ scene ])
+
+        expect(SceneParticipant).to have_received(:where).with(scene_id: [ scene.id ])
+      end
+    end
+  end
+
   describe "#scene_selection_for" do
     let(:service) { described_class.new(build_stubbed(:user), []) }
 

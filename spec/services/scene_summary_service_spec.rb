@@ -191,16 +191,24 @@ RSpec.describe SceneSummaryService do
   end
 
   describe "#posts_for_prompt" do
-    it "caps the number of posts at MAX_POSTS" do
+    it "takes published posts with their user, oldest first, capped at MAX_POSTS" do
       scene = build_stubbed(:scene)
-      relation = double
-      allow(scene).to receive(:posts).and_return(relation)
-      allow(relation).to receive_message_chain(:published, :includes, :order, :limit, :to_a).and_return([])
+      chain = double
+      allow(chain).to receive(:includes).and_return(chain)
+      allow(chain).to receive(:order).and_return(chain)
+      allow(chain).to receive(:limit).and_return(chain)
+      allow(chain).to receive(:to_a).and_return([])
+      allow(scene).to receive(:posts).and_return(double(published: chain))
 
       described_class.new(scene).send(:posts_for_prompt)
 
-      expect(relation.published.includes(:user).order(:created_at))
-        .to have_received(:limit).with(described_class::MAX_POSTS)
+      expect(chain).to have_received(:includes).with(:user)
+      expect(chain).to have_received(:order).with(:created_at)
+      expect(chain).to have_received(:limit).with(described_class::MAX_POSTS)
+    end
+
+    it "caps at five hundred" do
+      expect(described_class::MAX_POSTS).to eq(500)
     end
   end
 end
