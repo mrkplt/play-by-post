@@ -4,10 +4,10 @@
 # System specs (type: :feature, Capybara+Playwright) are ~85% of the suite's
 # wall time for ~15% of its examples, and mutation testing / the full
 # quality-metrics gate need data from a full run anyway — none of that is
-# worth paying for on every push. CI runs the complete pipeline (system
-# specs, mutation, quality gate, Docker build) on every PR, so it remains the
-# authoritative check; this hook exists to catch obvious breaks fast, not to
-# duplicate CI.
+# worth paying for on every push. The heavy tier runs in CI on every PR, or
+# locally on demand via bin/full-check — your call which to wait on. This
+# hook exists to catch obvious breaks fast, not to duplicate the full
+# pipeline.
 export PATH="/opt/homebrew/opt/ruby/bin:$PATH"
 
 if bin/docs-only; then
@@ -39,4 +39,4 @@ echo "==> Fast tests (rspec, excluding system specs)"
 bundle exec rspec --tag ~type:feature || exit 1
 rm -f storage/test_worker_*.sqlite3
 
-echo "All fast checks passed. System specs, mutation testing, and the full quality gate (bin/quality-metrics --check) run in CI when the PR is opened/updated."
+echo "All fast checks passed. Heavy tier (system specs, mutation, quality gate) runs in CI on the PR — or locally via bin/full-check."

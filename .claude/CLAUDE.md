@@ -73,7 +73,8 @@ tests/
 
 .mutant.yml            # Mutation testing config — all tested classes must be listed here
 bin/
-  pre-push             # Fast local gate — static checks + non-system specs (run before pushing)
+  pre-push             # Fast local gate — static checks + non-system specs (runs on every push)
+  full-check           # Full pipeline on demand — pre-push + system specs + mutation + quality gate
   quality-metrics      # Coverage/mutation/typing metric collector and gate checker
 ```
 
@@ -116,7 +117,7 @@ Dev only: `/letter_opener` (email preview) · Lookbook (component previews).
 2. Write failing RSpec tests
 3. Implement until tests pass
 4. Verify in browser against the testing plan
-5. Run `bin/pre-push` before pushing (fast local gate — static checks + non-system specs; CI runs the full pipeline, including system specs, mutation, and the quality gate, on the PR)
+5. Push — the pre-push hook runs the fast tier automatically; run `bin/full-check` when you want the heavy tier (system specs, mutation, quality gate) locally instead of waiting on CI
 
 **ALL new features must have tests.**
 
@@ -131,7 +132,9 @@ Dev only: `/letter_opener` (email preview) · Lookbook (component previews).
 
 ## Quality Pipeline
 
-`bin/pre-push` is a **fast local gate**, not the full pipeline — it's a docs-only short-circuit plus static checks and non-system specs (~30-40s total):
+Two tiers, split by cost:
+
+**Fast tier — `bin/pre-push` (the push hook, ~30-40s).** Docs-only short-circuit, then static checks and non-system specs:
 
 ```bash
 bin/docs-only                            # 0. Skip everything on a docs-only diff (mirrors CI's bin/ci-run)
@@ -144,7 +147,7 @@ bundle exec srb tc                       # 6. Sorbet type check
 bundle exec rspec --tag ~type:feature    # 7. Non-system tests + SimpleCov coverage
 ```
 
-System specs (`type: :feature`, Capybara+Playwright — 210 of 1346 examples but ~85% of the suite's wall time), mutation testing, and `bin/quality-metrics --check` do **not** run in `bin/pre-push`. They run in CI (`.github/workflows/ci.yml`) as parallel jobs on every PR and push to `master` — CI is the authoritative gate; the local hook exists to catch obvious breaks in seconds, not to duplicate CI. Moving mutation to CI-only doesn't reduce the work done (CI runs the identical `--since origin/master` scope), it just stops it from blocking the push locally. Mutation runs after tests (`--jobs 8`) and passes its output to `bin/quality-metrics --record-mutant` before the gate.
+**Heavy tier — system specs (`type: :feature`, Capybara+Playwright: 210 of 1346 examples but ~85% of suite wall time), mutation testing, and `bin/quality-metrics --check`.** This tier runs in CI (`.github/workflows/ci.yml`) as parallel jobs on every PR and push to `master` — CI is the authoritative gate. To run it locally instead of waiting on CI, use **`bin/full-check`** (fast tier + full rspec + mutation + quality gate; expect several minutes). That's a per-situation choice: hook stays fast on every push, `full-check` when you want the complete verdict before opening a PR or CI turnaround is the bottleneck. In CI, mutation runs after tests (`--jobs 8`) and passes its output to `bin/quality-metrics --record-mutant` before the gate.
 
 ### Quality Gates
 
@@ -180,7 +183,7 @@ Hard-won specifics for actually clearing the gates. Read this before touching up
 **Running the tools (the sequence that matches CI):**
 - Tests + coverage must run *before* `--check`; SimpleCov writes `coverage/`. A **mutation run overwrites nothing useful for line coverage** — if you run `mutant` last, re-run `bundle exec rspec` before `bin/quality-metrics --check` or every changed file reports `0.0%` line coverage (false failure).
 - Mutation for CI/gate: `bundle exec mutant run --usage opensource --jobs 4 --since origin/master > tmp/mutant_output.txt 2>&1` then `bin/quality-metrics --record-mutant tmp/mutant_output.txt` then `bin/quality-metrics --check`. CI runs the mutation step with `|| true`, so alive mutants don't fail the build directly — the **`mutation_coverage` floor (currently 83.66) in `--check` is what blocks**.
-- The pre-push hook (`.git/hooks/pre-push` → `bin/pre-push`) runs the *entire* pipeline incl. mutation, so `git push` legitimately takes several minutes. Run it backgrounded; it is not hung.
+- The pre-push hook (`.git/hooks/pre-push` → `bin/pre-push`) runs only the fast tier (~30-40s) — mutation and system specs are NOT in the push path. `bin/full-check` is the local command that runs the entire pipeline incl. mutation; it legitimately takes several minutes — run it backgrounded, it is not hung.
 - `mutant` runs with `--jobs > 1` against SQLite can emit spurious `SQLite3::BusyException: database is locked` "neutral" failures. Re-run single-job (`--jobs 1 <Subject>`) to confirm a mutant is genuinely alive before chasing it.
 
 **ERB gate (bites every view edit):**
@@ -217,7 +220,7 @@ Hard-won specifics for actually clearing the gates. Read this before touching up
 - The separate **`publish`** job (`needs:` all gates + `build`, `if:` master/tag push) is the only thing that pushes to GHCR and triggers the Coolify deploy, so an image ships only when *everything* is green on master. (Historically these were one master-only `build` job that `SKIPPED` on PRs, which let a precompile break reach master and require a hotfix — hence the split.)
 - Still run the local no-credentials precompile check (above) for fast local confidence, but the PR `build` job now catches it in CI too.
 - **`master` is squash-merge + delete-branch.** After merge the PR's individual commits are **not** ancestors of `master` (it's a single squash commit), and the source branch ref is **deleted** — pushing another commit to that branch afterward fails with `cannot lock ref … unable to resolve reference`. Land follow-ups on a **fresh branch off the updated `origin/master`** (`git fetch` first); `git diff origin/master..HEAD` will then show only your true delta even after a squash.
-- **The pre-push hook runs the entire pipeline including ~3-4 min of mutation**, so `git push` is genuinely slow. Let it run to completion uninterrupted — killing it mid-mutation leaves the ref unpushed (`[remote rejected]`/nothing sent). `--no-verify` is blocked by policy here; don't reach for it. When a push and a background job race, the push captures the ref at push time, so a commit made *after* you start the push won't be included — verify `git ls-remote` vs local HEAD and re-push if you're ahead.
+- **The pre-push hook runs the fast tier only (~30-40s)** — mutation and system specs moved to CI / `bin/full-check`, so `git push` is no longer minutes-slow. Still let it run to completion uninterrupted — killing it mid-run leaves the ref unpushed (`[remote rejected]`/nothing sent). `--no-verify` is blocked by policy here; don't reach for it. When a push and a background job race, the push captures the ref at push time, so a commit made *after* you start the push won't be included — verify `git ls-remote` vs local HEAD and re-push if you're ahead.
 
 ---
 
