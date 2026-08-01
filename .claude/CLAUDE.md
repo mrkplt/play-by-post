@@ -73,7 +73,7 @@ tests/
 
 .mutant.yml            # Mutation testing config — all tested classes must be listed here
 bin/
-  pre-push             # Full local quality pipeline (run before pushing)
+  pre-push             # Fast local gate — static checks + non-system specs (run before pushing)
   quality-metrics      # Coverage/mutation/typing metric collector and gate checker
 ```
 
@@ -116,7 +116,7 @@ Dev only: `/letter_opener` (email preview) · Lookbook (component previews).
 2. Write failing RSpec tests
 3. Implement until tests pass
 4. Verify in browser against the testing plan
-5. Run `bin/pre-push` before pushing
+5. Run `bin/pre-push` before pushing (fast local gate — static checks + non-system specs; CI runs the full pipeline, including system specs, mutation, and the quality gate, on the PR)
 
 **ALL new features must have tests.**
 
@@ -131,19 +131,20 @@ Dev only: `/letter_opener` (email preview) · Lookbook (component previews).
 
 ## Quality Pipeline
 
-`bin/pre-push` runs the full pipeline and is the gate before every push:
+`bin/pre-push` is a **fast local gate**, not the full pipeline — it's a docs-only short-circuit plus static checks and non-system specs (~30-40s total):
 
 ```bash
+bin/docs-only                            # 0. Skip everything on a docs-only diff (mirrors CI's bin/ci-run)
 bin/rubocop                              # 1. Lint (Omakase style)
-bin/importmap audit                      # 2. JS security
-bin/brakeman --no-pager                  # 3. Ruby security
-bundle exec srb tc                       # 4. Sorbet type check
-bundle exec rspec                        # 5. Tests + SimpleCov coverage
-bundle exec mutant run --usage opensource --since origin/master  # 6. Mutation
-bin/quality-metrics --check              # 7. Gate — fails build if metrics regress
+bin/check-design-tokens                  # 2. Design-token adherence
+bin/check-mutant-coverage                # 3. Mutation registration check
+bin/importmap audit                      # 4. JS security
+bin/brakeman --no-pager                  # 5. Ruby security
+bundle exec srb tc                       # 6. Sorbet type check
+bundle exec rspec --tag ~type:feature    # 7. Non-system tests + SimpleCov coverage
 ```
 
-The same pipeline runs in CI (`.github/workflows/ci.yml`) on every PR and push to `master`, as parallel jobs. Mutation runs after tests (`--jobs 8`) and passes its output to `bin/quality-metrics --record-mutant` before the gate.
+System specs (`type: :feature`, Capybara+Playwright — 210 of 1346 examples but ~85% of the suite's wall time), mutation testing, and `bin/quality-metrics --check` do **not** run in `bin/pre-push`. They run in CI (`.github/workflows/ci.yml`) as parallel jobs on every PR and push to `master` — CI is the authoritative gate; the local hook exists to catch obvious breaks in seconds, not to duplicate CI. Moving mutation to CI-only doesn't reduce the work done (CI runs the identical `--since origin/master` scope), it just stops it from blocking the push locally. Mutation runs after tests (`--jobs 8`) and passes its output to `bin/quality-metrics --record-mutant` before the gate.
 
 ### Quality Gates
 
