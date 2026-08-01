@@ -72,5 +72,15 @@ RSpec.describe PostPresenter do
       allow(post).to receive(:editable_by?).with(user).and_return(true)
       expect(presenter.editable_by?(user)).to be true
     end
+
+    it "returns the post's user" do
+      expect(presenter.user).to eq(user)
+    end
+
+    it "returns the post's scene" do
+      scene = build(:scene)
+      allow(post).to receive(:scene).and_return(scene)
+      expect(presenter.scene).to eq(scene)
+    end
   end
 end

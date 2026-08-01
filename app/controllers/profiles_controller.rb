@@ -10,7 +10,7 @@ class ProfilesController < ApplicationController
       .where.not(status: "banned")
       .includes(:game)
       .order("games.name")
-    @export_all_rate_limited = GameExportRequest.rate_limited?(current_user, nil)
+    @export_all_receipt = GameExportRequest.valid_receipt_for(current_user, nil)
   end
 
   sig { void }
@@ -52,13 +52,14 @@ class ProfilesController < ApplicationController
 
   sig { void }
   def export_all
-    if GameExportRequest.rate_limited?(current_user, nil)
-      redirect_to profile_path, alert: "An all-games export was requested recently. Please wait 24 hours before requesting another."
-      return
-    end
+    receipt = GameExportRequest.valid_receipt_for(current_user, nil)
 
-    request = GameExportRequest.create!(user: current_user, game: nil)
-    ExportJob.perform_later(request.id)
+    if receipt
+      ExportDelivery.email_download_link(receipt)
+    else
+      request = GameExportRequest.create!(user: current_user, game: nil)
+      ExportJob.perform_later(request.id)
+    end
 
     redirect_to profile_path, notice: "Export requested — you'll receive an email shortly."
   end

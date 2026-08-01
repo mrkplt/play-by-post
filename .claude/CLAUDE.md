@@ -155,10 +155,16 @@ Enforced by `bin/quality-metrics --check` against `quality_baseline.json`:
 | Each changed `app/` or `lib/` file — line coverage | ≥ 80% |
 | Each changed `app/` or `lib/` file — branch coverage | ≥ 70% |
 | Each changed file — Sorbet sigil | `true`, `strict`, or `strong` |
+| View CSS statements (`app/views/*.erb`) | must not increase (push markup into components) |
+| ERB logic (ternary / `\|\|` / local-assign, views + component templates) | must not increase (extract to presenter/component method) |
+| `raw_hex_class_violations` (raw hex in ERB class utilities) | ceiling 0 — use a `@theme` token |
+| `mutant_registration_violations` (component/presenter missing from `.mutant.yml`) | ceiling 0 |
+
+**Design system:** the UI is component-driven and token-based — see `docs/STYLE_GUIDE.md`. Colours/radii are `@theme` tokens in `app/assets/tailwind/application.css`; browse the component gallery at **`/lookbook`** (dev). Screens compose `Shared::MobileFrameComponent` + a header + `Ui::*`/`Shared::*` components; don't hand-write bespoke screen markup or raw hex.
 
 **Blast radius:** The gate checks every file touched by the branch vs `origin/master`, not just files you intended to change. Any edit to a file that lacks a sigil or has insufficient coverage will fail the gate. Fix both immediately when touching such a file.
 
-**Mutation registration:** Every new class must be added to `.mutant.yml` under `matcher.subjects` using its exact Ruby constant (e.g. `Shared::PostItemComponent`, `PostPresenter`, `PostRead`). Omitted classes are silently unmeasured.
+**Mutation registration (now gated):** Every new component/presenter must be added to `.mutant.yml` under `matcher.subjects` using its exact Ruby constant (e.g. `Shared::PostItemComponent`, `PostPresenter`). The `mutant_registration_violations` gate fails the build if a `Ui::*`/`Shared::*`/presenter class is missing — no longer just silently unmeasured.
 
 **Updating the baseline:** After an intentional quality improvement run `bin/quality-metrics --save`.
 
@@ -176,8 +182,8 @@ Hard-won specifics for actually clearing the gates. Read this before touching up
 - Inline Tailwind in a `.erb` **fails** the CSS-statements check. Move markup into a `Shared::*`/`Ui::*` ViewComponent (CSS is allowed/tracked there). RuboCop does not lint `.erb`, so `bin/rubocop <file.erb>` reports false syntax "offenses" — ignore; the real gate is `bin/quality-metrics`.
 - `||` fallbacks, ternaries, and local assigns in ERB **output tags** fail the ERB-logic check. Extract to a presenter/component Ruby method (e.g. `error_message` returning `a || b`).
 
-**Mutation blast radius (the expensive trap):**
-- `--since origin/master` pulls **every mutation of every subject in a file you touched** into scope — including pre-existing gaps. Adding a one-line method to `PostsController`/`ScenesController` dragged their legacy coverage (74% / 65%) into the aggregate and sank the global floor. Two fixes: minimize which files you touch, or write tests to lift the whole subject. **Always add the new class to `.mutant.yml` first** or it is silently unmeasured.
+**Mutation blast radius (a feature, not a trap):**
+- `--since origin/master` pulls **every mutation of every subject in a file you touched** into scope — including pre-existing gaps. Adding a one-line method to `PostsController`/`ScenesController` surfaced their legacy coverage (74% / 65%) and it counted against the aggregate. **This is good:** it exposes untested code exactly when you are in a position to test it, and every file dragged in makes the whole system more reliable. Make the edit the task needs and **write tests to lift the whole subject above the floor** — do not shy away from a necessary change, minimize touched files to duck the gate, or contort the code to keep a file out of scope. Lifting those two controllers to 92% / 95% was the point, not a cost. **Always add a new class to `.mutant.yml` first** or it is silently unmeasured.
 
 **Killing mutants with tests — patterns that worked here:**
 - *Read the `evil:` diff* in the mutant output to see the exact mutation; that tells you what assertion is missing.
@@ -193,9 +199,20 @@ Hard-won specifics for actually clearing the gates. Read this before touching up
 - New gem ⇒ `bundle exec tapioca gem <name>` for its RBI (Timecop needed this). **Tapioca may also delete unrelated RBIs** as it reconciles the gem set — `git checkout --` those back and keep only the intended new RBI.
 - `config/initializers/*` doing metaprogramming (`prepend`, `class_eval`) are `# typed: false` and are **not** gate-checked for sigil/coverage — the safe home for framework patches.
 
+**Test isolation — restore any global you mutate, especially `ActiveJob::Base.queue_adapter`.** The test env runs jobs `:inline`. Several specs flip the adapter to `:test` to inspect enqueued jobs; if one does it **inline in a test body without restoring** (rather than in an `around`/`ensure`), it leaks `:test` into every subsequent spec in the run, so their `deliver_later` mail is enqueued but never performed. This stayed invisible for a long time because the only login mailer used `deliver_now` (adapter-independent) — switching the magic link to `deliver_later` instantly broke 37 downstream feature specs (`sign_in_as` found no delivered email). Lessons: (1) always wrap adapter/config mutation in `around` or `begin/ensure`; (2) a feature-spec sign-in helper should not depend on scraping a delivered email — visit the magic-link **token URL directly** (`Devise::Passwordless::SignedGlobalIDTokenizer.encode(user)` → `user_magic_link_path`), which is delivery- and adapter-independent; (3) tests that assert a `deliver_later` mail was sent must drain/perform jobs or poll `deliveries`, not read it once.
+
+**The gates do NOT run `assets:precompile` — the Docker build does, and it's a different boot context.** Every CI gate (rspec, mutation, sorbet, brakeman) runs in `test`/dev with credentials present. The `build` job runs `SECRET_KEY_BASE_DUMMY=1 rails assets:precompile` in an image with **no master key**, so `Rails.application.credentials` is empty and any config that resolves the R2/S3 service gets a **nil bucket** → `aws-sdk-s3` aborts with `ArgumentError: missing required option :name`. A `config.to_prepare` block that references `ActiveStorage::VariantWithRecord` (or otherwise touches the storage service) runs during precompile and triggers exactly this — passing all gates but breaking master's container build. Guard such boot-time AS/service code with `unless ENV["SECRET_KEY_BASE_DUMMY"]`, and before merging attachment/initializer changes sanity-check locally: `mv config/credentials/production.{key,yml.enc} /tmp/ && SECRET_KEY_BASE_DUMMY=1 RAILS_ENV=production bin/rails assets:precompile` (must exit 0; then move them back).
+
 **Libraries / techniques established:**
 - **Time-travel in specs: `Timecop`** (`Timecop.freeze do … end`), in the `:test` group. Do **not** use `ActiveSupport::Testing::TimeHelpers` — it is not mixed in (`freeze_time`/`travel_to` are undefined). Test env uses the `:inline` ActiveJob adapter, so `:purge_later` and other `perform_later` calls run synchronously.
 - **Active Storage — prefer public API over patching `Blob`:** `attach`'s documented `key:` argument controls the storage folder/prefix but is only forwarded on the **Hash/io** attachable branch (not `UploadedFile`). To set key + custom metadata uniformly, build the blob with `ActiveStorage::Blob.create_and_upload!(key:, io:, filename:, content_type:, metadata: { custom: {...} })` then `attach(blob)`. `custom_metadata` lives at `blob.metadata[:custom]` and the S3 service maps it to `x-amz-meta-*`. For `VariantWithRecord` thumbnails (no controller in the path), the variant image is attached from a Hash, so merge a `key:` into that Hash via a small `prepend` on `create_or_find_record` — no `Blob#key` override needed. R2 has **no object tagging** and lifecycle rules filter by **prefix + age only**, so custom metadata is for legibility, not automation.
+
+**CI/CD topology — build-verify runs on PRs; publish/deploy is master-only:**
+- The **`build`** job builds the linux/arm64 image **on every event including PRs, in parallel with the gates, with `push: false`** — so a broken Dockerfile / `assets:precompile` is caught **before merge**. It publishes nothing.
+- The separate **`publish`** job (`needs:` all gates + `build`, `if:` master/tag push) is the only thing that pushes to GHCR and triggers the Coolify deploy, so an image ships only when *everything* is green on master. (Historically these were one master-only `build` job that `SKIPPED` on PRs, which let a precompile break reach master and require a hotfix — hence the split.)
+- Still run the local no-credentials precompile check (above) for fast local confidence, but the PR `build` job now catches it in CI too.
+- **`master` is squash-merge + delete-branch.** After merge the PR's individual commits are **not** ancestors of `master` (it's a single squash commit), and the source branch ref is **deleted** — pushing another commit to that branch afterward fails with `cannot lock ref … unable to resolve reference`. Land follow-ups on a **fresh branch off the updated `origin/master`** (`git fetch` first); `git diff origin/master..HEAD` will then show only your true delta even after a squash.
+- **The pre-push hook runs the entire pipeline including ~3-4 min of mutation**, so `git push` is genuinely slow. Let it run to completion uninterrupted — killing it mid-mutation leaves the ref unpushed (`[remote rejected]`/nothing sent). `--no-verify` is blocked by policy here; don't reach for it. When a push and a background job race, the push captures the ref at push time, so a commit made *after* you start the push won't be included — verify `git ls-remote` vs local HEAD and re-push if you're ahead.
 
 ---
 

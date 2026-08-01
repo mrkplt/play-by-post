@@ -101,4 +101,40 @@ RSpec.describe UserPresenter do
       expect(presenter.email).to eq("jane@example.com")
     end
   end
+
+  describe "#drawer_memberships" do
+    let(:real_user) { create(:user) }
+    let(:gm_game) { create(:game, name: "Beta") }
+    let(:player_game) { create(:game, name: "Alpha") }
+    let(:removed_game) { create(:game, name: "Charlie") }
+    let(:banned_game) { create(:game, name: "Delta") }
+
+    subject(:presenter) { described_class.new(real_user) }
+
+    before do
+      create(:game_member, game: gm_game, user: real_user, role: "game_master", status: "active")
+      create(:game_member, game: player_game, user: real_user, role: "player", status: "active")
+      create(:game_member, game: removed_game, user: real_user, role: "player", status: "removed")
+      create(:game_member, game: banned_game, user: real_user, role: "player", status: "banned")
+    end
+
+    it "includes active, GM, and removed memberships" do
+      names = presenter.drawer_memberships.map { |m| m.game.name }
+      expect(names).to include("Alpha", "Beta", "Charlie")
+    end
+
+    it "excludes banned memberships" do
+      names = presenter.drawer_memberships.map { |m| m.game.name }
+      expect(names).not_to include("Delta")
+    end
+
+    it "orders memberships by game name" do
+      names = presenter.drawer_memberships.map { |m| m.game.name }
+      expect(names).to eq(%w[Alpha Beta Charlie])
+    end
+
+    it "returns GameMember records" do
+      expect(presenter.drawer_memberships).to all(be_a(GameMember))
+    end
+  end
 end

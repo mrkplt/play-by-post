@@ -19,9 +19,9 @@ RSpec.describe "Image attachments", type: :feature do
       sign_in_as(player)
       visit game_scene_path(game, scene)
 
-      fill_in "Write your post...", with: "Check out this map!"
+      fill_in "Write your post... (markdown)", with: "Check out this map!"
       attach_file "Image (optional)", fixture_image
-      click_on "Post"
+      click_on "POST"
 
       expect(page).to have_text("Check out this map!")
       expect(page).to have_css("img[src*='test_image']")
@@ -31,8 +31,8 @@ RSpec.describe "Image attachments", type: :feature do
       sign_in_as(player)
       visit game_scene_path(game, scene)
 
-      fill_in "Write your post...", with: "Just text, no image."
-      click_on "Post"
+      fill_in "Write your post... (markdown)", with: "Just text, no image."
+      click_on "POST"
 
       expect(page).to have_text("Just text, no image.")
     end

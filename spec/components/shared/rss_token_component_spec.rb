@@ -8,9 +8,9 @@ RSpec.describe Shared::RssTokenComponent, type: :component do
 
     it "shows generate button" do
       render_inline(component)
-      expect(page).to have_button("Generate RSS Token")
-      expect(page).not_to have_button("Rotate Token")
-      expect(page).not_to have_button("Revoke Token")
+      expect(page).to have_button("Generate")
+      expect(page).not_to have_button("Rotate")
+      expect(page).not_to have_button("Revoke")
     end
 
     it "token_present? returns false" do
@@ -32,9 +32,9 @@ RSpec.describe Shared::RssTokenComponent, type: :component do
 
     it "shows rotate and revoke buttons" do
       render_inline(described_class.new(rss_token: rss_token))
-      expect(page).to have_button("Rotate Token")
-      expect(page).to have_button("Revoke Token")
-      expect(page).not_to have_button("Generate RSS Token")
+      expect(page).to have_button("Rotate")
+      expect(page).to have_button("Revoke")
+      expect(page).not_to have_button("Generate")
     end
   end
 end

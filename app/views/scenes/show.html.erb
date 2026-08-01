@@ -1,174 +1,137 @@
-<%= render(Ui::BreadcrumbComponent.new) do %>
-  <%= link_to "Games", root_path %> &rsaquo;
-  <%= link_to @game.name, game_path(@game) %> &rsaquo;
-  <%= @scene.title %>
-<% end %>
+<% content_for :active_game_id, @game.id %>
 
 <div data-controller="ooc-filter"
      data-ooc-filter-hide-ooc-value="<%= @hide_ooc %>"
      data-ooc-filter-toggle-url-value="<%= toggle_hide_ooc_profile_path %>">
-
-<div class="bg-white border border-slate-200 rounded-lg p-5 mb-4 relative" data-controller="menu" data-action="click@window->menu#close">
-  <div class="flex justify-between items-start">
-    <div>
-      <h1 style="margin:0 0 0.5rem; font-size:1.4rem;"><%= @scene.title %></h1>
-      <div class="flex gap-1 flex-wrap">
-        <% if @scene.private? %>
-          <%= render(Ui::BadgeComponent.new(variant: :yellow)) { "Private" } %>
+  <%= render Shared::MobileFrameComponent.new do |frame| %>
+    <% frame.with_header do %>
+      <header class="bg-sidebar-bg px-3 py-2 flex items-center gap-0.5">
+        <%= render Ui::IconButtonComponent.new(href: game_path(@game), label: "Back to game") do %>
+          <span class="text-2xl leading-none">&larr;</span>
         <% end %>
-        <% if @scene.resolved? %>
-          <%= render(Ui::BadgeComponent.new(variant: :gray)) { "Resolved" } %>
-        <% end %>
-      </div>
-    </div>
-
-    <% if !@scene.resolved? %>
-      <div class="relative flex-shrink-0 ml-3">
-        <button data-action="click->menu#toggle" class="bg-transparent border border-slate-300 rounded px-2.5 py-1.5 cursor-pointer text-slate-600 text-lg leading-none" title="Scene actions">
-          &#9776;
+        <h1 class="text-white font-bold text-[15px] m-0 truncate flex-1"><%= @scene.title %></h1>
+        <button type="button" data-action="click->ooc-filter#toggle"
+                class="flex items-center gap-1.5 cursor-pointer bg-transparent border-0"
+                aria-label="Toggle out-of-character posts">
+          <span class="text-[11px] text-muted-2 font-semibold">Hide OOC</span>
+          <span data-ooc-filter-target="switch">
+            <%= render Ui::ToggleSwitchComponent.new(on: @hide_ooc) %>
+          </span>
         </button>
-        <div data-menu-target="dropdown" hidden class="absolute right-0 top-12 bg-white border border-slate-200 rounded-lg shadow-lg min-w-[200px] z-100 py-1">
-          <% if @is_gm %>
-            <%= link_to "Quick Scene", new_game_scene_path(@game, quick: true, parent_scene_id: @scene.id),
-                class: "block px-4 py-2 text-slate-800 no-underline text-sm whitespace-nowrap" %>
-            <%= link_to "New Scene", new_game_scene_path(@game, parent_scene_id: @scene.id),
-                class: "block px-4 py-2 text-slate-800 no-underline text-sm whitespace-nowrap" %>
-            <%= link_to "Edit Participants", edit_game_scene_participants_path(@game, @scene),
-                class: "block px-4 py-2 text-slate-800 no-underline text-sm whitespace-nowrap" %>
-            <div class="border-t border-slate-100 my-1"></div>
-          <% end %>
-          <button data-action="click->ooc-filter#toggle"
-              class="flex justify-between items-center w-full px-4 py-2 bg-transparent border-none cursor-pointer text-slate-800 text-sm whitespace-nowrap">
-            <span>Hide OOC posts</span>
-            <span data-ooc-filter-target="indicator" class="text-slate-400 text-xs">Off</span>
-          </button>
-          <%= button_to @is_muted ? "Unmute notifications" : "Mute notifications",
-              toggle_notification_preference_game_scene_path(@game, @scene),
-              method: :post,
-              class: "block w-full text-left px-4 py-2 bg-transparent border-none cursor-pointer text-slate-800 text-sm whitespace-nowrap" %>
-          <% if @is_gm %>
-            <div class="border-t border-slate-100 my-1"></div>
-            <button data-action="click->menu#toggle" onclick="document.getElementById('resolve-form').hidden=false; this.closest('[data-controller=menu]').querySelector('[data-menu-target=dropdown]').hidden=true"
-                class="block w-full text-left px-4 py-2 bg-transparent border-none cursor-pointer text-red-600 text-sm whitespace-nowrap">
-              End Scene
-            </button>
-          <% end %>
-        </div>
-      </div>
+      </header>
     <% end %>
-  </div>
 
-  <% if @scene.image.attached? %>
-    <div style="margin-top:0.75rem;">
-      <%= image_tag @scene_presenter.banner_image, style: "max-width:100%; border-radius:4px;" %>
-    </div>
-  <% end %>
-
-  <% if @scene.parent_scene.present? %>
-    <p style="font-size:0.85rem; color:#64748b; margin:0.5rem 0 0.25rem;">
-      ↳ Continues from <%= link_to @scene.parent_scene.title, game_scene_path(@game, @scene.parent_scene) %>
-      <% if @scene.parent_scene.resolved? %>
+    <%# Scene meta / status %>
+    <div class="flex gap-1 flex-wrap">
+      <% if @scene.private? %>
+        <%= render(Ui::BadgeComponent.new(variant: :yellow)) { "Private" } %>
+      <% end %>
+      <% if @scene.resolved? %>
         <%= render(Ui::BadgeComponent.new(variant: :gray)) { "Resolved" } %>
       <% end %>
-    </p>
-  <% end %>
+    </div>
 
-  <% if @child_scenes.any? %>
-    <p style="font-size:0.85rem; color:#64748b; margin:0.25rem 0 0.25rem;">
-      <% @child_scenes.each do |child| %>
-        ⤷ <%= link_to child.title, game_scene_path(@game, child) %>
-        <% if child.resolved? %>
-          <%= render(Ui::BadgeComponent.new(variant: :gray)) { "Resolved" } %>
-        <% else %>
-          <%= render(Ui::BadgeComponent.new(variant: :green)) { "Active" } %>
+    <% if @scene.parent_scene.present? %>
+      <p class="text-[11px] text-muted-2 m-0">
+        &#8617; Continues from <%= link_to @scene.parent_scene.title, game_scene_path(@game, @scene.parent_scene), class: "text-accent" %>
+      </p>
+    <% end %>
+
+    <% if @scene.image.attached? %>
+      <div>
+        <%= image_tag @scene_presenter.banner_image, class: "max-w-full rounded-card" %>
+      </div>
+    <% end %>
+
+    <% if @child_scenes.any? %>
+      <p class="text-[11px] text-muted-2 m-0 flex flex-wrap gap-x-2">
+        <% @child_scenes.each do |child| %>
+          <span>&#10549; <%= link_to child.title, game_scene_path(@game, child), class: "text-accent" %></span>
+        <% end %>
+      </p>
+    <% end %>
+
+    <p class="text-[11px] text-muted-2 m-0">Participants: <%= @scene_presenter.participant_names %></p>
+
+    <div>
+      <%= button_to (@is_muted ? "Unmute notifications" : "Mute notifications"),
+            toggle_notification_preference_game_scene_path(@game, @scene), method: :post,
+            class: "text-[11px] font-semibold text-accent bg-transparent border-0 cursor-pointer p-0" %>
+    </div>
+
+    <% if @scene.resolved? && @scene.resolution.present? %>
+      <div class="bg-tint-blue-bg border border-tint-blue-border rounded-card p-3 text-sm text-tint-blue-strong">
+        <strong>Resolution:</strong> <%= @scene.resolution %>
+      </div>
+    <% end %>
+
+    <%# GM scene actions %>
+    <% if @is_gm && !@scene.resolved? %>
+      <div class="flex flex-wrap gap-3">
+        <%= link_to "Quick Scene", new_game_scene_path(@game, quick: true, parent_scene_id: @scene.id),
+              class: "text-xs font-semibold text-accent no-underline" %>
+        <%= link_to "New Scene", new_game_scene_path(@game, parent_scene_id: @scene.id),
+              class: "text-xs font-semibold text-accent no-underline" %>
+        <%= link_to "Edit Participants", edit_game_scene_participants_path(@game, @scene),
+              class: "text-xs font-semibold text-accent no-underline" %>
+        <button type="button" onclick="document.getElementById('resolve-form').hidden = !document.getElementById('resolve-form').hidden"
+                class="text-xs font-semibold text-danger bg-transparent border-0 cursor-pointer p-0">End Scene</button>
+      </div>
+      <div id="resolve-form" hidden class="bg-card border border-card-border rounded-card p-3">
+        <%= form_with url: resolve_game_scene_path(@game, @scene), method: :patch do |f| %>
+          <%= f.label :resolution, "Outcome (optional)", class: "block text-sm font-semibold mb-1" %>
+          <%= f.text_area :resolution, rows: 3, placeholder: "What happened? What was gained or lost?",
+                class: "w-full px-3 py-2 border border-input-border rounded-control text-base" %>
+          <%= f.submit "Confirm — End Scene", class: "mt-2 bg-card text-danger border border-red-200 rounded-control px-4 py-2 text-sm cursor-pointer" %>
+        <% end %>
+      </div>
+    <% end %>
+
+    <%# Posts %>
+    <div id="posts" data-controller="unread-aura">
+      <% if @posts.empty? %>
+        <p id="no_posts_message" class="text-muted-2 m-0 text-sm">No posts yet. Be the first!</p>
+      <% else %>
+        <% @post_presenters.each do |post_presenter| %>
+          <%= render Shared::PostItemComponent.new(
+                post: post_presenter, game: @game, current_user: current_user,
+                scene: @scene, read_post_ids: @read_post_ids) %>
         <% end %>
       <% end %>
-    </p>
-  <% end %>
-
-  <p style="font-size:0.85rem; color:#64748b; margin:0.25rem 0 0.75rem;">
-    Participants: <%= @scene_presenter.participant_names %>
-  </p>
-
-  <% if @scene.resolved? && @scene.resolution.present? %>
-    <div class="bg-green-50 border border-green-300 rounded p-3 mt-3">
-      <strong>Resolution:</strong> <%= @scene.resolution %>
     </div>
-  <% end %>
 
-  <% if @is_gm && !@scene.resolved? %>
-    <div id="resolve-form" hidden class="border-t border-slate-100 mt-3 pt-3">
-      <%= form_with url: resolve_game_scene_path(@game, @scene), method: :patch do |f| %>
-        <h3 style="margin-top:0; font-size:1rem;">End this scene</h3>
-        <div class="mb-4">
-          <%= f.label :resolution, "Outcome (optional)" %>
-          <%= f.text_area :resolution, rows: 3, placeholder: "What happened? What was gained or lost?", class: "w-full px-3 py-2 border border-slate-300 rounded text-base" %>
-        </div>
-        <%= f.submit "Confirm — End Scene", class: "px-5 py-2 bg-white text-red-600 border border-red-200 rounded text-base cursor-pointer hover:bg-red-50 inline-block no-underline" %>
-        <button type="button" onclick="document.getElementById('resolve-form').hidden=true"
-            class="bg-transparent border-none cursor-pointer text-slate-500 text-sm ml-2">
-          Cancel
-        </button>
-      <% end %>
-    </div>
-  <% end %>
+    <%# Join CTA %>
+    <% if !@is_participant && !@is_gm && !@scene.private? && !@scene.resolved? && @current_membership&.active? %>
+      <%= button_to "Join Scene", join_game_scene_participants_path(@game, @scene), method: :post,
+            class: "w-full bg-accent text-accent-ink rounded-control py-2.5 font-bold text-sm cursor-pointer border-0" %>
+    <% end %>
 
-  <!-- Post Thread -->
-  <div id="posts" class="mt-4 border-t border-slate-100 pt-4" data-controller="unread-aura">
-    <% if @posts.empty? %>
-      <p id="no_posts_message" class="text-slate-400 m-0">No posts yet. Be the first!</p>
-    <% else %>
-      <% @post_presenters.each do |post_presenter| %>
-        <%= render Shared::PostItemComponent.new(
-              post: post_presenter,
-              game: @game,
-              current_user: current_user,
-              scene: @scene,
-              read_post_ids: @read_post_ids
-            ) %>
+    <%# Scene summary %>
+    <% if @scene.resolved? %>
+      <% if @scene.scene_summary %>
+        <%= render Shared::SceneSummaryComponent.new(
+              summary: SceneSummaryPresenter.new(@scene.scene_summary), game: @game, scene: @scene, is_gm: @is_gm) %>
+      <% elsif @is_gm %>
+        <%= link_to "Write Summary", new_game_scene_scene_summary_path(@game, @scene),
+              class: "block text-center bg-accent text-accent-ink rounded-control py-2.5 font-bold text-sm no-underline" %>
       <% end %>
     <% end %>
-  </div>
-</div>
 
-<% if !@is_participant && !@is_gm && !@scene.private? && !@scene.resolved? && @current_membership&.active? %>
-  <div class="mt-4 text-center">
-    <%= button_to "Join Scene", join_game_scene_participants_path(@game, @scene), method: :post, class: "px-5 py-2 bg-slate-500 text-white rounded text-base cursor-pointer hover:bg-slate-600 inline-block no-underline" %>
-  </div>
-<% end %>
+    <%# Draft recovery notice for resolved scenes %>
+    <% if @scene.resolved? && @draft %>
+      <div class="bg-tint-blue-bg border border-tint-blue-border rounded-card p-4">
+        <p class="text-sm font-semibold text-tint-blue-strong mb-2">You have an unsaved draft from this scene.</p>
+        <div class="markdown-base post-content text-sm text-body-ink mb-3 border border-tint-blue-border rounded-control p-3 bg-card"><%= render_markdown(@draft.content.to_s) %></div>
+        <%= button_to "Discard Draft", discard_draft_game_scene_posts_path(@game, @scene), method: :delete,
+              class: "text-xs font-semibold text-danger bg-transparent border-0 cursor-pointer p-0" %>
+      </div>
+    <% end %>
 
-</div><!-- end ooc-filter -->
-
-<!-- Scene Summary (resolved scenes only) -->
-<% if @scene.resolved? %>
-  <% if @scene.scene_summary %>
-    <%= render Shared::SceneSummaryComponent.new(
-          summary: SceneSummaryPresenter.new(@scene.scene_summary),
-          game: @game,
-          scene: @scene,
-          is_gm: @is_gm
-        ) %>
-  <% elsif @is_gm %>
-    <%= link_to "Write Summary", new_game_scene_scene_summary_path(@game, @scene),
-        class: "mt-6 px-5 py-2 bg-slate-500 text-white rounded text-base cursor-pointer hover:bg-slate-600 inline-block no-underline" %>
+    <%# Composer %>
+    <% if (@is_participant || @is_gm) && !@scene.resolved? && @game.member_for(current_user)&.active? %>
+      <div id="post_composer" class="bg-card border border-card-border rounded-post p-4">
+        <%= render Shared::PostComposerComponent.new(post: @post, game: @game, scene: @scene, draft: @draft) %>
+      </div>
+    <% end %>
   <% end %>
-<% end %>
-
-<!-- Draft recovery notice for resolved scenes -->
-<% if @scene.resolved? && @draft %>
-  <div class="bg-amber-50 border border-amber-200 rounded-lg p-4 mt-4">
-    <p class="text-sm font-medium text-amber-800 mb-2">You have an unsaved draft from this scene.</p>
-    <div class="markdown-base post-content text-sm text-slate-700 mb-3 border border-amber-100 rounded p-3 bg-white"><%= render_markdown(@draft.content.to_s) %></div>
-    <%= button_to "Discard Draft",
-        discard_draft_game_scene_posts_path(@game, @scene),
-        method: :delete,
-        class: "px-3 py-1.5 bg-transparent border border-amber-300 text-amber-700 rounded text-sm cursor-pointer hover:bg-amber-100" %>
-  </div>
-<% end %>
-
-<!-- Post Composer -->
-<% if (@is_participant || @is_gm) && !@scene.resolved? && @game.member_for(current_user)&.active? %>
-  <div id="post_composer" class="bg-white border border-slate-200 rounded-lg p-5 mb-4 mt-6">
-    <%= render Shared::PostComposerComponent.new(post: @post, game: @game, scene: @scene, draft: @draft) %>
-  </div>
-<% end %>
+</div>

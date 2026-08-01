@@ -19,6 +19,8 @@ RSpec.describe Shared::PostItemComponent, type: :component do
 
   subject(:component) { described_class.new(post: presenter, game: game, current_user: user) }
 
+  before { allow(game).to receive(:game_master?).and_return(false) }
+
   def rendered_component
     render_inline(component)
     page
@@ -26,6 +28,40 @@ RSpec.describe Shared::PostItemComponent, type: :component do
 
   it "renders the post wrapper with the correct dom id" do
     expect(rendered_component).to have_css("##{ActionView::RecordIdentifier.dom_id(post)}")
+  end
+
+  describe "#ooc?" do
+    it "is false for an in-character post" do
+      expect(component.ooc?).to be false
+    end
+  end
+
+  describe "#card_classes" do
+    it "uses the white card tint for an in-character post" do
+      expect(component.card_classes).to include("bg-card").and include("attn-item")
+      expect(component.card_classes).not_to include("is-hot")
+      expect(component.card_classes).not_to include("bg-tint-blue-bg")
+    end
+
+    it "adds is-hot when the post is unread" do
+      recent = build_stubbed(:post, user: user, scene: scene, content: "New", is_ooc: false,
+        last_edited_at: nil, created_at: 1.hour.ago).tap { |p| allow(p).to receive(:game).and_return(game) }
+      c = described_class.new(post: PostPresenter.new(recent), game: game, current_user: user,
+        scene: scene, read_post_ids: Set.new)
+      expect(c.card_classes).to include("is-hot")
+    end
+  end
+
+  describe "#avatar_tone" do
+    it "is gold when the author is not the GM" do
+      allow(game).to receive(:game_master?).with(user).and_return(false)
+      expect(component.avatar_tone).to eq(:gold)
+    end
+
+    it "is dark when the author is the GM" do
+      allow(game).to receive(:game_master?).with(user).and_return(true)
+      expect(component.avatar_tone).to eq(:dark)
+    end
   end
 
   it "renders the author display name" do
@@ -54,6 +90,15 @@ RSpec.describe Shared::PostItemComponent, type: :component do
     it "renders the OOC badge" do
       expect(rendered_component).to have_css("[data-testid='ooc-post']")
       expect(rendered_component).to have_text("OOC")
+    end
+
+    it "reports ooc? true" do
+      expect(component.ooc?).to be true
+    end
+
+    it "uses the blue tint for the card" do
+      expect(component.card_classes).to include("bg-tint-blue-bg")
+      expect(component.card_classes).not_to include("bg-card")
     end
   end
 

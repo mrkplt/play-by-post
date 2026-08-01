@@ -13,6 +13,50 @@ RSpec.describe ExportJob, type: :job do
     ActiveJob::Base.queue_adapter = original_adapter
   end
 
+  describe "#perform (end to end, real attachment)" do
+    before do
+      allow_any_instance_of(GameExportService).to receive(:call).and_return("zip-bytes")
+      allow(ExportMailer).to receive(:export_ready).and_return(double(deliver_later: true))
+    end
+
+    it "attaches a real archive, stamps the receipt, and emails a download link" do
+      ExportJob.new.perform(export_request.id)
+
+      export_request.reload
+      expect(export_request.archive).to be_attached
+      expect(export_request.archive.filename.to_s).to match(/-export-\d{4}-\d{2}-\d{2}\.zip\z/)
+      expect(export_request.succeeded_at).to be_present
+      expect(ExportMailer).to have_received(:export_ready).with(
+        user, hash_including(game: game)
+      )
+    end
+
+    it "builds the export from only the requested game" do
+      other_game = create(:game)
+      create(:game_member, :game_master, game: other_game, user: user)
+
+      expect(GameExportService).to receive(:new).with(user, [ game ]).and_call_original
+
+      ExportJob.new.perform(export_request.id)
+    end
+
+    it "for an all-games request, includes active and removed games but not banned" do
+      active = create(:game); removed = create(:game); banned = create(:game)
+      create(:game_member, game: active, user: user, status: "active")
+      create(:game_member, :removed, game: removed, user: user)
+      create(:game_member, :banned, game: banned, user: user)
+      all_request = create(:game_export_request, :all_games, user: user)
+
+      expect(GameExportService).to receive(:new) do |_user, games|
+        expect(games).to include(active, removed)
+        expect(games).not_to include(banned)
+        instance_double(GameExportService, call: "zip-bytes")
+      end
+
+      ExportJob.new.perform(all_request.id)
+    end
+  end
+
   describe "#perform" do
     it "builds zip via GameExportService, attaches to request, and sends export_ready mail" do
       zip_double = "fake-zip-data"
@@ -40,6 +84,15 @@ RSpec.describe ExportJob, type: :job do
       expect(AttachmentUploader).to have_received(:attach).with(
         hash_including(kind: "export", user: user, game: game, export_scope: game.name)
       )
+      expect(export_request.reload.succeeded_at).to be_present
+    end
+
+    it "does not set succeeded_at when the export fails" do
+      allow_any_instance_of(GameExportService).to receive(:call).and_raise(StandardError, "boom")
+      allow(ExportMailer).to receive(:export_failed).and_return(double(deliver_later: true))
+
+      expect { ExportJob.new.perform(export_request.id) }.to raise_error(StandardError)
+      expect(export_request.reload.succeeded_at).to be_nil
     end
 
     it "attaches the archive with a slug-based filename" do

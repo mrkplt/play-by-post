@@ -59,4 +59,14 @@ class PostPresenter < BasePresenter
   def display_image
     @model.display_image # mutant:disable
   end
+
+  sig { returns(User) }
+  def user
+    @model.user # mutant:disable
+  end
+
+  sig { returns(Scene) }
+  def scene
+    @model.scene # mutant:disable
+  end
 end

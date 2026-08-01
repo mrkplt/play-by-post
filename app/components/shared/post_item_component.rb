@@ -28,4 +28,25 @@ class Shared::PostItemComponent < ApplicationComponent
 
     !@read_post_ids.include?(@post.id)
   end
+
+  sig { returns(T::Boolean) }
+  def ooc?
+    @post.is_ooc?
+  end
+
+  # Manuscript-style card. In-character posts are white; OOC posts take the
+  # quiet blue tint (same family as former/retired). Unread posts glow.
+  sig { returns(String) }
+  def card_classes
+    base = "attn-item rounded-post p-4 mb-3.5 last:mb-0"
+    tint = ooc? ? "bg-tint-blue-bg border border-tint-blue-border" : "bg-card border border-card-border"
+    hot = unread? ? "is-hot" : ""
+    [ base, tint, hot ].reject(&:empty?).join(" ")
+  end
+
+  # Avatar tone: the GM's monogram is dark, players' are gold.
+  sig { returns(Symbol) }
+  def avatar_tone
+    @game.game_master?(@post.user) ? :dark : :gold
+  end
 end

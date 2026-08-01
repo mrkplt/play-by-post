@@ -70,4 +70,34 @@
 
   .main-with-sidebar { @apply md:ml-[17.5rem]; }
   .content-area { @apply px-6 py-6 pt-16 md:pt-6 max-w-4xl mx-auto; }
+
+  /*
+   * Nav drawer (mobile-first redesign) — a slide-in overlay at all widths,
+   * opened by the hamburger in each screen's dark header. Reuses the `sidebar`
+   * Stimulus controller (data-open / backdrop).
+   */
+  .nav-drawer {
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    z-index: 50;
+    transform: translateX(-100%);
+    transition: transform 0.2s ease;
+  }
+  .nav-drawer[data-open] { transform: translateX(0); }
+
+  .nav-drawer-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 45;
+  }
+
+  /* Redesigned screens are full-bleed mobile frames — dark header + light body,
+     no side gutter or max-width. */
+  .app-frame {
+    @apply min-h-screen flex flex-col bg-canvas max-w-2xl mx-auto overflow-x-hidden;
+  }
+  .app-body {
+    @apply flex-1 px-4 py-4 flex flex-col gap-3;
+  }
 }

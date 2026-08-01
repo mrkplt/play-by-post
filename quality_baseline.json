@@ -7,5 +7,7 @@
   "component_css_statements": 237,
   "css_in_components_pct": 22.36,
   "presenter_method_violations": 0,
+  "raw_hex_class_violations": 0,
+  "mutant_registration_violations": 0,
   "saved_at": "2026-04-16T12:51:41+00:00"
 }

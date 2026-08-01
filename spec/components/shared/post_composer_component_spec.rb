@@ -26,7 +26,7 @@ RSpec.describe Shared::PostComposerComponent, type: :component do
 
   it "renders the submit button" do
     expect(rendered_component).to have_css("[data-testid='composer-actions']")
-    expect(rendered_component).to have_css("input[type='submit'][value='Post']")
+    expect(rendered_component).to have_css("input[type='submit'][value='POST']")
   end
 
   it "renders the OOC checkbox" do

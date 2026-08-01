@@ -3,11 +3,10 @@ require "rails_helper"
 RSpec.describe Shared::NavShellComponent, type: :component do
   subject(:component) { described_class.new(current_user: current_user) }
 
-  let(:current_user) { build_stubbed(:user, email: "jane@example.com") }
+  let(:current_user) { create(:user, email: "jane@example.com") }
 
   before do
-    allow(current_user).to receive(:display_name).and_return("Jane Doe")
-    allow(current_user).to receive(:games).and_return(double(any?: false))
+    create(:user_profile, user: current_user, display_name: "Jane Doe")
   end
 
   def rendered_component
@@ -15,27 +14,25 @@ RSpec.describe Shared::NavShellComponent, type: :component do
     page
   end
 
-  it "passes current_user to the sidebar" do
+  it "renders the nav drawer with the user's name" do
     expect(rendered_component).to have_text("Jane Doe")
   end
 
-  it "renders the hamburger button" do
-    expect(rendered_component).to have_css("button[aria-label='Open navigation']")
+  it "renders the drawer backdrop" do
+    expect(rendered_component).to have_css(".nav-drawer-backdrop", visible: :all)
   end
 
-  it "renders the backdrop" do
-    expect(rendered_component).to have_css(".sidebar-backdrop", visible: :all)
-  end
-
-  it "renders the sidebar aside" do
-    expect(rendered_component).to have_css("aside.sidebar")
-  end
-
-  it "wires the hamburger to the sidebar controller open action" do
-    expect(rendered_component).to have_css("button[data-action='click->sidebar#open']")
+  it "renders the drawer aside" do
+    expect(rendered_component).to have_css("aside.nav-drawer")
   end
 
   it "wires the backdrop to the sidebar controller close action" do
-    expect(rendered_component).to have_css("[data-action='click->sidebar#close']")
+    expect(rendered_component).to have_css(".nav-drawer-backdrop[data-action='click->sidebar#close']", visible: :all)
+  end
+
+  it "exposes current_user and active_game_id" do
+    c = described_class.new(current_user: current_user, active_game_id: 7)
+    expect(c.current_user).to eq(current_user)
+    expect(c.active_game_id).to eq(7)
   end
 end

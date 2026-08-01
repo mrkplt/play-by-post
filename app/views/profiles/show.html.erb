@@ -1,54 +1,39 @@
-<div class="mb-10">
-  <div class="flex items-center justify-between mb-4">
-    <h1 class="m-0 text-xl font-semibold">Profile</h1>
-    <div class="flex gap-2">
-      <%= link_to "Edit Profile", edit_profile_path, class: "px-5 py-2 bg-slate-500 text-white rounded text-base cursor-pointer hover:bg-slate-600 inline-block no-underline" %>
-      <% if @export_all_rate_limited %>
-        <button disabled class="px-5 py-2 bg-slate-300 text-slate-500 rounded text-base cursor-not-allowed inline-block" title="Export requested — check your email">Export All Games</button>
-      <% else %>
-        <%= button_to "Export All Games", export_all_profile_path, method: :post,
-              class: "px-5 py-2 bg-slate-500 text-white rounded text-base cursor-pointer hover:bg-slate-600 inline-block",
-              form: { data: {
-                controller: "form-confirm",
-                action: "submit->form-confirm#confirm",
-                form_confirm_message_value: "Request an export of all your games? You'll receive an email with a download link within a few minutes. The link expires after 7 days."
-              } } %>
-      <% end %>
-    </div>
-  </div>
-
-  <div class="bg-white border border-slate-200 rounded-lg p-5 mb-4">
-    <div class="mb-4">
-      <div class="text-xs text-slate-400 uppercase tracking-wide">Display Name</div>
-      <div class="text-lg font-semibold"><%= @profile.display_name.presence || "Not set" %></div>
-    </div>
-    <div class="mb-4">
-      <div class="text-xs text-slate-400 uppercase tracking-wide">Email</div>
-      <div><%= current_user.email %></div>
-    </div>
-    <div>
-      <div class="text-xs text-slate-400 uppercase tracking-wide">Hide OOC Posts</div>
-      <div><%= @profile.hide_ooc? ? "Yes" : "No" %></div>
-    </div>
-  </div>
-</div>
-
-<%= render Shared::RssTokenComponent.new(rss_token: current_user.rss_token) %>
-
-<div class="mb-10">
-  <h2>My Games</h2>
-  <% if @memberships.empty? %>
-    <p class="text-slate-400">You're not in any games yet.</p>
-  <% else %>
-    <% @memberships.each do |membership| %>
-      <div class="bg-white border border-slate-200 rounded-lg p-5 mb-2">
-        <div class="flex justify-between items-center">
-          <%= link_to membership.game.name, game_path(membership.game), class: "font-semibold no-underline text-inherit" %>
-          <span class="<%= membership.game_master? ? 'bg-blue-100 text-blue-700' : membership.removed? ? 'bg-slate-100 text-slate-600' : 'bg-green-100 text-green-800' %> inline-block px-2 py-0.5 rounded-full text-xs font-semibold">
-            <%= membership.game_master? ? "GM" : membership.removed? ? "Former" : "Player" %>
-          </span>
-        </div>
-      </div>
-    <% end %>
+<%= render Shared::MobileFrameComponent.new do |frame| %>
+  <% frame.with_header do %>
+    <%= render Shared::PageHeaderComponent.new(title: "Profile", leading: :back, back_href: root_path) %>
   <% end %>
-</div>
+
+  <%# Display Name %>
+  <%= render Ui::SectionLabelComponent.new do %>Display Name<% end %>
+  <div class="bg-card border border-card-border rounded-card px-3.5">
+    <%= render Ui::SettingsRowComponent.new(label: @profile.display_name.presence || "Not set", last: true) do %>
+      <%= link_to "Edit", edit_profile_path, class: "text-xs font-bold text-accent no-underline" %>
+    <% end %>
+  </div>
+
+  <%# Email + Preferences %>
+  <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do %>Account<% end %>
+  <div class="bg-card border border-card-border rounded-card px-3.5">
+    <%= render Ui::SettingsRowComponent.new(label: "Email", sub: current_user.email) do %>
+    <% end %>
+    <%= render Ui::SettingsRowComponent.new(label: "Hide OOC by default", sub: "Collapse out-of-character posts", last: true) do %>
+      <%= button_to toggle_hide_ooc_profile_path, method: :post, class: "bg-transparent border-0 p-0 cursor-pointer",
+            "aria-label": (@profile.hide_ooc? ? "Show OOC posts by default" : "Hide OOC posts by default") do %>
+        <%= render Ui::ToggleSwitchComponent.new(on: @profile.hide_ooc?) %>
+      <% end %>
+    <% end %>
+  </div>
+
+  <%# RSS Feed Token %>
+  <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do %>RSS Feed Token<% end %>
+  <%= render Shared::RssTokenComponent.new(rss_token: current_user.rss_token) %>
+
+  <%# Export %>
+  <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do %>Export<% end %>
+  <div class="bg-card border border-card-border rounded-card px-3.5">
+    <%= render Ui::SettingsRowComponent.new(label: "All your games", sub: export_all_games_notice(@export_all_receipt), last: true) do %>
+      <%= button_to "Export All Games", export_all_profile_path, method: :post,
+            class: "text-xs font-bold text-accent bg-transparent border-0 cursor-pointer p-0" %>
+    <% end %>
+  </div>
+<% end %>

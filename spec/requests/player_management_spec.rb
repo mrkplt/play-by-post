@@ -44,6 +44,14 @@ RSpec.describe PlayerManagementController, type: :request do
       expect(response.body).to include("Quest Master")
     end
 
+    it "shows a member's character name as their subtitle" do
+      player.user_profile.update!(display_name: "Quest Master")
+      create(:character, game: game, user: player, name: "Thorin Oakenshield")
+      sign_in(gm)
+      get game_player_management_path(game)
+      expect(response.body).to include("Thorin Oakenshield")
+    end
+
     it "shows pending invitation email" do
       create(:invitation, game: game, email: "invited@example.com", invited_by: gm)
       sign_in(gm)

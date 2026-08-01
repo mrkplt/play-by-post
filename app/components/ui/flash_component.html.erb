@@ -1,0 +1,10 @@
+<% if any? %>
+  <div class="max-w-2xl mx-auto px-4 pt-3">
+    <% if notice.present? %>
+      <p class="px-4 py-3 rounded mb-2 text-sm bg-green-100 text-green-800"><%= notice %></p>
+    <% end %>
+    <% if alert.present? %>
+      <p class="px-4 py-3 rounded mb-2 text-sm bg-red-50 text-red-800"><%= alert %></p>
+    <% end %>
+  </div>
+<% end %>
