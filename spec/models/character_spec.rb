@@ -67,6 +67,40 @@ RSpec.describe Character, type: :model do
       expect(character.save).to be false
       expect(character).not_to have_received(:snapshot_version)
     end
+
+    it "rolls back the save itself when the snapshot fails, because both share one transaction" do
+      character = create(:character, content: "Original")
+      allow(character).to receive(:snapshot_version).and_raise("boom")
+
+      character.content = "Changed"
+      expect { character.save }.to raise_error("boom")
+
+      expect(character.reload.content).to eq("Original")
+    end
+
+    it "rolls back save! itself when the snapshot fails, because both share one transaction" do
+      character = create(:character, content: "Original")
+      allow(character).to receive(:snapshot_version).and_raise("boom")
+
+      character.content = "Changed"
+      expect { character.save! }.to raise_error("boom")
+
+      expect(character.reload.content).to eq("Original")
+    end
+
+    it "actually creates the character_version row, unstubbed, with the current content and editor" do
+      editor = create(:user, :with_profile)
+      character = create(:character, content: "Some content")
+      Current.user = editor
+
+      character.update!(content: "Updated content")
+
+      version = character.character_versions.last
+      expect(version.content).to eq("Updated content")
+      expect(version.edited_by).to eq(editor)
+    ensure
+      Current.user = nil
+    end
   end
 
   # The branching is the logic and is now a pure decision; applying it to a

@@ -220,6 +220,15 @@ RSpec.describe PostDigestJob, type: :job do
       expect(NotificationMailer).not_to have_received(:post_digest)
     end
 
+    it "still mails a later participant after skipping one with no user" do
+      userless = build_stubbed(:scene_participant, user: nil)
+      allow(job).to receive(:participants_for).with(scene).and_return([ userless, participant ])
+
+      job.perform
+
+      expect(NotificationMailer).to have_received(:post_digest).with(scene, recipient, [ post ])
+    end
+
     it "asks the rule about that scene, user and participant" do
       job.perform
 

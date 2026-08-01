@@ -24,7 +24,7 @@ RSpec.describe GameExportService do
   def zip_file_content(zip_data, name)
     Zip::InputStream.open(StringIO.new(zip_data)) do |zip|
       while (entry = zip.get_next_entry)
-        return zip.read if entry.name == name
+        return zip.read.force_encoding(Encoding::UTF_8) if entry.name == name
       end
     end
     nil
@@ -79,6 +79,43 @@ RSpec.describe GameExportService do
 
       expect(readme).to include("_No description._")
     end
+
+    # Exact-content pin — every literal, header and blank line in one assertion,
+    # so a mutation to any of them (not just the fragments above) fails.
+    it "renders the full document byte for byte" do
+      Timecop.freeze(Time.utc(2026, 6, 15, 9, 30)) do
+        content = readme(
+          members: [
+            member(display_name: "Dana", role: "game_master"),
+            member(display_name: "Gus", status: "removed")
+          ],
+          scenes: [ build_stubbed(:scene), build_stubbed(:scene, :resolved) ]
+        )
+
+        expected = [
+          "# Test Game",
+          "",
+          "A test game.",
+          "",
+          "**Exported:** 2026-06-15 09:30 UTC",
+          "",
+          "## Members",
+          "",
+          "| Display Name | Role | Status |",
+          "|---|---|---|",
+          "| Dana | GM | Active |",
+          "| Gus | Player | Former |",
+          "",
+          "## Scenes",
+          "",
+          "- Active: 1",
+          "- Resolved: 1",
+          ""
+        ].join("\n")
+
+        expect(content).to eq(expected)
+      end
+    end
   end
 
   # posts.md and files_manifest.md are string building over a list. Stub the one
@@ -88,10 +125,10 @@ RSpec.describe GameExportService do
     let(:exported_scene) { build_stubbed(:scene) }
     let(:service) { described_class.new(build_stubbed(:user), []) }
 
-    def post_double(content: "Hello world!", author: "Alice", ooc: false, edited: nil)
+    def post_double(content: "Hello world!", author: "Alice", ooc: false, edited: nil, created_at: Time.utc(2026, 1, 1, 12, 0))
       double(
         user: double(display_name: author, email: "alice@example.com"),
-        created_at: Time.utc(2026, 1, 1, 12, 0),
+        created_at: created_at,
         last_edited_at: edited,
         is_ooc?: ooc,
         content: content
@@ -128,6 +165,32 @@ RSpec.describe GameExportService do
 
     it "does not mark unedited posts" do
       expect(posts_md([ post_double ])).not_to include("(edited)")
+    end
+
+    it "renders every post exactly, in order, separated by a rule" do
+      posts = [
+        post_double(content: "Hello world!", author: "Alice", created_at: Time.utc(2026, 1, 1, 12, 0)),
+        post_double(content: "Random chatter", author: "Bob", ooc: true, edited: Time.utc(2026, 1, 2),
+                     created_at: Time.utc(2026, 1, 2, 9, 30))
+      ]
+
+      expected = [
+        "## Alice — 2026-01-01 12:00 UTC",
+        "",
+        "Hello world!",
+        "",
+        "---",
+        "",
+        "## Bob — 2026-01-02 09:30 UTC (edited)",
+        "[Out of Character]",
+        "",
+        "Random chatter",
+        "",
+        "---",
+        ""
+      ].join("\n")
+
+      expect(posts_md(posts)).to eq(expected)
     end
   end
 
@@ -175,6 +238,32 @@ RSpec.describe GameExportService do
 
     it "shows unknown when the attachment is missing" do
       expect(manifest([ file_double(attached: false) ])).to include("unknown")
+    end
+
+    it "renders the full document byte for byte with files" do
+      expected = [
+        "# Game Files",
+        "",
+        "| Filename | Type | Size | Uploaded |",
+        "|---|---|---|---|",
+        "| rules.pdf | application/pdf | 500 B | 2026-01-01 |",
+        "",
+        "_Binary files are not included in this export. The game's GM can download them from the app._",
+        ""
+      ].join("\n")
+
+      expect(manifest([ file_double ])).to eq(expected)
+    end
+
+    it "renders the full document byte for byte with no files" do
+      expected = [
+        "# Game Files",
+        "",
+        "_No files uploaded._",
+        ""
+      ].join("\n")
+
+      expect(manifest([])).to eq(expected)
     end
   end
 
@@ -233,6 +322,74 @@ RSpec.describe GameExportService do
       sp = build_stubbed(:scene_participant, user: user, character: nil)
 
       expect(info(build_stubbed(:scene), participants: [ sp ])).to include("| Gus | — |")
+    end
+
+    it "renders the full document byte for byte, every section present" do
+      parent = build_stubbed(:scene, title: "The Tavern")
+      scene = build_stubbed(:scene, :resolved,
+        title: "The Sunken Archive",
+        description: "A drowned library.",
+        created_at: Time.utc(2026, 1, 2),
+        resolved_at: Time.utc(2026, 1, 10),
+        resolution: "The archive was recovered.",
+        parent_scene: parent)
+
+      character = build_stubbed(:character, name: "Aria")
+      dana = build_stubbed(:user)
+      allow(dana).to receive(:display_name).and_return("Dana")
+      sp_with_character = build_stubbed(:scene_participant, user: dana, character: character)
+
+      gus = build_stubbed(:user)
+      allow(gus).to receive(:display_name).and_return("Gus")
+      sp_without_character = build_stubbed(:scene_participant, user: gus, character: nil)
+
+      expected = [
+        "# The Sunken Archive",
+        "",
+        "A drowned library.",
+        "",
+        "**Status:** Resolved",
+        "**Created:** 2026-01-02",
+        "**Resolved:** 2026-01-10",
+        "",
+        "## Parent Scene",
+        "",
+        "The Tavern",
+        "",
+        "## Participants",
+        "",
+        "| Display Name | Character |",
+        "|---|---|",
+        "| Dana | Aria |",
+        "| Gus | — |",
+        "",
+        "## Resolution",
+        "",
+        "The archive was recovered.",
+        ""
+      ].join("\n")
+
+      expect(info(scene, participants: [ sp_with_character, sp_without_character ])).to eq(expected)
+    end
+
+    it "renders the full document byte for byte, every optional section absent" do
+      scene = build_stubbed(:scene,
+        title: "First Contact",
+        description: "",
+        created_at: Time.utc(2026, 2, 3),
+        parent_scene: nil)
+
+      expected = [
+        "# First Contact",
+        "",
+        "_No description._",
+        "",
+        "**Status:** Active",
+        "**Created:** 2026-02-03",
+        ""
+      ].join("\n")
+
+      expect(info(scene, participants: [])).to eq(expected)
     end
   end
 
@@ -408,6 +565,52 @@ RSpec.describe GameExportService do
     end
   end
 
+  # Which membership gets which scenes is exactly what the query has to select
+  # on: a real, persisted graph is needed so a wrong join, where clause, or
+  # branch actually changes what comes back — a stubbed relation can't fail
+  # this the way a real one does.
+  describe "#export_scenes_for" do
+    let(:service) { described_class.new(player_user, [ game ]) }
+
+    it "gives the GM every scene in the game, including private ones" do
+      secret = create(:scene, :private, game: game, title: "Secret Room")
+
+      result = described_class.new(gm_user, [ game ]).send(:export_scenes_for, game, gm_member)
+
+      expect(result).to contain_exactly(scene, secret)
+    end
+
+    it "limits a removed member to scenes they participated in" do
+      removed_user = create(:user, :with_profile)
+      removed_member = create(:game_member, :removed, game: game, user: removed_user)
+      create(:scene_participant, scene: scene, user: removed_user)
+      elsewhere = create(:scene, game: game, title: "Elsewhere")
+
+      result = described_class.new(removed_user, [ game ]).send(:export_scenes_for, game, removed_member)
+
+      expect(result).to contain_exactly(scene)
+      expect(result).not_to include(elsewhere)
+    end
+
+    it "gives an active player the scenes visible to them, not private ones they're not in" do
+      create(:scene, :private, game: game, title: "Secret Room")
+
+      result = service.send(:export_scenes_for, game, player_member)
+
+      expect(result).to contain_exactly(scene)
+    end
+
+    it "scopes visible scenes to the requested game, not every game the viewer can see" do
+      other_game = create(:game, name: "Other Game")
+      create(:game_member, game: other_game, user: player_user, role: "player", status: "active")
+      create(:scene, game: other_game, title: "Elsewhere Entirely")
+
+      result = service.send(:export_scenes_for, game, player_member)
+
+      expect(result).to contain_exactly(scene)
+    end
+  end
+
   describe "#call (zip layout)" do
     let(:export_user) { build_stubbed(:user) }
     let(:gm_member) { build_stubbed(:game_member, role: "game_master", status: "active") }
@@ -483,6 +686,54 @@ RSpec.describe GameExportService do
 
         expect(entries).to include(a_string_matching(%r{all-games-export-[\d-]+/alpha/}))
         expect(entries).to include(a_string_matching(%r{all-games-export-[\d-]+/beta/}))
+      end
+    end
+
+    # Each write_* method's only job is wiring a real content builder to the
+    # right zip entry. Every content builder is pinned exactly above; here it's
+    # enough to show the bytes written for a given entry match what that
+    # (already-trusted) builder produces for the same inputs — this catches a
+    # write_* mutation swapping the argument, dropping the write, or misnaming
+    # the entry, without re-pinning the content itself.
+    describe "content wiring" do
+      let(:one_scene) { build_stubbed(:scene, title: "Opening Scene") }
+      let(:one_character) { build_stubbed(:character, name: "Aria") }
+      let(:one_version) { build_stubbed(:character_version, created_at: Time.utc(2026, 5, 6), edited_by: build_stubbed(:user)) }
+
+      it "writes the readme's own content under README.md" do
+        service = build_service(one_game)
+        zip_data = service.call
+        name = zip_entries(zip_data).find { |e| e.end_with?("README.md") }
+
+        expect(zip_file_content(zip_data, name)).to eq(service.send(:readme_content, one_game.first, []))
+      end
+
+      it "writes the files manifest's own content under files_manifest.md" do
+        service = build_service(one_game)
+        zip_data = service.call
+        name = zip_entries(zip_data).find { |e| e.end_with?("files_manifest.md") }
+
+        expect(zip_file_content(zip_data, name)).to eq(service.send(:files_manifest_content, one_game.first))
+      end
+
+      it "writes each scene's own info and posts content" do
+        service = build_service(one_game, scenes: [ one_scene ])
+        zip_data = service.call
+        info_name = zip_entries(zip_data).find { |e| e.end_with?("scene_info.md") }
+        posts_name = zip_entries(zip_data).find { |e| e.end_with?("posts.md") }
+
+        expect(zip_file_content(zip_data, info_name)).to eq(service.send(:scene_info_content, one_scene))
+        expect(zip_file_content(zip_data, posts_name)).to eq(service.send(:posts_content, one_scene))
+      end
+
+      it "writes each character's own sheet and version content" do
+        service = build_service(one_game, characters: [ one_character ], versions: [ one_version ])
+        zip_data = service.call
+        sheet_name = zip_entries(zip_data).find { |e| e.end_with?("current_sheet.md") }
+        version_name = zip_entries(zip_data).find { |e| e.include?("version_history/") }
+
+        expect(zip_file_content(zip_data, sheet_name)).to eq(service.send(:character_sheet_content, one_character))
+        expect(zip_file_content(zip_data, version_name)).to eq(service.send(:character_version_content, one_version, 1))
       end
     end
   end

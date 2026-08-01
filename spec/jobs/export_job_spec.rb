@@ -172,6 +172,7 @@ RSpec.describe ExportJob, type: :job do
       expect(selector.games_for(user, nil)).to eq(wanted)
       expect(relation).to have_received(:where).with(status: %w[active removed])
       expect(relation).to have_received(:not).with(status: "banned")
+      expect(relation).to have_received(:includes).with(:game)
     end
   end
 end

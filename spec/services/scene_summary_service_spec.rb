@@ -188,6 +188,65 @@ RSpec.describe SceneSummaryService do
     it "includes the scene description when present" do
       expect(prompt_for([])).to include("Scene description: A dark tavern")
     end
+
+    it "renders the full prompt template byte for byte" do
+      titled_scene = build_stubbed(:scene, title: "The Sunken Tavern", description: "A dark tavern")
+      titled_service = described_class.new(titled_scene)
+      posts = [ post_double(content: "dice roll", ooc: true), post_double(content: "sword drawn") ]
+      allow(titled_service).to receive(:posts_for_prompt).and_return(posts)
+
+      expected = <<~PROMPT
+        You are a campaign chronicler for a tabletop RPG. Write a narrative summary of
+        the following scene as it would appear in a campaign log — vivid, in-character
+        prose, past tense, no game-mechanics language.
+
+        Scene title: The Sunken Tavern
+        Scene description: A dark tavern
+
+
+        Posts (in chronological order):
+        [OOC] Dana: dice roll
+
+        Dana: sword drawn
+
+        Rules:
+        - Posts marked [OOC] are out-of-character. Include their content only when it
+          directly shapes the fiction (e.g. a player describing their character's inner
+          state). Ignore dice rolls, rule references, scheduling notes, and table talk.
+        - Write from an omniscient narrator perspective; do not invent events not present
+          in the posts.
+        - Length: 150–400 words unless the scene warrants more.
+      PROMPT
+
+      expect(titled_service.send(:prompt)).to eq(expected)
+    end
+
+    it "renders the full prompt template byte for byte with no description and no posts" do
+      bare_scene = build_stubbed(:scene, title: "The Sunken Tavern", description: "")
+      bare_service = described_class.new(bare_scene)
+      allow(bare_service).to receive(:posts_for_prompt).and_return([])
+
+      expected = <<~PROMPT
+        You are a campaign chronicler for a tabletop RPG. Write a narrative summary of
+        the following scene as it would appear in a campaign log — vivid, in-character
+        prose, past tense, no game-mechanics language.
+
+        Scene title: The Sunken Tavern
+
+        Posts (in chronological order):
+
+
+        Rules:
+        - Posts marked [OOC] are out-of-character. Include their content only when it
+          directly shapes the fiction (e.g. a player describing their character's inner
+          state). Ignore dice rolls, rule references, scheduling notes, and table talk.
+        - Write from an omniscient narrator perspective; do not invent events not present
+          in the posts.
+        - Length: 150–400 words unless the scene warrants more.
+      PROMPT
+
+      expect(bare_service.send(:prompt)).to eq(expected)
+    end
   end
 
   describe "#posts_for_prompt" do
