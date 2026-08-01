@@ -293,10 +293,10 @@ RSpec.describe GamesController, type: :request do
       expect(response.body).not_to include("Retired Hero")
     end
 
-    it "shows the Export Game button when not rate limited" do
+    it "does not show the Export Game button on the game view (it lives on the settings page)" do
       sign_in(gm)
       get game_path(game)
-      expect(response.body).to include("Export Game")
+      expect(response.body).not_to include("Export Game")
     end
 
     it "shows GM management controls for GM" do

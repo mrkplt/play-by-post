@@ -59,18 +59,20 @@ For technology stack, domain model, codebase conventions, and development workfl
 
 ## Game View
 
-- The game area is a single page (`games#show`) with three **pill tabs in the dark header — Scenes / Roster / Files — switched client-side** (no page navigation). The header shows a hamburger (opens the nav drawer), a GM crown (only when the viewer is GM), the game title, and a gear (Player Management, GM-only). The active tab is deep-linkable via the URL hash.
-- **Scenes tab**: active (unresolved) scenes as cards showing just title + participant count (plus parent/child links where threaded), most recent first, with an attention glow on scenes with new activity. Below: an "In Active Scenes" roster preview (the GM as a person with a crown, then characters and the scene they're in — never a banned player), a "New Scene" action (GM), and an "Export Game" row (any non-banned member; shows the last-export notice).
+- The game area is a single page (`games#show`) with three **pill tabs in the dark header — Scenes / Roster / Files — switched client-side** (no page navigation). The header shows a hamburger (opens the nav drawer), a GM crown (only when the viewer is GM), the game title, and a gear (Game Settings, any viewer with game access — GM, active player, or removed player). The active tab is deep-linkable via the URL hash.
+- **Scenes tab**: active (unresolved) scenes as cards showing just title + participant count (plus parent/child links where threaded), most recent first, with an attention glow on scenes with new activity. Below: an "In Active Scenes" roster preview (the GM as a person with a crown, then characters and the scene they're in — never a banned player), and a "New Scene" action (GM).
 - **Roster tab**: a search field, the character list (avatar, name, "Played by {player}"; a removed player's row is dimmed with a "Removed" badge), a "New Character" action, a "N inactive characters hidden" note, and — GM only — a "Banned · GM only" section (blue-tinted, each row with an Unban action). Inactive (archived) characters are hidden by default.
 - **Files tab**: the file gallery (see Game-Level File Store). GM sees the upload form.
-- The gear is shown/enabled only for the GM and opens Player Management.
+- The gear is shown to any non-banned member (GM, active, or removed) and opens Game Settings.
 
 ---
 
-## Player Management
+## Game Settings
 
-- Reached by the GM via the gear (⚙) in the game header. Uses the settings-row pattern under a back-arrow header, with sections: Invite a Player (email + Invite), Pending Invitations (email + "Sent X ago" + Resend/Cancel), Members (name + character + Remove/Ban, where Remove is neutral and Ban is red and carries its own more serious confirmation), and Game Preferences (an "AI Scene Summaries" toggle switch)
-- GM-only: non-GM members are redirected away
+- Reached via the gear (⚙) in the game header — open to any non-banned member, not just the GM. Uses the settings-row pattern under a back-arrow header.
+- GM-only sections (hidden entirely for non-GM viewers): Invite a Player (email + Invite), Pending Invitations (email + "Sent X ago" + Resend/Cancel), Members (name + character + Remove/Ban, where Remove is neutral and Ban is red and carries its own more serious confirmation), and Game Preferences (an "AI Scene Summaries" toggle switch).
+- Export section (all non-banned members, GM and non-GM alike): a "This game" row with an "Export Game" action and the last-export notice, same as the profile-level export.
+- Non-members and banned members are redirected away with an access alert; this is the only guard on the page itself — GM-only content is scoped by conditionally rendering, not by a separate access check.
 
 ### Invitations
 - GM invites players by email

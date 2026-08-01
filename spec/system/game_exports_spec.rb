@@ -13,19 +13,19 @@ RSpec.describe "Game Exports", type: :feature do
 
   before { sign_in_as(user) }
 
-  describe "game show page" do
+  describe "game settings page" do
     context "as an active player" do
       before { create(:game_member, game: game, user: user, role: "player", status: "active") }
 
       it "shows an enabled Export Game button" do
-        visit game_path(game)
+        visit game_player_management_path(game)
 
         expect(page).to have_button("Export Game")
         expect(page).not_to have_button("Export Game", disabled: true)
       end
 
       it "clicking Export Game shows a success notice without a confirmation dialog" do
-        visit game_path(game)
+        visit game_player_management_path(game)
 
         click_button "Export Game"
 
@@ -36,7 +36,7 @@ RSpec.describe "Game Exports", type: :feature do
         receipt = create(:game_export_request, user: user, game: game, succeeded_at: 2.hours.ago)
         receipt.archive.attach(io: StringIO.new("zip"), filename: "e.zip", content_type: "application/zip")
 
-        visit game_path(game)
+        visit game_player_management_path(game)
 
         expect(page).to have_button("Export Game")
         expect(page).not_to have_button("Export Game", disabled: true)
@@ -48,7 +48,7 @@ RSpec.describe "Game Exports", type: :feature do
       before { create(:game_member, :game_master, game: game, user: user) }
 
       it "shows an enabled Export Game button" do
-        visit game_path(game)
+        visit game_player_management_path(game)
 
         expect(page).to have_button("Export Game")
         expect(page).not_to have_button("Export Game", disabled: true)
@@ -59,7 +59,7 @@ RSpec.describe "Game Exports", type: :feature do
       before { create(:game_member, game: game, user: user, role: "player", status: "removed") }
 
       it "shows an enabled Export Game button" do
-        visit game_path(game)
+        visit game_player_management_path(game)
 
         expect(page).to have_button("Export Game")
         expect(page).not_to have_button("Export Game", disabled: true)
@@ -69,8 +69,8 @@ RSpec.describe "Game Exports", type: :feature do
     context "as a banned member" do
       before { create(:game_member, game: game, user: user, role: "player", status: "banned") }
 
-      it "redirects away from the game page" do
-        visit game_path(game)
+      it "redirects away from the settings page" do
+        visit game_player_management_path(game)
 
         expect(page).to have_text("You do not have access to this game.")
       end

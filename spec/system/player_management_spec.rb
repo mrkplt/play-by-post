@@ -14,16 +14,27 @@ RSpec.describe "Player Management", type: :feature do
   describe "player management page" do
     it "GM can access player management via the game header gear" do
       visit game_path(game)
-      find("a[aria-label='Player management']").click
+      find("a[aria-label='Game settings']").click
 
       expect(page).to have_text(player.display_name)
     end
 
-    it "non-GM cannot access player management" do
+    it "non-GM sees the settings page via the gear, without player-management controls" do
+      sign_in_as(player)
+      visit game_path(game)
+      find("a[aria-label='Game settings']").click
+
+      expect(page).to have_current_path(game_player_management_path(game))
+      expect(page).not_to have_text("Invite a Player")
+      expect(page).to have_button("Export Game")
+    end
+
+    it "banned member cannot access the settings page" do
+      game.member_for(player).update!(status: "banned")
       sign_in_as(player)
       visit game_player_management_path(game)
 
-      expect(page).to have_current_path(game_path(game))
+      expect(page).to have_current_path(root_path)
     end
   end
 

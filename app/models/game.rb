@@ -46,6 +46,16 @@ class Game < ApplicationRecord
     game_members.exists?(user: user, status: "active")
   end
 
+  # Game master, active player, or removed (former) player — everyone
+  # except a banned member or a non-member.
+  sig { params(user: User).returns(T::Boolean) }
+  def viewable_by?(user)
+    membership = member_for(user)
+    return false unless membership
+
+    membership.game_master? || membership.active? || membership.removed?
+  end
+
   sig { returns(T.nilable(ActiveSupport::Duration)) }
   def edit_window_duration
     minutes = post_edit_window_minutes

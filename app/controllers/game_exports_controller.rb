@@ -31,8 +31,7 @@ class GameExportsController < ApplicationController
 
   sig { void }
   def require_export_access!
-    membership = @game.member_for(current_user)
-    return if membership&.active? || membership&.game_master? || membership&.removed?
+    return if @game.viewable_by?(current_user)
 
     redirect_to root_path, alert: "You do not have access to export this game."
   end
