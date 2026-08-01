@@ -18,6 +18,13 @@ class ExportCleanupJob < ApplicationJob
   def perform
     # Destroying the request purges its attached archive: has_one_attached
     # defaults to dependent: :purge_later, which enqueues the blob deletion.
-    GameExportRequest.where(created_at: ..RETENTION.ago).find_each(&:destroy)
+    expired.find_each(&:destroy)
+  end
+
+  # The job's only read, isolated so the retention boundary can be asserted
+  # without persisting requests either side of it.
+  sig { returns(ActiveRecord::Relation) }
+  def expired
+    GameExportRequest.where(created_at: ..RETENTION.ago)
   end
 end

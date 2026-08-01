@@ -61,11 +61,16 @@ class SceneSummaryService
     ENV.fetch("OPENROUTER_MODEL", DEFAULT_MODEL)
   end
 
+  # The prompt's only database read, isolated so the rendering above it can be
+  # exercised with built posts.
+  sig { returns(T::Array[Post]) }
+  def posts_for_prompt
+    @scene.posts.published.includes(:user).order(:created_at).limit(MAX_POSTS).to_a
+  end
+
   sig { returns(String) }
   def prompt
-    posts = @scene.posts.published.includes(:user).order(:created_at).limit(MAX_POSTS)
-
-    post_lines = posts.map do |post|
+    post_lines = posts_for_prompt.map do |post|
       user = T.must(post.user)
       author = user.display_name || user.email
       prefix = post.is_ooc? ? "[OOC] " : ""

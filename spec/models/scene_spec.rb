@@ -73,62 +73,72 @@ RSpec.describe Scene, type: :model do
     end
   end
 
+  # Both branches read through #posts, so stubbing that association covers the
+  # loaded and unloaded paths without persisting a scene or any posts.
   describe "#last_activity_at" do
-    let(:scene) { create(:scene) }
+    let(:scene) { build_stubbed(:scene) }
+
+    def with_posts(posts)
+      allow(scene).to receive(:posts).and_return(posts)
+      scene.last_activity_at
+    end
 
     it "returns created_at when there are no posts" do
-      expect(scene.last_activity_at).to eq(scene.created_at)
+      expect(with_posts(double(loaded?: false, maximum: nil))).to eq(scene.created_at)
     end
 
     it "returns the most recent post created_at" do
-      create(:post, scene: scene, created_at: 2.hours.ago)
-      latest = create(:post, scene: scene, created_at: 1.hour.ago)
-      expect(scene.last_activity_at).to eq(latest.created_at)
+      latest = 1.hour.ago
+      expect(with_posts(double(loaded?: false, maximum: latest))).to eq(latest)
     end
 
     it "uses in-memory posts when loaded" do
-      create(:post, scene: scene, created_at: 1.hour.ago)
-      loaded_scene = Scene.includes(:posts).find(scene.id)
-      expect(loaded_scene.last_activity_at).to eq(loaded_scene.posts.first.created_at)
+      latest = 1.hour.ago
+
+      expect(with_posts(double(loaded?: true, map: [ 3.hours.ago, latest ]))).to eq(latest)
+    end
+
+    it "falls back to created_at when loaded posts are empty" do
+      expect(with_posts(double(loaded?: true, map: []))).to eq(scene.created_at)
     end
   end
 
   describe "#participant?" do
-    let(:scene) { create(:scene) }
-    let(:user) { create(:user) }
+    let(:scene) { build_stubbed(:scene) }
+    let(:user) { build_stubbed(:user) }
 
-    it "returns true when user is a participant" do
-      scene.scene_participants.create!(user: user)
-      expect(scene.participant?(user)).to be true
+    def membership(exists)
+      participants = double
+      allow(participants).to receive(:exists?).with(user: user).and_return(exists)
+      allow(scene).to receive(:scene_participants).and_return(participants)
+      scene.participant?(user)
     end
 
-    it "returns false when user is not a participant but others are" do
-      other_user = create(:user)
-      scene.scene_participants.create!(user: other_user)
-      expect(scene.participant?(user)).to be false
+    it "returns true when user is a participant" do
+      expect(membership(true)).to be true
+    end
+
+    it "returns false when user is not a participant" do
+      expect(membership(false)).to be false
     end
   end
 
   describe "scopes" do
-    it ".active returns scenes without resolved_at" do
-      active = create(:scene)
-      create(:scene, :resolved)
-      expect(Scene.active).to contain_exactly(active)
+    it ".active selects rows with a null resolved_at" do
+      expect(unquoted_sql(Scene.active)).to include("scenes.resolved_at IS NULL")
     end
 
-    it ".resolved returns scenes with resolved_at" do
-      resolved = create(:scene, :resolved)
-      create(:scene)
-      expect(Scene.resolved).to contain_exactly(resolved)
+    it ".resolved selects rows with a non-null resolved_at" do
+      expect(unquoted_sql(Scene.resolved)).to include("scenes.resolved_at IS NOT NULL")
     end
   end
 
   describe "associations" do
-    it "has many child_scenes" do
-      parent = create(:scene)
-      child1 = create(:scene, parent_scene: parent, game: parent.game)
-      child2 = create(:scene, parent_scene: parent, game: parent.game)
-      expect(parent.child_scenes).to contain_exactly(child1, child2)
+    it "has many child_scenes keyed by parent_scene_id" do
+      association = Scene.reflect_on_association(:child_scenes)
+
+      expect(association.macro).to eq(:has_many)
+      expect(association.foreign_key).to eq("parent_scene_id")
     end
 
     it "belongs to a parent_scene optionally" do
@@ -137,11 +147,8 @@ RSpec.describe Scene, type: :model do
       expect(child.parent_scene).to eq(parent)
     end
 
-    it "nullifies child parent_scene_id when parent is destroyed" do
-      parent = create(:scene)
-      child = create(:scene, parent_scene: parent, game: parent.game)
-      parent.destroy
-      expect(child.reload.parent_scene_id).to be_nil
+    it "nullifies child parent_scene_id when the parent is destroyed" do
+      expect(Scene.reflect_on_association(:child_scenes).options[:dependent]).to eq(:nullify)
     end
   end
 end

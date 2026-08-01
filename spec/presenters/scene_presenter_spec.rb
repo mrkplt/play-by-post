@@ -99,22 +99,23 @@ RSpec.describe ScenePresenter do
   end
 
   describe "#participant_summary" do
+    # Only the count reaches the pluralisation, so stub the association the way
+    # #participant_names above already does rather than inserting participants.
+    def summary_for(count)
+      allow(scene).to receive(:scene_participants).and_return(double(count: count))
+      presenter.participant_summary
+    end
+
     it "pluralizes for zero participants" do
-      s = create(:scene)
-      expect(described_class.new(s).participant_summary).to eq("0 participants")
+      expect(summary_for(0)).to eq("0 participants")
     end
 
     it "singularizes for one participant" do
-      s = create(:scene)
-      create(:scene_participant, scene: s)
-      expect(described_class.new(s).participant_summary).to eq("1 participant")
+      expect(summary_for(1)).to eq("1 participant")
     end
 
     it "pluralizes for several participants" do
-      s = create(:scene)
-      create(:scene_participant, scene: s)
-      create(:scene_participant, scene: s)
-      expect(described_class.new(s).participant_summary).to eq("2 participants")
+      expect(summary_for(2)).to eq("2 participants")
     end
   end
 

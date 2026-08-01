@@ -14,10 +14,11 @@ RSpec.describe RssToken, type: :model do
       expect(build(:rss_token)).to be_valid
     end
 
-    it "requires token uniqueness" do
-      existing = create(:rss_token)
-      duplicate = build(:rss_token, token: existing.token)
-      expect(duplicate).not_to be_valid
+    it "declares token uniqueness" do
+      validator = RssToken.validators_on(:token)
+        .find { |v| v.is_a?(ActiveRecord::Validations::UniquenessValidator) }
+
+      expect(validator).to be_present
     end
   end
 
@@ -38,17 +39,17 @@ RSpec.describe RssToken, type: :model do
   end
 
   describe "#regenerate!" do
-    it "replaces the token with a new unique value" do
-      token_record = create(:rss_token)
+    it "replaces the token with a new value" do
+      token_record = build(:rss_token)
       old_token = token_record.token
+
       token_record.regenerate!
-      expect(token_record.reload.token).not_to eq(old_token)
+
+      expect(token_record.token).not_to eq(old_token)
     end
 
     it "generates a valid 64-char hex token" do
-      token_record = create(:rss_token)
-      token_record.regenerate!
-      expect(token_record.reload.token).to match(/\A[0-9a-f]{64}\z/)
+      expect(RssToken.generate_secure_token).to match(/\A[0-9a-f]{64}\z/)
     end
   end
 

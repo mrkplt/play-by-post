@@ -67,7 +67,7 @@ RSpec.describe Shared::SidebarComponent, type: :component do
 
     context "when the user is a GM in the game" do
       let(:current_user) { build_stubbed(:user) }
-      let(:member) { build_stubbed(:game_member, role: :game_master) }
+      let(:member) { build_stubbed(:game_member, role: "game_master") }
 
       it "returns true" do
         allow(game).to receive(:member_for).with(current_user).and_return(member)

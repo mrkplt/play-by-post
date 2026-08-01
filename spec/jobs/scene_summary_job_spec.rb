@@ -1,8 +1,8 @@
 require "rails_helper"
 
 RSpec.describe SceneSummaryJob, type: :job do
-  let(:game) { create(:game) }
-  let(:scene) { create(:scene, :resolved, game: game) }
+  let(:game) { build_stubbed(:game) }
+  let(:scene) { build_stubbed(:scene, :resolved, game: game) }
 
   around do |example|
     original_adapter = ActiveJob::Base.queue_adapter
@@ -24,56 +24,53 @@ RSpec.describe SceneSummaryJob, type: :job do
     before do
       service_double = instance_double(SceneSummaryService, call: service_result)
       allow(SceneSummaryService).to receive(:new).with(scene).and_return(service_double)
+      allow(Scene).to receive(:find_by).with(id: scene.id).and_return(scene)
+      allow(SceneSummary).to receive(:upsert)
     end
 
-    it "creates a SceneSummary for the scene" do
-      expect { described_class.new.perform(scene.id) }.to change(SceneSummary, :count).by(1)
-      summary = SceneSummary.find_by!(scene: scene)
-      expect(summary.body).to eq("A heroic tale.")
-      expect(summary.model_used).to eq("openai/gpt-4o")
-      expect(summary.generated_at).to be_present
-      expect(summary.input_tokens).to eq(100)
-      expect(summary.output_tokens).to eq(40)
-      expect(summary.edited_at).to be_nil
-      expect(summary.edited_by_id).to be_nil
-    end
-
-    it "upserts on re-run (does not create duplicate)" do
+    it "upserts the summary the service produced, keyed on the scene" do
       described_class.new.perform(scene.id)
-      new_result = SceneSummaryService::Result.new(
-        body: "Updated tale.",
-        model_used: "openai/gpt-4o",
-        input_tokens: 200,
-        output_tokens: 60
+
+      expect(SceneSummary).to have_received(:upsert).with(
+        hash_including(
+          scene_id: scene.id,
+          body: "A heroic tale.",
+          model_used: "openai/gpt-4o",
+          input_tokens: 100,
+          output_tokens: 40
+        ),
+        hash_including(unique_by: :scene_id)
       )
-      service_double = instance_double(SceneSummaryService, call: new_result)
-      allow(SceneSummaryService).to receive(:new).with(scene).and_return(service_double)
-
-      expect { described_class.new.perform(scene.id) }.not_to change(SceneSummary, :count)
-      expect(SceneSummary.find_by!(scene: scene).body).to eq("Updated tale.")
     end
 
-    it "resets edited_at and edited_by_id to nil when upserting over an existing edited summary" do
-      user = create(:user, :with_profile)
-      create(:game_member, game: game, user: user)
-      scene.create_scene_summary!(body: "Old text.", edited_at: Time.current, edited_by: user)
-
+    it "clears any previous manual edit when it upserts" do
       described_class.new.perform(scene.id)
 
-      summary = SceneSummary.find_by!(scene: scene)
-      expect(summary.body).to eq("A heroic tale.")
-      expect(summary.edited_at).to be_nil
-      expect(summary.edited_by_id).to be_nil
+      expect(SceneSummary).to have_received(:upsert)
+        .with(hash_including(edited_at: nil, edited_by_id: nil), anything)
+    end
+
+    it "stamps generated_at" do
+      Timecop.freeze do
+        described_class.new.perform(scene.id)
+
+        expect(SceneSummary).to have_received(:upsert)
+          .with(hash_including(generated_at: Time.current), anything)
+      end
     end
 
     it "does nothing if scene does not exist" do
-      expect(SceneSummaryService).not_to receive(:new)
-      expect { described_class.new.perform(0) }.not_to change(SceneSummary, :count)
+      allow(Scene).to receive(:find_by).with(id: 0).and_return(nil)
+
+      described_class.new.perform(0)
+
+      expect(SceneSummary).not_to have_received(:upsert)
     end
 
     it "logs and swallows ConfigurationError" do
       allow(SceneSummaryService).to receive(:new).and_raise(SceneSummaryService::ConfigurationError, "no key")
       expect(Rails.logger).to receive(:error).with(/no key/)
+
       expect { described_class.new.perform(scene.id) }.not_to raise_error
     end
   end

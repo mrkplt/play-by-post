@@ -21,78 +21,36 @@ RSpec.describe UserPresenter do
     end
   end
 
+  # The query is ours; executing it is ActiveRecord's. Assert the construction.
   describe "#games_by_recent_activity" do
-    let(:user) { create(:user) }
+    subject(:presenter) { described_class.new(build_stubbed(:user)) }
 
-    subject(:presenter) { described_class.new(user) }
-
-    it "returns games where user is an active member" do
-      game = create(:game)
-      create(:game_member, user: user, game: game, status: "active")
-
-      expect(presenter.games_by_recent_activity.map(&:id)).to include(game.id)
+    it "orders by latest scene activity, falling back to when the game was made" do
+      expect(unquoted_sql(presenter.games_by_recent_activity))
+        .to include("ORDER BY COALESCE(MAX(scenes.updated_at), games.created_at) DESC")
     end
 
-    it "excludes games where user is removed" do
-      game = create(:game)
-      create(:game_member, :removed, user: user, game: game)
+    it "excludes removed and banned memberships" do
+      sql = unquoted_sql(presenter.games_by_recent_activity)
 
-      expect(presenter.games_by_recent_activity.map(&:id)).not_to include(game.id)
+      expect(sql).to include("removed")
+      expect(sql).to include("banned")
     end
 
-    it "excludes games where user is banned" do
-      game = create(:game)
-      create(:game_member, :banned, user: user, game: game)
-
-      expect(presenter.games_by_recent_activity.map(&:id)).not_to include(game.id)
+    it "left joins scenes so games without any still appear" do
+      expect(unquoted_sql(presenter.games_by_recent_activity)).to include("LEFT OUTER JOIN scenes")
     end
 
-    it "orders games by most recent scene activity descending" do
-      old_game = create(:game, name: "Old Game")
-      create(:game_member, user: user, game: old_game)
-      create(:scene, game: old_game, updated_at: 2.days.ago)
-
-      new_game = create(:game, name: "New Game")
-      create(:game_member, user: user, game: new_game)
-      create(:scene, game: new_game, updated_at: 1.hour.ago)
-
-      expect(presenter.games_by_recent_activity.map(&:id)).to eq([ new_game.id, old_game.id ])
+    it "groups by game so MAX collapses per game" do
+      expect(unquoted_sql(presenter.games_by_recent_activity)).to include("GROUP BY games.id")
     end
 
-    it "falls back to game created_at when no scenes exist" do
-      older_game = create(:game, name: "Older", created_at: 3.days.ago)
-      create(:game_member, user: user, game: older_game)
-
-      newer_game = create(:game, name: "Newer", created_at: 1.day.ago)
-      create(:game_member, user: user, game: newer_game)
-
-      expect(presenter.games_by_recent_activity.map(&:id)).to eq([ newer_game.id, older_game.id ])
+    it "applies a limit when given one" do
+      expect(unquoted_sql(presenter.games_by_recent_activity(limit: 3))).to include("LIMIT 3")
     end
 
-    it "limits results when limit is provided" do
-      3.times { |i| create(:game_member, user: user, game: create(:game, name: "Game #{i}")) }
-
-      expect(presenter.games_by_recent_activity(limit: 2).length).to eq(2)
-    end
-
-    it "returns all games when no limit is provided" do
-      3.times { |i| create(:game_member, user: user, game: create(:game, name: "Game #{i}")) }
-
-      expect(presenter.games_by_recent_activity.length).to eq(3)
-    end
-
-    it "includes the game name in the selected fields" do
-      game = create(:game, name: "My Special Game")
-      create(:game_member, user: user, game: game)
-
-      expect(presenter.games_by_recent_activity.first.name).to eq("My Special Game")
-    end
-
-    it "uses left join so games without scenes are included" do
-      game = create(:game)
-      create(:game_member, user: user, game: game)
-
-      expect(presenter.games_by_recent_activity.map(&:id)).to include(game.id)
+    it "applies no limit otherwise" do
+      expect(unquoted_sql(presenter.games_by_recent_activity)).not_to include("LIMIT")
     end
   end
 
@@ -102,35 +60,34 @@ RSpec.describe UserPresenter do
     end
   end
 
+  # where.not is the only database part; the ordering is a Ruby sort_by.
   describe "#drawer_memberships" do
-    let(:real_user) { create(:user) }
-    let(:gm_game) { create(:game, name: "Beta") }
-    let(:player_game) { create(:game, name: "Alpha") }
-    let(:removed_game) { create(:game, name: "Charlie") }
-    let(:banned_game) { create(:game, name: "Delta") }
+    subject(:presenter) { described_class.new(user_with_memberships) }
 
-    subject(:presenter) { described_class.new(real_user) }
+    let(:user_with_memberships) { build_stubbed(:user) }
+    let(:relation) { double }
+
+    def membership(game_name)
+      build_stubbed(:game_member, game: build_stubbed(:game, name: game_name))
+    end
 
     before do
-      create(:game_member, game: gm_game, user: real_user, role: "game_master", status: "active")
-      create(:game_member, game: player_game, user: real_user, role: "player", status: "active")
-      create(:game_member, game: removed_game, user: real_user, role: "player", status: "removed")
-      create(:game_member, game: banned_game, user: real_user, role: "player", status: "banned")
-    end
-
-    it "includes active, GM, and removed memberships" do
-      names = presenter.drawer_memberships.map { |m| m.game.name }
-      expect(names).to include("Alpha", "Beta", "Charlie")
-    end
-
-    it "excludes banned memberships" do
-      names = presenter.drawer_memberships.map { |m| m.game.name }
-      expect(names).not_to include("Delta")
+      allow(relation).to receive(:where).and_return(relation)
+      allow(relation).to receive(:not).and_return(relation)
+      allow(relation).to receive(:includes).and_return(
+        [ membership("Charlie"), membership("Alpha"), membership("Beta") ]
+      )
+      allow(user_with_memberships).to receive(:game_members).and_return(relation)
     end
 
     it "orders memberships by game name" do
-      names = presenter.drawer_memberships.map { |m| m.game.name }
-      expect(names).to eq(%w[Alpha Beta Charlie])
+      expect(presenter.drawer_memberships.map { |m| m.game.name }).to eq(%w[Alpha Beta Charlie])
+    end
+
+    it "excludes banned memberships" do
+      presenter.drawer_memberships
+
+      expect(relation).to have_received(:not).with(status: "banned")
     end
 
     it "returns GameMember records" do

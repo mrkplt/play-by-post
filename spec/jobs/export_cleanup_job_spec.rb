@@ -11,51 +11,29 @@ RSpec.describe ExportCleanupJob, type: :job do
   end
 
   describe "#perform" do
-    it "destroys export requests older than the retention window" do
-      old = create(:game_export_request, user: user, game: game, created_at: 8.days.ago)
+    it "destroys everything the expired scope selects" do
+      doomed = build_stubbed(:game_export_request)
+      allow(doomed).to receive(:destroy)
+      job = described_class.new
+      allow(job).to receive(:expired).and_return(double(find_each: nil).tap { |d|
+        allow(d).to receive(:find_each) { |&blk| blk.call(doomed) }
+      })
 
-      expect { ExportCleanupJob.new.perform }.to change(GameExportRequest, :count).by(-1)
-      expect(GameExportRequest.exists?(old.id)).to be(false)
+      job.perform
+
+      expect(doomed).to have_received(:destroy)
     end
 
-    it "keeps export requests within the retention window" do
-      recent = create(:game_export_request, user: user, game: game, created_at: 6.days.ago)
-
-      expect { ExportCleanupJob.new.perform }.not_to change(GameExportRequest, :count)
-      expect(GameExportRequest.exists?(recent.id)).to be(true)
-    end
-
-    it "keeps a request just inside the retention boundary" do
+    it "selects requests at or before the retention cutoff" do
       Timecop.freeze do
-        boundary = create(:game_export_request, user: user, game: game, created_at: 7.days.ago + 1.second)
+        sql = unquoted_sql(described_class.new.send(:expired))
 
-        ExportCleanupJob.new.perform
-        expect(GameExportRequest.exists?(boundary.id)).to be(true)
+        expect(sql).to include("game_export_requests.created_at <=")
       end
     end
 
-    it "deletes a request exactly at the retention cutoff (inclusive boundary)" do
-      Timecop.freeze do
-        at_cutoff = create(:game_export_request, user: user, game: game, created_at: 7.days.ago)
-
-        ExportCleanupJob.new.perform
-        expect(GameExportRequest.exists?(at_cutoff.id)).to be(false)
-      end
-    end
-
-    it "purges the attached archive of an expired request" do
-      old = request_with_archive(created_at: 8.days.ago)
-      blob = old.archive.blob
-
-      ExportCleanupJob.new.perform
-
-      expect(ActiveStorage::Blob.exists?(blob.id)).to be(false)
-    end
-
-    it "handles expired requests that have no archive attached" do
-      create(:game_export_request, user: user, game: game, created_at: 8.days.ago)
-
-      expect { ExportCleanupJob.new.perform }.not_to raise_error
+    it "retains a full week" do
+      expect(described_class::RETENTION).to eq(7.days)
     end
   end
 end

@@ -18,12 +18,17 @@ RSpec.describe ExportDelivery do
   end
 
   describe ".email_download_link" do
-    it "enqueues an export_ready mail for the request's user" do
-      request = request_with_archive
+    it "sends an export_ready mail to the request's user, off the request cycle" do
+      request = build_stubbed(:game_export_request, user: user, game: game)
+      mail = double(deliver_later: true)
+      allow(described_class).to receive(:download_url_for).with(request).and_return("https://x/e.zip")
+      allow(ExportMailer).to receive(:export_ready).and_return(mail)
 
-      expect {
-        described_class.email_download_link(request)
-      }.to have_enqueued_job(ActionMailer::MailDeliveryJob)
+      described_class.email_download_link(request)
+
+      expect(ExportMailer).to have_received(:export_ready)
+        .with(user, download_url: "https://x/e.zip", game: game)
+      expect(mail).to have_received(:deliver_later)
     end
 
     it "generates a download URL for the archive" do

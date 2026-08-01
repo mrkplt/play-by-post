@@ -53,11 +53,22 @@ class GameExportService
     write_characters(zip, prefix, game, scenes)
   end
 
+  # Which scenes a membership exports. Pure decision — the query below just
+  # applies it, so the rule can be asserted without persisting scenes.
+  sig { params(membership: GameMember).returns(Symbol) }
+  def scene_selection_for(membership)
+    return :all if membership.game_master?
+    return :participating if membership.removed?
+
+    :visible
+  end
+
   sig { params(game: Game, membership: GameMember).returns(T::Array[Scene]) }
   def export_scenes_for(game, membership)
-    if membership.game_master?
+    case scene_selection_for(membership)
+    when :all
       game.scenes.includes(:parent_scene, scene_participants: %i[user character], posts: :user).to_a
-    elsif membership.removed?
+    when :participating
       game.scenes
           .joins(:scene_participants)
           .where(scene_participants: { user_id: @user.id })
@@ -81,14 +92,14 @@ class GameExportService
 
   sig { params(game: Game, scenes: T::Array[Scene]).returns(String) }
   def readme_content(game, scenes)
-    members = game.game_members.includes(:user).order(:role, :status)
+    members = members_for(game)
     active_count = scenes.count { |s| !s.resolved? }
     resolved_count = scenes.count(&:resolved?)
 
     lines = []
     lines << "# #{game.name}"
     lines << ""
-    lines << game.description.presence || "_No description._"
+    lines << (game.description.presence || "_No description._")
     lines << ""
     lines << "**Exported:** #{Time.current.utc.strftime("%Y-%m-%d %H:%M UTC")}"
     lines << ""
@@ -122,7 +133,7 @@ class GameExportService
 
   sig { params(game: Game).returns(String) }
   def files_manifest_content(game)
-    files = game.game_files.includes(file_attachment: :blob).order(:filename)
+    files = files_for(game)
 
     lines = []
     lines << "# Game Files"
@@ -199,7 +210,7 @@ class GameExportService
       lines << ""
     end
 
-    participants = scene.scene_participants.includes(:user, :character)
+    participants = participants_for(scene)
     unless participants.empty?
       lines << "## Participants"
       lines << ""
@@ -226,7 +237,7 @@ class GameExportService
 
   sig { params(scene: Scene).returns(String) }
   def posts_content(scene)
-    published = scene.posts.published.includes(:user).order(:created_at)
+    published = published_posts_for(scene)
     return "_No posts yet._\n" if published.empty?
 
     lines = T.let([], T::Array[String])
@@ -261,7 +272,7 @@ class GameExportService
       zip.put_next_entry("#{dir}current_sheet.md")
       zip.write(character_sheet_content(character))
 
-      versions = character.character_versions.includes(:edited_by).order(:created_at)
+      versions = versions_for(character)
       versions.each_with_index do |version, idx|
         date = version.created_at.strftime("%Y-%m-%d")
         filename = "#{dir}version_history/#{format("v%03d", idx + 1)}-#{date}.md"
@@ -269,6 +280,36 @@ class GameExportService
         zip.write(character_version_content(version, idx + 1))
       end
     end
+  end
+
+  # --- Reads -------------------------------------------------------------
+  # Every database read the export performs lives here, each returning a plain
+  # array. Specs covering the rendered output stub these and hand back built
+  # records, so only the reads themselves need a real connection.
+
+  sig { params(game: Game).returns(T::Array[GameMember]) }
+  def members_for(game)
+    game.game_members.includes(:user).order(:role, :status).to_a
+  end
+
+  sig { params(game: Game).returns(T::Array[GameFile]) }
+  def files_for(game)
+    game.game_files.includes(file_attachment: :blob).order(:filename).to_a
+  end
+
+  sig { params(scene: Scene).returns(T::Array[SceneParticipant]) }
+  def participants_for(scene)
+    scene.scene_participants.includes(:user, :character).to_a
+  end
+
+  sig { params(scene: Scene).returns(T::Array[Post]) }
+  def published_posts_for(scene)
+    scene.posts.published.includes(:user).order(:created_at).to_a
+  end
+
+  sig { params(character: Character).returns(T::Array[CharacterVersion]) }
+  def versions_for(character)
+    character.character_versions.includes(:edited_by).order(:created_at).to_a
   end
 
   sig { params(game: Game, scenes: T::Array[Scene]).returns(T::Array[Character]) }

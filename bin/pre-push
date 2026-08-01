@@ -1,7 +1,21 @@
 #!/bin/bash
+# Fast local gate — static checks + non-system specs only (~30-40s).
+#
+# System specs (type: :feature, Capybara+Playwright) are ~85% of the suite's
+# wall time for ~15% of its examples, and mutation testing / the full
+# quality-metrics gate need data from a full run anyway — none of that is
+# worth paying for on every push. The heavy tier runs in CI on every PR, or
+# locally on demand via bin/full-check — your call which to wait on. This
+# hook exists to catch obvious breaks fast, not to duplicate the full
+# pipeline.
 export PATH="/opt/homebrew/opt/ruby/bin:$PATH"
 
-echo "Running CI checks before push..."
+if bin/docs-only; then
+  echo "==> Docs-only change: skipping pre-push checks (CI will no-op them too)."
+  exit 0
+fi
+
+echo "Running fast checks before push (system specs, mutation, and the full quality gate run in CI on the PR)..."
 
 echo "==> Lint (rubocop)"
 bin/rubocop || exit 1
@@ -21,17 +35,19 @@ bin/brakeman --no-pager || exit 1
 echo "==> Type check (sorbet)"
 bundle exec srb tc || exit 1
 
-echo "==> Tests (rspec + coverage)"
-bundle exec rspec || exit 1
-
-echo "==> Mutation testing (mutant --since origin/master)"
-MUTANT_OUTPUT=$(mktemp)
-bundle exec mutant run --usage opensource --since origin/master 2>&1 | tee "$MUTANT_OUTPUT"
-bin/quality-metrics --record-mutant "$MUTANT_OUTPUT"
-rm -f "$MUTANT_OUTPUT"
+# Excluded here, run in CI / bin/full-check:
+#   type:feature — Capybara+Playwright, drives a real browser (~88s)
+#   type:request — issues HTTP through the full Rails stack (~12s); anything
+#                  making an HTTP call belongs in CI, not the commit path.
+# SKIP_COVERAGE: this tier doesn't run quality-metrics --check, so SimpleCov's
+# report would go unread — skipping the instrumentation saves ~9s. It's a
+# default, not a removal: `COVERAGE=1 bin/pre-push` turns the report back on.
+# NB: this must be --exclude-pattern, not two --tag flags. Both tags key on
+# `type`, so `--tag ~type:feature --tag ~type:request` silently keeps the
+# second only and runs the browser specs anyway.
+echo "==> Fast tests (rspec: unit tiers only — no browser, no HTTP)"
+SKIP_COVERAGE=1 bundle exec rspec \
+  --exclude-pattern "spec/system/**/*_spec.rb,spec/requests/**/*_spec.rb" || exit 1
 rm -f storage/test_worker_*.sqlite3
 
-echo "==> Quality metrics check"
-bin/quality-metrics --check || exit 1
-
-echo "All CI checks passed."
+echo "All fast checks passed. Heavy tier (system specs, mutation, quality gate) runs in CI on the PR — or locally via bin/full-check."

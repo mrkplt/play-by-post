@@ -1,4 +1,12 @@
-unless ENV["MUTANT"]
+# Coverage control:
+#   COVERAGE=1      force ON  — wins over SKIP_COVERAGE, so `COVERAGE=1 bin/pre-push`
+#                   still gives you a local report when you want one.
+#   SKIP_COVERAGE=1 default OFF for the pre-push tier, which doesn't run
+#                   bin/quality-metrics --check and so never reads the report.
+#   MUTANT          always OFF — mutant runs must not be instrumented.
+# bin/full-check and CI leave both unset, so coverage/ is populated for the gate.
+skip_coverage = ENV["MUTANT"] || (ENV["SKIP_COVERAGE"] && ENV["COVERAGE"] != "1")
+unless skip_coverage
   require "simplecov"
   SimpleCov.start "rails" do
     enable_coverage :branch

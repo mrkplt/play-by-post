@@ -88,6 +88,7 @@ group :test do
   gem "capybara-playwright-driver"
   gem "simplecov", require: false
   gem "timecop"
+  gem "activerecord-nulldb-adapter", require: false
 end
 
 gem "sorbet-runtime"

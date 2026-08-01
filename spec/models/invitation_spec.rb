@@ -30,17 +30,25 @@ RSpec.describe Invitation, type: :model do
   end
 
   describe "#accept!" do
-    it "sets accepted_at" do
-      invitation = create(:invitation)
+    it "stamps accepted_at with the current time" do
+      invitation = build(:invitation)
       expect(invitation.accepted_at).to be_nil
-      invitation.accept!
-      expect(invitation.reload.accepted_at).to be_present
+
+      Timecop.freeze do
+        invitation.accept!
+        # be_within, not eq: on the real adapter accept! round-trips through
+        # SQLite, which truncates the nanoseconds Time.current carries.
+        expect(invitation.accepted_at).to be_within(1.second).of(Time.current)
+      end
     end
 
-    it "persists the change" do
-      invitation = create(:invitation)
+    it "writes the change rather than only assigning it" do
+      invitation = build(:invitation)
+      allow(invitation).to receive(:update!)
+
       invitation.accept!
-      expect(invitation.reload.accepted_at).to be_present
+
+      expect(invitation).to have_received(:update!).with(hash_including(:accepted_at))
     end
 
     it "makes the invitation accepted" do

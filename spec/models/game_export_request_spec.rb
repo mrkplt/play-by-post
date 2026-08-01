@@ -11,9 +11,17 @@ RSpec.describe GameExportRequest, type: :model do
   end
 
   describe ".valid_receipt_for" do
-    it "returns a successful export whose archive is present, within the window" do
-      request = receipt(succeeded_at: 1.hour.ago, game: game)
-      expect(described_class.valid_receipt_for(user, game)).to eq(request)
+    it "returns the first candidate whose archive is attached" do
+      without = build_stubbed(:game_export_request)
+      with = build_stubbed(:game_export_request)
+      allow(without).to receive(:archive).and_return(double(attached?: false))
+      allow(with).to receive(:archive).and_return(double(attached?: true))
+      relation = double
+      allow(relation).to receive(:where).and_return(relation)
+      allow(relation).to receive(:order).and_return([ without, with ])
+      allow(described_class).to receive(:where).and_return(relation)
+
+      expect(described_class.valid_receipt_for(user, game)).to eq(with)
     end
 
     it "returns nil when the last success is outside the window" do
@@ -31,15 +39,20 @@ RSpec.describe GameExportRequest, type: :model do
       expect(described_class.valid_receipt_for(user, game)).to be_nil
     end
 
-    it "returns the receipt with the most recent succeeded_at, not first/last inserted" do
-      # The winner (most recent succeeded_at) sits in the MIDDLE by id, so
-      # neither an id-asc nor id-desc scan returns it — only ordering by
-      # succeeded_at desc does. This kills a dropped `.order(succeeded_at: :desc)`.
-      receipt(succeeded_at: 10.hours.ago, game: game)          # lowest id
-      newest = receipt(succeeded_at: 1.hour.ago, game: game)   # middle id
-      receipt(succeeded_at: 5.hours.ago, game: game)           # highest id
+    it "orders candidates by most recent success" do
+      expect(unquoted_sql(described_class.where(user: nil).order(succeeded_at: :desc)))
+        .to include("ORDER BY game_export_requests.succeeded_at DESC")
+    end
 
-      expect(described_class.valid_receipt_for(user, game)).to eq(newest)
+    it "builds the lookup ordered by succeeded_at descending" do
+      relation = double
+      allow(relation).to receive(:where).and_return(relation)
+      allow(relation).to receive(:order).and_return([])
+      allow(described_class).to receive(:where).and_return(relation)
+
+      described_class.valid_receipt_for(user, game)
+
+      expect(relation).to have_received(:order).with(succeeded_at: :desc)
     end
 
     it "scopes to the given game (all-games uses nil)" do
@@ -66,10 +79,12 @@ RSpec.describe GameExportRequest, type: :model do
 
   describe "#mark_succeeded!" do
     it "sets succeeded_at to now" do
-      request = create(:game_export_request, user: user, game: game, succeeded_at: nil)
+      request = build(:game_export_request, user: user, game: game, succeeded_at: nil)
       freeze = Time.utc(2026, 7, 30, 12, 0, 0)
+
       Timecop.freeze(freeze) { request.mark_succeeded! }
-      expect(request.reload.succeeded_at).to be_within(1.second).of(freeze)
+
+      expect(request.succeeded_at).to be_within(1.second).of(freeze)
     end
   end
 end

@@ -3,8 +3,9 @@ require "rails_helper"
 RSpec.describe SceneParticipant, type: :model do
   describe "#display_name" do
     it "returns the character name when character is present" do
-      character = create(:character, name: "Gandalf")
-      participant = create(:scene_participant, character: character, user: character.user)
+      character = build_stubbed(:character, name: "Gandalf")
+      participant = build_stubbed(:scene_participant, character: character, user: character.user)
+
       expect(participant.display_name).to eq("Gandalf")
     end
 
@@ -21,9 +22,11 @@ RSpec.describe SceneParticipant, type: :model do
     end
 
     it "prefers character name over user display name" do
-      user = create(:user, :with_profile)
-      character = create(:character, name: "Frodo", user: user)
-      participant = create(:scene_participant, user: user, character: character)
+      user = build_stubbed(:user)
+      allow(user).to receive(:display_name).and_return("Samwise")
+      character = build_stubbed(:character, name: "Frodo", user: user)
+      participant = build_stubbed(:scene_participant, user: user, character: character)
+
       expect(participant.display_name).to eq("Frodo")
     end
   end
