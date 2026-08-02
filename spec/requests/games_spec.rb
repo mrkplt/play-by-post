@@ -293,6 +293,64 @@ RSpec.describe GamesController, type: :request do
       expect(response.body).not_to include("Retired Hero")
     end
 
+    it "notes the number of hidden inactive characters" do
+      create(:character, :archived, game: game, user: player, name: "Retired Hero")
+      sign_in(gm)
+      get game_path(game)
+      expect(response.body).to include("1 inactive character")
+    end
+
+    it "dims a removed player's character row with a Removed badge and muted avatar" do
+      removed_player = create(:user, :with_profile)
+      create(:game_member, :removed, game: game, user: removed_player)
+      create(:character, game: game, user: removed_player, name: "Ghost Knight")
+      create(:character, game: game, user: player, name: "Bright Squire")
+      sign_in(gm)
+      get game_path(game)
+
+      doc = Nokogiri::HTML.parse(response.body)
+      removed_row = doc.xpath("//div[@data-roster-name][contains(., 'Ghost Knight')]").first.to_html
+      active_row  = doc.xpath("//div[@data-roster-name][contains(., 'Bright Squire')]").first.to_html
+
+      # Removed → dimmed, muted avatar tone, and a "Removed" badge.
+      expect(removed_row).to include("opacity-70")
+      expect(removed_row).to include(Ui::AvatarComponent::TONES.fetch(:muted))
+      expect(removed_row).to include("Removed")
+      # Active → none of those; gold avatar tone.
+      expect(active_row).not_to include("opacity-70")
+      expect(active_row).to include(Ui::AvatarComponent::TONES.fetch(:gold))
+      expect(active_row).not_to include("Removed")
+    end
+
+    it "builds a lowercased search filter key from character and owner names" do
+      player.user_profile.update!(display_name: "Sam Gamgee")
+      create(:character, game: game, user: player, name: "Frodo")
+      sign_in(gm)
+      get game_path(game)
+
+      doc = Nokogiri::HTML.parse(response.body)
+      keys = doc.xpath("//*[@data-roster-name]/@data-roster-name").map(&:value)
+      expect(keys).to include("frodo sam gamgee")
+    end
+
+    it "shows the GM-only Banned section listing banned players" do
+      banned_player = create(:user, :with_profile)
+      banned_player.user_profile.update!(display_name: "Exiled One")
+      create(:game_member, :banned, game: game, user: banned_player)
+      sign_in(gm)
+      get game_path(game)
+      expect(response.body).to include("Exiled One")
+    end
+
+    it "does not expose banned players to a non-GM member" do
+      banned_player = create(:user, :with_profile)
+      banned_player.user_profile.update!(display_name: "Exiled One")
+      create(:game_member, :banned, game: game, user: banned_player)
+      sign_in(player)
+      get game_path(game)
+      expect(response.body).not_to include("Exiled One")
+    end
+
     it "does not show the Export Game button on the game view (it lives on the settings page)" do
       sign_in(gm)
       get game_path(game)

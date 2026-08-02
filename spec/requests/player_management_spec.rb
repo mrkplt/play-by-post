@@ -31,6 +31,24 @@ RSpec.describe PlayerManagementController, type: :request do
       expect(response.body).to include("Export Game")
     end
 
+    it "shows a last-export notice for this game when a recent receipt exists" do
+      receipt = create(:game_export_request, user: player, game: game, succeeded_at: 2.hours.ago)
+      receipt.archive.attach(io: StringIO.new("zip"), filename: "e.zip", content_type: "application/zip")
+      sign_in(player)
+      get game_player_management_path(game)
+      expect(response.body).to match(/Last export: .+ ago/)
+    end
+
+    it "shows no last-export notice when the only receipt is for a different game" do
+      other_game = create(:game)
+      create(:game_member, game: other_game, user: player)
+      receipt = create(:game_export_request, user: player, game: other_game, succeeded_at: 2.hours.ago)
+      receipt.archive.attach(io: StringIO.new("zip"), filename: "e.zip", content_type: "application/zip")
+      sign_in(player)
+      get game_player_management_path(game)
+      expect(response.body).not_to include("Last export:")
+    end
+
     it "removed member can access the settings page" do
       game.member_for(player).update!(status: "removed")
       sign_in(player)

@@ -65,7 +65,7 @@
                       dimmed: row[:removed],
                       last: i == @roster_characters.length - 1) do %>
                   <% if row[:removed] %>
-                    <%= render Ui::BadgeComponent.new(variant: :slate) { "Removed" } %>
+                    <%= render(Ui::BadgeComponent.new(variant: :slate)) { "Removed" } %>
                   <% end %>
                 <% end %>
               </div>
