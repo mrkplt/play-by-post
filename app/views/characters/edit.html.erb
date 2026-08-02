@@ -26,7 +26,7 @@
   </div>
 <% end %>
 
-<% if @game.game_master?(current_user) %>
+<% if policy(@character).assign_owner? %>
   <div class="mt-6 pt-4 border-t border-slate-100">
     <% if @character.archived? %>
       <%= button_to "Restore character", restore_game_character_path(@game, @character),
