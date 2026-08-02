@@ -4,15 +4,21 @@ class PlayerManagementController < ApplicationController
   extend T::Sig
 
   before_action :set_game
-  before_action :require_gm!
+  before_action :require_access!
 
   sig { void }
   def show
-    @members = @game.game_members.where.not(status: "banned").where(role: "player").includes(:user)
-    @member_display_names = @members.each_with_object({}) { |m, h| h[m.user_id] = UserPresenter.new(m.user).display_name_or_email }
-    @member_characters = character_names_by_user
-    @pending_invitations = @game.invitations.pending.order(created_at: :desc)
-    @invitation = Invitation.new
+    @is_gm = @game.game_master?(current_user)
+
+    if @is_gm
+      @members = @game.game_members.where.not(status: "banned").where(role: "player").includes(:user)
+      @member_display_names = @members.each_with_object({}) { |m, h| h[m.user_id] = UserPresenter.new(m.user).display_name_or_email }
+      @member_characters = character_names_by_user
+      @pending_invitations = @game.invitations.pending.order(created_at: :desc)
+    end
+
+    @export_receipt = GameExportRequest.valid_receipt_for(current_user, @game)
+    @export_notice = @export_receipt ? T.unsafe(view_context).last_export_notice(@export_receipt) : nil
   end
 
   private
@@ -31,9 +37,7 @@ class PlayerManagementController < ApplicationController
   end
 
   sig { void }
-  def require_gm!
-    unless @game.game_master?(current_user)
-      redirect_to game_path(@game), alert: "Only the GM can manage players."
-    end
+  def require_access!
+    redirect_to root_path, alert: "You do not have access to this game." unless @game.viewable_by?(current_user)
   end
 end

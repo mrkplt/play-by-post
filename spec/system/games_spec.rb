@@ -218,20 +218,20 @@ RSpec.describe "Games", type: :feature do
       expect(page).to have_text("Thornwall")
     end
 
-    it "shows the player-management gear for GM" do
+    it "shows the settings gear for GM" do
       visit game_path(game)
 
       expect(page).to have_link(href: game_player_management_path(game))
     end
 
-    it "does not show the player-management gear for non-GM" do
+    it "also shows the settings gear for non-GM, linking to their scoped-down settings page" do
       player = create(:user, :with_profile)
       create(:game_member, game: game, user: player)
 
       sign_in_as(player)
       visit game_path(game)
 
-      expect(page).not_to have_link(href: game_player_management_path(game))
+      expect(page).to have_link(href: game_player_management_path(game))
     end
 
     it "shows New Scene button for GM" do

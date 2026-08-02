@@ -2,72 +2,83 @@
 
 <%= render Shared::MobileFrameComponent.new do |frame| %>
   <% frame.with_header do %>
-    <%= render Shared::PageHeaderComponent.new(title: "Player Management", leading: :back, back_href: game_path(@game)) %>
+    <%= render Shared::PageHeaderComponent.new(title: "Game Settings", leading: :back, back_href: game_path(@game)) %>
   <% end %>
 
-  <%# Invite a Player %>
-  <%= render Ui::SectionLabelComponent.new do %>Invite a Player<% end %>
-  <%= form_with url: game_player_management_invitations_path(@game), method: :post, class: "flex gap-2" do |f| %>
-    <input type="email" name="invitation[email]" placeholder="player@email.com"
-           class="flex-1 border border-input-border rounded-control px-2.5 py-2.5 text-xs text-ink bg-card placeholder:text-muted-2">
-    <button type="submit" class="bg-accent text-accent-ink border-0 rounded-control px-4 font-extrabold text-xs cursor-pointer">Invite</button>
-  <% end %>
-
-  <%# Pending Invitations %>
-  <% if @pending_invitations.any? %>
-    <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do %>Pending Invitations<% end %>
-    <div class="bg-card border border-card-border rounded-card px-3.5">
-      <% @pending_invitations.each_with_index do |inv, i| %>
-        <%= render Ui::SettingsRowComponent.new(label: inv.email, sub: "Sent #{time_ago_in_words(inv.created_at)} ago", last: i == @pending_invitations.length - 1) do %>
-          <%= form_with url: game_player_management_invitation_path(@game, inv), method: :delete, class: "inline" do |f| %>
-            <%= f.submit "Cancel", class: "text-[11px] font-bold text-danger bg-transparent border-0 cursor-pointer p-0" %>
-          <% end %>
-        <% end %>
-      <% end %>
-    </div>
-  <% end %>
-
-  <%# Members %>
-  <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do %>Members<% end %>
-  <% if @members.empty? %>
-    <p class="text-muted-2 text-sm">No players yet.</p>
-  <% else %>
-    <div class="bg-card border border-card-border rounded-card px-3.5">
-      <% @members.each_with_index do |member, i| %>
-        <%= render Ui::SettingsRowComponent.new(
-              label: @member_display_names[member.user_id],
-              sub: @member_characters[member.user_id],
-              last: i == @members.length - 1) do %>
-          <% if member.active? %>
-            <%= form_with url: game_player_management_game_member_path(@game, member), method: :patch, class: "inline" do |f| %>
-              <%= f.hidden_field :status, value: "removed" %>
-              <%= f.submit "Remove", class: "text-[11px] font-bold text-row-ink bg-transparent border-0 cursor-pointer p-0",
-                    data: { confirm: "Remove this player? They keep read-only access." } %>
-            <% end %>
-            <%= form_with url: game_player_management_game_member_path(@game, member), method: :patch, class: "inline" do |f| %>
-              <%= f.hidden_field :status, value: "banned" %>
-              <%= f.submit "Ban", class: "text-[11px] font-bold text-danger bg-transparent border-0 cursor-pointer p-0",
-                    data: { confirm: "Ban this player? This permanently revokes all access and cannot be undone easily." } %>
-            <% end %>
-          <% elsif member.removed? %>
-            <%= form_with url: game_player_management_game_member_path(@game, member), method: :patch, class: "inline" do |f| %>
-              <%= f.hidden_field :status, value: "active" %>
-              <%= f.submit "Reinstate", class: "text-[11px] font-bold text-accent bg-transparent border-0 cursor-pointer p-0" %>
-            <% end %>
-          <% end %>
-        <% end %>
-      <% end %>
-    </div>
-  <% end %>
-
-  <%# Game Preferences %>
-  <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do %>Game Preferences<% end %>
-  <div class="bg-card border border-card-border rounded-card px-3.5">
-    <%= render Ui::SettingsRowComponent.new(label: "AI Scene Summaries", sub: "Auto-summarize when scenes resolve", last: true) do %>
-      <%= button_to toggle_ai_summaries_enabled_game_path(@game), method: :patch, class: "bg-transparent border-0 p-0 cursor-pointer",
-            "aria-label": (@game.ai_summaries_enabled? ? "Disable AI scene summaries" : "Enable AI scene summaries") do %>
-        <%= render Ui::ToggleSwitchComponent.new(on: @game.ai_summaries_enabled?) %>
-      <% end %>
+  <% if @is_gm %>
+    <%# Invite a Player %>
+    <%= render Ui::SectionLabelComponent.new do %>Invite a Player<% end %>
+    <%= form_with url: game_player_management_invitations_path(@game), method: :post, class: "flex gap-2" do |f| %>
+      <input type="email" name="invitation[email]" placeholder="player@email.com"
+             class="flex-1 border border-input-border rounded-control px-2.5 py-2.5 text-xs text-ink bg-card placeholder:text-muted-2">
+      <button type="submit" class="bg-accent text-accent-ink border-0 rounded-control px-4 font-extrabold text-xs cursor-pointer">Invite</button>
     <% end %>
-  </div>
+
+    <%# Pending Invitations %>
+    <% if @pending_invitations.any? %>
+      <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do %>Pending Invitations<% end %>
+      <div class="bg-card border border-card-border rounded-card px-3.5">
+        <% @pending_invitations.each_with_index do |inv, i| %>
+          <%= render Ui::SettingsRowComponent.new(label: inv.email, sub: "Sent #{time_ago_in_words(inv.created_at)} ago", last: i == @pending_invitations.length - 1) do %>
+            <%= form_with url: game_player_management_invitation_path(@game, inv), method: :delete, class: "inline" do |f| %>
+              <%= f.submit "Cancel", class: "text-[11px] font-bold text-danger bg-transparent border-0 cursor-pointer p-0" %>
+            <% end %>
+          <% end %>
+        <% end %>
+      </div>
+    <% end %>
+
+    <%# Members %>
+    <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do %>Members<% end %>
+    <% if @members.empty? %>
+      <p class="text-muted-2 text-sm">No players yet.</p>
+    <% else %>
+      <div class="bg-card border border-card-border rounded-card px-3.5">
+        <% @members.each_with_index do |member, i| %>
+          <%= render Ui::SettingsRowComponent.new(
+                label: @member_display_names[member.user_id],
+                sub: @member_characters[member.user_id],
+                last: i == @members.length - 1) do %>
+            <% if member.active? %>
+              <%= form_with url: game_player_management_game_member_path(@game, member), method: :patch, class: "inline" do |f| %>
+                <%= f.hidden_field :status, value: "removed" %>
+                <%= f.submit "Remove", class: "text-[11px] font-bold text-row-ink bg-transparent border-0 cursor-pointer p-0",
+                      data: { confirm: "Remove this player? They keep read-only access." } %>
+              <% end %>
+              <%= form_with url: game_player_management_game_member_path(@game, member), method: :patch, class: "inline" do |f| %>
+                <%= f.hidden_field :status, value: "banned" %>
+                <%= f.submit "Ban", class: "text-[11px] font-bold text-danger bg-transparent border-0 cursor-pointer p-0",
+                      data: { confirm: "Ban this player? This permanently revokes all access and cannot be undone easily." } %>
+              <% end %>
+            <% elsif member.removed? %>
+              <%= form_with url: game_player_management_game_member_path(@game, member), method: :patch, class: "inline" do |f| %>
+                <%= f.hidden_field :status, value: "active" %>
+                <%= f.submit "Reinstate", class: "text-[11px] font-bold text-accent bg-transparent border-0 cursor-pointer p-0" %>
+              <% end %>
+            <% end %>
+          <% end %>
+        <% end %>
+      </div>
+    <% end %>
+
+    <%# Game Preferences %>
+    <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do %>Game Preferences<% end %>
+    <div class="bg-card border border-card-border rounded-card px-3.5">
+      <%= render Ui::SettingsRowComponent.new(label: "AI Scene Summaries", sub: "Auto-summarize when scenes resolve", last: true) do %>
+        <%= button_to toggle_ai_summaries_enabled_game_path(@game), method: :patch, class: "bg-transparent border-0 p-0 cursor-pointer",
+              "aria-label": (@game.ai_summaries_enabled? ? "Disable AI scene summaries" : "Enable AI scene summaries") do %>
+          <%= render Ui::ToggleSwitchComponent.new(on: @game.ai_summaries_enabled?) %>
+        <% end %>
+      <% end %>
+    </div>
+  <% end %>
+
+  <%# Export %>
+  <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do %>Export<% end %>
+  <%= render Ui::CardComponent.new do %>
+    <%= render Ui::SettingsRowComponent.new(label: "This game", sub: @export_notice, last: true) do %>
+      <%= button_to "Export Game", game_export_path(@game), method: :post,
+            class: "text-[11px] font-bold text-accent bg-transparent border-0 cursor-pointer p-0" %>
+    <% end %>
+  <% end %>
 <% end %>

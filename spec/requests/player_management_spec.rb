@@ -17,11 +17,59 @@ RSpec.describe PlayerManagementController, type: :request do
       expect(response).to have_http_status(:ok)
     end
 
-    it "non-GM player is redirected with alert" do
+    it "non-GM active player can access the settings page, but not player-management controls" do
       sign_in(player)
       get game_player_management_path(game)
-      expect(response).to redirect_to(game_path(game))
-      expect(flash[:alert]).to match(/only the gm/i)
+      expect(response).to have_http_status(:ok)
+      expect(response.body).not_to include("Invite a Player")
+      expect(response.body).not_to include("Game Preferences")
+    end
+
+    it "non-GM active player sees the Export section" do
+      sign_in(player)
+      get game_player_management_path(game)
+      expect(response.body).to include("Export Game")
+    end
+
+    it "shows a last-export notice for this game when a recent receipt exists" do
+      receipt = create(:game_export_request, user: player, game: game, succeeded_at: 2.hours.ago)
+      receipt.archive.attach(io: StringIO.new("zip"), filename: "e.zip", content_type: "application/zip")
+      sign_in(player)
+      get game_player_management_path(game)
+      expect(response.body).to match(/Last export: .+ ago/)
+    end
+
+    it "shows no last-export notice when the only receipt is for a different game" do
+      other_game = create(:game)
+      create(:game_member, game: other_game, user: player)
+      receipt = create(:game_export_request, user: player, game: other_game, succeeded_at: 2.hours.ago)
+      receipt.archive.attach(io: StringIO.new("zip"), filename: "e.zip", content_type: "application/zip")
+      sign_in(player)
+      get game_player_management_path(game)
+      expect(response.body).not_to include("Last export:")
+    end
+
+    it "removed member can access the settings page" do
+      game.member_for(player).update!(status: "removed")
+      sign_in(player)
+      get game_player_management_path(game)
+      expect(response).to have_http_status(:ok)
+    end
+
+    it "banned member is redirected with alert" do
+      game.member_for(player).update!(status: "banned")
+      sign_in(player)
+      get game_player_management_path(game)
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to match(/do not have access/i)
+    end
+
+    it "non-member is redirected with alert" do
+      outsider = create(:user, :with_profile)
+      sign_in(outsider)
+      get game_player_management_path(game)
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to match(/do not have access/i)
     end
 
     it "unauthenticated user is redirected" do

@@ -2,8 +2,9 @@
 
 # The dark game-scoped header for the Game View: a hamburger (opens the nav
 # drawer), an optional GM crown, the game title, an optional trailing gear
-# (Player Management, GM-only), and a row of pill tabs that switch in-page
-# panels (Scenes / Roster / Files) client-side — no cross-page navigation.
+# (Game Settings, shown to any viewer with game access), and a row of pill
+# tabs that switch in-page panels (Scenes / Roster / Files) client-side — no
+# cross-page navigation.
 #
 # Composed entirely from Ui primitives.
 class Shared::GameHeaderComponent < ApplicationComponent
@@ -36,10 +37,12 @@ class Shared::GameHeaderComponent < ApplicationComponent
     @is_gm
   end
 
-  # The gear (Player Management) is GM-only.
+  # The gear (Game Settings) is shown to every viewer who reached this page
+  # — GM, active player, or removed player — since the settings page itself
+  # scopes GM-only content internally.
   sig { returns(T::Boolean) }
   def show_gear?
-    @show_gear && @is_gm
+    @show_gear
   end
 
   sig { returns(String) }

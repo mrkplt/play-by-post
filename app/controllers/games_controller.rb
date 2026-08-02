@@ -120,9 +120,6 @@ class GamesController < ApplicationController
     # Files tab
     @game_files = @game.game_files.includes(file_attachment: :blob).order(created_at: :desc)
     @game_file = @game.game_files.new
-
-    @export_receipt = GameExportRequest.valid_receipt_for(current_user, @game)
-    @export_notice = @export_receipt ? T.unsafe(view_context).last_export_notice(@export_receipt) : nil
   end
 
   sig { void }
@@ -186,9 +183,7 @@ class GamesController < ApplicationController
 
   sig { void }
   def require_game_access!
-    membership = @game.member_for(current_user)
-    return if membership&.game_master?
-    return if membership&.active? || membership&.removed?
+    return if @game.viewable_by?(current_user)
 
     redirect_to root_path, alert: "You do not have access to this game."
   end

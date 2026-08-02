@@ -36,14 +36,6 @@
                 avatar_tone: :gold, last: i == @roster_preview.length - 1) %>
         <% end %>
       </div>
-
-      <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do %>Export<% end %>
-      <div class="bg-card border border-card-border rounded-card px-3.5">
-        <%= render Ui::SettingsRowComponent.new(label: "This game", sub: @export_notice, last: true) do %>
-          <%= button_to "Export Game", game_export_path(@game), method: :post,
-                class: "text-[11px] font-bold text-accent bg-transparent border-0 cursor-pointer p-0" %>
-        <% end %>
-      </div>
     </section>
 
     <%# ===== Roster panel ===== %>
@@ -73,7 +65,7 @@
                       dimmed: row[:removed],
                       last: i == @roster_characters.length - 1) do %>
                   <% if row[:removed] %>
-                    <%= render Ui::BadgeComponent.new(variant: :slate) { "Removed" } %>
+                    <%= render(Ui::BadgeComponent.new(variant: :slate)) { "Removed" } %>
                   <% end %>
                 <% end %>
               </div>

@@ -75,4 +75,40 @@ RSpec.describe Game, type: :model do
       expect(game.active_member?(user)).to be false
     end
   end
+
+  describe "#viewable_by?" do
+    let(:game) { build_stubbed(:game) }
+    let(:user) { build_stubbed(:user) }
+
+    # Each predicate is isolated so a mutation dropping one term from the
+    # game_master? || active? || removed? chain flips the result.
+    def stub_membership(member)
+      allow(game).to receive(:member_for).with(user).and_return(member)
+    end
+
+    it "returns false when the user is not a member" do
+      stub_membership(nil)
+      expect(game.viewable_by?(user)).to be false
+    end
+
+    it "returns true for the game master, by role and independent of status" do
+      stub_membership(instance_double(GameMember, game_master?: true, active?: false, removed?: false))
+      expect(game.viewable_by?(user)).to be true
+    end
+
+    it "returns true for an active member" do
+      stub_membership(instance_double(GameMember, game_master?: false, active?: true, removed?: false))
+      expect(game.viewable_by?(user)).to be true
+    end
+
+    it "returns true for a removed member" do
+      stub_membership(instance_double(GameMember, game_master?: false, active?: false, removed?: true))
+      expect(game.viewable_by?(user)).to be true
+    end
+
+    it "returns false for a member who is neither GM, active, nor removed (banned)" do
+      stub_membership(instance_double(GameMember, game_master?: false, active?: false, removed?: false))
+      expect(game.viewable_by?(user)).to be false
+    end
+  end
 end

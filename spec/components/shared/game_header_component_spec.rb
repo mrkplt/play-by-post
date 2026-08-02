@@ -32,9 +32,9 @@ RSpec.describe Shared::GameHeaderComponent, type: :component do
       expect(described_class.new(game: game, title: "x", is_gm: true).show_crown?).to be true
     end
 
-    it "shows the gear linking to player management" do
+    it "shows the gear linking to game settings" do
       allow_any_instance_of(described_class).to receive(:gear_path).and_return("/games/1/player_management")
-      expect(rendered(is_gm: true, show_gear: true)).to have_css("a[aria-label='Player management']")
+      expect(rendered(is_gm: true, show_gear: true)).to have_css("a[aria-label='Game settings']")
     end
 
     it "hides the gear when show_gear is false" do
@@ -47,8 +47,12 @@ RSpec.describe Shared::GameHeaderComponent, type: :component do
       expect(described_class.new(game: game, title: "x", is_gm: false).show_crown?).to be false
     end
 
-    it "does not show the gear even when requested" do
-      expect(described_class.new(game: game, title: "x", is_gm: false, show_gear: true).show_gear?).to be false
+    it "shows the gear too — the settings page scopes GM-only content itself" do
+      expect(described_class.new(game: game, title: "x", is_gm: false, show_gear: true).show_gear?).to be true
+    end
+
+    it "still hides the gear when show_gear is false" do
+      expect(described_class.new(game: game, title: "x", is_gm: false, show_gear: false).show_gear?).to be false
     end
   end
 
