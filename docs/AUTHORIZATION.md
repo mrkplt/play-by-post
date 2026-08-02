@@ -129,41 +129,9 @@ app/policies/
   game_member_policy.rb
 ```
 
-### ApplicationPolicy (default-deny)
+### ApplicationPolicy — use the generator, don't hand-roll
 
-```ruby
-# typed: true
-class ApplicationPolicy
-  extend T::Sig
-  attr_reader :user, :record
-
-  sig { params(user: User, record: T.untyped).void }
-  def initialize(user, record)
-    @user = user
-    @record = record
-  end
-
-  # default-deny: every query method defaults false unless a subclass overrides
-  def show?    = false
-  def create?  = false
-  def update?  = false
-  def destroy? = false
-
-  class Scope
-    extend T::Sig
-    attr_reader :user, :scope
-
-    sig { params(user: User, scope: T.untyped).void }
-    def initialize(user, scope)
-      @user = user
-      @scope = scope
-    end
-
-    sig { returns(T.untyped) }
-    def resolve = raise NoMethodError, "#{self.class}#resolve not implemented"
-  end
-end
-```
+Run `rails g pundit:install`. It generates the canonical `app/policies/application_policy.rb` and we keep its structure verbatim — the default-deny `index?/show?/create?/new?/update?/edit?/destroy?` set, the `new? → create?` / `edit? → update?` aliases, and the nested `Scope` with `protected attr_reader :user, :scope` and a `resolve` that raises until overridden. **These are Pundit's codified opinions; adopt them, don't reinvent.** The only change we layer on is Sorbet: `extend T::Sig`, a `# typed: true` sigil, and a `sig` on `initialize`/`resolve`. We do **not** trim the method set to a custom "just the four I need" list — the full CRUD set with aliases is what makes `authorize @record` infer correctly from `action_name`.
 
 ### Worked example — ScenePolicy (all three surfaces)
 
@@ -186,25 +154,51 @@ class ScenePolicy < ApplicationPolicy
   sig { returns(T::Array[Symbol]) }
   def permitted_attributes = %i[title private parent_scene_id]
 
+  # Standard no-arg #resolve; the caller passes the game-scoped relation in.
   class Scope < ApplicationPolicy::Scope
-    sig { params(game: Game).returns(T.untyped) }
-    def for_game(game) = scope.visible_to(user, game)   # delegates to Scene.visible_to
+    sig { returns(T.untyped) }
+    def resolve = scope.visible_to(user)
   end
 end
 ```
 
+`Scene.visible_to` today takes `(user, game)` because it checks GM status against
+the game. Two convention-clean ways to feed the game in, pick one in Phase 2:
+1. **Relation carries it** — controller calls `policy_scope(@game.scenes)`; refactor
+   `visible_to` to a single-arg scope that reads the game from its own relation
+   (`where(game_id:)` context), so `resolve` stays the standard no-arg form.
+2. **Pundit's documented escape hatch** — when a scope needs extra context, the
+   README sanctions instantiating it directly: `ScenePolicy::Scope.new(user, @game.scenes).resolve`.
+   Use this only if (1) is awkward; it's still the gem's blessed path, not a custom one.
+
+**Method-naming convention:** mirror controller action names so `authorize @record`
+infers the query from `action_name` (`show?`, `create?`, `update?`, `destroy?`,
+`index?`). Only non-RESTful member actions get a custom name, called explicitly:
+`authorize @scene, :resolve?`. Field methods follow Pundit's lookup — define
+`permitted_attributes_for_create` / `permitted_attributes_for_update` when the two
+diverge (see `CharacterPolicy`, `:hidden`/`:user_id`), falling back to the single
+`permitted_attributes` when they don't.
+
 ### Wiring (ApplicationController)
+
+Straight from Pundit's README — no local invention:
 
 ```ruby
 include Pundit::Authorization
 rescue_from Pundit::NotAuthorizedError, with: :user_not_authorized
-after_action  :verify_authorized, except: :index, unless: :devise_controller?
-after_action  :verify_policy_scoped, only: :index, unless: :devise_controller?
+after_action  :verify_authorized
+after_action  :verify_policy_scoped, only: :index
 
 def user_not_authorized
-  redirect_back fallback_location: root_path, alert: "You are not authorized to do that."
+  flash[:alert] = "You are not authorized to perform this action."
+  redirect_back fallback_location: root_path
 end
 ```
+
+`verify_authorized` runs for every action (the README default); controllers with
+genuinely nothing to authorize opt out with `skip_after_action :verify_authorized`
+(devise, webhook, and mailbox-ingress controllers — see out-of-scope list). Leave
+`pundit_user` at its default (`current_user`); don't repoint it at `Current.user`.
 
 `verify_authorized` / `verify_policy_scoped` are the coherence net: an action that
 forgets to call `authorize`/`policy_scope` **fails in tests**, so the layer cannot
@@ -266,7 +260,8 @@ end before fanning out.
 
 ### Phase 0 — Foundation (no behavior change)
 - Add `pundit` to Gemfile; `bundle install`; `tapioca gem pundit`.
-- `ApplicationPolicy` + `ApplicationPolicy::Scope` (default-deny).
+- `rails g pundit:install` for the canonical `ApplicationPolicy` + `Scope`; add
+  only the Sorbet sigil/`sig`s on top of the generated file — no structural edits.
 - Wire `Pundit::Authorization`, `rescue_from`, and the `verify_*` after_actions
   in `ApplicationController` (no controller calls `authorize` yet, so
   `verify_authorized` is not yet enforced — add `except`/opt-in per controller as
@@ -353,15 +348,25 @@ The richest surface: record scope (`visible_to`), action predicates
   forbidden actor gets the redirect/404 (403-path and scope-404-path both covered).
 - **`verify_authorized`** guarantees no migrated action silently skips the check.
 
-## Open decisions to confirm before Phase 1
+## Decisions — resolved by Pundit convention
 
-1. **403 vs 404 split** — record-not-in-scope → 404 (existence not leaked) vs
-   visible-but-forbidden → redirect+alert. Plan follows this split; confirm the
-   copy for each. (Today's controllers conflate them.)
-2. **Headless surfaces** — `profiles` (self-scoped, no game) and dashboard-style
-   actions: headless `authorize :symbol, :action?` vs skip. Proposed: skip
-   `verify_authorized` for genuinely self-scoped actions rather than force a
-   policy.
-3. **Naming** — `permitted_attributes_for_update` vs a single method branching on
-   `record.new_record?`. Proposed: action-specific methods where create/update
-   diverge (characters), single method otherwise.
+The earlier open questions all have a codified gem answer; we take it rather than
+invent a house style.
+
+1. **403 vs 404 split** — Pundit's own idiom already encodes this: `authorize`
+   raises `Pundit::NotAuthorizedError` → the single `user_not_authorized` handler
+   (flash + `redirect_back`) for the visible-but-forbidden case; loading via
+   `policy_scope(rel).find(id)` raises `RecordNotFound` → the existing 404 path for
+   the not-in-scope case. No per-controller bespoke copy — one handler, the
+   gem-standard message.
+2. **Headless surfaces** — Pundit's documented answer is `skip_after_action
+   :verify_authorized` for controllers with genuinely nothing to authorize, and a
+   headless policy (`authorize :symbol, :action?`) where there *is* a decision.
+   `profiles` is self-scoped to `current_user` with no shared record → `skip`.
+   Don't manufacture a policy where the gem says skip.
+3. **Field-method naming** — Pundit's lookup convention *is* the answer:
+   `permitted_attributes_for_create` / `permitted_attributes_for_update` (it checks
+   `permitted_attributes_for_#{action}` first, then `permitted_attributes`). Use
+   the action-specific methods where create/update diverge, the single method
+   otherwise. No `record.new_record?` branching — that's reinventing the lookup the
+   gem already does.
