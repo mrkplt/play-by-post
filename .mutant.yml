@@ -121,6 +121,11 @@ matcher:
     - GamePolicy
     - GameMemberPolicy
     - InvitationPolicy
+    - PostPolicy
+    - GameFilePolicy
+    - SceneSummaryPolicy
+    - CharacterVersionPolicy
+    - UserProfilePolicy
 
 mutation:
   timeout: 20.0

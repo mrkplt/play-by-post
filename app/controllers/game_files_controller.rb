@@ -6,6 +6,7 @@ class GameFilesController < ApplicationController
   before_action :set_game
   before_action :require_game_access!
   before_action :require_gm!, only: %i[create destroy]
+  after_action :verify_authorized, except: :index
 
   sig { void }
   def index
@@ -16,6 +17,7 @@ class GameFilesController < ApplicationController
 
   sig { void }
   def create
+    authorize @game.game_files.new
     uploaded_file = params.dig(:game_file, :file)
     unless uploaded_file
       redirect_to game_game_files_path(@game), alert: "Please select a file to upload."
@@ -43,7 +45,9 @@ class GameFilesController < ApplicationController
 
   sig { void }
   def destroy
-    @game.game_files.find(params[:id]).destroy
+    game_file = @game.game_files.find(params[:id])
+    authorize game_file
+    game_file.destroy
     redirect_to game_game_files_path(@game), notice: "File deleted."
   end
 
@@ -56,11 +60,7 @@ class GameFilesController < ApplicationController
 
   sig { void }
   def require_game_access!
-    membership = @game.member_for(current_user)
-    return if membership&.game_master?
-    return if membership&.active? || membership&.removed?
-
-    redirect_to root_path, alert: "You do not have access to this game."
+    redirect_to root_path, alert: "You do not have access to this game." unless @game.viewable_by?(current_user)
   end
 
   sig { void }

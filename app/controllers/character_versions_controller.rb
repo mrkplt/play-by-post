@@ -7,9 +7,11 @@ class CharacterVersionsController < ApplicationController
   before_action :require_game_access!
   before_action :set_character
   before_action :set_version
+  after_action :verify_authorized
 
   sig { void }
   def show
+    authorize @version
     @editor = UserPresenter.new(@version.edited_by)
   end
 
@@ -32,10 +34,6 @@ class CharacterVersionsController < ApplicationController
 
   sig { void }
   def require_game_access!
-    membership = @game.member_for(current_user)
-    return if membership&.game_master?
-    return if membership&.active? || membership&.removed?
-
-    redirect_to root_path, alert: "You do not have access to this game."
+    redirect_to root_path, alert: "You do not have access to this game." unless @game.viewable_by?(current_user)
   end
 end

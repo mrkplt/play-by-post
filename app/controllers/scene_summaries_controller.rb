@@ -11,6 +11,7 @@ class SceneSummariesController < ApplicationController
   before_action :require_resolved_scene!, only: %i[new create]
   before_action :require_gm!, only: %i[new create edit update destroy]
   before_action :set_summary, only: %i[edit update destroy]
+  after_action :verify_authorized, except: :index
 
   sig { void }
   def index
@@ -38,10 +39,12 @@ class SceneSummariesController < ApplicationController
   sig { void }
   def new
     @summary = @scene.build_scene_summary
+    authorize @summary
   end
 
   sig { void }
   def create
+    authorize SceneSummary.new(scene_id: @scene.id), :create?
     if @scene.scene_summary.present?
       redirect_to edit_game_scene_scene_summary_path(@game, @scene),
                   alert: "A summary already exists. Edit it instead."
@@ -58,10 +61,12 @@ class SceneSummariesController < ApplicationController
 
   sig { void }
   def edit
+    authorize @summary
   end
 
   sig { void }
   def update
+    authorize @summary
     attrs = summary_params.merge(edited_by: current_user, edited_at: Time.current,
                                  generated_at: nil, model_used: nil,
                                  input_tokens: nil, output_tokens: nil)
@@ -74,6 +79,7 @@ class SceneSummariesController < ApplicationController
 
   sig { void }
   def destroy
+    authorize @summary
     @summary.destroy!
     redirect_to game_scene_path(@game, @scene), notice: "Summary deleted."
   end
@@ -103,11 +109,7 @@ class SceneSummariesController < ApplicationController
 
   sig { returns(T::Boolean) }
   def game_access_granted?
-    membership = @game.member_for(current_user)
-    return true if membership&.game_master?
-    return true if membership&.active? || membership&.removed?
-
-    false
+    @game.viewable_by?(current_user)
   end
 
   sig { void }
