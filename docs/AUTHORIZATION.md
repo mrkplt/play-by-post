@@ -127,6 +127,7 @@ app/policies/
   scene_participant_policy.rb
   invitation_policy.rb
   game_member_policy.rb
+  user_profile_policy.rb       # show? update? = record.user == user (owner rule)
 ```
 
 ### ApplicationPolicy — use the generator, don't hand-roll
@@ -301,9 +302,10 @@ The richest surface: record scope (`visible_to`), action predicates
 - Repoint `sidebar_component`, `nav_drawer_component`, `player_management` views.
 
 ### Phase 4 — Remaining resources
-- `PostPolicy`, `GameFilePolicy`, `SceneSummaryPolicy`, `CharacterVersionPolicy`.
-- Migrate `posts`, `game_files`, `scene_summaries`, `character_versions`
-  controllers; repoint `post_item_component`, `post_presenter`.
+- `PostPolicy`, `GameFilePolicy`, `SceneSummaryPolicy`, `CharacterVersionPolicy`,
+  `UserProfilePolicy`.
+- Migrate `posts`, `game_files`, `scene_summaries`, `character_versions`,
+  `profiles` controllers; repoint `post_item_component`, `post_presenter`.
 
 ### Phase 5 — Cleanup + enforcement + docs
 - Remove now-dead model boolean predicates (keep the scopes); confirm no delegators
@@ -333,6 +335,7 @@ The richest surface: record scope (`visible_to`), action predicates
 | `game_files` | inlined access + `require_gm!` | `GameFilePolicy` |
 | `scene_summaries` | inlined access + `require_gm!` | `SceneSummaryPolicy` |
 | `character_versions` | inlined access | `CharacterVersionPolicy` / `CharacterPolicy#show?` |
+| `profiles` | none (implicitly `current_user`-scoped) | `UserProfilePolicy` — owner rule, **no skip** |
 
 ---
 
@@ -359,11 +362,15 @@ invent a house style.
    `policy_scope(rel).find(id)` raises `RecordNotFound` → the existing 404 path for
    the not-in-scope case. No per-controller bespoke copy — one handler, the
    gem-standard message.
-2. **Headless surfaces** — Pundit's documented answer is `skip_after_action
-   :verify_authorized` for controllers with genuinely nothing to authorize, and a
-   headless policy (`authorize :symbol, :action?`) where there *is* a decision.
-   `profiles` is self-scoped to `current_user` with no shared record → `skip`.
-   Don't manufacture a policy where the gem says skip.
+2. **Self-scoped surfaces (`profiles`)** — **authorize, don't skip.** A profile has
+   an owner and a real rule (you may only touch your own), so it gets a
+   `UserProfilePolicy` with `show?`/`update?` = `record.user == user`. "It currently
+   only loads `current_user`'s record" is precisely the implicit safety this
+   migration removes — it survives only until someone adds a param'd id. Pundit's
+   `skip_after_action :verify_authorized` is reserved strictly for controllers with
+   genuinely no authenticated user or record concept — the out-of-scope list below
+   (devise, webhook, mailbox-ingress), which already skip `authenticate_user!`.
+   Nothing user-facing skips.
 3. **Field-method naming** — Pundit's lookup convention *is* the answer:
    `permitted_attributes_for_create` / `permitted_attributes_for_update` (it checks
    `permitted_attributes_for_#{action}` first, then `permitted_attributes`). Use
