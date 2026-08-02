@@ -261,6 +261,37 @@ For technology stack, domain model, codebase conventions, and development workfl
 | Receive notifications | Yes | No | No |
 | Game appears on dashboard | Yes | Yes ("Former") | No |
 
+### Authorization implementation (Pundit)
+
+Every authorization decision is owned by a **policy object** — one per domain
+model in `app/policies/`, each `ApplicationPolicy` subclass initialized with
+`(user, record)` and therefore usable from any tier (controller, view, service,
+mailbox) without a request. The rules in the table above are expressed there:
+
+- **Action predicates** (`show?`, `create?`, `update?`, `resolve?`, `join?`,
+  `manage_players?`, …) — the route/action gate. Controllers call `authorize
+  @record`; an `after_action :verify_authorized` net fails any action that
+  forgets to authorize (index/public/self-scoped actions are the only ones
+  excepted per controller).
+- **Scopes** (`ScenePolicy::Scope`, `CharacterPolicy::Scope`) — wrap the
+  `visible_to` model scopes so a record outside a user's visibility is never
+  loaded.
+- **Field-level** (`permitted_attributes`) — e.g. only the GM assigns a
+  character's owner (`user_id`); a player may still hide their own sheet.
+- **Non-HTTP reuse** — `SceneMailbox` calls `ScenePolicy#reply_by_email?`
+  directly (reply-by-email is allowed only for scene participants), and
+  `PostPresenter#editable_by?` delegates to `PostPolicy#update?` so the post
+  card and the controller share one decision.
+
+Denials raise `Pundit::NotAuthorizedError` (→ a flash + `redirect_back`); loading
+a record through a policy scope that excludes it yields a 404 (existence is not
+leaked). Controllers preserve their specific denial copy where it is
+user-facing (no-access, hidden-sheet, cannot-edit, GM-only). Profiles are
+governed by an owner rule (`record.user == user`), not skipped. The only
+authorization-exempt controllers are those with no authenticated user: Devise
+sessions, the deploy webhook, the inbound-email ingress, and public invitation
+acceptance.
+
 ---
 
 ## Game Export
