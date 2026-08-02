@@ -5,9 +5,11 @@ class PlayerManagementController < ApplicationController
 
   before_action :set_game
   before_action :require_access!
+  after_action :verify_authorized
 
   sig { void }
   def show
+    authorize @game, :manage_players?
     @is_gm = @game.game_master?(current_user)
 
     if @is_gm

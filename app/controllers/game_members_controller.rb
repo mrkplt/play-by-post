@@ -5,10 +5,12 @@ class GameMembersController < ApplicationController
 
   before_action :set_game
   before_action :require_gm!
+  after_action :verify_authorized
 
   sig { void }
   def update
     @member = @game.game_members.find(params[:id])
+    authorize @member
 
     if @member.game_master?
       redirect_to game_player_management_path(@game), alert: "Cannot change GM status."

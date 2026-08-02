@@ -118,6 +118,9 @@ matcher:
     - CharacterPolicy::Scope
     - ScenePolicy
     - ScenePolicy::Scope
+    - GamePolicy
+    - GameMemberPolicy
+    - InvitationPolicy
 
 mutation:
   timeout: 20.0

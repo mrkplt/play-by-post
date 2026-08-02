@@ -6,6 +6,7 @@ class GamesController < ApplicationController
   before_action :set_game, only: %i[show edit update toggle_sheets_hidden toggle_images_disabled toggle_ai_summaries_enabled]
   before_action :require_game_access!, only: %i[show]
   before_action :require_gm!, only: %i[edit update toggle_sheets_hidden toggle_images_disabled toggle_ai_summaries_enabled]
+  after_action :verify_authorized, except: :index
 
   sig { void }
   def index
@@ -50,11 +51,13 @@ class GamesController < ApplicationController
   sig { void }
   def new
     @game = Game.new
+    authorize @game
   end
 
   sig { void }
   def create
     @game = Game.new(game_params)
+    authorize @game
     if @game.save
       @game.game_members.create!(user: current_user, role: "game_master", status: "active")
       redirect_to @game, notice: "Game created."
@@ -65,12 +68,14 @@ class GamesController < ApplicationController
 
   sig { void }
   def toggle_sheets_hidden
+    authorize @game, :update?
     @game.update!(sheets_hidden: !@game.sheets_hidden?)
     redirect_to game_path(@game), notice: @game.sheets_hidden? ? "Character sheets are now hidden." : "Character sheets are now visible."
   end
 
   sig { void }
   def toggle_images_disabled
+    authorize @game, :update?
     @game.update!(images_disabled: !@game.images_disabled?)
     redirect_to edit_game_path(@game), notice: @game.images_disabled? ? "Image attachments are now disabled." : "Image attachments are now enabled."
   end
@@ -78,12 +83,14 @@ class GamesController < ApplicationController
   sig { void }
   # mutant:disable
   def toggle_ai_summaries_enabled
+    authorize @game, :update?
     @game.update!(ai_summaries_enabled: !@game.ai_summaries_enabled?)
     redirect_to game_player_management_path(@game), notice: @game.ai_summaries_enabled? ? "AI scene summaries enabled." : "AI scene summaries disabled."
   end
 
   sig { void }
   def show
+    authorize @game
     raw_scenes = @game.scenes
       .visible_to(current_user, @game)
       .active
@@ -124,10 +131,12 @@ class GamesController < ApplicationController
 
   sig { void }
   def edit
+    authorize @game
   end
 
   sig { void }
   def update
+    authorize @game
     if @game.update(game_params)
       redirect_to @game, notice: "Game updated."
     else
@@ -183,14 +192,14 @@ class GamesController < ApplicationController
 
   sig { void }
   def require_game_access!
-    return if @game.viewable_by?(current_user)
+    return if policy(@game).show?
 
     redirect_to root_path, alert: "You do not have access to this game."
   end
 
   sig { void }
   def require_gm!
-    return if @game.game_master?(current_user)
+    return if policy(@game).update?
 
     redirect_to game_path(@game), alert: "Only the GM can do this."
   end

@@ -7,10 +7,12 @@ class InvitationsController < ApplicationController
 
   before_action :set_game, except: %i[accept]
   before_action :require_gm!, except: %i[accept]
+  after_action :verify_authorized, except: %i[accept]
 
   sig { void }
   def create
     @invitation = @game.invitations.new(email: params[:invitation][:email], invited_by: current_user)
+    authorize @invitation
 
     if @invitation.save
       InvitationMailer.invite(@invitation).deliver_later
@@ -23,6 +25,7 @@ class InvitationsController < ApplicationController
   sig { void }
   def destroy
     invitation = @game.invitations.find(params[:id])
+    authorize invitation
     invitation.destroy
     redirect_to game_player_management_path(@game), notice: "Invitation cancelled."
   end

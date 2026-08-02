@@ -5,9 +5,11 @@ class GameExportsController < ApplicationController
 
   before_action :set_game
   before_action :require_export_access!
+  after_action :verify_authorized
 
   sig { void }
   def create
+    authorize @game, :export?
     receipt = GameExportRequest.valid_receipt_for(current_user, @game)
 
     if receipt
