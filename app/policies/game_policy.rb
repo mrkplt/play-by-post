@@ -44,6 +44,18 @@ class GamePolicy < ApplicationPolicy
     (membership&.game_master? || membership&.active?) || false
   end
 
+  # Which scenes this user's export of the game includes: everything for the GM,
+  # only participated scenes for a removed member, otherwise the normally-visible
+  # set. Removed members export less than they can view (see REQUIREMENTS).
+  sig { returns(Symbol) }
+  def export_scene_selection
+    membership = record.member_for(user)
+    return :all if membership&.game_master?
+    return :participating if membership&.removed?
+
+    :visible
+  end
+
   private
 
   sig { returns(T::Boolean) }

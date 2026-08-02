@@ -545,26 +545,6 @@ RSpec.describe GameExportService do
     end
   end
 
-  describe "#scene_selection_for" do
-    let(:service) { described_class.new(build_stubbed(:user), []) }
-
-    def rule_for(role:, status: "active")
-      service.send(:scene_selection_for, build_stubbed(:game_member, role: role, status: status))
-    end
-
-    it "gives a GM every scene" do
-      expect(rule_for(role: "game_master")).to eq(:all)
-    end
-
-    it "limits a removed member to scenes they took part in" do
-      expect(rule_for(role: "player", status: "removed")).to eq(:participating)
-    end
-
-    it "gives an active player the scenes visible to them" do
-      expect(rule_for(role: "player")).to eq(:visible)
-    end
-  end
-
   # Which membership gets which scenes is exactly what the query has to select
   # on: a real, persisted graph is needed so a wrong join, where clause, or
   # branch actually changes what comes back — a stubbed relation can't fail
@@ -575,7 +555,7 @@ RSpec.describe GameExportService do
     it "gives the GM every scene in the game, including private ones" do
       secret = create(:scene, :private, game: game, title: "Secret Room")
 
-      result = described_class.new(gm_user, [ game ]).send(:export_scenes_for, game, gm_member)
+      result = described_class.new(gm_user, [ game ]).send(:export_scenes_for, game, :all)
 
       expect(result).to contain_exactly(scene, secret)
     end
@@ -586,7 +566,7 @@ RSpec.describe GameExportService do
       create(:scene_participant, scene: scene, user: removed_user)
       elsewhere = create(:scene, game: game, title: "Elsewhere")
 
-      result = described_class.new(removed_user, [ game ]).send(:export_scenes_for, game, removed_member)
+      result = described_class.new(removed_user, [ game ]).send(:export_scenes_for, game, :participating)
 
       expect(result).to contain_exactly(scene)
       expect(result).not_to include(elsewhere)
@@ -595,7 +575,7 @@ RSpec.describe GameExportService do
     it "gives an active player the scenes visible to them, not private ones they're not in" do
       create(:scene, :private, game: game, title: "Secret Room")
 
-      result = service.send(:export_scenes_for, game, player_member)
+      result = service.send(:export_scenes_for, game, :visible)
 
       expect(result).to contain_exactly(scene)
     end
@@ -605,7 +585,7 @@ RSpec.describe GameExportService do
       create(:game_member, game: other_game, user: player_user, role: "player", status: "active")
       create(:scene, game: other_game, title: "Elsewhere Entirely")
 
-      result = service.send(:export_scenes_for, game, player_member)
+      result = service.send(:export_scenes_for, game, :visible)
 
       expect(result).to contain_exactly(scene)
     end

@@ -42,10 +42,10 @@ class GameExportService
 
   sig { params(game: Game, zip: Zip::OutputStream, prefix: String).void }
   def build_game(game, zip, prefix:)
-    membership = game.member_for(@user)
-    return unless membership&.active? || membership&.game_master? || membership&.removed?
+    policy = GamePolicy.new(@user, game)
+    return unless policy.export?
 
-    scenes = export_scenes_for(game, membership)
+    scenes = export_scenes_for(game, policy.export_scene_selection)
 
     write_readme(zip, prefix, game, scenes)
     write_files_manifest(zip, prefix, game)
@@ -53,19 +53,10 @@ class GameExportService
     write_characters(zip, prefix, game, scenes)
   end
 
-  # Which scenes a membership exports. Pure decision — the query below just
-  # applies it, so the rule can be asserted without persisting scenes.
-  sig { params(membership: GameMember).returns(Symbol) }
-  def scene_selection_for(membership)
-    return :all if membership.game_master?
-    return :participating if membership.removed?
-
-    :visible
-  end
-
-  sig { params(game: Game, membership: GameMember).returns(T::Array[Scene]) }
-  def export_scenes_for(game, membership)
-    case scene_selection_for(membership)
+  # Applies the export scope the policy decided (:all / :participating / :visible).
+  sig { params(game: Game, selection: Symbol).returns(T::Array[Scene]) }
+  def export_scenes_for(game, selection)
+    case selection
     when :all
       game.scenes.includes(:parent_scene, scene_participants: %i[user character], posts: :user).to_a
     when :participating

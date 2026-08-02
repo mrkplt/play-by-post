@@ -74,4 +74,31 @@ RSpec.describe GamePolicy do
       expect(policy.write_access?).to be(false)
     end
   end
+
+  describe "#export_scene_selection" do
+    def stub_membership(gm: false, removed: false)
+      allow(game).to receive(:member_for).with(user)
+        .and_return(instance_double(GameMember, game_master?: gm, removed?: removed))
+    end
+
+    it "gives the GM every scene" do
+      stub_membership(gm: true)
+      expect(policy.export_scene_selection).to eq(:all)
+    end
+
+    it "limits a removed member to scenes they participated in" do
+      stub_membership(gm: false, removed: true)
+      expect(policy.export_scene_selection).to eq(:participating)
+    end
+
+    it "gives everyone else the normally-visible set" do
+      stub_membership(gm: false, removed: false)
+      expect(policy.export_scene_selection).to eq(:visible)
+    end
+
+    it "defaults to the visible set when there is no membership" do
+      allow(game).to receive(:member_for).with(user).and_return(nil)
+      expect(policy.export_scene_selection).to eq(:visible)
+    end
+  end
 end
