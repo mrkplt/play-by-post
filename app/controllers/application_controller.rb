@@ -4,6 +4,7 @@ class ApplicationController < ActionController::Base
   extend T::Sig
 
   include Pagy::Method
+  include Pundit::Authorization
 
   allow_browser versions: :modern
   before_action :authenticate_user!
@@ -11,8 +12,15 @@ class ApplicationController < ActionController::Base
 
   rescue_from ActiveRecord::RecordNotFound, with: :not_found
   rescue_from ActionController::ParameterMissing, with: :bad_request
+  rescue_from Pundit::NotAuthorizedError, with: :user_not_authorized
 
   private
+
+  sig { void }
+  def user_not_authorized
+    flash[:alert] = "You are not authorized to perform this action."
+    redirect_back fallback_location: root_path
+  end
 
   sig { void }
   def not_found

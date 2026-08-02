@@ -111,6 +111,9 @@ matcher:
     - SceneMailbox
     # Helpers
     - ApplicationHelper
+    # Policies
+    - ApplicationPolicy
+    - ApplicationPolicy::Scope
 
 mutation:
   timeout: 20.0
