@@ -66,6 +66,7 @@ matcher:
     - Ui::ButtonComponent
     - Ui::GlowComponent
     - Ui::AvatarComponent
+    - Ui::CardComponent
     - Ui::SectionLabelComponent
     - Ui::ToggleSwitchComponent
     - Ui::IconButtonComponent

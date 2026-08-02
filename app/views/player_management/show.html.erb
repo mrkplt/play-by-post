@@ -75,10 +75,10 @@
 
   <%# Export %>
   <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do %>Export<% end %>
-  <div class="bg-card border border-card-border rounded-card px-3.5">
+  <%= render Ui::CardComponent.new do %>
     <%= render Ui::SettingsRowComponent.new(label: "This game", sub: @export_notice, last: true) do %>
       <%= button_to "Export Game", game_export_path(@game), method: :post,
             class: "text-[11px] font-bold text-accent bg-transparent border-0 cursor-pointer p-0" %>
     <% end %>
-  </div>
+  <% end %>
 <% end %>
