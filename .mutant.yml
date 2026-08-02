@@ -116,6 +116,8 @@ matcher:
     - ApplicationPolicy::Scope
     - CharacterPolicy
     - CharacterPolicy::Scope
+    - ScenePolicy
+    - ScenePolicy::Scope
 
 mutation:
   timeout: 20.0

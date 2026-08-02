@@ -42,6 +42,6 @@ class SceneMailbox < ApplicationMailbox
   sig { void }
   def require_participant
     user = sender_user
-    inbound_email.bounced! unless user && T.must(@scene).participant?(user)
+    inbound_email.bounced! unless user && ScenePolicy.new(user, T.must(@scene)).reply_by_email?
   end
 end
