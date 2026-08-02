@@ -60,12 +60,12 @@ class GameFilesController < ApplicationController
 
   sig { void }
   def require_game_access!
-    redirect_to root_path, alert: "You do not have access to this game." unless @game.viewable_by?(current_user)
+    redirect_to root_path, alert: "You do not have access to this game." unless policy(@game).show?
   end
 
   sig { void }
   def require_gm!
-    unless @game.game_master?(current_user)
+    unless policy(@game).update?
       redirect_to game_path(@game), alert: "Only the GM can manage files."
     end
   end

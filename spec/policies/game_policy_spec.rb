@@ -47,4 +47,31 @@ RSpec.describe GamePolicy do
       expect(policy.edit?).to be(false)
     end
   end
+
+  describe "#write_access? (GM or active member)" do
+    def stub_membership(gm: false, active: false, present: true)
+      membership = present ? instance_double(GameMember, game_master?: gm, active?: active) : nil
+      allow(game).to receive(:member_for).with(user).and_return(membership)
+    end
+
+    it "is true for the GM" do
+      stub_membership(gm: true)
+      expect(policy.write_access?).to be(true)
+    end
+
+    it "is true for an active member" do
+      stub_membership(active: true)
+      expect(policy.write_access?).to be(true)
+    end
+
+    it "is false for a member who is neither GM nor active (e.g. removed)" do
+      stub_membership(gm: false, active: false)
+      expect(policy.write_access?).to be(false)
+    end
+
+    it "is false for a non-member" do
+      stub_membership(present: false)
+      expect(policy.write_access?).to be(false)
+    end
+  end
 end

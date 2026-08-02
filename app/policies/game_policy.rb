@@ -36,6 +36,14 @@ class GamePolicy < ApplicationPolicy
     viewable?
   end
 
+  # Write access to the game: the GM or an active member (mirrors the write
+  # guard shared by post/character/scene creation).
+  sig { returns(T::Boolean) }
+  def write_access?
+    membership = record.member_for(user)
+    (membership&.game_master? || membership&.active?) || false
+  end
+
   private
 
   sig { returns(T::Boolean) }

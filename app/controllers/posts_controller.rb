@@ -106,7 +106,7 @@ class PostsController < ApplicationController
 
   sig { void }
   def require_participant!
-    unless @scene.participant?(current_user) || @game.game_master?(current_user)
+    unless policy(@scene.posts.new).participate?
       redirect_to game_scene_path(@game, @scene), alert: "You are not a participant in this scene."
     end
   end

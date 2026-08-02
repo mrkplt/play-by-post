@@ -54,7 +54,7 @@ class SceneParticipantsController < ApplicationController
   sig { void }
   def join
     authorize @scene, :join?
-    if @scene.private? && !@game.game_master?(current_user)
+    if @scene.private? && !policy(@game).update?
       redirect_to game_scene_path(@game, @scene), alert: "Cannot join a private scene."
       return
     end
@@ -82,7 +82,7 @@ class SceneParticipantsController < ApplicationController
 
   sig { void }
   def require_gm!
-    return if @game.game_master?(current_user)
+    return if policy(@game).update?
 
     redirect_to game_scene_path(@game, @scene), alert: "Only the GM can edit participants."
   end

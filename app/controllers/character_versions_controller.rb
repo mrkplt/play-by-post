@@ -34,6 +34,6 @@ class CharacterVersionsController < ApplicationController
 
   sig { void }
   def require_game_access!
-    redirect_to root_path, alert: "You do not have access to this game." unless @game.viewable_by?(current_user)
+    redirect_to root_path, alert: "You do not have access to this game." unless policy(@game).show?
   end
 end

@@ -60,6 +60,7 @@ class ScenesController < ApplicationController
     @is_participant = @scene.participant?(current_user)
     @current_membership = @game.member_for(current_user)
     @is_muted = NotificationPreference.muted?(@scene, current_user)
+    @can_post = policy(@scene.posts.new).create? && !@scene.resolved?
     @hide_ooc = current_user.user_profile&.hide_ooc? || false
     @child_scenes = @scene.child_scenes.visible_to(current_user, @game).order(:created_at)
 
@@ -120,12 +121,12 @@ class ScenesController < ApplicationController
 
   sig { void }
   def require_game_access!
-    redirect_to root_path, alert: "You do not have access to this game." unless @game.viewable_by?(current_user)
+    redirect_to root_path, alert: "You do not have access to this game." unless policy(@game).show?
   end
 
   sig { void }
   def require_gm!
-    return if @game.game_master?(current_user)
+    return if policy(@game).update?
 
     redirect_to game_path(@game), alert: "Only the GM can create scenes."
   end

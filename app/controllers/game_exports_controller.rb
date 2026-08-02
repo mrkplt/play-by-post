@@ -33,7 +33,7 @@ class GameExportsController < ApplicationController
 
   sig { void }
   def require_export_access!
-    return if @game.viewable_by?(current_user)
+    return if policy(@game).export?
 
     redirect_to root_path, alert: "You do not have access to export this game."
   end

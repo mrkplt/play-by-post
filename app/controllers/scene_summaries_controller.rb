@@ -109,12 +109,12 @@ class SceneSummariesController < ApplicationController
 
   sig { returns(T::Boolean) }
   def game_access_granted?
-    @game.viewable_by?(current_user)
+    policy(@game).show?
   end
 
   sig { void }
   def require_gm!
-    return if @game.game_master?(current_user)
+    return if policy(@game).update?
 
     redirect_to @game, alert: "Only the GM can manage summaries."
   end

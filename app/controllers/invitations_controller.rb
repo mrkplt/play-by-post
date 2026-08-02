@@ -57,7 +57,7 @@ class InvitationsController < ApplicationController
 
   sig { void }
   def require_gm!
-    unless @game.game_master?(current_user)
+    unless policy(@game).update?
       redirect_to game_path(@game), alert: "Only the GM can manage invitations."
     end
   end

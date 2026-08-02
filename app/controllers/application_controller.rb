@@ -39,9 +39,7 @@ class ApplicationController < ActionController::Base
 
   sig { params(game: Game).void }
   def require_active_member!(game)
-    membership = game.member_for(current_user)
-    return if membership&.game_master?
-    return if membership&.active?
+    return if policy(game).write_access?
 
     redirect_to game_path(game), alert: "You no longer have write access to this game."
   end
