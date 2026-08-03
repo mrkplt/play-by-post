@@ -47,7 +47,7 @@ class PostPresenter < BasePresenter
 
   sig { params(user: User).returns(T::Boolean) }
   def editable_by?(user)
-    @model.editable_by?(user) # mutant:disable
+    PostPolicy.new(user, @model).update? # mutant:disable
   end
 
   sig { returns(T.untyped) }

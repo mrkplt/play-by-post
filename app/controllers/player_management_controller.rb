@@ -5,12 +5,14 @@ class PlayerManagementController < ApplicationController
 
   before_action :set_game
   before_action :require_access!
+  after_action :verify_authorized
 
   sig { void }
   def show
-    @is_gm = @game.game_master?(current_user)
+    authorize @game, :manage_players?
+    @game_presenter = GamePresenter.new(@game, current_user)
 
-    if @is_gm
+    if policy(@game).update?
       @members = @game.game_members.where.not(status: "banned").where(role: "player").includes(:user)
       @member_display_names = @members.each_with_object({}) { |m, h| h[m.user_id] = UserPresenter.new(m.user).display_name_or_email }
       @member_characters = character_names_by_user
@@ -38,6 +40,6 @@ class PlayerManagementController < ApplicationController
 
   sig { void }
   def require_access!
-    redirect_to root_path, alert: "You do not have access to this game." unless @game.viewable_by?(current_user)
+    redirect_to root_path, alert: "You do not have access to this game." unless policy(@game).manage_players?
   end
 end

@@ -5,4 +5,4 @@
 <% end %>
 
 <%= render Shared::SceneSummaryIndexPageComponent.new(
-      game: @game, summaries: @summaries, pagy: @pagy, is_gm: @is_gm) %>
+      game: @game, summaries: @summaries, pagy: @pagy, is_gm: @game_presenter.gm?) %>

@@ -8,18 +8,19 @@ class PostsController < ApplicationController
   before_action :require_participant!
   before_action :require_active_member_for_write!, only: %i[create save_draft]
   before_action :set_post, only: %i[edit update mark_read]
+  before_action :require_editable!, only: %i[edit update]
+  after_action :verify_authorized, except: %i[discard_draft save_draft]
 
   sig { void }
   def mark_read
+    authorize @post, :mark_read?
     PostRead.mark!(@post, current_user)
     head :no_content
   end
 
   sig { void }
   def edit
-    unless @post.editable_by?(current_user)
-      redirect_to game_scene_path(@game, @scene), alert: "This post can no longer be edited."
-    end
+    authorize @post
   end
 
   sig { void }
@@ -57,6 +58,7 @@ class PostsController < ApplicationController
       @post.user = current_user
     end
 
+    authorize @post, :create?
     attach_image(@post)
 
     if @post.save
@@ -75,11 +77,7 @@ class PostsController < ApplicationController
 
   sig { void }
   def update
-    unless @post.editable_by?(current_user)
-      redirect_to game_scene_path(@game, @scene), alert: "This post can no longer be edited."
-      return
-    end
-
+    authorize @post
     @post.update!(content: params[:post][:content], last_edited_at: Time.current) # mutant:disable
     @post_presenter = PostPresenter.new(@post, scene_participants: @scene.scene_participants.includes(:character, :user).to_a) # mutant:disable
 
@@ -108,9 +106,14 @@ class PostsController < ApplicationController
 
   sig { void }
   def require_participant!
-    unless @scene.participant?(current_user) || @game.game_master?(current_user)
+    unless policy(@scene.posts.new).participate?
       redirect_to game_scene_path(@game, @scene), alert: "You are not a participant in this scene."
     end
+  end
+
+  sig { void }
+  def require_editable!
+    redirect_to game_scene_path(@game, @scene), alert: "This post can no longer be edited." unless policy(@post).update?
   end
 
   sig { void }

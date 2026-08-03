@@ -5,15 +5,13 @@ class GameMembersController < ApplicationController
 
   before_action :set_game
   before_action :require_gm!
+  before_action :set_member, only: :update
+  before_action :require_manageable_member!, only: :update
+  after_action :verify_authorized
 
   sig { void }
   def update
-    @member = @game.game_members.find(params[:id])
-
-    if @member.game_master?
-      redirect_to game_player_management_path(@game), alert: "Cannot change GM status."
-      return
-    end
+    authorize @member
 
     new_status = params.dig(:game_member, :status) || params[:status]
     unless GameMember::STATUSES.include?(new_status)
@@ -33,8 +31,22 @@ class GameMembersController < ApplicationController
   end
 
   sig { void }
+  def set_member
+    @member = @game.game_members.find(params[:id])
+  end
+
+  # The GM's own membership is not modifiable — the rule lives in
+  # GameMemberPolicy#update?; this surfaces its specific message.
+  sig { void }
+  def require_manageable_member!
+    return if policy(@member).update?
+
+    redirect_to game_player_management_path(@game), alert: "Cannot change GM status."
+  end
+
+  sig { void }
   def require_gm!
-    unless @game.game_master?(current_user)
+    unless policy(@game).update?
       redirect_to game_path(@game), alert: "Only the GM can manage players."
     end
   end

@@ -4,7 +4,7 @@
   <%= render Shared::MobileFrameComponent.new do |frame| %>
     <% frame.with_header do %>
       <%= render Shared::GameHeaderComponent.new(
-            game: @game, title: @game.name, is_gm: @is_gm, active_tab: :scenes, show_gear: true) %>
+            game: @game, title: @game.name, is_gm: @game_presenter.gm?, active_tab: :scenes, show_gear: true) %>
     <% end %>
 
     <%# ===== Scenes panel ===== %>
@@ -20,7 +20,7 @@
         </div>
       <% end %>
 
-      <% if @is_gm %>
+      <% if @game_presenter.gm? %>
         <%= link_to "New Scene", new_game_scene_path(@game),
               class: "block w-full text-center bg-accent text-accent-ink rounded-control py-2.5 font-bold text-[13px] no-underline" %>
       <% end %>
@@ -29,7 +29,7 @@
       <div class="bg-card border border-card-border rounded-card overflow-hidden">
         <%= render Shared::RosterRowComponent.new(
               name: @gm_name, subtitle: "Running this game",
-              avatar_tone: :dark, crown: @is_gm, last: @roster_preview.empty?) %>
+              avatar_tone: :dark, crown: @game_presenter.gm?, last: @roster_preview.empty?) %>
         <% @roster_preview.each_with_index do |row, i| %>
           <%= render Shared::RosterRowComponent.new(
                 name: row[:name], subtitle: row[:scene],
@@ -79,7 +79,7 @@
           </p>
         <% end %>
 
-        <% if @is_gm && @banned_members.any? %>
+        <% if @game_presenter.gm? && @banned_members.any? %>
           <%= render Ui::SectionLabelComponent.new(html_class: "mt-3") do %>Banned &middot; GM only<% end %>
           <div class="bg-tint-blue-bg border border-tint-blue-border rounded-card overflow-hidden opacity-85 mt-1">
             <% @banned_members.each_with_index do |member, i| %>
@@ -99,7 +99,7 @@
           </div>
         <% end %>
 
-        <% if @is_gm %>
+        <% if @game_presenter.gm? %>
           <%= link_to "Invite Player", game_player_management_path(@game),
                 class: "block w-full text-center bg-accent text-accent-ink rounded-control py-2.5 font-extrabold text-[13px] tracking-[0.02em] no-underline mt-3" %>
         <% end %>
@@ -108,14 +108,14 @@
 
     <%# ===== Files panel ===== %>
     <section data-game-tabs-target="panel" data-panel="files" class="flex flex-col gap-3" hidden>
-      <% if @is_gm %>
+      <% if @game_presenter.gm? %>
         <%= render Shared::FileUploadFormComponent.new(game: @game, game_file: @game_file) %>
       <% end %>
       <% if @game_files.empty? %>
         <p class="text-muted-2 text-sm">No files uploaded yet.</p>
       <% else %>
         <%= render Ui::SectionLabelComponent.new do %>Newest first<% end %>
-        <%= render Shared::GalleryComponent.new(game_files: @game_files.to_a, game: @game, is_gm: @is_gm) %>
+        <%= render Shared::GalleryComponent.new(game_files: @game_files.to_a, game: @game, is_gm: @game_presenter.gm?) %>
       <% end %>
     </section>
   <% end %>

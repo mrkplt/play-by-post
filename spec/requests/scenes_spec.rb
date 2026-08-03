@@ -668,6 +668,7 @@ RSpec.describe ScenesController, type: :request do
       patch resolve_game_scene_path(game, scene), params: { resolution: "Nope." }
       expect(scene.reload).not_to be_resolved
       expect(response).to redirect_to(game_scene_path(game, scene))
+      expect(flash[:alert]).to match(/only the gm/i)
     end
 
     it "redirects with alert when scene is already resolved" do

@@ -53,6 +53,9 @@ gem "thruster", require: false
 gem "devise"
 gem "devise-passwordless"
 
+# Authorization — per-model policy objects
+gem "pundit"
+
 # Markdown rendering
 gem "redcarpet"
 

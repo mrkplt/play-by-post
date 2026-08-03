@@ -6,16 +6,18 @@ class GameFilesController < ApplicationController
   before_action :set_game
   before_action :require_game_access!
   before_action :require_gm!, only: %i[create destroy]
+  after_action :verify_authorized, except: :index
 
   sig { void }
   def index
     @game_files = @game.game_files.includes(file_attachment: :blob).order(created_at: :desc)
-    @is_gm = @game.game_master?(current_user)
+    @game_presenter = GamePresenter.new(@game, current_user)
     @game_file = @game.game_files.new
   end
 
   sig { void }
   def create
+    authorize @game.game_files.new
     uploaded_file = params.dig(:game_file, :file)
     unless uploaded_file
       redirect_to game_game_files_path(@game), alert: "Please select a file to upload."
@@ -36,14 +38,16 @@ class GameFilesController < ApplicationController
       redirect_to game_game_files_path(@game), notice: "File uploaded."
     else
       @game_files = @game.game_files.includes(file_attachment: :blob).order(created_at: :desc)
-      @is_gm = @game.game_master?(current_user)
+      @game_presenter = GamePresenter.new(@game, current_user)
       render :index, status: :unprocessable_content
     end
   end
 
   sig { void }
   def destroy
-    @game.game_files.find(params[:id]).destroy
+    game_file = @game.game_files.find(params[:id])
+    authorize game_file
+    game_file.destroy
     redirect_to game_game_files_path(@game), notice: "File deleted."
   end
 
@@ -56,16 +60,12 @@ class GameFilesController < ApplicationController
 
   sig { void }
   def require_game_access!
-    membership = @game.member_for(current_user)
-    return if membership&.game_master?
-    return if membership&.active? || membership&.removed?
-
-    redirect_to root_path, alert: "You do not have access to this game."
+    redirect_to root_path, alert: "You do not have access to this game." unless policy(@game).show?
   end
 
   sig { void }
   def require_gm!
-    unless @game.game_master?(current_user)
+    unless policy(@game).update?
       redirect_to game_path(@game), alert: "Only the GM can manage files."
     end
   end

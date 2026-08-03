@@ -36,6 +36,7 @@ matcher:
     - PostRead
     # Presenters
     - GameFilePresenter
+    - GamePresenter
     - PostPresenter
     - SceneSummaryPresenter
     - ScenePresenter
@@ -111,6 +112,21 @@ matcher:
     - SceneMailbox
     # Helpers
     - ApplicationHelper
+    # Policies
+    - ApplicationPolicy
+    - ApplicationPolicy::Scope
+    - CharacterPolicy
+    - CharacterPolicy::Scope
+    - ScenePolicy
+    - ScenePolicy::Scope
+    - GamePolicy
+    - GameMemberPolicy
+    - InvitationPolicy
+    - PostPolicy
+    - GameFilePolicy
+    - SceneSummaryPolicy
+    - CharacterVersionPolicy
+    - UserProfilePolicy
 
 mutation:
   timeout: 20.0

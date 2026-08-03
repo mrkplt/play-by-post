@@ -142,7 +142,7 @@ RSpec.describe CharactersController, type: :request do
     it "non-owner player is redirected" do
       sign_in(other_player)
       get edit_game_character_path(game, character)
-      expect(response).to have_http_status(:redirect)
+      expect(response).to redirect_to(game_character_path(game, character))
       expect(flash[:alert]).to match(/cannot edit/i)
     end
 
@@ -184,7 +184,8 @@ RSpec.describe CharactersController, type: :request do
       sign_in(player)
       patch archive_game_character_path(game, character)
       expect(character.reload).not_to be_archived
-      expect(response).to have_http_status(:redirect)
+      expect(response).to redirect_to(game_character_path(game, character))
+      expect(flash[:alert]).to match(/only the gm/i)
     end
   end
 
@@ -202,7 +203,8 @@ RSpec.describe CharactersController, type: :request do
       sign_in(player)
       patch restore_game_character_path(game, character)
       expect(character.reload.archived_at).not_to be_nil
-      expect(response).to have_http_status(:redirect)
+      expect(response).to redirect_to(game_character_path(game, character))
+      expect(flash[:alert]).to match(/only the gm/i)
     end
   end
 

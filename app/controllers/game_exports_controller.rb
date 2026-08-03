@@ -5,9 +5,11 @@ class GameExportsController < ApplicationController
 
   before_action :set_game
   before_action :require_export_access!
+  after_action :verify_authorized
 
   sig { void }
   def create
+    authorize @game, :export?
     receipt = GameExportRequest.valid_receipt_for(current_user, @game)
 
     if receipt
@@ -31,7 +33,7 @@ class GameExportsController < ApplicationController
 
   sig { void }
   def require_export_access!
-    return if @game.viewable_by?(current_user)
+    return if policy(@game).export?
 
     redirect_to root_path, alert: "You do not have access to export this game."
   end

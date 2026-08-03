@@ -7,11 +7,12 @@ class ScenesController < ApplicationController
   before_action :require_game_access!
   before_action :require_gm!, only: %i[new create]
   before_action :set_scene, only: %i[show resolve toggle_notification_preference]
+  before_action :require_gm_to_resolve!, only: :resolve
+  after_action :verify_authorized, except: :index
 
   sig { void }
   def index
-    all_scenes = @game.scenes
-      .visible_to(current_user, @game)
+    all_scenes = ScenePolicy::Scope.new(current_user, @game).resolve
       .includes(:parent_scene, :child_scenes, scene_participants: [ :character, :user ])
       .order(created_at: :asc)
       .to_a
@@ -20,19 +21,22 @@ class ScenesController < ApplicationController
     roots = all_scenes.select { |s| s.parent_scene_id.nil? || scene_index[s.parent_scene_id].nil? }
 
     @trees = roots.map { |root| build_tree(root, scene_index, all_scenes) }
-    @is_gm = @game.game_master?(current_user)
+    @game_presenter = GamePresenter.new(@game, current_user)
   end
 
   sig { void }
   def new
     @scene = @game.scenes.new
+    authorize @scene
     @players_with_characters = active_players_with_characters
     @parent_scene_options = parent_scene_options.map { |s| ScenePresenter.new(s) }
   end
 
   sig { void }
   def create
-    @scene = @game.scenes.new(scene_params)
+    @scene = @game.scenes.new
+    authorize @scene
+    @scene.assign_attributes(permitted_attributes(@scene))
     attach_image(@scene)
 
     if @scene.save
@@ -48,10 +52,11 @@ class ScenesController < ApplicationController
 
   sig { void }
   def show
+    authorize @scene
     @posts = @scene.posts.published.includes(:user).order(:created_at)
     @draft = @scene.posts.drafts.find_by(user: current_user)
     @post = Post.new
-    @is_gm = @game.game_master?(current_user)
+    @game_presenter = GamePresenter.new(@game, current_user)
     @is_participant = @scene.participant?(current_user)
     @current_membership = @game.member_for(current_user)
     @is_muted = NotificationPreference.muted?(@scene, current_user)
@@ -74,6 +79,7 @@ class ScenesController < ApplicationController
 
   sig { void }
   def toggle_notification_preference
+    authorize @scene, :show?
     NotificationPreference.toggle!(@scene, current_user)
     redirect_to game_scene_path(@game, @scene),
       notice: NotificationPreference.muted?(@scene, current_user) ? "Notifications muted for this scene." : "Notifications enabled for this scene."
@@ -81,10 +87,7 @@ class ScenesController < ApplicationController
 
   sig { void }
   def resolve
-    unless @game.game_master?(current_user)
-      redirect_to game_scene_path(@game, @scene), alert: "Only the GM can resolve a scene."
-      return
-    end
+    authorize @scene
 
     if @scene.resolved?
       redirect_to game_scene_path(@game, @scene), alert: "Scene is already resolved."
@@ -112,27 +115,24 @@ class ScenesController < ApplicationController
 
   sig { void }
   def check_scene_visibility!
-    return if @game.game_master?(current_user)
-    return unless @scene.private?
-    return if @scene.participant?(current_user)
-
-    redirect_to game_path(@game), alert: "You do not have access to this scene."
+    redirect_to game_path(@game), alert: "You do not have access to this scene." unless policy(@scene).visible?
   end
 
   sig { void }
   def require_game_access!
-    membership = @game.member_for(current_user)
-    return if membership&.game_master?
-    return if membership&.active? || membership&.removed?
-
-    redirect_to root_path, alert: "You do not have access to this game."
+    redirect_to root_path, alert: "You do not have access to this game." unless policy(@game).show?
   end
 
   sig { void }
   def require_gm!
-    return if @game.game_master?(current_user)
+    return if policy(@game).update?
 
     redirect_to game_path(@game), alert: "Only the GM can create scenes."
+  end
+
+  sig { void }
+  def require_gm_to_resolve!
+    redirect_to game_scene_path(@game, @scene), alert: "Only the GM can resolve a scene." unless policy(@scene).resolve?
   end
 
   # Returns an array of [user, characters] pairs for all active players,

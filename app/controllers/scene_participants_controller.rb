@@ -7,9 +7,11 @@ class SceneParticipantsController < ApplicationController
   before_action :set_scene
   before_action :require_gm!, only: %i[edit update]
   before_action :require_active_member_for_write!, only: %i[join]
+  after_action :verify_authorized
 
   sig { void }
   def edit
+    authorize @scene, :manage_participants?
     players = @game.users.joins(:game_members)
       .where(game_members: { game: @game, role: "player", status: "active" })
       .order("user_profiles.display_name")
@@ -27,6 +29,7 @@ class SceneParticipantsController < ApplicationController
 
   sig { void }
   def update
+    authorize @scene, :manage_participants?
     gm = T.must(@game.game_master)
     character_ids = Array(params[:character_ids]).map(&:to_i)
     characters = @game.characters.where(id: character_ids)
@@ -50,7 +53,8 @@ class SceneParticipantsController < ApplicationController
 
   sig { void }
   def join
-    if @scene.private? && !@game.game_master?(current_user)
+    authorize @scene, :join?
+    if @scene.private? && !policy(@game).update?
       redirect_to game_scene_path(@game, @scene), alert: "Cannot join a private scene."
       return
     end
@@ -78,7 +82,7 @@ class SceneParticipantsController < ApplicationController
 
   sig { void }
   def require_gm!
-    return if @game.game_master?(current_user)
+    return if policy(@game).update?
 
     redirect_to game_scene_path(@game, @scene), alert: "Only the GM can edit participants."
   end
