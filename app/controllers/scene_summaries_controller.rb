@@ -23,7 +23,7 @@ class SceneSummariesController < ApplicationController
         end
         summaries = scene_summaries_for_game
         @pagy, @summaries = pagy(summaries, limit: 20)
-        @is_gm = @game.game_master?(current_user)
+        @game_presenter = GamePresenter.new(@game, current_user)
       end
       format.rss do
         unless rss_access_allowed?(params[:token])

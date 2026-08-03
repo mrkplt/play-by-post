@@ -36,6 +36,7 @@ matcher:
     - PostRead
     # Presenters
     - GameFilePresenter
+    - GamePresenter
     - PostPresenter
     - SceneSummaryPresenter
     - ScenePresenter

@@ -99,7 +99,7 @@ class GamesController < ApplicationController
       .sort_by { |s| -s.last_activity_at.to_i }
     @active_scenes = raw_scenes.map { |s| ScenePresenter.new(s) }
 
-    @is_gm = @game.game_master?(current_user)
+    @game_presenter = GamePresenter.new(@game, current_user)
     @gm_name = gm_display_name
     @roster_preview = roster_preview_rows(raw_scenes)
     @hot_scene_ids = hot_scene_ids(raw_scenes)
@@ -119,7 +119,7 @@ class GamesController < ApplicationController
       }
     end
     @inactive_count = @game.characters.archived.visible_to(current_user, @game).count
-    @banned_members = @is_gm ? @game.game_members.where(status: "banned").includes(:user).to_a : []
+    @banned_members = policy(@game).update? ? @game.game_members.where(status: "banned").includes(:user).to_a : []
     @banned_names = @banned_members.each_with_object({}) do |m, h|
       h[m.user_id] = UserPresenter.new(m.user).display_name_or_email
     end

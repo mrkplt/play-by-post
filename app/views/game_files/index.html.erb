@@ -5,7 +5,7 @@
     <%= render Shared::PageHeaderComponent.new(title: "Files", leading: :back, back_href: game_path(@game)) %>
   <% end %>
 
-  <% if @is_gm %>
+  <% if @game_presenter.gm? %>
     <%= render Shared::FileUploadFormComponent.new(game: @game, game_file: @game_file) %>
   <% end %>
 
@@ -13,6 +13,6 @@
     <p class="text-muted-2 text-sm">No files uploaded yet.</p>
   <% else %>
     <%= render Ui::SectionLabelComponent.new do %>Newest first<% end %>
-    <%= render Shared::GalleryComponent.new(game_files: @game_files.to_a, game: @game, is_gm: @is_gm) %>
+    <%= render Shared::GalleryComponent.new(game_files: @game_files.to_a, game: @game, is_gm: @game_presenter.gm?) %>
   <% end %>
 <% end %>
