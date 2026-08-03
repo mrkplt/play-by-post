@@ -1,0 +1,111 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Ratchets the number of instance variables a controller exposes to its views.
+#
+# A controller's public actions hand @ivars to the view layer; a growing pile of
+# them (like the @is_gm boolean this replaced) is view logic that belongs in a
+# presenter / view model. This does not cap the count outright — it forbids any
+# touched controller from *increasing* its distinct public-action ivar count
+# versus origin/master, the same "must not increase" ratchet used for CSS and
+# ERB logic. New controllers (absent from master) are reviewed fresh and skipped.
+#
+# Counting is AST-based (Prism), so `@x ||=`, multiple assignment, and private
+# memoization are handled correctly: only ivars *written* in *public* action
+# methods count; helpers below `private` do not.
+
+require "prism"
+
+ROOT = File.expand_path("..", __dir__)
+
+IVAR_WRITE_NODES = [
+  Prism::InstanceVariableWriteNode,
+  Prism::InstanceVariableOperatorWriteNode,
+  Prism::InstanceVariableAndWriteNode,
+  Prism::InstanceVariableOrWriteNode,
+  Prism::InstanceVariableTargetNode, # multiple-assignment target: @a, @b = ...
+].freeze
+
+def collect_ivar_names(node, into)
+  return if node.nil?
+  into << node.name if IVAR_WRITE_NODES.any? { |klass| node.is_a?(klass) }
+  node.compact_child_nodes.each { |child| collect_ivar_names(child, into) }
+end
+
+def first_class_node(node)
+  return node if node.is_a?(Prism::ClassNode)
+
+  node.compact_child_nodes.each do |child|
+    found = first_class_node(child)
+    return found if found
+  end
+  nil
+end
+
+def visibility_switch(node)
+  return nil unless node.is_a?(Prism::CallNode) && node.receiver.nil?
+  return nil unless %i[private protected public].include?(node.name)
+  return nil unless node.arguments.nil? || node.arguments.arguments.empty?
+
+  node.name
+end
+
+# Distinct instance-variable names written in the controller's public actions.
+def public_action_ivar_count(source)
+  return 0 if source.nil? || source.strip.empty?
+
+  klass = first_class_node(Prism.parse(source).value)
+  return 0 unless klass
+
+  statements = klass.body.is_a?(Prism::StatementsNode) ? klass.body.body : []
+  names = []
+  visibility = :public
+
+  statements.each do |node|
+    if (switch = visibility_switch(node))
+      visibility = switch
+    elsif node.is_a?(Prism::DefNode) && visibility == :public
+      collect_ivar_names(node, names)
+    end
+  end
+
+  names.uniq.size
+end
+
+changed = `git diff --name-only origin/master -- app/controllers/`.strip.split("\n")
+  .select { |f| f.end_with?(".rb") }
+
+failures = []
+reported = false
+
+changed.each do |rel|
+  absolute = File.join(ROOT, rel)
+  next unless File.exist?(absolute) # deleted — nothing to ratchet
+
+  old_source = `git show origin/master:#{rel} 2>/dev/null`.force_encoding("utf-8")
+  next if old_source.strip.empty? # new controller — reviewed fresh, not ratcheted
+
+  old_count = public_action_ivar_count(old_source)
+  new_count = public_action_ivar_count(File.read(absolute, encoding: "utf-8"))
+  delta = new_count - old_count
+
+  reported = true
+  status = delta > 0 ? "FAIL" : "OK"
+  puts "  [#{status}] #{rel}: #{old_count} -> #{new_count} (#{delta >= 0 ? '+' : ''}#{delta})"
+
+  if delta > 0
+    failures << "#{rel}: +#{delta} public-action instance variable(s); move view-facing data into a presenter / view model"
+  end
+end
+
+if !reported
+  puts "Controller ivar check: OK (no changed controllers to ratchet)"
+  exit 0
+elsif failures.empty?
+  puts "\nController ivar check: OK (no controller increased its public-action ivar count)"
+  exit 0
+else
+  puts "\nController ivar check: FAIL\n\n"
+  failures.each { |f| puts "  #{f}" }
+  exit 1
+end

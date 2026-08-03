@@ -47,4 +47,12 @@ class ScenePresenter < BasePresenter
   def banner_image
     @model.image.variant(resize_to_limit: [ 1200, nil ], format: :jpeg, quality: 85)
   end
+
+  # Whether this viewer may post into the scene right now: the post policy allows
+  # it and the scene is still open. Keeps the composer's visibility sourced from
+  # the same policy PostsController authorizes with, without a controller ivar.
+  sig { params(user: User).returns(T::Boolean) }
+  def can_post?(user)
+    PostPolicy.new(user, @model.posts.new).create? && !@model.resolved?
+  end
 end

@@ -128,7 +128,7 @@
     <% end %>
 
     <%# Composer %>
-    <% if @can_post %>
+    <% if @scene_presenter.can_post?(current_user) %>
       <div id="post_composer" class="bg-card border border-card-border rounded-post p-4">
         <%= render Shared::PostComposerComponent.new(post: @post, game: @game, scene: @scene, draft: @draft) %>
       </div>

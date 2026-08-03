@@ -5,6 +5,36 @@ RSpec.describe ScenePresenter do
 
   subject(:presenter) { described_class.new(scene) }
 
+  describe "#can_post?" do
+    let(:user) { build_stubbed(:user) }
+    let(:new_post) { instance_double(Post) }
+
+    before { allow(scene).to receive(:posts).and_return(double(new: new_post)) }
+
+    def stub_policy(create:)
+      allow(PostPolicy).to receive(:new).with(user, new_post)
+        .and_return(instance_double(PostPolicy, create?: create))
+    end
+
+    it "is true when the post policy allows it and the scene is open" do
+      stub_policy(create: true)
+      allow(scene).to receive(:resolved?).and_return(false)
+      expect(presenter.can_post?(user)).to be(true)
+    end
+
+    it "is false when the scene is resolved" do
+      stub_policy(create: true)
+      allow(scene).to receive(:resolved?).and_return(true)
+      expect(presenter.can_post?(user)).to be(false)
+    end
+
+    it "is false when the post policy denies it" do
+      stub_policy(create: false)
+      allow(scene).to receive(:resolved?).and_return(false)
+      expect(presenter.can_post?(user)).to be(false)
+    end
+  end
+
   describe "#parent_option_label" do
     context "when active" do
       it { expect(presenter.parent_option_label).to eq(scene.title) }

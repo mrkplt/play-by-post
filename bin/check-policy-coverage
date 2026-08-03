@@ -1,0 +1,61 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Assures every authorizable domain model has a Pundit policy.
+#
+# Adding a model that a user can act on and forgetting its policy is the quiet
+# way authorization coverage erodes. This fails the build until either the
+# policy exists (app/policies/<model>_policy.rb) or the model is declared
+# non-authorizable in NON_AUTHORIZABLE below (value objects, join rows, receipts,
+# and the authentication entity — things no controller exposes as a resource).
+
+require "pathname"
+
+ROOT = File.expand_path("..", __dir__)
+
+# Base classes / non-models that live under app/models but aren't domain records.
+NOT_A_MODEL = %w[application_record.rb current.rb].freeze
+
+# Models with no authorization surface of their own. Each is either an internal
+# record (usage/receipt/read/token), a join row managed through its parent's
+# policy (SceneParticipant → ScenePolicy#manage_participants?), or the auth
+# entity (User — created via invitations/sessions, never a managed resource).
+NON_AUTHORIZABLE = %w[
+  AiUsage
+  GameExportRequest
+  NotificationPreference
+  PostRead
+  RssToken
+  SceneParticipant
+  User
+].freeze
+
+def constant_for(basename)
+  basename.delete_suffix(".rb").split("_").map(&:capitalize).join
+end
+
+missing = []
+
+Dir.glob("#{ROOT}/app/models/*.rb").sort.each do |file|
+  basename = File.basename(file)
+  next if NOT_A_MODEL.include?(basename)
+
+  constant = constant_for(basename)
+  next if NON_AUTHORIZABLE.include?(constant)
+
+  policy_file = File.join(ROOT, "app/policies", "#{basename.delete_suffix('.rb')}_policy.rb")
+  missing << [constant, "app/policies/#{basename.delete_suffix('.rb')}_policy.rb"] unless File.exist?(policy_file)
+end
+
+if missing.empty?
+  puts "Policy coverage check: OK (every authorizable model has a policy)"
+  exit 0
+end
+
+puts "Policy coverage check: FAIL"
+puts "These models have no policy:\n\n"
+missing.each { |constant, path| puts "  #{constant.ljust(28)} expected #{path}" }
+puts "\nCreate the policy (and register it in .mutant.yml), or — if the model has"
+puts "no authorization surface — add its constant to NON_AUTHORIZABLE in"
+puts "bin/check-policy-coverage with a note."
+exit 1

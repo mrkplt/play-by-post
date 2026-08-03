@@ -60,7 +60,6 @@ class ScenesController < ApplicationController
     @is_participant = @scene.participant?(current_user)
     @current_membership = @game.member_for(current_user)
     @is_muted = NotificationPreference.muted?(@scene, current_user)
-    @can_post = policy(@scene.posts.new).create? && !@scene.resolved?
     @hide_ooc = current_user.user_profile&.hide_ooc? || false
     @child_scenes = @scene.child_scenes.visible_to(current_user, @game).order(:created_at)
 
