@@ -9,6 +9,7 @@ For technology stack, domain model, codebase conventions, and development workfl
 ## Authentication & Accounts
 
 - Authentication is magic link only — no passwords
+- A magic login link is valid for 1 day after it is sent; links older than that are rejected
 - New users arrive via invitation magic links; there is no standalone signup page
 - A magic link from an invitation creates a new account or links to an existing one
 - After first login, users must set a display name before using the app
@@ -61,7 +62,7 @@ For technology stack, domain model, codebase conventions, and development workfl
 
 - The game area is a single page (`games#show`) with three **pill tabs in the dark header — Scenes / Roster / Files — switched client-side** (no page navigation). The header shows a hamburger (opens the nav drawer), a GM crown (only when the viewer is GM), the game title, and a gear (Game Settings, any viewer with game access — GM, active player, or removed player). The active tab is deep-linkable via the URL hash.
 - **Scenes tab**: active (unresolved) scenes as cards showing just title + participant count (plus parent/child links where threaded), most recent first, with an attention glow on scenes with new activity. Below: an "In Active Scenes" roster preview (the GM as a person with a crown, then characters and the scene they're in — never a banned player), and a "New Scene" action (GM).
-- **Roster tab**: a search field, the character list (avatar, name, "Played by {player}"; a removed player's row is dimmed with a "Removed" badge), a "New Character" action, a "N inactive characters hidden" note, and — GM only — a "Banned · GM only" section (blue-tinted, each row with an Unban action). Inactive (archived) characters are hidden by default.
+- **Roster tab**: a search field, the character list (avatar, name, "Played by {player}"; a removed player's row is dimmed with a "Removed" badge), a "New Character" action, a "N inactive characters hidden" note, and — GM only — a "Banned · GM only" section (blue-tinted, each row with an Unban action) plus the invite controls: an "Invite a Player" (email + Invite) form and a "Pending Invitations" list (email + "Sent X ago" + Cancel). Inviting or cancelling returns the GM to the Roster tab. Inactive (archived) characters are hidden by default.
 - **Files tab**: the file gallery (see Game-Level File Store). GM sees the upload form.
 - The gear is shown to any non-banned member (GM, active, or removed) and opens Game Settings.
 
@@ -70,7 +71,7 @@ For technology stack, domain model, codebase conventions, and development workfl
 ## Game Settings
 
 - Reached via the gear (⚙) in the game header — open to any non-banned member, not just the GM. Uses the settings-row pattern under a back-arrow header.
-- GM-only sections (hidden entirely for non-GM viewers): Invite a Player (email + Invite), Pending Invitations (email + "Sent X ago" + Resend/Cancel), Members (name + character + Remove/Ban, where Remove is neutral and Ban is red and carries its own more serious confirmation), and Game Preferences (an "AI Scene Summaries" toggle switch).
+- GM-only sections (hidden entirely for non-GM viewers): Members (name + character + Remove/Ban, where Remove is neutral and Ban is red and carries its own more serious confirmation), and Game Preferences (an "AI Scene Summaries" toggle switch). Inviting players lives on the game Roster tab, not here.
 - Export section (all non-banned members, GM and non-GM alike): a "This game" row with an "Export Game" action and the last-export notice, same as the profile-level export.
 - Non-members and banned members are redirected away with an access alert; this is the only guard on the page itself — GM-only content is scoped by conditionally rendering, not by a separate access check.
 
@@ -109,12 +110,13 @@ For technology stack, domain model, codebase conventions, and development workfl
 
 ### Quick Scene (from scene view)
 - Creates a new scene inheriting all participants and parent from the current scene
-- Minimal form: title and description only
+- Minimal form: title only, with the inherited participants and parent carried in hidden fields
 - Private flag inherited from the parent scene
 - Intended for continuing the narrative with the same group
 
 ### New Scene (from scene view or game view)
-- Full form: title, description, participant selection, parent scene, private flag, optional image
+- The New Scene / Quick Scene screen follows the mobile-first component system: a `MobileFrameComponent` scaffold, a back-arrow `PageHeaderComponent` (titled "New Scene" or "Quick Scene"), and the form rendered by `Shared::SceneFormComponent` using design tokens — no bespoke screen markup
+- Full form: title, participant selection, parent scene, private flag, optional image
 - When entered from a scene view: pre-populates participants and parent from that scene (GM can change)
 - When entered from the game view: starts with the full active player list, no parent pre-selected
 - The GM is always included as a participant and cannot be removed

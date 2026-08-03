@@ -17,7 +17,7 @@ RSpec.describe InvitationsController, type: :request do
         post game_player_management_invitations_path(game),
           params: { invitation: { email: "newplayer@example.com" } }
       }.to change(Invitation, :count).by(1)
-      expect(response).to redirect_to(game_player_management_path(game))
+      expect(response).to redirect_to(game_path(game, anchor: "roster"))
     end
 
     it "player cannot send an invitation" do
@@ -32,7 +32,7 @@ RSpec.describe InvitationsController, type: :request do
       sign_in(gm)
       post game_player_management_invitations_path(game),
         params: { invitation: { email: "not-an-email" } }
-      expect(response).to redirect_to(game_player_management_path(game))
+      expect(response).to redirect_to(game_path(game, anchor: "roster"))
       expect(flash[:alert]).to be_present
     end
   end
@@ -45,7 +45,7 @@ RSpec.describe InvitationsController, type: :request do
       expect {
         delete game_player_management_invitation_path(game, invitation)
       }.to change(Invitation, :count).by(-1)
-      expect(response).to redirect_to(game_player_management_path(game))
+      expect(response).to redirect_to(game_path(game, anchor: "roster"))
     end
 
     it "player cannot cancel an invitation" do

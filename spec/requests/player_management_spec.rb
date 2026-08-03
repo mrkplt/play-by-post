@@ -100,20 +100,6 @@ RSpec.describe PlayerManagementController, type: :request do
       expect(response.body).to include("Thorin Oakenshield")
     end
 
-    it "shows pending invitation email" do
-      create(:invitation, game: game, email: "invited@example.com", invited_by: gm)
-      sign_in(gm)
-      get game_player_management_path(game)
-      expect(response.body).to include("invited@example.com")
-    end
-
-    it "does not show accepted invitation in pending list" do
-      create(:invitation, :accepted, game: game, email: "accepted@example.com", invited_by: gm)
-      sign_in(gm)
-      get game_player_management_path(game)
-      expect(response.body).not_to include("accepted@example.com")
-    end
-
     it "does not show banned members in the members list" do
       banned_user = create(:user, :with_profile)
       banned_user.user_profile.update!(display_name: "Banned Person")
@@ -121,22 +107,6 @@ RSpec.describe PlayerManagementController, type: :request do
       sign_in(gm)
       get game_player_management_path(game)
       expect(response.body).not_to include("Banned Person")
-    end
-
-    it "shows pending invitations in reverse chronological order" do
-      create(:invitation, game: game, email: "older@example.com", invited_by: gm, created_at: 2.days.ago)
-      create(:invitation, game: game, email: "newer@example.com", invited_by: gm, created_at: 1.day.ago)
-      sign_in(gm)
-      get game_player_management_path(game)
-      older_pos = response.body.index("older@example.com")
-      newer_pos = response.body.index("newer@example.com")
-      expect(newer_pos).to be < older_pos
-    end
-
-    it "renders the new invitation form" do
-      sign_in(gm)
-      get game_player_management_path(game)
-      expect(response.body).to include("invitation")
     end
   end
 end

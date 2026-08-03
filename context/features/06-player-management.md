@@ -7,10 +7,12 @@ The GM manages game membership through invitations, player removal (amicable dep
 ## Requirements
 
 ### Invitations
+- The invite controls live on the game Roster tab and are visible to the GM only
 - GM invites players by email
 - Invited player receives a magic link email; no existing account required
-- GM can view all pending invitations
-- GM can cancel or resend a pending invitation
+- GM can view all pending invitations on the Roster tab
+- GM can cancel a pending invitation
+- Sending or cancelling an invitation returns the GM to the Roster tab
 - Invitation acceptance creates or links the player's account and adds them to the game
 
 ### Player Removal (amicable departure)

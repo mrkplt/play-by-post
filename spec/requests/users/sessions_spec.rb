@@ -61,5 +61,21 @@ RSpec.describe Users::SessionsController, type: :request do
         get user_magic_link_path, params: { user: { email: user.email, token: token } }
       }.to change { user.user_profile.reload.last_login_at }
     end
+
+    it "still signs in the user within the one-day validity window" do
+      token = Timecop.freeze { Devise::Passwordless::SignedGlobalIDTokenizer.encode(user) }
+      Timecop.travel(23.hours.from_now) do
+        get user_magic_link_path, params: { user: { email: user.email, token: token } }
+      end
+      expect(response).to redirect_to(root_path)
+    end
+
+    it "rejects a magic link older than one day" do
+      token = Timecop.freeze { Devise::Passwordless::SignedGlobalIDTokenizer.encode(user) }
+      Timecop.travel(25.hours.from_now) do
+        get user_magic_link_path, params: { user: { email: user.email, token: token } }
+      end
+      expect(response).not_to redirect_to(root_path)
+    end
   end
 end

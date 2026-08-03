@@ -100,8 +100,7 @@
         <% end %>
 
         <% if @game_presenter.gm? %>
-          <%= link_to "Invite Player", game_player_management_path(@game),
-                class: "block w-full text-center bg-accent text-accent-ink rounded-control py-2.5 font-extrabold text-[13px] tracking-[0.02em] no-underline mt-3" %>
+          <%= render Shared::InvitePanelComponent.new(game: @game, pending_invitations: @pending_invitations) %>
         <% end %>
       </div>
     </section>

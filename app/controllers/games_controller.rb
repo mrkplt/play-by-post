@@ -123,6 +123,7 @@ class GamesController < ApplicationController
     @banned_names = @banned_members.each_with_object({}) do |m, h|
       h[m.user_id] = UserPresenter.new(m.user).display_name_or_email
     end
+    @pending_invitations = policy(@game).update? ? @game.invitations.pending.order(created_at: :desc).to_a : []
 
     # Files tab
     @game_files = @game.game_files.includes(file_attachment: :blob).order(created_at: :desc)

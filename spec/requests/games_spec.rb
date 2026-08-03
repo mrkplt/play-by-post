@@ -351,6 +351,50 @@ RSpec.describe GamesController, type: :request do
       expect(response.body).not_to include("Exiled One")
     end
 
+    it "renders the invite form on the roster for the GM" do
+      sign_in(gm)
+      get game_path(game)
+      expect(response.body).to include("Invite a Player")
+      expect(response.body).to include("name=\"invitation[email]\"")
+    end
+
+    it "does not render the invite form for a non-GM member" do
+      sign_in(player)
+      get game_path(game)
+      expect(response.body).not_to include("Invite a Player")
+    end
+
+    it "shows a pending invitation email to the GM on the roster" do
+      create(:invitation, game: game, email: "invited@example.com", invited_by: gm)
+      sign_in(gm)
+      get game_path(game)
+      expect(response.body).to include("invited@example.com")
+    end
+
+    it "does not show an accepted invitation in the roster pending list" do
+      create(:invitation, :accepted, game: game, email: "accepted@example.com", invited_by: gm)
+      sign_in(gm)
+      get game_path(game)
+      expect(response.body).not_to include("accepted@example.com")
+    end
+
+    it "shows pending invitations newest first" do
+      create(:invitation, game: game, email: "older@example.com", invited_by: gm, created_at: 2.days.ago)
+      create(:invitation, game: game, email: "newer@example.com", invited_by: gm, created_at: 1.day.ago)
+      sign_in(gm)
+      get game_path(game)
+      older_pos = response.body.index("older@example.com")
+      newer_pos = response.body.index("newer@example.com")
+      expect(newer_pos).to be < older_pos
+    end
+
+    it "does not expose pending invitations to a non-GM member" do
+      create(:invitation, game: game, email: "invited@example.com", invited_by: gm)
+      sign_in(player)
+      get game_path(game)
+      expect(response.body).not_to include("invited@example.com")
+    end
+
     it "does not show the Export Game button on the game view (it lives on the settings page)" do
       sign_in(gm)
       get game_path(game)

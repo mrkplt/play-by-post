@@ -28,8 +28,7 @@ class ScenesController < ApplicationController
   def new
     @scene = @game.scenes.new
     authorize @scene
-    @players_with_characters = active_players_with_characters
-    @parent_scene_options = parent_scene_options.map { |s| ScenePresenter.new(s) }
+    @scene_form = build_scene_form
   end
 
   sig { void }
@@ -44,8 +43,7 @@ class ScenesController < ApplicationController
       notify_new_scene
       redirect_to game_scene_path(@game, @scene), notice: "Scene created."
     else
-      @players_with_characters = active_players_with_characters
-      @parent_scene_options = parent_scene_options.map { |s| ScenePresenter.new(s) }
+      @scene_form = build_scene_form
       render :new, status: :unprocessable_content
     end
   end
@@ -133,6 +131,47 @@ class ScenesController < ApplicationController
   sig { void }
   def require_gm_to_resolve!
     redirect_to game_scene_path(@game, @scene), alert: "Only the GM can resolve a scene." unless policy(@scene).resolve?
+  end
+
+  # Assembles the New Scene / Quick Scene form component from the current
+  # request. Shared by #new and #create's error re-render so both paths present
+  # an identical form.
+  sig { returns(Shared::SceneFormComponent) }
+  def build_scene_form
+    Shared::SceneFormComponent.new(
+      game: @game,
+      scene: @scene,
+      players_with_characters: active_players_with_characters,
+      parent_options: parent_scene_select_options,
+      quick: params[:quick].present?,
+      selected_character_ids: selected_character_ids,
+      selected_parent_scene_id: params[:parent_scene_id]&.to_s,
+      back_href: scene_form_back_href
+    )
+  end
+
+  # Parent-scene dropdown pairs: [label, id]. Built from raw scenes so Sorbet
+  # keeps the id typed while ScenePresenter supplies the display label.
+  sig { returns(T::Array[[ String, Integer ]]) }
+  def parent_scene_select_options
+    parent_scene_options.map { |s| [ ScenePresenter.new(s).parent_option_label, s.id ] }
+  end
+
+  # Characters that should start checked: any resubmitted in params, unioned
+  # with any already attached to the scene (present when re-rendering an edit).
+  sig { returns(T::Array[String]) }
+  def selected_character_ids
+    from_params = Array(params[:character_ids]).map(&:to_s)
+    from_params | @scene.scene_participants.filter_map { |sp| sp.character_id&.to_s }
+  end
+
+  sig { returns(String) }
+  def scene_form_back_href
+    if params[:parent_scene_id].present?
+      game_scene_path(@game, params[:parent_scene_id])
+    else
+      game_path(@game)
+    end
   end
 
   # Returns an array of [user, characters] pairs for all active players,
