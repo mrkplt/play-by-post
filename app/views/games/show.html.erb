@@ -100,7 +100,7 @@
         <% end %>
 
         <% if @game_presenter.gm? %>
-          <%= render Shared::InvitePanelComponent.new(game: @game, pending_invitations: @pending_invitations) %>
+          <%= render Shared::InvitePanelComponent.new(game: @game, pending_invitations: @game_presenter.pending_invitations) %>
         <% end %>
       </div>
     </section>
