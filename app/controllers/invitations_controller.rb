@@ -16,9 +16,9 @@ class InvitationsController < ApplicationController
 
     if @invitation.save
       InvitationMailer.invite(@invitation).deliver_later
-      redirect_to game_player_management_path(@game), notice: "Invitation sent to #{@invitation.email}."
+      redirect_to game_path(@game, anchor: "roster"), notice: "Invitation sent to #{@invitation.email}."
     else
-      redirect_to game_player_management_path(@game), alert: @invitation.errors.full_messages.join(", ")
+      redirect_to game_path(@game, anchor: "roster"), alert: @invitation.errors.full_messages.join(", ")
     end
   end
 
@@ -27,7 +27,7 @@ class InvitationsController < ApplicationController
     invitation = @game.invitations.find(params[:id])
     authorize invitation
     invitation.destroy
-    redirect_to game_player_management_path(@game), notice: "Invitation cancelled."
+    redirect_to game_path(@game, anchor: "roster"), notice: "Invitation cancelled."
   end
 
   sig { void }

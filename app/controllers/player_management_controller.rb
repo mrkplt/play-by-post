@@ -16,7 +16,6 @@ class PlayerManagementController < ApplicationController
       @members = @game.game_members.where.not(status: "banned").where(role: "player").includes(:user)
       @member_display_names = @members.each_with_object({}) { |m, h| h[m.user_id] = UserPresenter.new(m.user).display_name_or_email }
       @member_characters = character_names_by_user
-      @pending_invitations = @game.invitations.pending.order(created_at: :desc)
     end
 
     @export_receipt = GameExportRequest.valid_receipt_for(current_user, @game)

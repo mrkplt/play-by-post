@@ -39,16 +39,23 @@ RSpec.describe "Player Management", type: :feature do
   end
 
   describe "invitations" do
-    it "GM can invite a player by email" do
-      visit game_player_management_path(game)
+    it "GM can invite a player by email from the roster" do
+      visit game_path(game, anchor: "roster")
       find("input[name='invitation[email]']").fill_in with: "newplayer@example.com"
       click_on "Invite"
 
       expect(page).to have_text("Invitation sent")
     end
 
+    it "players do not see the invite controls on the roster" do
+      sign_in_as(player)
+      visit game_path(game, anchor: "roster")
+
+      expect(page).not_to have_text("Invite a Player")
+    end
+
     it "invitation email is sent" do
-      visit game_player_management_path(game)
+      visit game_path(game, anchor: "roster")
       find("input[name='invitation[email]']").fill_in with: "invited@example.com"
       click_on "Invite"
 
@@ -97,10 +104,10 @@ RSpec.describe "Player Management", type: :feature do
   end
 
   describe "pending invitations" do
-    it "shows pending invitations list" do
+    it "shows pending invitations list on the roster" do
       create(:invitation, game: game, email: "pending@example.com")
 
-      visit game_player_management_path(game)
+      visit game_path(game, anchor: "roster")
 
       expect(page).to have_text(/pending invitations/i)
       expect(page).to have_text("pending@example.com")
@@ -109,7 +116,7 @@ RSpec.describe "Player Management", type: :feature do
     it "GM can cancel a pending invitation" do
       invitation = create(:invitation, game: game, email: "todelete@example.com")
 
-      visit game_player_management_path(game)
+      visit game_path(game, anchor: "roster")
 
       within(:xpath, "//div[contains(@class,'items-center')][.//span[normalize-space()='todelete@example.com']]") do
         click_on "Cancel"

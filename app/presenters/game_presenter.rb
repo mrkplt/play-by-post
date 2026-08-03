@@ -18,4 +18,11 @@ class GamePresenter < BasePresenter
   def gm?
     GamePolicy.new(@current_user, @model).update?
   end
+
+  # Outstanding (unaccepted) invitations for this game, newest first — the data
+  # behind the GM-only invite panel on the Roster tab.
+  sig { returns(T::Array[Invitation]) }
+  def pending_invitations
+    @model.invitations.pending.order(created_at: :desc).to_a
+  end
 end

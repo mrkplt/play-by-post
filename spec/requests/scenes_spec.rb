@@ -187,6 +187,54 @@ RSpec.describe ScenesController, type: :request do
       zara_pos = response.body.index("Zara the Fierce")
       expect(aaron_pos).to be < zara_pos
     end
+
+    it "renders the full New Scene form by default" do
+      sign_in(gm)
+      get new_game_scene_path(game)
+      expect(response.body).to include("New Scene")
+      expect(response.body).to include("Create Scene")
+    end
+
+    it "renders the collapsed Quick Scene form when quick is set" do
+      sign_in(gm)
+      get new_game_scene_path(game, quick: true)
+      expect(response.body).to include("Quick Scene")
+      expect(response.body).to include("Create Quick Scene")
+      expect(response.body).not_to include("Participants")
+    end
+
+    it "treats a blank quick param as the full form" do
+      sign_in(gm)
+      get new_game_scene_path(game, quick: "")
+      expect(response.body).to include("Create Scene")
+      expect(response.body).to include("Participants")
+    end
+
+    it "uses each parent scene's id as the option value" do
+      active = create(:scene, game: game, title: "Open Thread")
+      sign_in(gm)
+      get new_game_scene_path(game)
+      expect(response.body).to include("value=\"#{active.id}\">Open Thread")
+    end
+
+    it "points Cancel back to the game when no parent scene is given" do
+      sign_in(gm)
+      get new_game_scene_path(game)
+      expect(response.body).to include("href=\"#{game_path(game)}\">Cancel")
+    end
+
+    it "points Cancel back to the game when the parent param is blank" do
+      sign_in(gm)
+      get new_game_scene_path(game, parent_scene_id: "")
+      expect(response.body).to include("href=\"#{game_path(game)}\">Cancel")
+    end
+
+    it "points Cancel back to the parent scene when one is given" do
+      parent = create(:scene, game: game, title: "Parent Thread")
+      sign_in(gm)
+      get new_game_scene_path(game, parent_scene_id: parent.id)
+      expect(response.body).to include("href=\"#{game_scene_path(game, parent)}\">Cancel")
+    end
   end
 
   describe "GET /games/:game_id/scenes/:id" do

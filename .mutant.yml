@@ -49,11 +49,13 @@ matcher:
     - Shared::SceneSummaryFormComponent
     - Shared::SceneSummaryIndexPageComponent
     - Shared::FileUploadFormComponent
+    - Shared::InvitePanelComponent
     - Shared::GalleryComponent
     - Shared::NavShellComponent
     - Shared::PostComposerComponent
     - Shared::PostItemComponent
     - Shared::SceneCardComponent
+    - Shared::SceneFormComponent
     - Shared::SidebarComponent
     - Shared::TreeNodeComponent
     - Shared::GameHeaderComponent

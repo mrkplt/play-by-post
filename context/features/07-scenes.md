@@ -14,12 +14,13 @@ Scenes are the primary narrative unit within a game. They can be created in mult
 
 ### Quick Scene (from scene view)
 - Creates a new scene inheriting all participants and parent from the current scene
-- Minimal form: title and description only
+- Minimal form: title only, with inherited participants and parent carried in hidden fields
 - Private flag inherited from the parent scene
 - Intended for continuing the narrative with the same group
 
 ### New Scene (from scene view or game view)
-- Full form: title, description, participant selection, parent scene, private flag, optional image
+- The New Scene / Quick Scene screen uses the mobile-first component system (MobileFrame scaffold, back-arrow page header, and `Shared::SceneFormComponent` for the form)
+- Full form: title, participant selection, parent scene, private flag, optional image
 - When entered from a scene view: pre-populates participants and parent from that scene (GM can change)
 - When entered from the game view: starts with the full active player list, no parent pre-selected
 - The GM is always included as a participant and cannot be removed

@@ -1,0 +1,68 @@
+<%= form_with model: [ game, scene ], multipart: true, class: "flex flex-col gap-4" do |f| %>
+  <% if errors? %>
+    <div class="bg-tint-blue-bg border border-tint-blue-border rounded-card p-3 text-sm text-danger">
+      <% error_messages.each do |msg| %>
+        <div><%= msg %></div>
+      <% end %>
+    </div>
+  <% end %>
+
+  <div class="flex flex-col gap-1.5">
+    <%= f.label :title, "Title (optional — defaults to date/time)", class: "text-[11px] font-bold text-muted uppercase tracking-[0.05em]" %>
+    <%= f.text_field :title, maxlength: 200, autofocus: true, placeholder: "Name this scene",
+          class: "w-full border border-input-border rounded-control px-3 py-2.5 text-sm text-ink bg-card placeholder:text-muted-2" %>
+  </div>
+
+  <% if quick? %>
+    <%= f.hidden_field :parent_scene_id, value: carried_parent_scene_id %>
+    <% selected_character_ids.each do |cid| %>
+      <%= hidden_field_tag "character_ids[]", cid %>
+    <% end %>
+  <% else %>
+    <div class="flex flex-col gap-2">
+      <%= render Ui::SectionLabelComponent.new do %>Participants<% end %>
+      <p class="text-[11px] text-muted-2 m-0">Select characters to include. The GM is always included automatically.</p>
+      <div class="bg-card border border-card-border rounded-card px-3.5 py-1">
+        <% players_with_characters.each do |player, characters| %>
+          <div class="py-2 border-b border-card-divider last:border-b-0">
+            <div class="text-[13px] font-semibold text-ink"><%= player.display_name_or_email %></div>
+            <% if characters.empty? %>
+              <div class="text-[11px] text-muted-2 pl-4 mt-1">No active characters</div>
+            <% else %>
+              <% characters.each do |character| %>
+                <label class="flex items-center gap-2 pl-4 mt-1 text-[13px] text-body-ink cursor-pointer">
+                  <%= check_box_tag "character_ids[]", character.id, character_checked?(character), id: nil,
+                        class: "accent-accent" %>
+                  <%= character.name %>
+                </label>
+              <% end %>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+
+    <div class="flex flex-col gap-1.5">
+      <%= f.label :parent_scene_id, "Parent scene (optional)", class: "text-[11px] font-bold text-muted uppercase tracking-[0.05em]" %>
+      <%= f.select :parent_scene_id, parent_options,
+            { include_blank: "— none —", selected: selected_parent_scene_id },
+            class: "w-full border border-input-border rounded-control px-3 py-2.5 text-sm text-ink bg-card" %>
+    </div>
+
+    <label class="flex items-center gap-2 text-[13px] text-ink cursor-pointer">
+      <%= f.check_box :private, class: "accent-accent" %> Private scene
+    </label>
+
+    <div class="flex flex-col gap-1.5">
+      <%= f.label :image, "Scene image (optional)", class: "text-[11px] font-bold text-muted uppercase tracking-[0.05em]" %>
+      <%= f.file_field :image, accept: "image/jpeg,image/png,image/gif,image/webp",
+            class: "w-full text-[13px] text-body-ink border border-input-border rounded-control px-3 py-2.5 bg-card file:mr-3 file:py-1 file:px-3 file:rounded-control file:border-0 file:text-xs file:font-semibold file:bg-pill-idle file:text-ink" %>
+      <p class="text-[11px] text-muted-2 m-0">JPEG, PNG, GIF, or WebP. Max 10MB.</p>
+    </div>
+  <% end %>
+
+  <div class="flex gap-2 pt-1">
+    <%= f.submit submit_label, class: "flex-1 bg-accent text-accent-ink rounded-control py-2.5 font-bold text-[13px] border-0 cursor-pointer" %>
+    <%= link_to "Cancel", cancel_href, class: "flex-1 text-center border border-card-border text-ink rounded-control py-2.5 font-bold text-[13px] no-underline" %>
+  </div>
+<% end %>

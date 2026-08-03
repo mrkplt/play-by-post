@@ -10,6 +10,7 @@ All authentication is passwordless via magic links. There is no standalone signu
 - Authentication uses magic links only; there are no passwords
 - A sign-in request sends a magic link email to the provided address
 - Clicking the magic link authenticates the user and starts a session
+- A magic login link is valid for 1 day after it is sent; expired links are rejected
 
 ### Account Creation
 - New users arrive via invitation magic links; there is no standalone signup page
