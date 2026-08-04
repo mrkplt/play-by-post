@@ -5,8 +5,8 @@ module ViewportHelper
   # is verified on a phone and on a desktop browser. The nav chrome itself
   # differs by size and is covered separately (mobile_nav_spec / desktop_nav_spec).
   VIEWPORTS = {
-    "mobile (375px)" => [375, 812],
-    "desktop (1280px)" => [1280, 900]
+    "mobile (375px)" => [ 375, 812 ],
+    "desktop (1280px)" => [ 1280, 900 ]
   }.freeze
 
   def resize_window_to_viewport(width, height)
