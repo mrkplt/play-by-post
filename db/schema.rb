@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_04_120000) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_04_130000) do
   create_table "action_mailbox_inbound_emails", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "message_checksum", null: false
@@ -79,6 +79,15 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_04_120000) do
     t.integer "user_id", null: false
     t.index ["game_id"], name: "index_characters_on_game_id"
     t.index ["user_id"], name: "index_characters_on_user_id"
+  end
+
+  create_table "feedbacks", force: :cascade do |t|
+    t.text "body", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.string "url"
+    t.integer "user_id", null: false
+    t.index ["user_id"], name: "index_feedbacks_on_user_id"
   end
 
   create_table "game_export_requests", force: :cascade do |t|
@@ -254,6 +263,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_04_120000) do
   add_foreign_key "character_versions", "users", column: "edited_by_id"
   add_foreign_key "characters", "games"
   add_foreign_key "characters", "users"
+  add_foreign_key "feedbacks", "users"
   add_foreign_key "game_export_requests", "games"
   add_foreign_key "game_export_requests", "users"
   add_foreign_key "game_files", "games"
