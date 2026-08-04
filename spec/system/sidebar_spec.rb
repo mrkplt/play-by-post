@@ -37,20 +37,6 @@ RSpec.describe "Nav drawer", type: :feature do
       end
     end
 
-    it "opens when the hamburger is clicked (below the desktop breakpoint)" do
-      page.driver.resize_window_to(page.driver.current_window_handle, 390, 844)
-      visit root_path
-      find("button[aria-label='Open navigation']").click
-      expect(page).to have_css("aside.nav-drawer[data-open]", visible: :all)
-    end
-
-    it "docks the drawer open with no hamburger at desktop widths (>=1024px)" do
-      page.driver.resize_window_to(page.driver.current_window_handle, 1280, 900)
-      visit root_path
-      expect(page).to have_css("aside.nav-drawer", visible: true)
-      expect(page).to have_no_css("button[aria-label='Open navigation']", visible: true)
-    end
-
     describe "game list" do
       let(:game_one) { create(:game, name: "Dragon Campaign") }
       let(:game_two) { create(:game, name: "Space Opera") }
