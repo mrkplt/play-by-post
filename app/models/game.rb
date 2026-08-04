@@ -12,6 +12,13 @@ class Game < ApplicationRecord
     [ "1 week", 10080 ]
   ].freeze
 
+  # MAINTENANCE: GamePurgeJob does NOT rely on these dependent: cascades to
+  # delete a purged game's records and artifacts — it collects and deletes them
+  # explicitly, child-first. Adding a new association here (or a new attachment
+  # to any record below a game) means GamePurgeJob#delete_records /
+  # #purge_artifacts must be updated too, or those rows/blobs will be orphaned
+  # when a game is purged. The end-to-end spec in spec/jobs/game_purge_job_spec.rb
+  # is the guardrail: populate the new record there so a missed table fails.
   has_many :game_members, dependent: :destroy
   has_many :users, through: :game_members
   has_many :scenes, dependent: :destroy
