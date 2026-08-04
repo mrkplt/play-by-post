@@ -9,7 +9,7 @@
     <%= javascript_importmap_tags %>
   </head>
   <body>
-    <div data-controller="sidebar" data-action="keydown@window->sidebar#closeOnEscape">
+    <div data-controller="sidebar feedback" data-action="keydown@window->sidebar#closeOnEscape">
       <% if user_signed_in? %>
         <%= render Shared::NavShellComponent.new(current_user: current_user, active_game_id: content_for(:active_game_id).presence&.to_i) %>
       <% end %>

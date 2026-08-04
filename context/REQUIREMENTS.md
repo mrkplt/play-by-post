@@ -20,12 +20,24 @@ For technology stack, domain model, codebase conventions, and development workfl
 ## Navigation & Layout (mobile-first redesign)
 
 - The interface is mobile-first: each screen is a full-bleed frame with a dark header bar over a light body. Dark surface `#2b2d31` (header bars) / `#1a1b1e` (nav drawer); gold accent `#c8a96e`. All colours, radii, and greys are defined once as Tailwind `@theme` tokens and consumed by ViewComponents — no per-screen hex.
-- **Global navigation is a slide-in drawer** opened by the hamburger (☰) in each screen's header. The drawer has a fixed profile chip (avatar + display name + "View Profile") at the top, a scrollable list of the player's games in the middle, and pinned "Account Settings" / "Sign Out" at the bottom. Only the games list scrolls; the header and footer stay fixed.
+- **Global navigation is a slide-in drawer** opened by the hamburger (☰) in each screen's header. The drawer has a fixed profile chip (avatar + display name + "View Profile") at the top, a scrollable list of the player's games in the middle, and pinned "Send Feedback" / "Account Settings" / "Sign Out" at the bottom. Only the games list scrolls; the header and footer stay fixed.
   - Each drawer game row shows a status icon: a crown (♛) for games the viewer GMs, a moon (☾) for a former/removed game, or a plain marker for an ordinary player game. The current game's row is highlighted. Banned games never appear.
 - **Icon tap targets** (hamburger, gear, back, OOC checkbox) are sized to a 44px-tall touch target minimum.
 - **Attention glow**: interactive cards/rows carry two distinct states — a persistent gold glow (`is-hot`) that is data-driven ("this has unread/new activity") and a lighter hover glow (affordance, "this is clickable"). These are separate states, not one effect at two opacities.
 - The UI is built component-first: a shared `MobileFrameComponent` scaffold (header / body / footer slots), `Ui::*` primitives (Avatar, ToggleSwitch, SectionLabel, SettingsRow, IconButton, PillTabs, Badge), and `Shared::*` composed components (GameHeader, NavDrawer, GameCard, SceneCard, RosterRow, PostItem, PostComposer). Screens are assembled purely by composing these components.
 - **Desktop rendering**: the same components adapt to wider viewports rather than being redesigned. On phones and tablets (<1024px) the frame keeps its mobile behaviour — full-bleed on phones, a hamburger-opened slide-in nav drawer throughout. At desktop widths (≥1024px) the layout becomes a two-pane website: the nav drawer **docks open as a permanent left rail** (its backdrop and the hamburger are hidden, since navigation is always visible), and each screen's frame becomes the page — a full-width dark top bar (still carrying the title, crown, gear, pill tabs, and any back-arrow) over a light content area whose body is a centered, capped-width reading column. This is purely a responsive CSS treatment (media query in `sidebar_component.css`); no per-screen markup differs between mobile and desktop.
+
+---
+
+## Feedback
+
+- A "Send Feedback" control is pinned in the nav-drawer footer, available on every authenticated screen (both the mobile overlay drawer and the docked desktop rail).
+- Clicking it opens a modal that collects the feedback: a free-form textarea, a Submit, and a Cancel. The modal dismisses on Cancel, backdrop click, or Escape.
+- Submitting saves a `Feedback` record capturing **who submitted it** (the signed-in user) and **the URL of the page they were on** when they opened the modal (captured client-side and carried in a hidden field). The body is required; a blank submission is rejected.
+- The modal **submits in place via fetch — it never navigates the page**. On success the modal swaps to an in-place "Thanks for your feedback!" confirmation with a Close button, so the user stays exactly where they were; on failure an inline error is shown and the form is preserved. The endpoint answers with a bare status (`201`/`422`), not a redirect or re-render.
+- The modal is rendered as a sibling of the drawer (not inside it), so its fixed-position overlay spans the viewport rather than being clamped to the off-screen drawer on mobile.
+- Any signed-in user may submit feedback (`FeedbackPolicy#create?`); there is no membership or ownership gate. Feedback records belong to the submitting user and are removed with that user (`dependent: :destroy`); they are not tied to a game and so are outside the game-purge flow.
+- "Feedback" is a mass noun here — its plural is "feedback" (registered as uncountable), so the table is `feedback`, the association is `has_many :feedback`, and the route is a singular `resource :feedback`.
 
 ---
 
