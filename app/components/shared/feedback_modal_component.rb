@@ -13,6 +13,6 @@ class Shared::FeedbackModalComponent < ApplicationComponent
 
   sig { returns(String) }
   def submit_path
-    helpers.feedbacks_path
+    helpers.feedback_path
   end
 end

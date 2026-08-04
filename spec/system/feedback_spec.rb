@@ -15,7 +15,7 @@ RSpec.describe "Feedback", type: :feature do
   context "on desktop (drawer docked)" do
     before { resize_window_to_viewport(1280, 900) }
 
-    it "submits feedback capturing the submitter and the page URL" do
+    it "submits feedback in place, capturing the submitter and page URL without navigating" do
       visit game_path(game)
 
       click_button "Send Feedback"
@@ -26,7 +26,9 @@ RSpec.describe "Feedback", type: :feature do
         click_button "Submit"
       end
 
+      # The modal swaps to its in-place confirmation — the page never navigates.
       expect(page).to have_text("Thanks for your feedback!")
+      expect(page).to have_current_path(game_path(game))
 
       feedback = Feedback.last
       expect(feedback.user).to eq(user)

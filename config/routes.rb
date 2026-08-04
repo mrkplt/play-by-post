@@ -23,7 +23,7 @@ Rails.application.routes.draw do
   get "invitations/:token/accept", to: "invitations#accept", as: :accept_invitation
 
   authenticate :user do
-    resources :feedbacks, only: %i[create]
+    resource :feedback, only: %i[create]
     resource :profile, only: %i[show edit update], controller: "profiles" do
       post :toggle_hide_ooc, on: :collection
       post :export_all, on: :collection

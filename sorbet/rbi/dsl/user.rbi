@@ -393,19 +393,19 @@ class User
     sig { params(args: T.untyped, blk: T.untyped).returns(::UserProfile) }
     def create_user_profile!(*args, &blk); end
 
+    # This method is created by ActiveRecord on the `User` class because it declared `has_many :feedback`.
+    # 🔗 [Rails guide for `has_many` association](https://guides.rubyonrails.org/association_basics.html#the-has-many-association)
+    sig { returns(::Feedback::PrivateCollectionProxy) }
+    def feedback; end
+
+    sig { params(value: T::Enumerable[::Feedback]).void }
+    def feedback=(value); end
+
     sig { returns(T::Array[T.untyped]) }
     def feedback_ids; end
 
     sig { params(ids: T::Array[T.untyped]).returns(T::Array[T.untyped]) }
     def feedback_ids=(ids); end
-
-    # This method is created by ActiveRecord on the `User` class because it declared `has_many :feedbacks`.
-    # 🔗 [Rails guide for `has_many` association](https://guides.rubyonrails.org/association_basics.html#the-has-many-association)
-    sig { returns(::Feedback::PrivateCollectionProxy) }
-    def feedbacks; end
-
-    sig { params(value: T::Enumerable[::Feedback]).void }
-    def feedbacks=(value); end
 
     sig { returns(T::Array[T.untyped]) }
     def game_ids; end

@@ -102,7 +102,7 @@ matcher:
     - CharacterVersionsController
     - ProfilesController
     - PlayerManagementController
-    - FeedbacksController
+    - FeedbackController
     - Users::SessionsController
     # Jobs
     - PostDigestJob

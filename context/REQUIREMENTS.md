@@ -34,9 +34,10 @@ For technology stack, domain model, codebase conventions, and development workfl
 - A "Send Feedback" control is pinned in the nav-drawer footer, available on every authenticated screen (both the mobile overlay drawer and the docked desktop rail).
 - Clicking it opens a modal that collects the feedback: a free-form textarea, a Submit, and a Cancel. The modal dismisses on Cancel, backdrop click, or Escape.
 - Submitting saves a `Feedback` record capturing **who submitted it** (the signed-in user) and **the URL of the page they were on** when they opened the modal (captured client-side and carried in a hidden field). The body is required; a blank submission is rejected.
-- After submitting, the user is returned to the page they were on with a "Thanks for your feedback!" confirmation.
+- The modal **submits in place via fetch — it never navigates the page**. On success the modal swaps to an in-place "Thanks for your feedback!" confirmation with a Close button, so the user stays exactly where they were; on failure an inline error is shown and the form is preserved. The endpoint answers with a bare status (`201`/`422`), not a redirect or re-render.
 - The modal is rendered as a sibling of the drawer (not inside it), so its fixed-position overlay spans the viewport rather than being clamped to the off-screen drawer on mobile.
 - Any signed-in user may submit feedback (`FeedbackPolicy#create?`); there is no membership or ownership gate. Feedback records belong to the submitting user and are removed with that user (`dependent: :destroy`); they are not tied to a game and so are outside the game-purge flow.
+- "Feedback" is a mass noun here — its plural is "feedback" (registered as uncountable), so the table is `feedback`, the association is `has_many :feedback`, and the route is a singular `resource :feedback`.
 
 ---
 

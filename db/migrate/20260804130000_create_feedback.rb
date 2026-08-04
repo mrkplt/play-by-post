@@ -1,6 +1,6 @@
-class CreateFeedbacks < ActiveRecord::Migration[8.1]
+class CreateFeedback < ActiveRecord::Migration[8.1]
   def change
-    create_table :feedbacks do |t|
+    create_table :feedback do |t|
       t.references :user, null: false, foreign_key: true
       t.text :body, null: false
       # The URL of the page the submitter was on when they opened the feedback

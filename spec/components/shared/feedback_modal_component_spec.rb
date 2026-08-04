@@ -11,8 +11,9 @@ RSpec.describe Shared::FeedbackModalComponent, type: :component do
       expect(page).to have_css("[data-testid='feedback-modal'][data-feedback-target='modal']", visible: :all)
     end
 
-    it "posts to the feedbacks route" do
-      expect(page).to have_css("form[action='/feedbacks']", visible: :all)
+    it "posts to the feedback route and submits via the controller (no navigation)" do
+      form = page.find("form[action='/feedback']", visible: :all)
+      expect(form["data-action"]).to eq("submit->feedback#submit")
     end
 
     it "renders a textarea for the feedback body" do
@@ -26,6 +27,11 @@ RSpec.describe Shared::FeedbackModalComponent, type: :component do
     it "renders a submit and a cancel control" do
       expect(page).to have_css("input[type='submit'][value='Submit']", visible: :all)
       expect(page).to have_css("button[data-action='click->feedback#close']", text: "Cancel", visible: :all)
+    end
+
+    it "renders hidden success and error regions the controller reveals" do
+      expect(page).to have_css("[data-feedback-target='successPanel'][hidden]", visible: :all)
+      expect(page).to have_css("[data-feedback-target='error'][hidden]", visible: :all)
     end
   end
 end
