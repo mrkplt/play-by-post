@@ -93,11 +93,28 @@
   }
 
   /* Redesigned screens are full-bleed mobile frames — dark header + light body,
-     no side gutter or max-width. */
+     no side gutter or max-width — on phones. On wider (tablet/desktop) viewports
+     the same frame becomes a centered panel floating on a dark canvas, with a
+     border and drop shadow, so it reads as a deliberate web layout instead of a
+     phone screen stranded in an empty white window. */
   .app-frame {
     @apply min-h-screen flex flex-col bg-canvas max-w-2xl mx-auto overflow-x-hidden;
   }
   .app-body {
     @apply flex-1 px-4 py-4 flex flex-col gap-3;
+  }
+
+  @media (min-width: 768px) {
+    /* Dark canvas behind the panel; fills the whole window at any content height. */
+    body {
+      background: var(--color-drawer-bg);
+      min-height: 100vh;
+    }
+    .app-frame {
+      min-height: calc(100vh - 3rem);
+      margin-block: 1.5rem;
+      border: 1px solid var(--color-sidebar-border);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+    }
   }
 }

@@ -25,6 +25,7 @@ For technology stack, domain model, codebase conventions, and development workfl
 - **Icon tap targets** (hamburger, gear, back, OOC checkbox) are sized to a 44px-tall touch target minimum.
 - **Attention glow**: interactive cards/rows carry two distinct states — a persistent gold glow (`is-hot`) that is data-driven ("this has unread/new activity") and a lighter hover glow (affordance, "this is clickable"). These are separate states, not one effect at two opacities.
 - The UI is built component-first: a shared `MobileFrameComponent` scaffold (header / body / footer slots), `Ui::*` primitives (Avatar, ToggleSwitch, SectionLabel, SettingsRow, IconButton, PillTabs, Badge), and `Shared::*` composed components (GameHeader, NavDrawer, GameCard, SceneCard, RosterRow, PostItem, PostComposer). Screens are assembled purely by composing these components.
+- **Desktop rendering**: the same mobile frame adapts to wider viewports rather than being redesigned. On phones the frame is full-bleed (dark header over a light body, no side gutter). At tablet/desktop widths (≥768px) the frame becomes a centered, fixed-width panel — a border and drop shadow lift it off a dark canvas backdrop (`#1a1b1e`) with a gutter above and below — so it reads as a deliberate web layout instead of a phone screen stranded in an empty window. The layout stays single-column; the navigation drawer remains a hamburger-opened slide-in overlay at every width.
 
 ---
 
