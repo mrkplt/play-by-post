@@ -104,17 +104,49 @@
     @apply flex-1 px-4 py-4 flex flex-col gap-3;
   }
 
+  /* ---- Desktop (>=768px): a real two-pane website, not a phone frame ----
+     The nav drawer docks open as a permanent left rail (no hamburger, no
+     backdrop), and each screen's frame becomes the page itself: a full-width
+     dark top bar over a light content area whose body is a centered reading
+     column. Below 768px everything stays exactly as it was on mobile. */
   @media (min-width: 768px) {
-    /* Dark canvas behind the panel; fills the whole window at any content height. */
-    body {
-      background: var(--color-drawer-bg);
-      min-height: 100vh;
+    .nav-drawer {
+      transform: none;
+      transition: none;
+      z-index: 30;
     }
+    .nav-drawer-backdrop { display: none; }
+
+    /* The hamburger only makes sense when the rail is hidden. !important beats
+       the IconButton's `flex` utility, which lives in a later cascade layer. */
+    [data-action="click->sidebar#open"] { display: none !important; }
+
+    /* Content sits to the right of the 270px rail. Scoped to the sibling of an
+       actual drawer, so signed-out pages (no rail) stay full-width. */
+    .nav-drawer ~ div { margin-left: 270px; }
+
+    /* The frame stops being a centered phone column and fills the content
+       pane; only the body is capped to a comfortable reading width. */
     .app-frame {
-      min-height: calc(100vh - 3rem);
-      margin-block: 1.5rem;
-      border: 1px solid var(--color-sidebar-border);
-      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+      max-width: none;
+      margin-inline: 0;
+    }
+    .app-body {
+      width: 100%;
+      max-width: 48rem;
+      margin-inline: auto;
+      padding: 1.5rem 2rem;
+    }
+
+    /* Keep the pinned action bar's button at the reading width, not stretched
+       across the whole pane. */
+    .app-frame > footer {
+      display: flex;
+      justify-content: center;
+    }
+    .app-frame > footer > * {
+      width: 100%;
+      max-width: 48rem;
     }
   }
 }
