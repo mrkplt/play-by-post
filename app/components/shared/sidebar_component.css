@@ -93,11 +93,61 @@
   }
 
   /* Redesigned screens are full-bleed mobile frames — dark header + light body,
-     no side gutter or max-width. */
+     no side gutter or max-width — on phones. On wider (tablet/desktop) viewports
+     the same frame becomes a centered panel floating on a dark canvas, with a
+     border and drop shadow, so it reads as a deliberate web layout instead of a
+     phone screen stranded in an empty white window. */
   .app-frame {
     @apply min-h-screen flex flex-col bg-canvas max-w-2xl mx-auto overflow-x-hidden;
   }
   .app-body {
     @apply flex-1 px-4 py-4 flex flex-col gap-3;
+  }
+
+  /* ---- Desktop (>=1024px): a real two-pane website, not a phone frame ----
+     The nav drawer docks open as a permanent left rail (no hamburger, no
+     backdrop), and each screen's frame becomes the page itself: a full-width
+     dark top bar over a light content area whose body is a centered reading
+     column. Below 1024px everything stays as it was — full-bleed on phones,
+     the hamburger-opened overlay drawer on tablets. */
+  @media (min-width: 1024px) {
+    .nav-drawer {
+      transform: none;
+      transition: none;
+      z-index: 30;
+    }
+    .nav-drawer-backdrop { display: none; }
+
+    /* The hamburger only makes sense when the rail is hidden. !important beats
+       the IconButton's `flex` utility, which lives in a later cascade layer. */
+    [data-action="click->sidebar#open"] { display: none !important; }
+
+    /* Content sits to the right of the 270px rail. Scoped to the sibling of an
+       actual drawer, so signed-out pages (no rail) stay full-width. */
+    .nav-drawer ~ div { margin-left: 270px; }
+
+    /* The frame stops being a centered phone column and fills the content
+       pane; only the body is capped to a comfortable reading width. */
+    .app-frame {
+      max-width: none;
+      margin-inline: 0;
+    }
+    .app-body {
+      width: 100%;
+      max-width: 48rem;
+      margin-inline: auto;
+      padding: 1.5rem 2rem;
+    }
+
+    /* Keep the pinned action bar's button at the reading width, not stretched
+       across the whole pane. */
+    .app-frame > footer {
+      display: flex;
+      justify-content: center;
+    }
+    .app-frame > footer > * {
+      width: 100%;
+      max-width: 48rem;
+    }
   }
 }
