@@ -23,6 +23,12 @@ class GamePolicy < ApplicationPolicy
     gm?
   end
 
+  # Deleting the game (soft-delete, then scheduled purge) is GM-only.
+  sig { returns(T::Boolean) }
+  def destroy?
+    gm?
+  end
+
   # The player-management screen is visible to any game member; GM-only sections
   # within it are gated separately in the view.
   sig { returns(T::Boolean) }

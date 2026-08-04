@@ -72,7 +72,7 @@ For technology stack, domain model, codebase conventions, and development workfl
 ## Game Settings
 
 - Reached via the gear (⚙) in the game header — open to any non-banned member, not just the GM. Uses the settings-row pattern under a back-arrow header.
-- GM-only sections (hidden entirely for non-GM viewers): Members (name + character + Remove/Ban, where Remove is neutral and Ban is red and carries its own more serious confirmation), and Game Preferences (an "AI Scene Summaries" toggle switch). Inviting players lives on the game Roster tab, not here.
+- GM-only sections (hidden entirely for non-GM viewers): Members (name + character + Remove/Ban, where Remove is neutral and Ban is red and carries its own more serious confirmation), Game Preferences (an "AI Scene Summaries" toggle switch), and Danger Zone (game deletion — see below). Inviting players lives on the game Roster tab, not here.
 - Export section (all non-banned members, GM and non-GM alike): a "This game" row with an "Export Game" action and the last-export notice, same as the profile-level export.
 - Non-members and banned members are redirected away with an access alert; this is the only guard on the page itself — GM-only content is scoped by conditionally rendering, not by a separate access check.
 
@@ -98,6 +98,15 @@ For technology stack, domain model, codebase conventions, and development workfl
 - The game disappears from the banned player's dashboard entirely
 - Banned players no longer receive notifications
 - The character roster shows a "Banned" status visible only to the GM
+
+### Game Deletion (GM only)
+
+- Only the game's GM (its owner) sees the Danger Zone "Delete Game" control, and only the GM may delete (`GamePolicy#destroy?`).
+- Deletion requires an explicit confirmation: a modal that the GM must confirm by typing the game's exact name; the destructive button stays disabled until the typed text matches. It is framed as permanent — the copy makes no promise of recovery.
+- Deletion is **two-phase (soft delete, then scheduled purge)**:
+  - **Phase 1 — soft delete (immediate).** The GM's action stamps the game's `deleted_at`. From that moment the game is hidden everywhere — it disappears from the dashboard and the nav drawer, and any direct link to the game or its scenes/posts/files resolves as not-found. This is enforced by a model `default_scope` (`deleted_at IS NULL`), so every lookup, through-association, and export enumeration is filtered without a per-call-site guard. There is no restore UI; the window is purely a safety buffer.
+  - **Phase 2 — purge (after a 7-day retention window).** A daily recurring job (`GamePurgeSweepJob`) scans for games whose `deleted_at` is older than the retention window and enqueues one `GamePurgeJob` per game. The purge job destroys the game and everything belonging to it — scenes, posts, characters and their version history, game files, invitations, memberships, and export requests — and every attached artifact (post images, scene images, uploaded game files, export archives) is removed from storage. The sweep and purge read past the default scope via `unscoped`.
+- Retention is 7 days (`GamePurgeSweepJob::RETENTION`), measured from `deleted_at`; a game deleted exactly at the cutoff is purged, one a second newer is not.
 
 ---
 

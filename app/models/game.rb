@@ -18,8 +18,20 @@ class Game < ApplicationRecord
   has_many :characters, dependent: :destroy
   has_many :game_files, dependent: :destroy
   has_many :invitations, dependent: :destroy
+  # Purged along with the game so no export request dangles against a deleted
+  # game (the FK has no cascade); destroying each also purges its archive blob.
+  has_many :game_export_requests, dependent: :destroy
 
   validates :name, presence: true, length: { maximum: 200 }
+
+  # Soft-deleted games are hidden everywhere by this default scope: every
+  # controller lookup, through-association, and export enumeration is filtered
+  # without touching each call site. The purge sweep/job read via `unscoped` to
+  # see them again. Deletion is a two-phase flow — see REQUIREMENTS "Game
+  # Deletion": the GM soft-deletes (sets deleted_at), and after a retention
+  # window GamePurgeSweepJob enqueues GamePurgeJob to destroy the record and all
+  # its artifacts.
+  default_scope { where(deleted_at: nil) }
 
   sig { returns(T.nilable(User)) }
   def game_master
@@ -54,6 +66,18 @@ class Game < ApplicationRecord
     return false unless membership
 
     membership.game_master? || membership.active? || membership.removed?
+  end
+
+  # Phase one of deletion: hide the game now. The record and its artifacts are
+  # removed later by GamePurgeJob once the retention window has passed.
+  sig { void }
+  def soft_delete!
+    update!(deleted_at: Time.current)
+  end
+
+  sig { returns(T::Boolean) }
+  def deleted?
+    deleted_at.present?
   end
 
   sig { returns(T.nilable(ActiveSupport::Duration)) }

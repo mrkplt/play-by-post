@@ -93,5 +93,19 @@ RSpec.describe UserPresenter do
     it "returns GameMember records" do
       expect(presenter.drawer_memberships).to all(be_a(GameMember))
     end
+
+    context "with a soft-deleted game", db: true do
+      it "drops memberships whose game was soft-deleted" do
+        user = create(:user)
+        live = create(:game, name: "Live One")
+        gone = create(:game, name: "Gone One")
+        create(:game_member, game: live, user: user)
+        create(:game_member, game: gone, user: user)
+        gone.soft_delete!
+
+        names = described_class.new(user).drawer_memberships.map { |m| m.game.name }
+        expect(names).to eq([ "Live One" ])
+      end
+    end
   end
 end
