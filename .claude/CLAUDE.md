@@ -126,6 +126,7 @@ Key model notes:
 - `Post` — markdown body, editable within 10-min window (`editable_by?`), draft support — see REQUIREMENTS.md
 - `UserProfile` — display_name, hide_ooc, last_login_at (updated by Warden hook on every sign-in) — see REQUIREMENTS.md
 - `Invitation` — email + token + accepted_at
+- `Game` deletion is two-phase: soft delete (`deleted_at`, hidden by a `default_scope`) then a scheduled purge. **The purge does NOT use `dependent:` cascades** — `GamePurgeJob` collects and deletes a game's records and Active Storage artifacts explicitly, child-first. **Adding any association under a game, or any attachment to a record below a game, means `GamePurgeJob` (`#delete_records` / `#purge_artifacts`) MUST be updated too**, or those rows/blobs are orphaned on purge. The end-to-end spec in `spec/jobs/game_purge_job_spec.rb` is the guardrail — populate the new record/attachment there so a missed table fails the suite. See REQUIREMENTS "Game Deletion".
 
 ---
 

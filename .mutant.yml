@@ -64,6 +64,7 @@ matcher:
     - Shared::RosterRowComponent
     - Shared::PageHeaderComponent
     - Shared::MobileFrameComponent
+    - Shared::DeleteGameComponent
     - Ui::BadgeComponent
     - Ui::BreadcrumbComponent
     - Ui::ButtonComponent
@@ -106,6 +107,8 @@ matcher:
     - ExportCleanupJob
     - SceneSummaryJob
     - CoolifyDeployJob
+    - GamePurgeSweepJob
+    - GamePurgeJob
     # Mailers
     - NotificationMailer
     - InvitationMailer

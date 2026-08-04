@@ -179,6 +179,14 @@ RSpec.describe GamesController, type: :request do
       post games_path, params: { game: { name: "Adventure" } }
       expect(response).to have_http_status(:redirect)
     end
+
+    it "redirects with an alert when the game param is missing" do
+      sign_in(gm)
+      post games_path, params: {}
+
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to eq("Bad request.")
+    end
   end
 
   describe "GET /games/:id/edit" do
@@ -232,6 +240,50 @@ RSpec.describe GamesController, type: :request do
     it "unauthenticated user is redirected" do
       patch game_path(game), params: { game: { name: "Hacked" } }
       expect(response).to have_http_status(:redirect)
+    end
+  end
+
+  describe "DELETE /games/:id" do
+    it "GM soft-deletes the game and is redirected to the dashboard" do
+      sign_in(gm)
+      delete game_path(game)
+
+      expect(response).to redirect_to(root_path)
+      expect(Game.unscoped.find(game.id).deleted_at).to be_present
+      # The default scope hides it everywhere thereafter.
+      expect(Game.exists?(game.id)).to be(false)
+    end
+
+    it "player cannot delete the game" do
+      sign_in(player)
+      delete game_path(game)
+
+      expect(response).to redirect_to(game_path(game))
+      expect(Game.unscoped.find(game.id).deleted_at).to be_nil
+    end
+
+    it "unauthenticated user is redirected" do
+      delete game_path(game)
+      expect(response).to have_http_status(:redirect)
+    end
+
+    it "leaves a soft-deleted game unreachable" do
+      game.soft_delete!
+      sign_in(gm)
+      get game_path(game)
+
+      expect(response).to redirect_to(root_path)
+    end
+
+    it "drops a soft-deleted game from the dashboard" do
+      hidden = create(:game, name: "Vanishing Point")
+      create(:game_member, :game_master, game: hidden, user: gm)
+      hidden.soft_delete!
+
+      sign_in(gm)
+      get root_path
+
+      expect(response.body).not_to include("Vanishing Point")
     end
   end
 

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_30_113920) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_04_120000) do
   create_table "action_mailbox_inbound_emails", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "message_checksum", null: false
@@ -118,12 +118,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_30_113920) do
   create_table "games", force: :cascade do |t|
     t.boolean "ai_summaries_enabled", default: false, null: false
     t.datetime "created_at", null: false
+    t.datetime "deleted_at"
     t.text "description"
     t.boolean "images_disabled", default: false, null: false
     t.string "name", null: false
     t.integer "post_edit_window_minutes"
     t.boolean "sheets_hidden", default: false, null: false
     t.datetime "updated_at", null: false
+    t.index ["deleted_at"], name: "index_games_on_deleted_at"
   end
 
   create_table "invitations", force: :cascade do |t|

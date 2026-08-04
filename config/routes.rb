@@ -29,7 +29,7 @@ Rails.application.routes.draw do
       post :generate_rss_token, on: :collection
       delete :revoke_rss_token, on: :collection
     end
-    resources :games, only: %i[index new create show edit update] do
+    resources :games, only: %i[index new create show edit update destroy] do
       member do
         patch :toggle_sheets_hidden
         patch :toggle_images_disabled

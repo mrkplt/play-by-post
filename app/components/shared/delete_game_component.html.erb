@@ -1,0 +1,42 @@
+<div data-controller="game-delete" data-game-delete-name-value="<%= game_name %>"
+     data-action="keydown@document->game-delete#closeOnEscape">
+  <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do %>Danger Zone<% end %>
+  <%= render Ui::CardComponent.new do %>
+    <%= render Ui::SettingsRowComponent.new(label: "Delete this game", sub: "Permanently removes the game and all its data", last: true) do %>
+      <button type="button" data-action="click->game-delete#open"
+              class="text-[11px] font-bold text-danger bg-transparent border-0 cursor-pointer p-0">
+        Delete Game
+      </button>
+    <% end %>
+  <% end %>
+
+  <div data-game-delete-target="modal" hidden data-testid="delete-game-modal"
+       class="fixed inset-0 z-[1000] flex items-center justify-center p-4"
+       data-action="click->game-delete#closeOnBackdrop">
+    <div class="absolute inset-0 bg-black/60" data-game-delete-backdrop></div>
+    <div class="relative bg-card rounded-card w-full max-w-sm flex flex-col overflow-hidden">
+      <div class="p-5 flex flex-col gap-3">
+        <h2 class="text-lg font-semibold text-danger">Delete <%= game_name %>?</h2>
+        <p class="text-sm text-muted-2">
+          This permanently deletes the game and everything in it — scenes, posts,
+          characters, and every uploaded file, image, and portrait. This cannot be undone.
+        </p>
+        <label class="text-sm font-medium text-row-ink" for="delete-game-confirm">
+          <%= confirm_instruction %>
+        </label>
+        <input id="delete-game-confirm" type="text" autocomplete="off"
+               data-game-delete-target="input" data-action="input->game-delete#validate"
+               class="w-full px-3 py-2 border border-card-border rounded text-base bg-card" />
+        <div class="flex justify-end gap-2 mt-1">
+          <button type="button" data-action="click->game-delete#close"
+                  class="px-4 py-2 border border-card-border text-row-ink rounded text-sm cursor-pointer">
+            Cancel
+          </button>
+          <%= button_to "Delete Game", delete_path, method: :delete, disabled: true,
+                data: { game_delete_target: "submit" },
+                class: "px-4 py-2 bg-danger text-white rounded text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -7,3 +7,7 @@ production:
     class: ExportCleanupJob
     schedule: "0 4 * * *"  # Daily at 4am UTC
     queue: default
+  game_purge_sweep:
+    class: GamePurgeSweepJob
+    schedule: "0 5 * * *"  # Daily at 5am UTC
+    queue: default
