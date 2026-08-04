@@ -104,12 +104,13 @@
     @apply flex-1 px-4 py-4 flex flex-col gap-3;
   }
 
-  /* ---- Desktop (>=768px): a real two-pane website, not a phone frame ----
+  /* ---- Desktop (>=1024px): a real two-pane website, not a phone frame ----
      The nav drawer docks open as a permanent left rail (no hamburger, no
      backdrop), and each screen's frame becomes the page itself: a full-width
      dark top bar over a light content area whose body is a centered reading
-     column. Below 768px everything stays exactly as it was on mobile. */
-  @media (min-width: 768px) {
+     column. Below 1024px everything stays as it was — full-bleed on phones,
+     the hamburger-opened overlay drawer on tablets. */
+  @media (min-width: 1024px) {
     .nav-drawer {
       transform: none;
       transition: none;
