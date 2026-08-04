@@ -18,9 +18,9 @@ class Game < ApplicationRecord
   has_many :characters, dependent: :destroy
   has_many :game_files, dependent: :destroy
   has_many :invitations, dependent: :destroy
-  # Purged along with the game so no export request dangles against a deleted
-  # game (the FK has no cascade); destroying each also purges its archive blob.
-  has_many :game_export_requests, dependent: :destroy
+  # No dependent: cascade — GamePurgeJob collects and deletes a purged game's
+  # export requests (and their archive blobs) explicitly.
+  has_many :game_export_requests
 
   validates :name, presence: true, length: { maximum: 200 }
 
