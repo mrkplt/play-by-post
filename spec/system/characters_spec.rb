@@ -77,6 +77,47 @@ RSpec.describe "Characters", type: :feature do
     end
   end
 
+  describe "markdown formatting toolbar" do
+    it "wraps the selected sheet text and refreshes the live preview" do
+      sign_in_as(player)
+      visit new_game_character_path(game)
+
+      fill_in "Name", with: "Toolbar Tester"
+      find("textarea.markdown-editor").set("hero")
+      page.execute_script(
+        "const t = document.querySelector('textarea.markdown-editor'); t.focus(); t.setSelectionRange(0, t.value.length);"
+      )
+      click_button "B"
+
+      expect(find("textarea.markdown-editor").value).to eq("**hero**")
+      expect(page).to have_css("[data-markdown-preview-target='preview'] strong", text: "hero")
+    end
+
+    it "gives each toolbar button a >= 44px touch target" do
+      sign_in_as(player)
+      visit new_game_character_path(game)
+
+      min_height = page.evaluate_script(
+        "Math.min(...Array.from(document.querySelectorAll(\"[role='toolbar'][aria-label='Markdown formatting'] button\")).map(b => b.getBoundingClientRect().height))"
+      )
+      expect(min_height).to be >= 44
+    end
+
+    it "prepends a heading marker to the current line" do
+      sign_in_as(player)
+      visit new_game_character_path(game)
+
+      find("textarea.markdown-editor").set("Backstory")
+      page.execute_script(
+        "const t = document.querySelector('textarea.markdown-editor'); t.focus(); t.setSelectionRange(0, 0);"
+      )
+      click_button "H"
+
+      expect(find("textarea.markdown-editor").value).to eq("## Backstory")
+      expect(page).to have_css("[data-markdown-preview-target='preview'] h2", text: "Backstory")
+    end
+  end
+
   describe "character editing" do
     let!(:character) { create(:character, game: game, user: player, name: "Vesper") }
 
