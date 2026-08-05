@@ -17,7 +17,6 @@ class CharactersController < ApplicationController
     @character = @game.characters.new
     authorize @character
     @users = players_for_select
-    @character_form = build_character_form
   end
 
   sig { void }
@@ -29,7 +28,6 @@ class CharactersController < ApplicationController
       if params[:character][:user_id].blank?
         @users = players_for_select
         @character.errors.add(:base, "Please select a player")
-        @character_form = build_character_form
         return render :new, status: :unprocessable_content
       end
       owner = User.find(params[:character][:user_id])
@@ -44,7 +42,6 @@ class CharactersController < ApplicationController
       redirect_to game_character_path(@game, @character), notice: "Character created."
     else
       @users = players_for_select
-      @character_form = build_character_form
       render :new, status: :unprocessable_content
     end
   end
@@ -60,7 +57,6 @@ class CharactersController < ApplicationController
   sig { void }
   def edit
     authorize @character
-    @character_form = build_character_form
   end
 
   sig { void }
@@ -83,7 +79,6 @@ class CharactersController < ApplicationController
     if @character.update(permitted_attributes(@character))
       redirect_to game_character_path(@game, @character), notice: "Character updated."
     else
-      @character_form = build_character_form
       render :edit, status: :unprocessable_content
     end
   end
@@ -103,24 +98,6 @@ class CharactersController < ApplicationController
   sig { returns(T::Array[User]) }
   def players_for_select
     @game.active_members.where(role: "player").includes(:user).map(&:user)
-  end
-
-  sig { returns(Shared::CharacterFormComponent) }
-  def build_character_form
-    Shared::CharacterFormComponent.new(
-      game: @game,
-      character: @character,
-      users: @users || [],
-      new_record: @character.new_record?,
-      can_assign_owner: policy(@character).assign_owner?,
-      archived: @character.archived?,
-      back_href: character_form_back_href
-    )
-  end
-
-  sig { returns(String) }
-  def character_form_back_href
-    @character.new_record? ? game_path(@game) : game_character_path(@game, @character)
   end
 
   sig { void }

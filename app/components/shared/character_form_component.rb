@@ -69,11 +69,6 @@ class Shared::CharacterFormComponent < ApplicationComponent
   end
 
   sig { returns(String) }
-  def heading
-    @new_record ? "New Character" : "Edit — #{@character.name}"
-  end
-
-  sig { returns(String) }
   def content_label
     @new_record ? "Sheet (optional, markdown supported)" : "Sheet (markdown supported)"
   end

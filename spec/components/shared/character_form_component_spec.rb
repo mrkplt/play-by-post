@@ -22,14 +22,12 @@ RSpec.describe Shared::CharacterFormComponent, type: :component do
   describe "mode-driven copy" do
     it "uses New Character wording for a new record" do
       component = build_component(new_record: true)
-      expect(component.heading).to eq("New Character")
       expect(component.submit_label).to eq("Create Character")
       expect(component.content_label).to eq("Sheet (optional, markdown supported)")
     end
 
-    it "uses edit wording naming the character for an existing record" do
+    it "uses edit wording for an existing record" do
       component = build_component(character: existing_character, new_record: false)
-      expect(component.heading).to eq("Edit — Thornwall")
       expect(component.submit_label).to eq("Save")
       expect(component.content_label).to eq("Sheet (markdown supported)")
     end

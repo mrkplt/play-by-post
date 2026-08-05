@@ -2,8 +2,11 @@
 
 <%= render Shared::MobileFrameComponent.new do |frame| %>
   <% frame.with_header do %>
-    <%= render Shared::PageHeaderComponent.new(title: @character_form.heading, leading: :back, back_href: @character_form.back_href) %>
+    <%= render Shared::PageHeaderComponent.new(title: "Edit — #{@character.name}", leading: :back, back_href: game_character_path(@game, @character)) %>
   <% end %>
 
-  <%= render @character_form %>
+  <%= render Shared::CharacterFormComponent.new(
+        game: @game, character: @character, users: [],
+        new_record: false, can_assign_owner: policy(@character).assign_owner?,
+        archived: @character.archived?, back_href: game_character_path(@game, @character)) %>
 <% end %>
