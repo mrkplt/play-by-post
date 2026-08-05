@@ -82,10 +82,11 @@ For technology stack, domain model, codebase conventions, and development workfl
 
 ## Game View
 
-- The game area is a single page (`games#show`) with three **pill tabs in the dark header — Scenes / Roster / Files — switched client-side** (no page navigation). The header shows a hamburger (opens the nav drawer), a GM crown (only when the viewer is GM), the game title, and a gear (Game Settings, any viewer with game access — GM, active player, or removed player). The active tab is deep-linkable via the URL hash.
+- The game area is a single page (`games#show`) with four **pill tabs in the dark header — Scenes / Roster / Files / Pages — switched client-side** (no page navigation). The header shows a hamburger (opens the nav drawer), a GM crown (only when the viewer is GM), the game title, and a gear (Game Settings, any viewer with game access — GM, active player, or removed player). The active tab is deep-linkable via the URL hash.
 - **Scenes tab**: active (unresolved) scenes as cards showing just title + participant count (plus parent/child links where threaded), most recent first, with an attention glow on scenes with new activity. Below: an "In Active Scenes" roster preview (the GM as a person with a crown, then characters and the scene they're in — never a banned player), and a "New Scene" action (GM).
 - **Roster tab**: a search field, the character list (avatar, name, "Played by {player}"; a removed player's row is dimmed with a "Removed" badge), a "New Character" action, a "N inactive characters hidden" note, and — GM only — a "Banned · GM only" section (blue-tinted, each row with an Unban action) plus the invite controls: an "Invite a Player" (email + Invite) form and a "Pending Invitations" list (email + "Sent X ago" + Cancel). Inviting or cancelling returns the GM to the Roster tab. Inactive (archived) characters are hidden by default.
 - **Files tab**: the file gallery (see Game-Level File Store). GM sees the upload form.
+- **Pages tab**: an in-page index of the game's pages (title → page), alphabetised by title, with a "New Page" action shown to the GM only (see Game Pages).
 - The gear is shown to any non-banned member (GM, active, or removed) and opens Game Settings.
 
 ---
@@ -127,7 +128,7 @@ For technology stack, domain model, codebase conventions, and development workfl
 - Deletion requires an explicit confirmation: a modal that the GM must confirm by typing the game's exact name; the destructive button stays disabled until the typed text matches. The game name is shown in quotes in the modal copy (heading and the "type to confirm" instruction). Matching ignores surrounding whitespace on both the typed text and the stored name, so a game whose name has leading/trailing spaces is still confirmable. It is framed as permanent — the copy makes no promise of recovery.
 - Deletion is **two-phase (soft delete, then scheduled purge)**:
   - **Phase 1 — soft delete (immediate).** The GM's action stamps the game's `deleted_at`. From that moment the game is hidden everywhere — it disappears from the dashboard and the nav drawer, and any direct link to the game or its scenes/posts/files resolves as not-found. This is enforced by a model `default_scope` (`deleted_at IS NULL`), so every lookup, through-association, and export enumeration is filtered without a per-call-site guard. There is no restore UI; the window is purely a safety buffer.
-  - **Phase 2 — purge (after a 7-day retention window).** A daily recurring job (`GamePurgeSweepJob`) scans for games whose `deleted_at` is older than the retention window and enqueues one `GamePurgeJob` per game. The purge does **not** rely on association cascades or Active Storage's fire-and-forget `purge_later`: it collects and deletes the game's artifacts and records explicitly. Every stored artifact (post images, scene images, uploaded game files, export archives) is purged from storage within the job, and every dependent record (scenes, posts and reads, participants, summaries, notification preferences, characters and their version history, game files, invitations, memberships, and export requests) is deleted child-first, in batches, ending with the game row. The sweep and purge read past the default scope via `unscoped`.
+  - **Phase 2 — purge (after a 7-day retention window).** A daily recurring job (`GamePurgeSweepJob`) scans for games whose `deleted_at` is older than the retention window and enqueues one `GamePurgeJob` per game. The purge does **not** rely on association cascades or Active Storage's fire-and-forget `purge_later`: it collects and deletes the game's artifacts and records explicitly. Every stored artifact (post images, scene images, uploaded game files, export archives) is purged from storage within the job, and every dependent record (scenes, posts and reads, participants, summaries, notification preferences, characters and their version history, game files, pages, invitations, memberships, and export requests) is deleted child-first, in batches, ending with the game row. The sweep and purge read past the default scope via `unscoped`.
 - Retention is 7 days (`GamePurgeSweepJob::RETENTION`), measured from `deleted_at`; a game deleted exactly at the cutoff is purged, one a second newer is not.
 
 ---
@@ -258,6 +259,20 @@ For technology stack, domain model, codebase conventions, and development workfl
 
 ---
 
+## Game Pages
+
+Game-level wiki pages: freeform reference material (house rules, lore, NPC directories, session notes) that belongs to the whole game rather than any one scene or character.
+
+- A page has a **title** and a markdown **body**. The body is optional; the title is required (max 200 characters).
+- Each page is addressed by a **globally unique, non-editable 16-character alphanumeric slug** at `games/:game_id/pages/:slug`. The slug is generated automatically on creation and never changes — renaming a page's title never changes its URL. There is no user-facing slug field.
+- **Only the GM can create, edit, or delete pages.** The new and edit screens use the same interface (shared `Shared::PageFormComponent`): a title field and the standard markdown editor (formatting toolbar + live preview, see "Markdown Editing"). Creating or saving lands on the page's show screen.
+- **Every non-banned member of the game can view pages** — the GM, active players, and removed (former) players alike. Banned members and non-members are denied (redirected with an access alert). Enforced by `PagePolicy` (`show?` → game viewable; `create?`/`update?`/`destroy?` → GM).
+- The page **show screen renders the markdown body** into the app's standard reading chrome (mobile frame + back-arrow header). The GM additionally sees Edit and Delete controls (delete is confirmed). A page with no body shows a placeholder.
+- Pages are discovered through the **Pages tab** on the Game View, which lists every page in the game (alphabetised by title) and — for the GM — a "New Page" action.
+- Pages are part of a game's lifecycle: they are **removed when the game is purged** (`GamePurgeJob`) and **included in the game export** (see Game Export).
+
+---
+
 ## Notifications & Email
 
 ### Email Types
@@ -353,7 +368,8 @@ acceptance.
 - Clicking the export button submits immediately — no confirmation dialog — and the acknowledgment ("Export requested — you'll receive an email shortly.") renders on screen via the standard flash notice; delivery-window and link-expiry details are shown as static helper text next to the button instead
 - `succeeded_at` is indexed `(game_id, succeeded_at desc)` so the receipt lookup is a fast indexed read
 - If a job fails, `ExportMailer#export_failed` is sent and the job re-raises (for retry by Solid Queue)
-- Archive structure: `{game-slug}-export-{date}/README.md`, `files_manifest.md`, `scenes/NNN-{slug}/scene_info.md`, `scenes/NNN-{slug}/posts.md`, `characters/{slug}/current_sheet.md`, `characters/{slug}/version_history/vNNN-{date}.md`
+- Archive structure: `{game-slug}-export-{date}/README.md`, `files_manifest.md`, `scenes/NNN-{slug}/scene_info.md`, `scenes/NNN-{slug}/posts.md`, `characters/{slug}/current_sheet.md`, `characters/{slug}/version_history/vNNN-{date}.md`, `pages/{slug}.md`
+- Game pages are exported as `pages/{slug}.md` (slug derived from the page title, disambiguated on collision), each with the title as an H1 and the markdown body
 - Drafts are excluded from posts; binary game files are excluded (a manifest is included)
 - User emails are never written to the archive; only display names
 - Zip files are purged from Active Storage after 7 days

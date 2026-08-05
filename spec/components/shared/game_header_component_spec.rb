@@ -20,6 +20,7 @@ RSpec.describe Shared::GameHeaderComponent, type: :component do
     expect(rendered).to have_css("button[data-tab='scenes']")
     expect(rendered).to have_css("button[data-tab='roster']")
     expect(rendered).to have_css("button[data-tab='files']")
+    expect(rendered).to have_css("button[data-tab='pages']")
   end
 
   it "gold-fills the active tab" do
@@ -56,8 +57,8 @@ RSpec.describe Shared::GameHeaderComponent, type: :component do
     end
   end
 
-  it "exposes the three tabs" do
+  it "exposes the four tabs" do
     labels = described_class.new(game: game, title: "x").tabs.map(&:label)
-    expect(labels).to eq(%w[Scenes Roster Files])
+    expect(labels).to eq(%w[Scenes Roster Files Pages])
   end
 end

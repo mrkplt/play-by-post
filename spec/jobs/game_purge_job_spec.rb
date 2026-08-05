@@ -29,6 +29,7 @@ RSpec.describe GamePurgeJob, type: :job, db: true do
     records[:post] = post
     records[:post_read] = create(:post_read, post: post, user: player)
     records[:game_file] = create(:game_file, game: game)
+    records[:page] = create(:page, game: game)
     records[:export] = create(:game_export_request, user: gm, game: game)
 
     parent.image.attach(io: StringIO.new("s"), filename: "scene-#{suffix}.png", content_type: "image/png")
@@ -49,7 +50,8 @@ RSpec.describe GamePurgeJob, type: :job, db: true do
       SceneSummary.exists?(r[:scene_summary].id) &&
       NotificationPreference.exists?(r[:notification_preference].id) &&
       Character.exists?(r[:character].id) && CharacterVersion.exists?(r[:character_version].id) &&
-      GameFile.exists?(r[:game_file].id) && Invitation.exists?(r[:invitation].id) &&
+      GameFile.exists?(r[:game_file].id) && Page.exists?(r[:page].id) &&
+      Invitation.exists?(r[:invitation].id) &&
       GameMember.where(id: r[:memberships].map(&:id)).count == 2 &&
       GameExportRequest.exists?(r[:export].id) &&
       ActiveStorage::Blob.where(filename: r[:blob_filenames]).count == 4
@@ -91,6 +93,7 @@ RSpec.describe GamePurgeJob, type: :job, db: true do
         expect(Character.where(id: target[:character].id)).to be_empty
         expect(CharacterVersion.where(id: target[:character_version].id)).to be_empty
         expect(GameFile.where(id: target[:game_file].id)).to be_empty
+        expect(Page.where(id: target[:page].id)).to be_empty
         expect(Invitation.where(id: target[:invitation].id)).to be_empty
         expect(GameMember.where(id: target[:memberships].map(&:id))).to be_empty
         expect(GameExportRequest.where(id: target[:export].id)).to be_empty

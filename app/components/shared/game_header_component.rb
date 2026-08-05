@@ -3,7 +3,7 @@
 # The dark game-scoped header for the Game View: a hamburger (opens the nav
 # drawer), an optional GM crown, the game title, an optional trailing gear
 # (Game Settings, shown to any viewer with game access), and a row of pill
-# tabs that switch in-page panels (Scenes / Roster / Files) client-side — no
+# tabs that switch in-page panels (Scenes / Roster / Files / Pages) client-side — no
 # cross-page navigation.
 #
 # Composed entirely from Ui primitives.
@@ -58,7 +58,8 @@ class Shared::GameHeaderComponent < ApplicationComponent
     [
       Ui::PillTabsComponent::Tab.new(label: "Scenes", panel: :scenes),
       Ui::PillTabsComponent::Tab.new(label: "Roster", panel: :roster),
-      Ui::PillTabsComponent::Tab.new(label: "Files", panel: :files)
+      Ui::PillTabsComponent::Tab.new(label: "Files", panel: :files),
+      Ui::PillTabsComponent::Tab.new(label: "Pages", panel: :pages)
     ]
   end
 end

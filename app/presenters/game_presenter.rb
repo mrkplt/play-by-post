@@ -32,4 +32,10 @@ class GamePresenter < BasePresenter
   def description_display
     @model.description.presence || "No description yet."
   end
+
+  # The game's pages, alphabetised by title — the data behind the Pages tab.
+  sig { returns(T::Array[Page]) }
+  def pages
+    @model.pages.order(:title).to_a
+  end
 end

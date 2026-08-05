@@ -33,6 +33,19 @@ RSpec.describe GamePresenter do
     end
   end
 
+  describe "#pages" do
+    it "returns the game's pages ordered by title" do
+      ordered = [ build_stubbed(:page), build_stubbed(:page) ]
+      all_rel = double("all pages")
+      ordered_rel = double("ordered pages")
+      allow(game).to receive(:pages).and_return(all_rel)
+      allow(all_rel).to receive(:order).with(:title).and_return(ordered_rel)
+      allow(ordered_rel).to receive(:to_a).and_return(ordered)
+
+      expect(presenter.pages).to eq(ordered)
+    end
+  end
+
   describe "#description_display" do
     it "returns the description when present" do
       allow(game).to receive(:description).and_return("A grim frontier saga")

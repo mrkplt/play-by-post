@@ -51,6 +51,7 @@ class GameExportService
     write_files_manifest(zip, prefix, game)
     write_scenes(zip, prefix, game, scenes)
     write_characters(zip, prefix, game, scenes)
+    write_pages(zip, prefix, game)
   end
 
   # Applies the export scope the policy decided (:all / :participating / :visible).
@@ -273,6 +274,29 @@ class GameExportService
     end
   end
 
+  # --- Pages ---
+
+  sig { params(zip: Zip::OutputStream, prefix: String, game: Game).void }
+  def write_pages(zip, prefix, game)
+    slug_tracker = T.let({}, T::Hash[String, Integer])
+
+    pages_for(game).each do |page|
+      slug = unique_slug(slugify(page.title), slug_tracker)
+      zip.put_next_entry("#{prefix}pages/#{slug}.md")
+      zip.write(page_content(page))
+    end
+  end
+
+  sig { params(page: Page).returns(String) }
+  def page_content(page)
+    lines = []
+    lines << "# #{page.title}"
+    lines << ""
+    lines << (page.body.presence || "_No content._")
+    lines << ""
+    lines.join("\n")
+  end
+
   # --- Reads -------------------------------------------------------------
   # Every database read the export performs lives here, each returning a plain
   # array. Specs covering the rendered output stub these and hand back built
@@ -286,6 +310,11 @@ class GameExportService
   sig { params(game: Game).returns(T::Array[GameFile]) }
   def files_for(game)
     game.game_files.includes(file_attachment: :blob).order(:filename).to_a
+  end
+
+  sig { params(game: Game).returns(T::Array[Page]) }
+  def pages_for(game)
+    game.pages.order(:title).to_a
   end
 
   sig { params(scene: Scene).returns(T::Array[SceneParticipant]) }

@@ -120,5 +120,10 @@
         <%= render Shared::GalleryComponent.new(game_files: @game_files.to_a, game: @game, is_gm: @game_presenter.gm?) %>
       <% end %>
     </section>
+
+    <%# ===== Pages panel ===== %>
+    <section data-game-tabs-target="panel" data-panel="pages" hidden>
+      <%= render Shared::GamePagesListComponent.new(game: @game, pages: @game_presenter.pages, is_gm: @game_presenter.gm?) %>
+    </section>
   <% end %>
 </div>
