@@ -190,11 +190,11 @@ For technology stack, domain model, codebase conventions, and development workfl
 - One image attachment per scene
 
 ### Markdown Editing
-- Every text field whose content is rendered as markdown shares the same editing affordances: a formatting toolbar directly above a monospaced textarea, with a live rendered preview below it
-- This applies to: the post composer, the standalone post-edit form, character sheets (new/edit), and scene summaries
+- **Every user-editable multi-line text field is a markdown field** and shares the same editing affordances: a formatting toolbar directly above the textarea, with a live rendered preview below it. There is no such thing as a plain-textarea prose field — if a person can type multi-line prose into it, it renders markdown and carries the toolbar + preview.
+- This applies to: the post composer, the standalone post-edit form, character sheets (new/edit), scene summaries, and the game description (New Game / Edit Game).
 - The toolbar provides bold, italic, heading, quote, bulleted list, numbered list, link, and inline-code controls; each inserts the corresponding markdown around the current selection (or the current line, for block-level controls) and refreshes the live preview
-- Plain-text fields that are **not** rendered as markdown (e.g. scene title, scene resolution, feedback body) do not get the toolbar
-- The game description is the one exception: its **display** on the Game Settings screen renders markdown (single newlines shown as line breaks), but it is still **edited** in a plain textarea on the Edit Game screen — no toolbar or live preview
+- Single-line identifier inputs (e.g. game name, scene title) are **not** markdown fields — they are short labels, not prose, and get no toolbar.
+- Not yet migrated to this rule (still plain textareas — outstanding work): the scene resolution/outcome field and the feedback modal body. New prose fields must ship as markdown from the start.
 
 ### File & Image Constraints
 - Post and scene images: JPG, PNG, GIF, WEBP — 10 MB limit

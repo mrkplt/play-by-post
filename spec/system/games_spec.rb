@@ -164,7 +164,7 @@ RSpec.describe "Games", type: :feature do
     it "creates a game and lands on the game view" do
       click_on "+ New Game"
       fill_in "Name", with: "Shadows of the Rift"
-      fill_in "Description (optional)", with: "A dark fantasy adventure"
+      fill_in "Description (optional, markdown supported)", with: "A dark fantasy adventure"
       click_on "Create game"
 
       expect(page).to have_text("Shadows of the Rift")
@@ -318,6 +318,13 @@ RSpec.describe "Games", type: :feature do
 
       expect(page).to have_current_path(game_player_management_path(game))
       expect(page).to have_text("Updated Campaign")
+    end
+
+    it "renders a markdown live preview of the description as the GM types" do
+      visit edit_game_path(game)
+      fill_in "Description (optional, markdown supported)", with: "A **grim** saga"
+
+      expect(page).to have_css("[data-markdown-preview-target='preview'] strong", text: "grim")
     end
 
     it "GM can access manage players from edit page" do
