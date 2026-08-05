@@ -25,6 +25,11 @@ class Shared::DeleteGameComponent < ApplicationComponent
 
   sig { returns(String) }
   def confirm_instruction
-    "Type #{game_name} to confirm"
+    %(Type "#{game_name}" to confirm)
+  end
+
+  sig { returns(String) }
+  def delete_heading
+    %(Delete "#{game_name}"?)
   end
 end

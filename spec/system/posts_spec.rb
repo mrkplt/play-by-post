@@ -25,6 +25,18 @@ RSpec.describe "Posts", type: :feature do
       expect(page).to have_text(player.display_name)
     end
 
+    it "the composer markdown toolbar wraps the selection and refreshes the preview" do
+      visit game_scene_path(game, scene)
+      find("#post_composer textarea").set("brave")
+      page.execute_script(
+        "const t = document.querySelector('#post_composer textarea'); t.focus(); t.setSelectionRange(0, t.value.length);"
+      )
+      within("#post_composer") { click_button "I" }
+
+      expect(find("#post_composer textarea").value).to eq("_brave_")
+      expect(page).to have_css("#post_composer [data-markdown-preview-target='preview'] em", text: "brave")
+    end
+
     it "can mark a post as OOC" do
       visit game_scene_path(game, scene)
       fill_in "Write your post... (markdown)", with: "Anyone want to reschedule?"

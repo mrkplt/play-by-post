@@ -21,7 +21,7 @@ export default class extends Controller {
   }
 
   validate() {
-    this.submitTarget.disabled = this.inputTarget.value.trim() !== this.nameValue
+    this.submitTarget.disabled = this.inputTarget.value.trim() !== this.nameValue.trim()
   }
 
   closeOnBackdrop(event) {

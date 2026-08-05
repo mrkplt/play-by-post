@@ -63,6 +63,7 @@ For technology stack, domain model, codebase conventions, and development workfl
 ## Game Creation
 
 - Any logged-in user can create a new game
+- The New Game screen uses the app's mobile-frame chrome (back-arrow header, component-driven form), not a bare form
 - Game creation requires a name; description is optional
 - Game creator automatically becomes the Game Master (GM)
 - Game creation requires a confirmation step before submission
@@ -92,7 +93,8 @@ For technology stack, domain model, codebase conventions, and development workfl
 ## Game Settings
 
 - Reached via the gear (⚙) in the game header — open to any non-banned member, not just the GM. Uses the settings-row pattern under a back-arrow header.
-- GM-only sections (hidden entirely for non-GM viewers): Members (name + character + Remove/Ban, where Remove is neutral and Ban is red and carries its own more serious confirmation), Game Preferences (an "AI Scene Summaries" toggle switch), and Danger Zone (game deletion — see below). Inviting players lives on the game Roster tab, not here.
+- GM-only sections (hidden entirely for non-GM viewers): Game Details (the game name and its description, with an Edit link opening the Edit Game screen; a blank description shows a "No description yet." placeholder), Members (name + character + Remove/Ban, where Remove is neutral and Ban is red and carries its own more serious confirmation), Game Preferences (an "AI Scene Summaries" toggle switch), and Danger Zone (game deletion — see below). Inviting players lives on the game Roster tab, not here.
+- The Edit Game screen (reached from Game Details) uses the same mobile-frame/back-arrow chrome as the rest of the app: a name/description form plus the Post Images, Character Sheets, AI Scene Summaries, and Manage Players controls.
 - Export section (all non-banned members, GM and non-GM alike): a "This game" row with an "Export Game" action and the last-export notice, same as the profile-level export.
 - Non-members and banned members are redirected away with an access alert; this is the only guard on the page itself — GM-only content is scoped by conditionally rendering, not by a separate access check.
 
@@ -122,7 +124,7 @@ For technology stack, domain model, codebase conventions, and development workfl
 ### Game Deletion (GM only)
 
 - Only the game's GM (its owner) sees the Danger Zone "Delete Game" control, and only the GM may delete (`GamePolicy#destroy?`).
-- Deletion requires an explicit confirmation: a modal that the GM must confirm by typing the game's exact name; the destructive button stays disabled until the typed text matches. It is framed as permanent — the copy makes no promise of recovery.
+- Deletion requires an explicit confirmation: a modal that the GM must confirm by typing the game's exact name; the destructive button stays disabled until the typed text matches. The game name is shown in quotes in the modal copy (heading and the "type to confirm" instruction). Matching ignores surrounding whitespace on both the typed text and the stored name, so a game whose name has leading/trailing spaces is still confirmable. It is framed as permanent — the copy makes no promise of recovery.
 - Deletion is **two-phase (soft delete, then scheduled purge)**:
   - **Phase 1 — soft delete (immediate).** The GM's action stamps the game's `deleted_at`. From that moment the game is hidden everywhere — it disappears from the dashboard and the nav drawer, and any direct link to the game or its scenes/posts/files resolves as not-found. This is enforced by a model `default_scope` (`deleted_at IS NULL`), so every lookup, through-association, and export enumeration is filtered without a per-call-site guard. There is no restore UI; the window is purely a safety buffer.
   - **Phase 2 — purge (after a 7-day retention window).** A daily recurring job (`GamePurgeSweepJob`) scans for games whose `deleted_at` is older than the retention window and enqueues one `GamePurgeJob` per game. The purge does **not** rely on association cascades or Active Storage's fire-and-forget `purge_later`: it collects and deletes the game's artifacts and records explicitly. Every stored artifact (post images, scene images, uploaded game files, export archives) is purged from storage within the job, and every dependent record (scenes, posts and reads, participants, summaries, notification preferences, characters and their version history, game files, invitations, memberships, and export requests) is deleted child-first, in batches, ending with the game row. The sweep and purge read past the default scope via `unscoped`.
@@ -137,6 +139,7 @@ For technology stack, domain model, codebase conventions, and development workfl
 - Scenes sharing the same parent scene are grouped on the same row (parallel branches)
 - Private scenes visible only to participants and the GM
 - Resolved scenes displayed separately from active scenes
+- The game view lists only active scenes; a "View all scenes" link on the game view opens the All Scenes view (the full scene tree, including resolved scenes), available to every viewer with game access
 
 ### Quick Scene (from scene view)
 - Creates a new scene inheriting all participants and parent from the current scene
@@ -181,9 +184,15 @@ For technology stack, domain model, codebase conventions, and development workfl
 - Post authors can edit their post within 10 minutes of creation; the edit window is enforced server-side
 - Edit link is visible only while the edit window is open
 - Posts support a draft state — a post can be saved as a draft before publishing
-- Markdown formatting with in-browser live preview
+- Markdown formatting with a formatting toolbar and in-browser live preview (see "Markdown Editing" below)
 - One image attachment per post
 - One image attachment per scene
+
+### Markdown Editing
+- Every text field whose content is rendered as markdown shares the same editing affordances: a formatting toolbar directly above a monospaced textarea, with a live rendered preview below it
+- This applies to: the post composer, the standalone post-edit form, character sheets (new/edit), and scene summaries
+- The toolbar provides bold, italic, heading, quote, bulleted list, numbered list, link, and inline-code controls; each inserts the corresponding markdown around the current selection (or the current line, for block-level controls) and refreshes the live preview
+- Plain-text fields that are **not** rendered as markdown (e.g. game description, scene title, scene resolution, feedback body) do not get the toolbar
 
 ### File & Image Constraints
 - Post and scene images: JPG, PNG, GIF, WEBP — 10 MB limit
@@ -205,7 +214,8 @@ For technology stack, domain model, codebase conventions, and development workfl
 - A player can have multiple characters per game (main characters, retired characters, GM-created NPCs)
 - When a player joins a game they do not yet have a character; they are prompted to create one but it is not required immediately
 - Character creation requires a name; sheet content starts empty and can be filled in at any time
-- Sheet content is plain text, rendered monospaced with whitespace preserved
+- Sheet content supports markdown, edited in a monospaced textarea with whitespace preserved (see "Markdown Editing" below)
+- The character new/edit/show and version-history screens use the shared mobile-first component system (mobile frame + page header + design tokens), consistent with the rest of the app
 - Characters can be marked inactive; inactive characters are hidden by default from the roster and dashboard
 - The GM can create a character on behalf of any player
 - The GM can edit any character sheet in their game

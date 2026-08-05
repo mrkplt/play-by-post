@@ -31,6 +31,29 @@ RSpec.describe PlayerManagementController, type: :request do
       expect(response.body).to include("Export Game")
     end
 
+    it "shows the GM a Game Details section with the name, description, and an edit link" do
+      game.update!(name: "Ashfall Reaches", description: "A grim frontier saga")
+      sign_in(gm)
+      get game_player_management_path(game)
+      expect(response.body).to include("Game Details")
+      expect(response.body).to include("Ashfall Reaches")
+      expect(response.body).to include("A grim frontier saga")
+      expect(response.body).to include(edit_game_path(game))
+    end
+
+    it "shows a placeholder in Game Details when the description is blank" do
+      game.update!(description: "")
+      sign_in(gm)
+      get game_player_management_path(game)
+      expect(response.body).to include("No description yet.")
+    end
+
+    it "does not show the Game Details section to a non-GM member" do
+      sign_in(player)
+      get game_player_management_path(game)
+      expect(response.body).not_to include("Game Details")
+    end
+
     it "shows a last-export notice for this game when a recent receipt exists" do
       receipt = create(:game_export_request, user: player, game: game, succeeded_at: 2.hours.ago)
       receipt.archive.attach(io: StringIO.new("zip"), filename: "e.zip", content_type: "application/zip")
