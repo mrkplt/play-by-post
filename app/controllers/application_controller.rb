@@ -16,19 +16,25 @@ class ApplicationController < ActionController::Base
 
   private
 
-  sig { void }
-  def user_not_authorized
+  # rescue_from handlers accept the exception. They must declare the parameter:
+  # Rails passes the exception whenever the handler's arity is non-zero, and
+  # sorbet-runtime's lazy method wrapper reports arity -1 until the method's
+  # first call — so a zero-arg handler raises ArgumentError on the first
+  # not-found/denial/param-missing in a process. Taking the argument makes the
+  # arity stable at 1 and the call contract consistent.
+  sig { params(_error: StandardError).void }
+  def user_not_authorized(_error)
     flash[:alert] = "You are not authorized to perform this action."
     redirect_back fallback_location: root_path
   end
 
-  sig { void }
-  def not_found
+  sig { params(_error: StandardError).void }
+  def not_found(_error)
     redirect_to root_path, alert: "That could not be found."
   end
 
-  sig { void }
-  def bad_request
+  sig { params(_error: StandardError).void }
+  def bad_request(_error)
     redirect_to root_path, alert: "Bad request."
   end
 

@@ -179,6 +179,14 @@ RSpec.describe GamesController, type: :request do
       post games_path, params: { game: { name: "Adventure" } }
       expect(response).to have_http_status(:redirect)
     end
+
+    it "redirects with an alert when the game param is missing" do
+      sign_in(gm)
+      post games_path, params: {}
+
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to eq("Bad request.")
+    end
   end
 
   describe "GET /games/:id/edit" do
@@ -235,6 +243,50 @@ RSpec.describe GamesController, type: :request do
     end
   end
 
+  describe "DELETE /games/:id" do
+    it "GM soft-deletes the game and is redirected to the dashboard" do
+      sign_in(gm)
+      delete game_path(game)
+
+      expect(response).to redirect_to(root_path)
+      expect(Game.unscoped.find(game.id).deleted_at).to be_present
+      # The default scope hides it everywhere thereafter.
+      expect(Game.exists?(game.id)).to be(false)
+    end
+
+    it "player cannot delete the game" do
+      sign_in(player)
+      delete game_path(game)
+
+      expect(response).to redirect_to(game_path(game))
+      expect(Game.unscoped.find(game.id).deleted_at).to be_nil
+    end
+
+    it "unauthenticated user is redirected" do
+      delete game_path(game)
+      expect(response).to have_http_status(:redirect)
+    end
+
+    it "leaves a soft-deleted game unreachable" do
+      game.soft_delete!
+      sign_in(gm)
+      get game_path(game)
+
+      expect(response).to redirect_to(root_path)
+    end
+
+    it "drops a soft-deleted game from the dashboard" do
+      hidden = create(:game, name: "Vanishing Point")
+      create(:game_member, :game_master, game: hidden, user: gm)
+      hidden.soft_delete!
+
+      sign_in(gm)
+      get root_path
+
+      expect(response.body).not_to include("Vanishing Point")
+    end
+  end
+
   describe "GET /games/:id" do
     it "shows character player email prefix when no display name is set" do
       player_no_name = create(:user)
@@ -268,6 +320,20 @@ RSpec.describe GamesController, type: :request do
       sign_in(gm)
       get game_path(game)
       expect(response.body).not_to include("Finished Quest")
+    end
+
+    it "links to the all-scenes view for the GM" do
+      sign_in(gm)
+      get game_path(game)
+      expect(response.body).to include(game_scenes_path(game))
+      expect(response.body).to include("View all scenes")
+    end
+
+    it "links to the all-scenes view for a player" do
+      sign_in(player)
+      get game_path(game)
+      expect(response.body).to include(game_scenes_path(game))
+      expect(response.body).to include("View all scenes")
     end
 
     it "does not show private scenes to non-participants in the active scenes section" do

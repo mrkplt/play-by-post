@@ -48,6 +48,18 @@ RSpec.describe GamePolicy do
     end
   end
 
+  describe "#destroy? (GM only)" do
+    it "is true for the GM" do
+      stub_game(gm: true)
+      expect(policy.destroy?).to be(true)
+    end
+
+    it "is false for a non-GM" do
+      stub_game(gm: false)
+      expect(policy.destroy?).to be(false)
+    end
+  end
+
   describe "#write_access? (GM or active member)" do
     def stub_membership(gm: false, active: false, present: true)
       membership = present ? instance_double(GameMember, game_master?: gm, active?: active) : nil

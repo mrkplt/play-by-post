@@ -59,4 +59,9 @@
             class: "text-[11px] font-bold text-accent bg-transparent border-0 cursor-pointer p-0" %>
     <% end %>
   <% end %>
+
+  <% if @game_presenter.gm? %>
+    <%# Danger Zone — GM-only game deletion %>
+    <%= render Shared::DeleteGameComponent.new(game: @game) %>
+  <% end %>
 <% end %>

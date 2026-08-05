@@ -3,15 +3,19 @@
 class GamesController < ApplicationController
   extend T::Sig
 
-  before_action :set_game, only: %i[show edit update toggle_sheets_hidden toggle_images_disabled toggle_ai_summaries_enabled]
+  before_action :set_game, only: %i[show edit update destroy toggle_sheets_hidden toggle_images_disabled toggle_ai_summaries_enabled]
   before_action :require_game_access!, only: %i[show]
-  before_action :require_gm!, only: %i[edit update toggle_sheets_hidden toggle_images_disabled toggle_ai_summaries_enabled]
+  before_action :require_gm!, only: %i[edit update destroy toggle_sheets_hidden toggle_images_disabled toggle_ai_summaries_enabled]
   after_action :verify_authorized, except: :index
 
   sig { void }
   def index
     @memberships = current_user.game_members
       .where.not(status: "banned")
+      # Drop memberships whose game was soft-deleted — the default scope makes
+      # membership.game nil for those, so they must not reach the dashboard loop.
+      # Game.all carries the default scope, so this is IN (kept game ids).
+      .where(game_id: Game.all)
       .includes(game: %i[scenes])
       .order("games.name")
 
@@ -142,6 +146,13 @@ class GamesController < ApplicationController
     else
       render :edit, status: :unprocessable_content
     end
+  end
+
+  sig { void }
+  def destroy
+    authorize @game
+    @game.soft_delete!
+    redirect_to root_path, notice: "\"#{@game.name}\" has been deleted."
   end
 
   private
