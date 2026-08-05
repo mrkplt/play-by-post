@@ -1,7 +1,7 @@
 <%= form_with model: [@game, @scene, @post],
     multipart: true,
     data: {
-      controller: "markdown-preview post-draft",
+      controller: "markdown-preview post-draft markdown-toolbar",
       post_draft_save_url_value: save_draft_game_scene_posts_path(@game, @scene)
     } do |f| %>
   <% if @post.errors.any? %>
@@ -15,12 +15,14 @@
   <%= render Ui::SectionLabelComponent.new(html_class: "mb-2") do %>Post a Reply<% end %>
 
   <div class="mb-3">
+    <%= render Shared::MarkdownToolbarComponent.new %>
     <%= f.text_area :content, rows: 5,
         value: @draft&.content.to_s,
         placeholder: "Write your post... (markdown)",
-        class: "markdown-editor w-full px-2.5 py-2 border border-input-border rounded-control text-base font-mono",
+        class: "markdown-editor w-full px-2.5 py-2 border border-input-border border-t-0 rounded-b-control text-base font-mono",
         data: {
           markdown_preview_target: "input",
+          markdown_toolbar_target: "input",
           post_draft_target: "content",
           action: "input->markdown-preview#update input->post-draft#scheduleSave"
         } %>

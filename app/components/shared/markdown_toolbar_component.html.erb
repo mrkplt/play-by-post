@@ -1,0 +1,11 @@
+<div class="flex flex-wrap gap-1 border border-input-border border-b-0 rounded-t-control bg-canvas px-1.5 py-1.5" role="toolbar" aria-label="Markdown formatting">
+  <% buttons.each do |button| %>
+    <button type="button"
+            title="<%= button[:title] %>"
+            aria-label="<%= button[:title] %>"
+            data-action="markdown-toolbar#<%= button[:action] %>"
+            class="min-w-[34px] h-8 px-2 flex items-center justify-center rounded-control text-[13px] text-row-ink bg-card border border-card-border cursor-pointer hover:bg-pill-idle hover:text-white hover:border-pill-idle">
+      <span class="<%= button[:label_class] %>"><%= button[:label] %></span>
+    </button>
+  <% end %>
+</div>

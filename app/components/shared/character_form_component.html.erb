@@ -1,0 +1,62 @@
+<%= form_with model: [ game, character ], class: "flex flex-col gap-4",
+    data: { controller: "markdown-preview markdown-toolbar" } do |f| %>
+  <% if errors? %>
+    <div class="bg-tint-blue-bg border border-tint-blue-border rounded-card p-3 text-sm text-danger">
+      <% error_messages.each do |msg| %>
+        <div><%= msg %></div>
+      <% end %>
+    </div>
+  <% end %>
+
+  <% if owner_select? %>
+    <div class="flex flex-col gap-1.5">
+      <%= f.label :user_id, "Player", class: "text-[11px] font-bold text-muted uppercase tracking-[0.05em]" %>
+      <%= f.select :user_id, owner_options, { prompt: "Select a player" },
+            class: "w-full border border-input-border rounded-control px-3 py-2.5 text-sm text-ink bg-card" %>
+    </div>
+  <% end %>
+
+  <div class="flex flex-col gap-1.5">
+    <%= f.label :name, class: "text-[11px] font-bold text-muted uppercase tracking-[0.05em]" %>
+    <%= f.text_field :name, autofocus: true, placeholder: "Character name",
+          class: "w-full border border-input-border rounded-control px-3 py-2.5 text-sm text-ink bg-card placeholder:text-muted-2" %>
+  </div>
+
+  <div class="flex flex-col gap-1.5">
+    <%= f.label :content, content_label, class: "text-[11px] font-bold text-muted uppercase tracking-[0.05em]" %>
+    <%= render Shared::MarkdownToolbarComponent.new %>
+    <%= f.text_area :content, rows: 12, placeholder: "Race, class, stats, backstory… (markdown supported)",
+          class: "markdown-editor w-full border border-input-border border-t-0 rounded-b-control px-3 py-2.5 text-base text-ink bg-card placeholder:text-muted-2",
+          data: {
+            markdown_preview_target: "input",
+            markdown_toolbar_target: "input",
+            action: "input->markdown-preview#update"
+          } %>
+  </div>
+
+  <div data-markdown-preview-target="preview"
+       class="markdown-base character-sheet-content border border-card-border rounded-card px-3 py-3 min-h-12 bg-canvas empty:hidden"></div>
+
+  <% if visibility_toggle? %>
+    <label class="flex items-center gap-2 text-[13px] text-ink cursor-pointer">
+      <%= f.check_box :hidden, class: "accent-accent" %> Hide from other players
+    </label>
+  <% end %>
+
+  <div class="flex gap-2 pt-1">
+    <%= f.submit submit_label, class: "flex-1 bg-accent text-accent-ink rounded-control py-2.5 font-bold text-[13px] border-0 cursor-pointer" %>
+    <%= link_to "Cancel", back_href, class: "flex-1 text-center border border-card-border text-ink rounded-control py-2.5 font-bold text-[13px] no-underline" %>
+  </div>
+<% end %>
+
+<% if archive_section? %>
+  <div class="border-t border-card-divider pt-4 mt-2">
+    <% if archived? %>
+      <%= button_to "Restore character", restore_game_character_path(game, character), method: :patch,
+            class: "bg-card text-accent border border-card-border rounded-control px-4 py-2 text-[13px] font-bold cursor-pointer" %>
+    <% else %>
+      <%= button_to "Archive character", archive_game_character_path(game, character), method: :patch,
+            class: "bg-card text-danger border border-card-border rounded-control px-4 py-2 text-[13px] font-bold cursor-pointer" %>
+    <% end %>
+  </div>
+<% end %>

@@ -1,39 +1,9 @@
-<h1>Edit — <%= @character.name %></h1>
+<% content_for :active_game_id, @game.id %>
 
-<%= form_with model: [@game, @character], data: { controller: "markdown-preview" } do |f| %>
-  <div class="mb-4">
-    <%= f.label :name, class: "block font-medium mb-1 text-sm" %>
-    <%= f.text_field :name, class: "w-full px-3 py-2 border border-slate-300 rounded text-base" %>
-  </div>
+<%= render Shared::MobileFrameComponent.new do |frame| %>
+  <% frame.with_header do %>
+    <%= render Shared::PageHeaderComponent.new(title: @character_form.heading, leading: :back, back_href: @character_form.back_href) %>
+  <% end %>
 
-  <div class="mb-4">
-    <%= f.label :content, "Sheet (markdown supported)", class: "block font-medium mb-1 text-sm" %>
-    <%= f.text_area :content, rows: 15, class: "markdown-editor w-full px-3 py-2 border border-slate-300 rounded text-base",
-        data: { markdown_preview_target: "input", action: "input->markdown-preview#update" } %>
-  </div>
-
-  <div data-markdown-preview-target="preview" class="markdown-base character-sheet-content border border-slate-200 rounded-lg px-3 py-3 mb-3 min-h-12 bg-slate-50"></div>
-
-  <div class="mb-4">
-    <label style="font-weight:normal; cursor:pointer;">
-      <%= f.check_box :hidden %> Hide from other players
-    </label>
-  </div>
-
-  <div class="flex gap-2 items-center">
-    <%= f.submit "Save", class: "px-5 py-2 bg-slate-500 text-white rounded text-base cursor-pointer hover:bg-slate-600 inline-block no-underline" %>
-    <%= link_to "Cancel", game_character_path(@game, @character), class: "px-5 py-2 bg-slate-500 text-white rounded text-base cursor-pointer hover:bg-slate-600 inline-block no-underline" %>
-  </div>
-<% end %>
-
-<% if policy(@character).assign_owner? %>
-  <div class="mt-6 pt-4 border-t border-slate-100">
-    <% if @character.archived? %>
-      <%= button_to "Restore character", restore_game_character_path(@game, @character),
-          method: :patch, class: "px-5 py-2 bg-slate-500 text-white rounded text-base cursor-pointer hover:bg-slate-600 inline-block no-underline" %>
-    <% else %>
-      <%= button_to "Archive character", archive_game_character_path(@game, @character),
-          method: :patch, class: "px-5 py-2 bg-slate-500 text-white rounded text-base cursor-pointer hover:bg-slate-600 inline-block no-underline" %>
-    <% end %>
-  </div>
+  <%= render @character_form %>
 <% end %>

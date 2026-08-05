@@ -55,6 +55,10 @@ matcher:
     - Shared::NavShellComponent
     - Shared::PostComposerComponent
     - Shared::PostItemComponent
+    - Shared::CharacterFormComponent
+    - Shared::MarkdownToolbarComponent
+    - Shared::CharacterVersionHistoryComponent
+    - Shared::PostEditFormComponent
     - Shared::SceneCardComponent
     - Shared::SceneFormComponent
     - Shared::SidebarComponent

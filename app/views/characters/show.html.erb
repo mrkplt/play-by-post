@@ -1,53 +1,31 @@
-<%= render(Ui::BreadcrumbComponent.new) do %>
-  <%= link_to "Games", root_path %> &rsaquo;
-  <%= link_to @game.name, game_path(@game) %> &rsaquo;
-  <%= @character.name %>
-<% end %>
+<% content_for :active_game_id, @game.id %>
 
-<div class="flex items-center justify-between mb-4">
-  <h1 class="m-0 text-xl font-semibold"><%= @character.name %></h1>
-  <% if policy(@character).update? %>
-    <%= link_to "Edit", edit_game_character_path(@game, @character), class: "px-5 py-2 bg-slate-500 text-white rounded text-base cursor-pointer hover:bg-slate-600 inline-block no-underline" %>
+<%= render Shared::MobileFrameComponent.new do |frame| %>
+  <% frame.with_header do %>
+    <%= render Shared::PageHeaderComponent.new(title: @character.name, leading: :back, back_href: game_path(@game)) %>
   <% end %>
-</div>
 
-<p style="font-size:0.85rem; color:#64748b;">
-  Player: <%= @character_owner.display_name_or_email %>
-  <% if @character.archived? %>
-    <%= render(Ui::BadgeComponent.new(variant: :gray)) { "Archived" } %>
-  <% end %>
-  <% if @character.hidden? %>
-    <%= render(Ui::BadgeComponent.new(variant: :yellow)) { "Hidden" } %>
-  <% end %>
-</p>
-
-<div class="bg-white border border-slate-200 rounded-lg p-5 mb-4">
-  <% if @character.content.present? %>
-    <div class="markdown-base character-sheet-content"><%= render_markdown(@character.content) %></div>
-  <% else %>
-    <p style="color:#94a3b8;">No sheet content yet.</p>
-  <% end %>
-</div>
-
-<!-- Version History -->
-<details style="margin-top:1.5rem;">
-  <summary style="cursor:pointer; font-weight:600; margin-bottom:0.75rem;">Version History (<%= @versions.count %>)</summary>
-  <div class="overflow-x-auto">
-    <table>
-      <thead>
-        <tr>
-          <th>Date</th>
-          <th>Edited by</th>
-        </tr>
-      </thead>
-      <tbody>
-        <% @versions.each do |version| %>
-          <tr>
-            <td><%= link_to game_character_character_version_path(@game, @character, version) do %><time data-local-time="<%= version.created_at.iso8601 %>"><%= version.created_at.strftime("%b %-d, %Y %-I:%M %p") %></time><% end %></td>
-            <td><%= @version_editor_names[version.id] %></td>
-          </tr>
-        <% end %>
-      </tbody>
-    </table>
+  <div class="flex items-center gap-2 flex-wrap">
+    <span class="text-[11px] text-muted-2">Player: <%= @character_owner.display_name_or_email %></span>
+    <% if @character.archived? %>
+      <%= render(Ui::BadgeComponent.new(variant: :gray)) { "Archived" } %>
+    <% end %>
+    <% if @character.hidden? %>
+      <%= render(Ui::BadgeComponent.new(variant: :yellow)) { "Hidden" } %>
+    <% end %>
+    <% if policy(@character).update? %>
+      <%= link_to "Edit", edit_game_character_path(@game, @character), class: "ml-auto text-xs font-semibold text-accent no-underline" %>
+    <% end %>
   </div>
-</details>
+
+  <div class="bg-card border border-card-border rounded-card p-4">
+    <% if @character.content.present? %>
+      <div class="markdown-base character-sheet-content"><%= render_markdown(@character.content) %></div>
+    <% else %>
+      <p class="text-muted-2 m-0 text-sm">No sheet content yet.</p>
+    <% end %>
+  </div>
+
+  <%= render Shared::CharacterVersionHistoryComponent.new(
+        game: @game, character: @character, versions: @versions.to_a, editor_names: @version_editor_names) %>
+<% end %>

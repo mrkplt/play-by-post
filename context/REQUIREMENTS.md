@@ -174,9 +174,15 @@ For technology stack, domain model, codebase conventions, and development workfl
 - Post authors can edit their post within 10 minutes of creation; the edit window is enforced server-side
 - Edit link is visible only while the edit window is open
 - Posts support a draft state — a post can be saved as a draft before publishing
-- Markdown formatting with in-browser live preview
+- Markdown formatting with a formatting toolbar and in-browser live preview (see "Markdown Editing" below)
 - One image attachment per post
 - One image attachment per scene
+
+### Markdown Editing
+- Every text field whose content is rendered as markdown shares the same editing affordances: a formatting toolbar directly above a monospaced textarea, with a live rendered preview below it
+- This applies to: the post composer, the standalone post-edit form, character sheets (new/edit), and scene summaries
+- The toolbar provides bold, italic, heading, quote, bulleted list, numbered list, link, and inline-code controls; each inserts the corresponding markdown around the current selection (or the current line, for block-level controls) and refreshes the live preview
+- Plain-text fields that are **not** rendered as markdown (e.g. game description, scene title, scene resolution, feedback body) do not get the toolbar
 
 ### File & Image Constraints
 - Post and scene images: JPG, PNG, GIF, WEBP — 10 MB limit
@@ -198,7 +204,8 @@ For technology stack, domain model, codebase conventions, and development workfl
 - A player can have multiple characters per game (main characters, retired characters, GM-created NPCs)
 - When a player joins a game they do not yet have a character; they are prompted to create one but it is not required immediately
 - Character creation requires a name; sheet content starts empty and can be filled in at any time
-- Sheet content is plain text, rendered monospaced with whitespace preserved
+- Sheet content supports markdown, edited in a monospaced textarea with whitespace preserved (see "Markdown Editing" below)
+- The character new/edit/show and version-history screens use the shared mobile-first component system (mobile frame + page header + design tokens), consistent with the rest of the app
 - Characters can be marked inactive; inactive characters are hidden by default from the roster and dashboard
 - The GM can create a character on behalf of any player
 - The GM can edit any character sheet in their game
