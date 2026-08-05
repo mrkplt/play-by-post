@@ -33,6 +33,23 @@ RSpec.describe GamePresenter do
     end
   end
 
+  describe "#description_display" do
+    it "returns the description when present" do
+      allow(game).to receive(:description).and_return("A grim frontier saga")
+      expect(presenter.description_display).to eq("A grim frontier saga")
+    end
+
+    it "returns a placeholder when the description is blank" do
+      allow(game).to receive(:description).and_return("")
+      expect(presenter.description_display).to eq("No description yet.")
+    end
+
+    it "returns a placeholder when the description is nil" do
+      allow(game).to receive(:description).and_return(nil)
+      expect(presenter.description_display).to eq("No description yet.")
+    end
+  end
+
   it "delegates model methods to the game" do
     expect(presenter.name).to eq(game.name)
   end

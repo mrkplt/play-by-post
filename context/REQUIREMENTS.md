@@ -55,6 +55,7 @@ For technology stack, domain model, codebase conventions, and development workfl
 ## Game Creation
 
 - Any logged-in user can create a new game
+- The New Game screen uses the app's mobile-frame chrome (back-arrow header, component-driven form), not a bare form
 - Game creation requires a name; description is optional
 - Game creator automatically becomes the Game Master (GM)
 - Game creation requires a confirmation step before submission
@@ -84,7 +85,8 @@ For technology stack, domain model, codebase conventions, and development workfl
 ## Game Settings
 
 - Reached via the gear (⚙) in the game header — open to any non-banned member, not just the GM. Uses the settings-row pattern under a back-arrow header.
-- GM-only sections (hidden entirely for non-GM viewers): Members (name + character + Remove/Ban, where Remove is neutral and Ban is red and carries its own more serious confirmation), Game Preferences (an "AI Scene Summaries" toggle switch), and Danger Zone (game deletion — see below). Inviting players lives on the game Roster tab, not here.
+- GM-only sections (hidden entirely for non-GM viewers): Game Details (the game name and its description, with an Edit link opening the Edit Game screen; a blank description shows a "No description yet." placeholder), Members (name + character + Remove/Ban, where Remove is neutral and Ban is red and carries its own more serious confirmation), Game Preferences (an "AI Scene Summaries" toggle switch), and Danger Zone (game deletion — see below). Inviting players lives on the game Roster tab, not here.
+- The Edit Game screen (reached from Game Details) uses the same mobile-frame/back-arrow chrome as the rest of the app: a name/description form plus the Post Images, Character Sheets, AI Scene Summaries, and Manage Players controls.
 - Export section (all non-banned members, GM and non-GM alike): a "This game" row with an "Export Game" action and the last-export notice, same as the profile-level export.
 - Non-members and banned members are redirected away with an access alert; this is the only guard on the page itself — GM-only content is scoped by conditionally rendering, not by a separate access check.
 
