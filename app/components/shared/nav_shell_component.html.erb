@@ -3,6 +3,12 @@
      data-sidebar-target="backdrop"
      data-action="click->sidebar#close"></div>
 
+<%# The feedback modal lives here — a sibling of the drawer, not inside it, so
+    its fixed-position overlay is measured against the viewport rather than the
+    off-screen (translateX) drawer. Placed before the drawer so the desktop
+    `.nav-drawer ~ div` rail-offset rule never matches it. %>
+<%= render Shared::FeedbackModalComponent.new %>
+
 <aside class="nav-drawer" data-sidebar-target="sidebar">
   <%= render Shared::NavDrawerComponent.new(current_user: current_user, active_game_id: active_game_id) %>
 </aside>

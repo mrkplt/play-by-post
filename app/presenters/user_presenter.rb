@@ -24,10 +24,13 @@ class UserPresenter < BasePresenter
   # Games the nav drawer lists: every membership except banned (banned games
   # disappear entirely), each paired with its membership so the drawer can pick
   # the right status icon (GM crown / former moon / plain). Ordered by name.
+  # Soft-deleted games are dropped (Game.all carries the default scope) — their
+  # membership survives but has no visible game.
   sig { returns(T::Array[GameMember]) }
   def drawer_memberships
     @model.game_members
       .where.not(status: "banned")
+      .where(game_id: Game.all)
       .includes(:game)
       .sort_by { |m| m.game&.name.to_s }
   end

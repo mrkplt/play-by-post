@@ -45,6 +45,44 @@ RSpec.describe Game, type: :model do
     end
   end
 
+  describe "soft deletion" do
+    describe "default scope" do
+      it "hides soft-deleted games" do
+        expect(unquoted_sql(Game.all)).to include("games.deleted_at IS NULL")
+      end
+    end
+
+    describe "#soft_delete!" do
+      it "stamps deleted_at with the current time" do
+        game = build_stubbed(:game)
+        allow(game).to receive(:update!)
+
+        Timecop.freeze do
+          game.soft_delete!
+          expect(game).to have_received(:update!).with(deleted_at: Time.current)
+        end
+      end
+    end
+
+    describe "#deleted?" do
+      it "is true once deleted_at is set" do
+        expect(build_stubbed(:game, deleted_at: Time.current).deleted?).to be(true)
+      end
+
+      it "is false while deleted_at is nil" do
+        expect(build_stubbed(:game, deleted_at: nil).deleted?).to be(false)
+      end
+    end
+
+    describe "export requests" do
+      it "are associated without a destroy cascade — GamePurgeJob deletes them explicitly" do
+        reflection = Game.reflect_on_association(:game_export_requests)
+        expect(reflection).to be_present
+        expect(reflection.options[:dependent]).to be_nil
+      end
+    end
+  end
+
   describe "#edit_window_duration" do
     it "returns nil when post_edit_window_minutes is nil" do
       expect(build(:game, post_edit_window_minutes: nil).edit_window_duration).to be_nil

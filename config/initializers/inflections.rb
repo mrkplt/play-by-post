@@ -14,3 +14,10 @@
 # ActiveSupport::Inflector.inflections(:en) do |inflect|
 #   inflect.acronym "RESTful"
 # end
+
+# "feedback" is a mass noun — its plural is "feedback", not "feedbacks". This
+# keeps the model/table/association/route on the correct word (feedback table,
+# has_many :feedback, resource :feedback).
+ActiveSupport::Inflector.inflections(:en) do |inflect|
+  inflect.uncountable %w[feedback]
+end

@@ -26,6 +26,12 @@ RSpec.describe Shared::NavShellComponent, type: :component do
     expect(rendered_component).to have_css("aside.nav-drawer")
   end
 
+  it "renders the feedback modal outside the drawer aside" do
+    render_inline(component)
+    expect(page).to have_css("[data-testid='feedback-modal']", visible: :all)
+    expect(page).to have_no_css("aside.nav-drawer [data-testid='feedback-modal']", visible: :all)
+  end
+
   it "wires the backdrop to the sidebar controller close action" do
     expect(rendered_component).to have_css(".nav-drawer-backdrop[data-action='click->sidebar#close']", visible: :all)
   end

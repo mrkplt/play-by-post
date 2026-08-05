@@ -20,12 +20,24 @@ For technology stack, domain model, codebase conventions, and development workfl
 ## Navigation & Layout (mobile-first redesign)
 
 - The interface is mobile-first: each screen is a full-bleed frame with a dark header bar over a light body. Dark surface `#2b2d31` (header bars) / `#1a1b1e` (nav drawer); gold accent `#c8a96e`. All colours, radii, and greys are defined once as Tailwind `@theme` tokens and consumed by ViewComponents — no per-screen hex.
-- **Global navigation is a slide-in drawer** opened by the hamburger (☰) in each screen's header. The drawer has a fixed profile chip (avatar + display name + "View Profile") at the top, a scrollable list of the player's games in the middle, and pinned "Account Settings" / "Sign Out" at the bottom. Only the games list scrolls; the header and footer stay fixed.
+- **Global navigation is a slide-in drawer** opened by the hamburger (☰) in each screen's header. The drawer has a fixed profile chip (avatar + display name + "View Profile") at the top, a scrollable list of the player's games in the middle, and pinned "Send Feedback" / "Account Settings" / "Sign Out" at the bottom. Only the games list scrolls; the header and footer stay fixed.
   - Each drawer game row shows a status icon: a crown (♛) for games the viewer GMs, a moon (☾) for a former/removed game, or a plain marker for an ordinary player game. The current game's row is highlighted. Banned games never appear.
 - **Icon tap targets** (hamburger, gear, back, OOC checkbox) are sized to a 44px-tall touch target minimum.
 - **Attention glow**: interactive cards/rows carry two distinct states — a persistent gold glow (`is-hot`) that is data-driven ("this has unread/new activity") and a lighter hover glow (affordance, "this is clickable"). These are separate states, not one effect at two opacities.
 - The UI is built component-first: a shared `MobileFrameComponent` scaffold (header / body / footer slots), `Ui::*` primitives (Avatar, ToggleSwitch, SectionLabel, SettingsRow, IconButton, PillTabs, Badge), and `Shared::*` composed components (GameHeader, NavDrawer, GameCard, SceneCard, RosterRow, PostItem, PostComposer). Screens are assembled purely by composing these components.
 - **Desktop rendering**: the same components adapt to wider viewports rather than being redesigned. On phones and tablets (<1024px) the frame keeps its mobile behaviour — full-bleed on phones, a hamburger-opened slide-in nav drawer throughout. At desktop widths (≥1024px) the layout becomes a two-pane website: the nav drawer **docks open as a permanent left rail** (its backdrop and the hamburger are hidden, since navigation is always visible), and each screen's frame becomes the page — a full-width dark top bar (still carrying the title, crown, gear, pill tabs, and any back-arrow) over a light content area whose body is a centered, capped-width reading column. This is purely a responsive CSS treatment (media query in `sidebar_component.css`); no per-screen markup differs between mobile and desktop.
+
+---
+
+## Feedback
+
+- A "Send Feedback" control is pinned in the nav-drawer footer, available on every authenticated screen (both the mobile overlay drawer and the docked desktop rail).
+- Clicking it opens a modal that collects the feedback: a free-form textarea, a Submit, and a Cancel. The modal dismisses on Cancel, backdrop click, or Escape.
+- Submitting saves a `Feedback` record capturing **who submitted it** (the signed-in user) and **the URL of the page they were on** when they opened the modal (captured client-side and carried in a hidden field). The body is required; a blank submission is rejected.
+- The modal **submits in place via fetch — it never navigates the page**. On success the modal swaps to an in-place "Thanks for your feedback!" confirmation with a Close button, so the user stays exactly where they were; on failure an inline error is shown and the form is preserved. The endpoint answers with a bare status (`201`/`422`), not a redirect or re-render.
+- The modal is rendered as a sibling of the drawer (not inside it), so its fixed-position overlay spans the viewport rather than being clamped to the off-screen drawer on mobile.
+- Any signed-in user may submit feedback (`FeedbackPolicy#create?`); there is no membership or ownership gate. Feedback records belong to the submitting user and are removed with that user (`dependent: :destroy`); they are not tied to a game and so are outside the game-purge flow.
+- "Feedback" is a mass noun here — its plural is "feedback" (registered as uncountable), so the table is `feedback`, the association is `has_many :feedback`, and the route is a singular `resource :feedback`.
 
 ---
 
@@ -72,7 +84,7 @@ For technology stack, domain model, codebase conventions, and development workfl
 ## Game Settings
 
 - Reached via the gear (⚙) in the game header — open to any non-banned member, not just the GM. Uses the settings-row pattern under a back-arrow header.
-- GM-only sections (hidden entirely for non-GM viewers): Members (name + character + Remove/Ban, where Remove is neutral and Ban is red and carries its own more serious confirmation), and Game Preferences (an "AI Scene Summaries" toggle switch). Inviting players lives on the game Roster tab, not here.
+- GM-only sections (hidden entirely for non-GM viewers): Members (name + character + Remove/Ban, where Remove is neutral and Ban is red and carries its own more serious confirmation), Game Preferences (an "AI Scene Summaries" toggle switch), and Danger Zone (game deletion — see below). Inviting players lives on the game Roster tab, not here.
 - Export section (all non-banned members, GM and non-GM alike): a "This game" row with an "Export Game" action and the last-export notice, same as the profile-level export.
 - Non-members and banned members are redirected away with an access alert; this is the only guard on the page itself — GM-only content is scoped by conditionally rendering, not by a separate access check.
 
@@ -99,6 +111,15 @@ For technology stack, domain model, codebase conventions, and development workfl
 - Banned players no longer receive notifications
 - The character roster shows a "Banned" status visible only to the GM
 
+### Game Deletion (GM only)
+
+- Only the game's GM (its owner) sees the Danger Zone "Delete Game" control, and only the GM may delete (`GamePolicy#destroy?`).
+- Deletion requires an explicit confirmation: a modal that the GM must confirm by typing the game's exact name; the destructive button stays disabled until the typed text matches. The game name is shown in quotes in the modal copy (heading and the "type to confirm" instruction). Matching ignores surrounding whitespace on both the typed text and the stored name, so a game whose name has leading/trailing spaces is still confirmable. It is framed as permanent — the copy makes no promise of recovery.
+- Deletion is **two-phase (soft delete, then scheduled purge)**:
+  - **Phase 1 — soft delete (immediate).** The GM's action stamps the game's `deleted_at`. From that moment the game is hidden everywhere — it disappears from the dashboard and the nav drawer, and any direct link to the game or its scenes/posts/files resolves as not-found. This is enforced by a model `default_scope` (`deleted_at IS NULL`), so every lookup, through-association, and export enumeration is filtered without a per-call-site guard. There is no restore UI; the window is purely a safety buffer.
+  - **Phase 2 — purge (after a 7-day retention window).** A daily recurring job (`GamePurgeSweepJob`) scans for games whose `deleted_at` is older than the retention window and enqueues one `GamePurgeJob` per game. The purge does **not** rely on association cascades or Active Storage's fire-and-forget `purge_later`: it collects and deletes the game's artifacts and records explicitly. Every stored artifact (post images, scene images, uploaded game files, export archives) is purged from storage within the job, and every dependent record (scenes, posts and reads, participants, summaries, notification preferences, characters and their version history, game files, invitations, memberships, and export requests) is deleted child-first, in batches, ending with the game row. The sweep and purge read past the default scope via `unscoped`.
+- Retention is 7 days (`GamePurgeSweepJob::RETENTION`), measured from `deleted_at`; a game deleted exactly at the cutoff is purged, one a second newer is not.
+
 ---
 
 ## Scenes
@@ -108,6 +129,7 @@ For technology stack, domain model, codebase conventions, and development workfl
 - Scenes sharing the same parent scene are grouped on the same row (parallel branches)
 - Private scenes visible only to participants and the GM
 - Resolved scenes displayed separately from active scenes
+- The game view lists only active scenes; a "View all scenes" link on the game view opens the All Scenes view (the full scene tree, including resolved scenes), available to every viewer with game access
 
 ### Quick Scene (from scene view)
 - Creates a new scene inheriting all participants and parent from the current scene

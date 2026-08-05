@@ -35,6 +35,10 @@
 
   <%# Account footer — pinned %>
   <div class="border-t border-sidebar-bg px-[18px] pt-2.5 flex flex-col flex-shrink-0">
+    <button type="button" data-action="click->feedback#open"
+            class="text-left text-[13px] text-sidebar-text py-2 bg-transparent border-0 cursor-pointer p-0 pt-2 pb-2">
+      Send Feedback
+    </button>
     <%= link_to "Account Settings", profile_path, class: "text-[13px] text-sidebar-text py-2 no-underline" %>
     <%= link_to "Sign Out", destroy_user_session_path, class: "text-[13px] text-sidebar-text py-2 no-underline" %>
   </div>

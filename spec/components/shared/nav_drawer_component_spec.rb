@@ -72,6 +72,10 @@ RSpec.describe Shared::NavDrawerComponent, type: :component do
     expect(r).to have_text("Sign Out")
   end
 
+  it "renders a Send Feedback button wired to the feedback modal" do
+    expect(rendered).to have_css("button[data-action='click->feedback#open']", text: "Send Feedback")
+  end
+
   it "marks a row active only for the matching game" do
     c = described_class.new(current_user: user, active_game_id: player_game.id)
     member = player_member
