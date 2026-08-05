@@ -59,9 +59,13 @@ export default class extends Controller {
     this.successPanelTarget.hidden = false
   }
 
-  // Return the modal to its blank form state, ready for the next open.
+  // Return the modal to its blank form state, ready for the next open. The
+  // input event keeps the markdown live-preview in sync with the cleared field
+  // (the modal is only toggled hidden, never reconnected, so the preview
+  // controller won't otherwise refresh).
   reset() {
     this.fieldTarget.value = ""
+    this.fieldTarget.dispatchEvent(new Event("input", { bubbles: true }))
     this.errorTarget.hidden = true
     this.formPanelTarget.hidden = false
     this.successPanelTarget.hidden = true

@@ -334,7 +334,7 @@ Hard-won specifics for actually clearing the gates. Read this before touching up
 
 - **Every user-editable multi-line text field is a markdown field.** If a person can type multi-line prose into it, it must render markdown on display **and** carry the standard editing affordances: the `Shared::MarkdownToolbarComponent` toolbar directly above the textarea, plus a live `markdown-base` preview below it (wire the form with `data: { controller: "markdown-preview markdown-toolbar" }` and the textarea with the `markdown-preview`/`markdown-toolbar` targets + `input->markdown-preview#update`). Render the stored value through `MarkdownRenderer` wherever it is shown. There is no "plain textarea for prose" — do not add one. Copy the wiring from `Shared::PageFormComponent` / `Shared::GameFormComponent`.
 - **Single-line identifier inputs are the only exception** (e.g. game name, scene title): short labels, not prose — no toolbar, no markdown.
-- Not yet migrated (existing debt, convert on touch): the scene resolution/outcome field (`scenes/show.html.erb`) and the feedback modal body. See REQUIREMENTS "Markdown Editing".
+- Every prose field is migrated: post composer/edit, character sheets, scene summaries, game description, scene resolution/outcome, and the feedback modal body. There is no remaining plain-textarea prose field — keep it that way.
 
 ### CSS
 - New work: Tailwind only. Do not add to `app/assets/stylesheets/application.css` (legacy, migration in progress).

@@ -249,11 +249,18 @@ RSpec.describe "Scenes", type: :feature do
     it "GM can resolve a scene with outcome text" do
       visit game_scene_path(game, scene)
       click_on "End Scene"
-      fill_in "Outcome (optional)", with: "The party defeated the dragon."
+      fill_in "Outcome (optional, markdown supported)", with: "The party defeated the dragon."
       click_on "Confirm — End Scene"
 
       expect(page).to have_text("Resolved")
       expect(page).to have_text("The party defeated the dragon.")
+    end
+
+    it "renders the resolution outcome as markdown" do
+      scene.update!(resolved_at: Time.current, resolution: "The party **won** the day.")
+      visit game_scene_path(game, scene)
+
+      expect(page).to have_css(".markdown-base strong", text: "won")
     end
 
     it "hides the scene actions menu after resolution" do

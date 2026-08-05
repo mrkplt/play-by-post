@@ -40,7 +40,7 @@ For technology stack, domain model, codebase conventions, and development workfl
 ## Feedback
 
 - A "Send Feedback" control is pinned in the nav-drawer footer, available on every authenticated screen (both the mobile overlay drawer and the docked desktop rail).
-- Clicking it opens a modal that collects the feedback: a free-form textarea, a Submit, and a Cancel. The modal dismisses on Cancel, backdrop click, or Escape.
+- Clicking it opens a modal that collects the feedback: a markdown body field (formatting toolbar + live preview, see "Markdown Editing"), a Submit, and a Cancel. The modal dismisses on Cancel, backdrop click, or Escape.
 - Submitting saves a `Feedback` record capturing **who submitted it** (the signed-in user) and **the URL of the page they were on** when they opened the modal (captured client-side and carried in a hidden field). The body is required; a blank submission is rejected.
 - The modal **submits in place via fetch — it never navigates the page**. On success the modal swaps to an in-place "Thanks for your feedback!" confirmation with a Close button, so the user stays exactly where they were; on failure an inline error is shown and the form is preserved. The endpoint answers with a bare status (`201`/`422`), not a redirect or re-render.
 - The modal is rendered as a sibling of the drawer (not inside it), so its fixed-position overlay spans the viewport rather than being clamped to the off-screen drawer on mobile.
@@ -166,8 +166,8 @@ For technology stack, domain model, codebase conventions, and development workfl
 ### Scene Resolution
 - Only the GM can resolve (close) a scene via an "End Scene" action
 - Resolution is final and at the GM's sole discretion; players cannot vote or approve
-- Resolution presents an optional outcomes text field (what happened, what was gained/lost)
-- Resolved scenes display their outcomes prominently
+- Resolution presents an optional outcomes markdown field (what happened, what was gained/lost) — formatting toolbar + live preview, see "Markdown Editing"
+- Resolved scenes display their outcomes prominently, rendered as markdown
 - All scene participants receive a resolution notification email
 - The scene toolbar (actions menu) is hidden after a scene is resolved
 
@@ -191,10 +191,9 @@ For technology stack, domain model, codebase conventions, and development workfl
 
 ### Markdown Editing
 - **Every user-editable multi-line text field is a markdown field** and shares the same editing affordances: a formatting toolbar directly above the textarea, with a live rendered preview below it. There is no such thing as a plain-textarea prose field — if a person can type multi-line prose into it, it renders markdown and carries the toolbar + preview.
-- This applies to: the post composer, the standalone post-edit form, character sheets (new/edit), scene summaries, and the game description (New Game / Edit Game).
+- This applies to every multi-line prose field: the post composer, the standalone post-edit form, character sheets (new/edit), scene summaries, the game description (New Game / Edit Game), the scene resolution/outcome field, and the feedback modal body.
 - The toolbar provides bold, italic, heading, quote, bulleted list, numbered list, link, and inline-code controls; each inserts the corresponding markdown around the current selection (or the current line, for block-level controls) and refreshes the live preview
 - Single-line identifier inputs (e.g. game name, scene title) are **not** markdown fields — they are short labels, not prose, and get no toolbar.
-- Not yet migrated to this rule (still plain textareas — outstanding work): the scene resolution/outcome field and the feedback modal body. New prose fields must ship as markdown from the start.
 
 ### File & Image Constraints
 - Post and scene images: JPG, PNG, GIF, WEBP — 10 MB limit
