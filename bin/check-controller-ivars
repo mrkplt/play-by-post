@@ -4,11 +4,15 @@
 # Ratchets the number of instance variables a controller exposes to its views.
 #
 # A controller's public actions hand @ivars to the view layer; a growing pile of
-# them (like the @is_gm boolean this replaced) is view logic that belongs in a
-# presenter / view model. This does not cap the count outright — it forbids any
-# touched controller from *increasing* its distinct public-action ivar count
-# versus origin/master, the same "must not increase" ratchet used for CSS and
-# ERB logic. New controllers (absent from master) are reviewed fresh and skipped.
+# them (like the @is_gm boolean this replaced) is view logic that does not belong
+# in the controller. The remedy is not to inline the computation in the ERB
+# either — it is to move the data behind one of two seams: a view-model
+# (presenter) method the view calls, or a parameter on the ViewComponent that
+# renders it (letting the component derive the value from what it is handed).
+# This does not cap the count outright — it forbids any touched controller from
+# *increasing* its distinct public-action ivar count versus origin/master, the
+# same "must not increase" ratchet used for CSS and ERB logic. New controllers
+# (absent from master) are reviewed fresh and skipped.
 #
 # Counting is AST-based (Prism), so `@x ||=`, multiple assignment, and private
 # memoization are handled correctly: only ivars *written* in *public* action
@@ -94,7 +98,7 @@ changed.each do |rel|
   puts "  [#{status}] #{rel}: #{old_count} -> #{new_count} (#{delta >= 0 ? '+' : ''}#{delta})"
 
   if delta > 0
-    failures << "#{rel}: +#{delta} public-action instance variable(s); move view-facing data into a presenter / view model"
+    failures << "#{rel}: +#{delta} public-action instance variable(s); expose view-facing data as a view-model (presenter) method or as a parameter on the ViewComponent that renders it — not as a new controller ivar, and not inlined in the ERB"
   end
 end
 
