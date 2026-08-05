@@ -316,7 +316,7 @@ RSpec.describe "Games", type: :feature do
       fill_in "Description", with: "An updated description"
       click_on "Save Changes"
 
-      expect(page).to have_current_path(game_path(game))
+      expect(page).to have_current_path(game_player_management_path(game))
       expect(page).to have_text("Updated Campaign")
     end
 

@@ -41,6 +41,14 @@ RSpec.describe PlayerManagementController, type: :request do
       expect(response.body).to include(edit_game_path(game))
     end
 
+    it "renders the Game Details description as markdown with line breaks" do
+      game.update!(description: "A **grim** saga\nwith two lines")
+      sign_in(gm)
+      get game_player_management_path(game)
+      expect(response.body).to include("<strong>grim</strong>")
+      expect(response.body).to include("<br>")
+    end
+
     it "shows a placeholder in Game Details when the description is blank" do
       game.update!(description: "")
       sign_in(gm)

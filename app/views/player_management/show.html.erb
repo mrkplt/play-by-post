@@ -7,13 +7,7 @@
 
   <% if @game_presenter.gm? %>
     <%# Game Details %>
-    <%= render Ui::SectionLabelComponent.new do %>Game Details<% end %>
-    <%= render Ui::CardComponent.new do %>
-      <%= render Ui::SettingsRowComponent.new(
-            label: @game.name, sub: @game_presenter.description_display, last: true) do %>
-        <%= link_to "Edit", edit_game_path(@game), class: "text-xs font-bold text-accent no-underline" %>
-      <% end %>
-    <% end %>
+    <%= render Shared::GameDetailsComponent.new(game: @game) %>
 
     <%# Members %>
     <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do %>Members<% end %>

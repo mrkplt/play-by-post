@@ -94,8 +94,8 @@ For technology stack, domain model, codebase conventions, and development workfl
 ## Game Settings
 
 - Reached via the gear (⚙) in the game header — open to any non-banned member, not just the GM. Uses the settings-row pattern under a back-arrow header.
-- GM-only sections (hidden entirely for non-GM viewers): Game Details (the game name and its description, with an Edit link opening the Edit Game screen; a blank description shows a "No description yet." placeholder), Members (name + character + Remove/Ban, where Remove is neutral and Ban is red and carries its own more serious confirmation), Game Preferences (an "AI Scene Summaries" toggle switch), and Danger Zone (game deletion — see below). Inviting players lives on the game Roster tab, not here.
-- The Edit Game screen (reached from Game Details) uses the same mobile-frame/back-arrow chrome as the rest of the app: a name/description form plus the Post Images, Character Sheets, AI Scene Summaries, and Manage Players controls.
+- GM-only sections (hidden entirely for non-GM viewers): Game Details (the game name and its description — the description is rendered as markdown, with single newlines shown as line breaks — with an Edit link opening the Edit Game screen; a blank description shows a "No description yet." placeholder), Members (name + character + Remove/Ban, where Remove is neutral and Ban is red and carries its own more serious confirmation), Game Preferences (an "AI Scene Summaries" toggle switch), and Danger Zone (game deletion — see below). Inviting players lives on the game Roster tab, not here.
+- The Edit Game screen (reached from Game Details) uses the same mobile-frame/back-arrow chrome as the rest of the app: a name/description form plus the Post Images, Character Sheets, AI Scene Summaries, and Manage Players controls. Saving the name/description form returns to the Game Settings screen.
 - Export section (all non-banned members, GM and non-GM alike): a "This game" row with an "Export Game" action and the last-export notice, same as the profile-level export.
 - Non-members and banned members are redirected away with an access alert; this is the only guard on the page itself — GM-only content is scoped by conditionally rendering, not by a separate access check.
 
@@ -193,7 +193,8 @@ For technology stack, domain model, codebase conventions, and development workfl
 - Every text field whose content is rendered as markdown shares the same editing affordances: a formatting toolbar directly above a monospaced textarea, with a live rendered preview below it
 - This applies to: the post composer, the standalone post-edit form, character sheets (new/edit), and scene summaries
 - The toolbar provides bold, italic, heading, quote, bulleted list, numbered list, link, and inline-code controls; each inserts the corresponding markdown around the current selection (or the current line, for block-level controls) and refreshes the live preview
-- Plain-text fields that are **not** rendered as markdown (e.g. game description, scene title, scene resolution, feedback body) do not get the toolbar
+- Plain-text fields that are **not** rendered as markdown (e.g. scene title, scene resolution, feedback body) do not get the toolbar
+- The game description is the one exception: its **display** on the Game Settings screen renders markdown (single newlines shown as line breaks), but it is still **edited** in a plain textarea on the Edit Game screen — no toolbar or live preview
 
 ### File & Image Constraints
 - Post and scene images: JPG, PNG, GIF, WEBP — 10 MB limit

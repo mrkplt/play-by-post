@@ -26,13 +26,6 @@ class GamePresenter < BasePresenter
     @model.invitations.pending.order(created_at: :desc).to_a
   end
 
-  # The description shown in the Game Settings "Game Details" row, with a
-  # placeholder when the GM has not written one yet.
-  sig { returns(String) }
-  def description_display
-    @model.description.presence || "No description yet."
-  end
-
   # The game's pages, alphabetised by title — the data behind the Pages tab.
   sig { returns(T::Array[Page]) }
   def pages
