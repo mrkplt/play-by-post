@@ -52,6 +52,9 @@ gem "thruster", require: false
 # Auth
 gem "devise"
 gem "devise-passwordless"
+# Server-side session store — sessions rows live in the primary SQLite DB on the
+# mounted volume, so a login survives deploys/restarts (see docs/CONFIGURATION.md).
+gem "activerecord-session_store"
 
 # Authorization — per-model policy objects
 gem "pundit"

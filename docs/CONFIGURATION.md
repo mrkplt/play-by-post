@@ -76,6 +76,14 @@ than by hand. There is no `DATABASE_URL` and no database password.
 `credentials.secret_key_base`). Setting it as an env var would override the credential, and
 if the two ever diverge, every existing session cookie and signed value stops verifying.
 
+> **This is load-bearing for staying logged in.** Sessions are server-side
+> (`activerecord-session_store`, table on the `/data` volume), but the session-id
+> cookie *and* the 30-day remember-me cookie are both signed with `secret_key_base`.
+> A stable `secret_key_base` is therefore what lets a login survive a deploy. If
+> logins drop on every deploy, the first thing to check is whether `secret_key_base`
+> is changing between deploys — i.e. whether `SECRET_KEY_BASE` is set in the Coolify
+> UI to a value that rotates. It must be unset so Rails reads the stable credential.
+
 **There is no `IMAGE_TAG`.** The compose file pins `:latest`, which the build workflow
 publishes on every push to master (`type=raw,value=latest,enable={{is_default_branch}}`).
 Enable **"always pull image"** in Coolify, or Docker reuses the cached `:latest` layer and
