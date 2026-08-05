@@ -6,7 +6,6 @@
   <% end %>
 
   <%= render Shared::CharacterFormComponent.new(
-        game: @game, character: @character, users: [],
-        new_record: false, can_assign_owner: policy(@character).assign_owner?,
-        archived: @character.archived?, back_href: game_character_path(@game, @character)) %>
+        game: @game, character: @character,
+        can_assign_owner: policy(@character).assign_owner?) %>
 <% end %>
