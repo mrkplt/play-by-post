@@ -129,6 +129,7 @@ For technology stack, domain model, codebase conventions, and development workfl
 - Scenes sharing the same parent scene are grouped on the same row (parallel branches)
 - Private scenes visible only to participants and the GM
 - Resolved scenes displayed separately from active scenes
+- The game view lists only active scenes; a "View all scenes" link on the game view opens the All Scenes view (the full scene tree, including resolved scenes), available to every viewer with game access
 
 ### Quick Scene (from scene view)
 - Creates a new scene inheriting all participants and parent from the current scene
