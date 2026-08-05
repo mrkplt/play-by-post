@@ -61,6 +61,7 @@ matcher:
     - Shared::PostEditFormComponent
     - Shared::SceneCardComponent
     - Shared::SceneFormComponent
+    - Shared::GameFormComponent
     - Shared::SidebarComponent
     - Shared::TreeNodeComponent
     - Shared::GameHeaderComponent
