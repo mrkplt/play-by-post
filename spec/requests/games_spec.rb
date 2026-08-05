@@ -322,6 +322,20 @@ RSpec.describe GamesController, type: :request do
       expect(response.body).not_to include("Finished Quest")
     end
 
+    it "links to the all-scenes view for the GM" do
+      sign_in(gm)
+      get game_path(game)
+      expect(response.body).to include(game_scenes_path(game))
+      expect(response.body).to include("View all scenes")
+    end
+
+    it "links to the all-scenes view for a player" do
+      sign_in(player)
+      get game_path(game)
+      expect(response.body).to include(game_scenes_path(game))
+      expect(response.body).to include("View all scenes")
+    end
+
     it "does not show private scenes to non-participants in the active scenes section" do
       private_scene = create(:scene, :private, game: game, title: "Secret Council")
       create(:scene_participant, scene: private_scene, user: gm)

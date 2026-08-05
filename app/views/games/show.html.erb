@@ -25,6 +25,9 @@
               class: "block w-full text-center bg-accent text-accent-ink rounded-control py-2.5 font-bold text-[13px] no-underline" %>
       <% end %>
 
+      <%= link_to "View all scenes", game_scenes_path(@game),
+            class: "block w-full text-center text-accent rounded-control py-2 font-bold text-[13px] no-underline" %>
+
       <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do %>In Active Scenes<% end %>
       <div class="bg-card border border-card-border rounded-card overflow-hidden">
         <%= render Shared::RosterRowComponent.new(
