@@ -15,6 +15,14 @@ For technology stack, domain model, codebase conventions, and development workfl
 - After first login, users must set a display name before using the app
 - Display names are required and shown throughout the app for authorship attribution
 
+### Sessions & staying logged in
+
+- **A login lasts 30 days.** Signing in via a magic link sets a persistent remember-me cookie (`config.remember_for = 30.days`) and a server-side session that expires after 30 days. The login survives browser restarts and app deploys — it is not tied to the browser session.
+- **Sessions are stored server-side** (`activerecord-session_store`): the session payload lives in a `sessions` table in the primary database (on the mounted `/data` volume in production), and the cookie holds only an opaque session id. Because the table is on the persistent volume, sessions survive deploys and container restarts.
+- **Every user has a `remember_token`**, generated on create. It is the user's `authenticatable_salt` and the value behind the remember-me cookie. This gives the passwordless model a real per-user salt (Devise's default is nil without a password), so a session can be validated and revoked: rotating a user's `remember_token` invalidates that user's sessions and remember-me cookie.
+- **Sign-out** clears the current session and the remember-me cookie, and (via `expire_all_remember_me_on_sign_out`) drops the user's `remember_token`; the next magic-link login regenerates it.
+- One-time effect on first deploy of this behaviour: introducing a non-nil salt invalidates any pre-existing session cookie signed against the old (nil) salt, so users logged in at that moment are asked to sign in once more.
+
 ---
 
 ## Navigation & Layout (mobile-first redesign)
