@@ -330,6 +330,12 @@ Hard-won specifics for actually clearing the gates. Read this before touching up
 - Happy path and error path in the same controller action must render the same component. Never mix a ViewComponent in one branch and a partial in the other. Delete old partials once fully replaced.
 - Component namespaces: `Ui::*` for primitives, `Shared::*` for domain components.
 
+### Forms & text fields
+
+- **Every user-editable multi-line text field is a markdown field.** If a person can type multi-line prose into it, it must render markdown on display **and** carry the standard editing affordances: the `Shared::MarkdownToolbarComponent` toolbar directly above the textarea, plus a live `markdown-base` preview below it (wire the form with `data: { controller: "markdown-preview markdown-toolbar" }` and the textarea with the `markdown-preview`/`markdown-toolbar` targets + `input->markdown-preview#update`). Render the stored value through `MarkdownRenderer` wherever it is shown. There is no "plain textarea for prose" — do not add one. Copy the wiring from `Shared::PageFormComponent` / `Shared::GameFormComponent`.
+- **Single-line identifier inputs are the only exception** (e.g. game name, scene title): short labels, not prose — no toolbar, no markdown.
+- Every prose field is migrated: post composer/edit, character sheets, scene summaries, game description, scene resolution/outcome, and the feedback modal body. There is no remaining plain-textarea prose field — keep it that way.
+
 ### CSS
 - New work: Tailwind only. Do not add to `app/assets/stylesheets/application.css` (legacy, migration in progress).
 - Never edit `app/assets/builds/` (generated).

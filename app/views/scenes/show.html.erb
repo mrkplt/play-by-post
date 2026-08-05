@@ -60,9 +60,7 @@
     </div>
 
     <% if @scene.resolved? && @scene.resolution.present? %>
-      <div class="bg-tint-blue-bg border border-tint-blue-border rounded-card p-3 text-sm text-tint-blue-strong">
-        <strong>Resolution:</strong> <%= @scene.resolution %>
-      </div>
+      <%= render Shared::SceneResolutionComponent.new(scene: @scene) %>
     <% end %>
 
     <%# GM scene actions %>
@@ -77,14 +75,7 @@
         <button type="button" onclick="document.getElementById('resolve-form').hidden = !document.getElementById('resolve-form').hidden"
                 class="text-xs font-semibold text-danger bg-transparent border-0 cursor-pointer p-0">End Scene</button>
       </div>
-      <div id="resolve-form" hidden class="bg-card border border-card-border rounded-card p-3">
-        <%= form_with url: resolve_game_scene_path(@game, @scene), method: :patch do |f| %>
-          <%= f.label :resolution, "Outcome (optional)", class: "block text-sm font-semibold mb-1" %>
-          <%= f.text_area :resolution, rows: 3, placeholder: "What happened? What was gained or lost?",
-                class: "w-full px-3 py-2 border border-input-border rounded-control text-base" %>
-          <%= f.submit "Confirm — End Scene", class: "mt-2 bg-card text-danger border border-red-200 rounded-control px-4 py-2 text-sm cursor-pointer" %>
-        <% end %>
-      </div>
+      <%= render Shared::SceneResolveFormComponent.new(game: @game, scene: @scene) %>
     <% end %>
 
     <%# Posts %>

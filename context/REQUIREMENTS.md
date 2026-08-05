@@ -40,7 +40,7 @@ For technology stack, domain model, codebase conventions, and development workfl
 ## Feedback
 
 - A "Send Feedback" control is pinned in the nav-drawer footer, available on every authenticated screen (both the mobile overlay drawer and the docked desktop rail).
-- Clicking it opens a modal that collects the feedback: a free-form textarea, a Submit, and a Cancel. The modal dismisses on Cancel, backdrop click, or Escape.
+- Clicking it opens a modal that collects the feedback: a markdown body field (formatting toolbar + live preview, see "Markdown Editing"), a Submit, and a Cancel. The modal dismisses on Cancel, backdrop click, or Escape.
 - Submitting saves a `Feedback` record capturing **who submitted it** (the signed-in user) and **the URL of the page they were on** when they opened the modal (captured client-side and carried in a hidden field). The body is required; a blank submission is rejected.
 - The modal **submits in place via fetch — it never navigates the page**. On success the modal swaps to an in-place "Thanks for your feedback!" confirmation with a Close button, so the user stays exactly where they were; on failure an inline error is shown and the form is preserved. The endpoint answers with a bare status (`201`/`422`), not a redirect or re-render.
 - The modal is rendered as a sibling of the drawer (not inside it), so its fixed-position overlay spans the viewport rather than being clamped to the off-screen drawer on mobile.
@@ -94,8 +94,8 @@ For technology stack, domain model, codebase conventions, and development workfl
 ## Game Settings
 
 - Reached via the gear (⚙) in the game header — open to any non-banned member, not just the GM. Uses the settings-row pattern under a back-arrow header.
-- GM-only sections (hidden entirely for non-GM viewers): Game Details (the game name and its description, with an Edit link opening the Edit Game screen; a blank description shows a "No description yet." placeholder), Members (name + character + Remove/Ban, where Remove is neutral and Ban is red and carries its own more serious confirmation), Game Preferences (an "AI Scene Summaries" toggle switch), and Danger Zone (game deletion — see below). Inviting players lives on the game Roster tab, not here.
-- The Edit Game screen (reached from Game Details) uses the same mobile-frame/back-arrow chrome as the rest of the app: a name/description form plus the Post Images, Character Sheets, AI Scene Summaries, and Manage Players controls.
+- GM-only sections (hidden entirely for non-GM viewers): Game Details (the game name and its description — the description is rendered as markdown, with single newlines shown as line breaks — with an Edit link opening the Edit Game screen; a blank description shows a "No description yet." placeholder), Members (name + character + Remove/Ban, where Remove is neutral and Ban is red and carries its own more serious confirmation), Game Preferences (an "AI Scene Summaries" toggle switch), and Danger Zone (game deletion — see below). Inviting players lives on the game Roster tab, not here.
+- The Edit Game screen (reached from Game Details) uses the same mobile-frame/back-arrow chrome as the rest of the app: a name/description form plus the Post Images, Character Sheets, AI Scene Summaries, and Manage Players controls. Saving the name/description form returns to the Game Settings screen.
 - Export section (all non-banned members, GM and non-GM alike): a "This game" row with an "Export Game" action and the last-export notice, same as the profile-level export.
 - Non-members and banned members are redirected away with an access alert; this is the only guard on the page itself — GM-only content is scoped by conditionally rendering, not by a separate access check.
 
@@ -166,8 +166,8 @@ For technology stack, domain model, codebase conventions, and development workfl
 ### Scene Resolution
 - Only the GM can resolve (close) a scene via an "End Scene" action
 - Resolution is final and at the GM's sole discretion; players cannot vote or approve
-- Resolution presents an optional outcomes text field (what happened, what was gained/lost)
-- Resolved scenes display their outcomes prominently
+- Resolution presents an optional outcomes markdown field (what happened, what was gained/lost) — formatting toolbar + live preview, see "Markdown Editing"
+- Resolved scenes display their outcomes prominently, rendered as markdown
 - All scene participants receive a resolution notification email
 - The scene toolbar (actions menu) is hidden after a scene is resolved
 
@@ -190,10 +190,10 @@ For technology stack, domain model, codebase conventions, and development workfl
 - One image attachment per scene
 
 ### Markdown Editing
-- Every text field whose content is rendered as markdown shares the same editing affordances: a formatting toolbar directly above a monospaced textarea, with a live rendered preview below it
-- This applies to: the post composer, the standalone post-edit form, character sheets (new/edit), and scene summaries
+- **Every user-editable multi-line text field is a markdown field** and shares the same editing affordances: a formatting toolbar directly above the textarea, with a live rendered preview below it. There is no such thing as a plain-textarea prose field — if a person can type multi-line prose into it, it renders markdown and carries the toolbar + preview.
+- This applies to every multi-line prose field: the post composer, the standalone post-edit form, character sheets (new/edit), scene summaries, the game description (New Game / Edit Game), the scene resolution/outcome field, and the feedback modal body.
 - The toolbar provides bold, italic, heading, quote, bulleted list, numbered list, link, and inline-code controls; each inserts the corresponding markdown around the current selection (or the current line, for block-level controls) and refreshes the live preview
-- Plain-text fields that are **not** rendered as markdown (e.g. game description, scene title, scene resolution, feedback body) do not get the toolbar
+- Single-line identifier inputs (e.g. game name, scene title) are **not** markdown fields — they are short labels, not prose, and get no toolbar.
 
 ### File & Image Constraints
 - Post and scene images: JPG, PNG, GIF, WEBP — 10 MB limit

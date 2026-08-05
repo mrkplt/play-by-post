@@ -213,14 +213,14 @@ RSpec.describe GamesController, type: :request do
     it "GM can update the game" do
       sign_in(gm)
       patch game_path(game), params: { game: { name: "Updated Name" } }
-      expect(response).to redirect_to(game_path(game))
+      expect(response).to redirect_to(game_player_management_path(game))
       expect(game.reload.name).to eq("Updated Name")
     end
 
     it "GM can update the description" do
       sign_in(gm)
       patch game_path(game), params: { game: { description: "New desc" } }
-      expect(response).to redirect_to(game_path(game))
+      expect(response).to redirect_to(game_player_management_path(game))
       expect(game.reload.description).to eq("New desc")
     end
 

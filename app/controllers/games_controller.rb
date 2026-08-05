@@ -142,7 +142,7 @@ class GamesController < ApplicationController
   def update
     authorize @game
     if @game.update(game_params)
-      redirect_to @game, notice: "Game updated."
+      redirect_to game_player_management_path(@game), notice: "Game updated."
     else
       render :edit, status: :unprocessable_content
     end

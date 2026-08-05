@@ -6,17 +6,25 @@
     <%# Form panel — submitted via fetch so the page never navigates. %>
     <div data-feedback-target="formPanel">
       <%= form_with url: submit_path, scope: :feedback, method: :post,
-            data: { action: "submit->feedback#submit" },
+            data: { controller: "markdown-preview markdown-toolbar", action: "submit->feedback#submit" },
             class: "p-5 flex flex-col gap-3" do |form| %>
         <h2 class="text-lg font-semibold text-row-ink">Send Feedback</h2>
         <p class="text-sm text-muted-2">
           Tell us what's working, what's broken, or what you'd like to see. We'll
-          note the page you're on.
+          note the page you're on. Markdown is supported.
         </p>
         <%= form.hidden_field :url, data: { feedback_target: "url" } %>
+        <%= render Shared::MarkdownToolbarComponent.new %>
         <%= form.text_area :body, rows: 5, required: true, placeholder: "Your feedback…",
-              data: { feedback_target: "field" },
-              class: "w-full px-3 py-2 border border-card-border rounded text-base bg-card" %>
+              data: {
+                feedback_target: "field",
+                markdown_preview_target: "input",
+                markdown_toolbar_target: "input",
+                action: "input->markdown-preview#update"
+              },
+              class: "markdown-editor w-full px-3 py-2 border border-card-border border-t-0 rounded-b text-base bg-card" %>
+        <div data-markdown-preview-target="preview"
+             class="markdown-base border border-card-border rounded px-3 py-3 min-h-12 bg-canvas empty:hidden"></div>
         <p data-feedback-target="error" hidden class="text-sm text-danger">
           Something went wrong. Please try again.
         </p>

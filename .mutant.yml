@@ -61,8 +61,11 @@ matcher:
     - Shared::CharacterVersionHistoryComponent
     - Shared::PostEditFormComponent
     - Shared::SceneCardComponent
+    - Shared::SceneResolutionComponent
+    - Shared::SceneResolveFormComponent
     - Shared::SceneFormComponent
     - Shared::GameFormComponent
+    - Shared::GameDetailsComponent
     - Shared::SidebarComponent
     - Shared::TreeNodeComponent
     - Shared::GameHeaderComponent

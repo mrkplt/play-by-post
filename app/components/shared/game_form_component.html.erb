@@ -1,4 +1,5 @@
-<%= form_with model: game, class: "flex flex-col gap-4" do |f| %>
+<%= form_with model: game, class: "flex flex-col gap-4",
+    data: { controller: "markdown-preview markdown-toolbar" } do |f| %>
   <% if errors? %>
     <div class="bg-tint-blue-bg border border-tint-blue-border rounded-card p-3 text-sm text-danger">
       <% error_messages.each do |msg| %>
@@ -14,10 +15,19 @@
   </div>
 
   <div class="flex flex-col gap-1.5">
-    <%= f.label :description, "Description (optional)", class: "text-[11px] font-bold text-muted uppercase tracking-[0.05em]" %>
-    <%= f.text_area :description, rows: 4,
-          class: "w-full border border-input-border rounded-control px-3 py-2.5 text-base text-ink bg-card placeholder:text-muted-2" %>
+    <%= f.label :description, "Description (optional, markdown supported)", class: "text-[11px] font-bold text-muted uppercase tracking-[0.05em]" %>
+    <%= render Shared::MarkdownToolbarComponent.new %>
+    <%= f.text_area :description, rows: 4, placeholder: "Describe this game in markdown…",
+          class: "markdown-editor w-full border border-input-border border-t-0 rounded-b-control px-3 py-2.5 text-base text-ink bg-card placeholder:text-muted-2",
+          data: {
+            markdown_preview_target: "input",
+            markdown_toolbar_target: "input",
+            action: "input->markdown-preview#update"
+          } %>
   </div>
+
+  <div data-markdown-preview-target="preview"
+       class="markdown-base border border-card-border rounded-card px-3 py-3 min-h-12 bg-canvas empty:hidden"></div>
 
   <% if note? %>
     <p class="text-[11px] text-muted-2 m-0"><%= note %></p>

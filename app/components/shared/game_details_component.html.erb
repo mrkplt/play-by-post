@@ -1,0 +1,11 @@
+<%= render Ui::SectionLabelComponent.new do %>Game Details<% end %>
+<%= render Ui::CardComponent.new do %>
+  <%= render Ui::SettingsRowComponent.new(label: name, last: true) do %>
+    <%= link_to "Edit", edit_path, class: "text-xs font-bold text-accent no-underline" %>
+  <% end %>
+  <% if description? %>
+    <div class="markdown-base text-[13px] text-muted-2 border-t border-card-divider py-3"><%= rendered_description %></div>
+  <% else %>
+    <p class="text-[11px] text-muted-2 m-0 border-t border-card-divider py-3">No description yet.</p>
+  <% end %>
+<% end %>

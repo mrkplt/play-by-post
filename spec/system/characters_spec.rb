@@ -78,18 +78,22 @@ RSpec.describe "Characters", type: :feature do
   end
 
   describe "markdown formatting toolbar" do
+    let(:sheet_editor) { "textarea[name='character[content]']" }
+
     it "wraps the selected sheet text and refreshes the live preview" do
       sign_in_as(player)
       visit new_game_character_path(game)
 
       fill_in "Name", with: "Toolbar Tester"
-      find("textarea.markdown-editor").set("hero")
+      editor = find(sheet_editor)
+      editor.set("hero")
       page.execute_script(
-        "const t = document.querySelector('textarea.markdown-editor'); t.focus(); t.setSelectionRange(0, t.value.length);"
+        "const t = arguments[0]; t.focus(); t.setSelectionRange(0, t.value.length);",
+        editor
       )
       click_button "B"
 
-      expect(find("textarea.markdown-editor").value).to eq("**hero**")
+      expect(editor.value).to eq("**hero**")
       expect(page).to have_css("[data-markdown-preview-target='preview'] strong", text: "hero")
     end
 
@@ -97,8 +101,10 @@ RSpec.describe "Characters", type: :feature do
       sign_in_as(player)
       visit new_game_character_path(game)
 
+      toolbar = find("[role='toolbar'][aria-label='Markdown formatting']")
       min_height = page.evaluate_script(
-        "Math.min(...Array.from(document.querySelectorAll(\"[role='toolbar'][aria-label='Markdown formatting'] button\")).map(b => b.getBoundingClientRect().height))"
+        "Math.min(...Array.from(arguments[0].querySelectorAll('button')).map(b => b.getBoundingClientRect().height))",
+        toolbar
       )
       expect(min_height).to be >= 44
     end
@@ -107,13 +113,15 @@ RSpec.describe "Characters", type: :feature do
       sign_in_as(player)
       visit new_game_character_path(game)
 
-      find("textarea.markdown-editor").set("Backstory")
+      editor = find(sheet_editor)
+      editor.set("Backstory")
       page.execute_script(
-        "const t = document.querySelector('textarea.markdown-editor'); t.focus(); t.setSelectionRange(0, 0);"
+        "const t = arguments[0]; t.focus(); t.setSelectionRange(0, 0);",
+        editor
       )
       click_button "H"
 
-      expect(find("textarea.markdown-editor").value).to eq("## Backstory")
+      expect(editor.value).to eq("## Backstory")
       expect(page).to have_css("[data-markdown-preview-target='preview'] h2", text: "Backstory")
     end
   end

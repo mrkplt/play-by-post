@@ -53,9 +53,18 @@ RSpec.describe Shared::GameFormComponent, type: :component do
       render_inline(build_component(submit_label: "Create game", cancel_href: "/"))
 
       expect(page).to have_field("Name")
-      expect(page).to have_field("Description (optional)")
+      expect(page).to have_field("Description (optional, markdown supported)")
       expect(page).to have_button("Create game")
       expect(page).to have_link("Cancel", href: "/")
+    end
+
+    it "wires the description field to the markdown toolbar and live preview" do
+      render_inline(build_component)
+
+      expect(page).to have_css("form[data-controller~='markdown-preview'][data-controller~='markdown-toolbar']")
+      expect(page).to have_css("textarea.markdown-editor[data-markdown-preview-target='input']")
+      expect(page).to have_css("[role='toolbar'][aria-label='Markdown formatting']")
+      expect(page).to have_css("[data-markdown-preview-target='preview']")
     end
 
     it "renders the note when supplied" do
