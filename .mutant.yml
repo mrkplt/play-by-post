@@ -35,6 +35,7 @@ matcher:
     - NotificationPreference
     - PostRead
     - Feedback
+    - Page
     # Presenters
     - GameFilePresenter
     - GamePresenter
@@ -72,6 +73,9 @@ matcher:
     - Shared::MobileFrameComponent
     - Shared::DeleteGameComponent
     - Shared::FeedbackModalComponent
+    - Shared::PageFormComponent
+    - Shared::PageDetailComponent
+    - Shared::GamePagesListComponent
     - Ui::BadgeComponent
     - Ui::BreadcrumbComponent
     - Ui::ButtonComponent
@@ -102,6 +106,7 @@ matcher:
     - SceneParticipantsController
     - PostsController
     - GameFilesController
+    - PagesController
     - InvitationsController
     - GameMembersController
     - CharacterVersionsController

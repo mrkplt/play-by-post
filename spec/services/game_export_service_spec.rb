@@ -416,6 +416,26 @@ RSpec.describe GameExportService do
     end
   end
 
+  describe "#page_content" do
+    let(:service) { described_class.new(build_stubbed(:user), []) }
+
+    def content(page)
+      service.send(:page_content, page)
+    end
+
+    it "titles the page as an h1" do
+      expect(content(build_stubbed(:page, title: "House Rules"))).to include("# House Rules")
+    end
+
+    it "includes the markdown body" do
+      expect(content(build_stubbed(:page, body: "Roll **twice**."))).to include("Roll **twice**.")
+    end
+
+    it "notes an empty body rather than writing nothing" do
+      expect(content(build_stubbed(:page, body: nil))).to include("_No content._")
+    end
+  end
+
   describe "#slugify" do
     let(:service) { described_class.new(build_stubbed(:user), []) }
 
@@ -478,6 +498,16 @@ RSpec.describe GameExportService do
 
       expect(c).to have_received(:includes).with(file_attachment: :blob)
       expect(c).to have_received(:order).with(:filename)
+    end
+
+    it "loads pages ordered by title" do
+      game = build_stubbed(:game)
+      c = chain
+      allow(game).to receive(:pages).and_return(c)
+
+      service.send(:pages_for, game)
+
+      expect(c).to have_received(:order).with(:title)
     end
 
     it "loads participants with their user and character" do
@@ -595,7 +625,7 @@ RSpec.describe GameExportService do
     let(:export_user) { build_stubbed(:user) }
     let(:gm_member) { build_stubbed(:game_member, role: "game_master", status: "active") }
 
-    def build_service(games, scenes: [], characters: [], versions: [])
+    def build_service(games, scenes: [], characters: [], versions: [], pages: [])
       games.each { |g| allow(g).to receive(:member_for).with(export_user).and_return(gm_member) }
       described_class.new(export_user, games).tap do |service|
         allow(service).to receive(:export_scenes_for).and_return(scenes)
@@ -605,6 +635,7 @@ RSpec.describe GameExportService do
         allow(service).to receive(:published_posts_for).and_return([])
         allow(service).to receive(:characters_for).and_return(characters)
         allow(service).to receive(:versions_for).and_return(versions)
+        allow(service).to receive(:pages_for).and_return(pages)
       end
     end
 
@@ -652,6 +683,20 @@ RSpec.describe GameExportService do
       entries = entries_for(one_game, characters: [ character ], versions: [ version ])
 
       expect(entries).to include(a_string_matching(%r{characters/aria/version_history/v001-2026-05-06\.md$}))
+    end
+
+    it "writes a markdown file per page, slugged from the title" do
+      entries = entries_for(one_game, pages: [ build_stubbed(:page, title: "House Rules") ])
+
+      expect(entries).to include(a_string_matching(%r{pages/house-rules\.md$}))
+    end
+
+    it "disambiguates pages with duplicate titles" do
+      entries = entries_for(one_game, pages: [ build_stubbed(:page, title: "Lore"),
+                                               build_stubbed(:page, title: "Lore") ])
+
+      expect(entries).to include(a_string_matching(%r{pages/lore\.md$}))
+      expect(entries).to include(a_string_matching(%r{pages/lore-2\.md$}))
     end
 
     context "with several games" do
@@ -714,6 +759,15 @@ RSpec.describe GameExportService do
 
         expect(zip_file_content(zip_data, sheet_name)).to eq(service.send(:character_sheet_content, one_character))
         expect(zip_file_content(zip_data, version_name)).to eq(service.send(:character_version_content, one_version, 1))
+      end
+
+      it "writes each page's own content under pages/{slug}.md" do
+        one_page = build_stubbed(:page, title: "House Rules")
+        service = build_service(one_game, pages: [ one_page ])
+        zip_data = service.call
+        name = zip_entries(zip_data).find { |e| e.end_with?("house-rules.md") }
+
+        expect(zip_file_content(zip_data, name)).to eq(service.send(:page_content, one_page))
       end
     end
   end

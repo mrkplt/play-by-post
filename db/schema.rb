@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_05_000002) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_05_100000) do
   create_table "action_mailbox_inbound_emails", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "message_checksum", null: false
@@ -161,6 +161,17 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_05_000002) do
     t.index ["user_id"], name: "index_notification_preferences_on_user_id"
   end
 
+  create_table "pages", force: :cascade do |t|
+    t.text "body"
+    t.datetime "created_at", null: false
+    t.integer "game_id", null: false
+    t.string "slug", null: false
+    t.string "title", null: false
+    t.datetime "updated_at", null: false
+    t.index ["game_id"], name: "index_pages_on_game_id"
+    t.index ["slug"], name: "index_pages_on_slug", unique: true
+  end
+
   create_table "post_reads", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.integer "post_id", null: false
@@ -284,6 +295,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_05_000002) do
   add_foreign_key "invitations", "users", column: "invited_by_id"
   add_foreign_key "notification_preferences", "scenes"
   add_foreign_key "notification_preferences", "users"
+  add_foreign_key "pages", "games"
   add_foreign_key "post_reads", "posts"
   add_foreign_key "post_reads", "users"
   add_foreign_key "posts", "scenes"

@@ -16,6 +16,9 @@ module GeneratedPathHelpersModule
   def archive_game_character_path(*args); end
 
   sig { params(args: T.untyped).returns(String) }
+  def deploy_webhook_path(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
   def destroy_user_session_path(*args); end
 
   sig { params(args: T.untyped).returns(String) }
@@ -23,6 +26,9 @@ module GeneratedPathHelpersModule
 
   sig { params(args: T.untyped).returns(String) }
   def edit_game_character_path(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def edit_game_page_path(*args); end
 
   sig { params(args: T.untyped).returns(String) }
   def edit_game_path(*args); end
@@ -43,6 +49,9 @@ module GeneratedPathHelpersModule
   def export_all_profile_path(*args); end
 
   sig { params(args: T.untyped).returns(String) }
+  def feedback_path(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
   def game_character_character_version_path(*args); end
 
   sig { params(args: T.untyped).returns(String) }
@@ -59,6 +68,12 @@ module GeneratedPathHelpersModule
 
   sig { params(args: T.untyped).returns(String) }
   def game_game_files_path(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def game_page_path(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def game_pages_path(*args); end
 
   sig { params(args: T.untyped).returns(String) }
   def game_path(*args); end
@@ -109,10 +124,16 @@ module GeneratedPathHelpersModule
   def letter_opener_web_path(*args); end
 
   sig { params(args: T.untyped).returns(String) }
+  def lookbook_path(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
   def mark_read_game_scene_post_path(*args); end
 
   sig { params(args: T.untyped).returns(String) }
   def new_game_character_path(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def new_game_page_path(*args); end
 
   sig { params(args: T.untyped).returns(String) }
   def new_game_path(*args); end

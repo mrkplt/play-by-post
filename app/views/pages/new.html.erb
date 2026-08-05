@@ -1,0 +1,9 @@
+<% content_for :active_game_id, @game.id %>
+
+<%= render Shared::MobileFrameComponent.new do |frame| %>
+  <% frame.with_header do %>
+    <%= render Shared::PageHeaderComponent.new(title: "New Page", leading: :back, back_href: game_path(@game, anchor: "pages")) %>
+  <% end %>
+
+  <%= render Shared::PageFormComponent.new(game: @game, page: @page) %>
+<% end %>
