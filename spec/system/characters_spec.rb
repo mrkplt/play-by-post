@@ -93,6 +93,16 @@ RSpec.describe "Characters", type: :feature do
       expect(page).to have_css("[data-markdown-preview-target='preview'] strong", text: "hero")
     end
 
+    it "gives each toolbar button a >= 44px touch target" do
+      sign_in_as(player)
+      visit new_game_character_path(game)
+
+      min_height = page.evaluate_script(
+        "Math.min(...Array.from(document.querySelectorAll(\"[role='toolbar'][aria-label='Markdown formatting'] button\")).map(b => b.getBoundingClientRect().height))"
+      )
+      expect(min_height).to be >= 44
+    end
+
     it "prepends a heading marker to the current line" do
       sign_in_as(player)
       visit new_game_character_path(game)
