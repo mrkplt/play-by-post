@@ -8,7 +8,8 @@
 # locally on demand via bin/full-check — your call which to wait on. This
 # hook exists to catch obvious breaks fast, not to duplicate the full
 # pipeline.
-export PATH="/opt/homebrew/opt/ruby/bin:$PATH"
+export PATH="$HOME/.rbenv/bin:$PATH"
+eval "$(rbenv init -)"
 
 if bin/docs-only; then
   echo "==> Docs-only change: skipping pre-push checks (CI will no-op them too)."
