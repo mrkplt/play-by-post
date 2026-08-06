@@ -8,7 +8,7 @@ RSpec.describe "Games", type: :feature do
   describe "dashboard" do
     it "shows empty state when user has no games" do
       expect(page).to have_text("You're not in any games yet")
-      expect(page).to have_link("+ New Game", href: new_game_path)
+      expect(page).to have_link("New Game", href: new_game_path)
     end
 
     it "lists games the user belongs to, crowning GM games" do
@@ -162,7 +162,7 @@ RSpec.describe "Games", type: :feature do
 
   describe "game creation" do
     it "creates a game and lands on the game view" do
-      click_on "+ New Game"
+      click_on "New Game"
       fill_in "Name", with: "Shadows of the Rift"
       fill_in "Description (optional, markdown supported)", with: "A dark fantasy adventure"
       click_on "Create game"
@@ -171,7 +171,7 @@ RSpec.describe "Games", type: :feature do
     end
 
     it "makes the creator the GM (header shows the player-management gear)" do
-      click_on "+ New Game"
+      click_on "New Game"
       fill_in "Name", with: "New Campaign"
       click_on "Create game"
 
@@ -179,7 +179,7 @@ RSpec.describe "Games", type: :feature do
     end
 
     it "requires a name" do
-      click_on "+ New Game"
+      click_on "New Game"
       click_on "Create game"
 
       expect(page).to have_text("can't be blank")
