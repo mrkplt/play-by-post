@@ -49,6 +49,7 @@ class GameExportService
 
     write_readme(zip, prefix, game, scenes)
     write_files_manifest(zip, prefix, game)
+    write_links_manifest(zip, prefix, game)
     write_scenes(zip, prefix, game, scenes)
     write_characters(zip, prefix, game, scenes)
     write_pages(zip, prefix, game)
@@ -158,6 +159,38 @@ class GameExportService
     else
       "#{bytes} B"
     end
+  end
+
+  # --- links_manifest.md ---
+
+  sig { params(zip: Zip::OutputStream, prefix: String, game: Game).void }
+  def write_links_manifest(zip, prefix, game)
+    zip.put_next_entry("#{prefix}links_manifest.md")
+    zip.write(links_manifest_content(game))
+  end
+
+  sig { params(game: Game).returns(String) }
+  def links_manifest_content(game)
+    links = links_for(game)
+
+    lines = []
+    lines << "# Game Links"
+    lines << ""
+
+    if links.empty?
+      lines << "_No links added._"
+    else
+      lines << "| Description | URL |"
+      lines << "|---|---|"
+      links.each do |link|
+        lines << "| #{link.description} | #{link.url} |"
+      end
+      lines << ""
+      lines << "_External links open in a new tab._"
+    end
+
+    lines << ""
+    lines.join("\n")
   end
 
   # --- Scenes ---
@@ -315,6 +348,11 @@ class GameExportService
   sig { params(game: Game).returns(T::Array[Page]) }
   def pages_for(game)
     game.pages.order(:title).to_a
+  end
+
+  sig { params(game: Game).returns(T::Array[GameLink]) }
+  def links_for(game)
+    game.game_links.order(:description).to_a
   end
 
   sig { params(scene: Scene).returns(T::Array[SceneParticipant]) }

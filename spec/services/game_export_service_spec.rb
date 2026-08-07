@@ -267,6 +267,57 @@ RSpec.describe GameExportService do
     end
   end
 
+  describe "#links_manifest_content" do
+    let(:exported_game) { build_stubbed(:game) }
+    let(:service) { described_class.new(build_stubbed(:user), [ exported_game ]) }
+
+    def link_double(description: "Maps", url: "https://maps.example.com")
+      double(description: description, url: url)
+    end
+
+    def manifest(links)
+      allow(service).to receive(:links_for).with(exported_game).and_return(links)
+      service.send(:links_manifest_content, exported_game)
+    end
+
+    it "reports when no links have been added" do
+      expect(manifest([])).to include("_No links added._")
+    end
+
+    it "lists a link's description and URL" do
+      content = manifest([ link_double ])
+
+      expect(content).to include("Maps")
+      expect(content).to include("https://maps.example.com")
+    end
+
+    it "renders the full document byte for byte with links" do
+      expected = [
+        "# Game Links",
+        "",
+        "| Description | URL |",
+        "|---|---|",
+        "| Maps | https://maps.example.com |",
+        "",
+        "_External links open in a new tab._",
+        ""
+      ].join("\n")
+
+      expect(manifest([ link_double ])).to eq(expected)
+    end
+
+    it "renders the full document byte for byte with no links" do
+      expected = [
+        "# Game Links",
+        "",
+        "_No links added._",
+        ""
+      ].join("\n")
+
+      expect(manifest([])).to eq(expected)
+    end
+  end
+
   describe "#scene_info_content" do
     let(:service) { described_class.new(build_stubbed(:user), []) }
 
@@ -510,6 +561,16 @@ RSpec.describe GameExportService do
       expect(c).to have_received(:order).with(:title)
     end
 
+    it "loads links ordered by description" do
+      game = build_stubbed(:game)
+      c = chain
+      allow(game).to receive(:game_links).and_return(c)
+
+      service.send(:links_for, game)
+
+      expect(c).to have_received(:order).with(:description)
+    end
+
     it "loads participants with their user and character" do
       scene = build_stubbed(:scene)
       c = chain
@@ -631,6 +692,7 @@ RSpec.describe GameExportService do
         allow(service).to receive(:export_scenes_for).and_return(scenes)
         allow(service).to receive(:members_for).and_return([])
         allow(service).to receive(:files_for).and_return([])
+        allow(service).to receive(:links_for).and_return([])
         allow(service).to receive(:participants_for).and_return([])
         allow(service).to receive(:published_posts_for).and_return([])
         allow(service).to receive(:characters_for).and_return(characters)
@@ -648,6 +710,10 @@ RSpec.describe GameExportService do
 
       expect(entries).to include(a_string_matching(%r{README\.md$}))
       expect(entries).to include(a_string_matching(%r{files_manifest\.md$}))
+    end
+
+    it "writes a links manifest" do
+      expect(entries_for(one_game)).to include(a_string_matching(%r{links_manifest\.md$}))
     end
 
     it "writes scene info and posts per scene" do
@@ -739,6 +805,14 @@ RSpec.describe GameExportService do
         name = zip_entries(zip_data).find { |e| e.end_with?("files_manifest.md") }
 
         expect(zip_file_content(zip_data, name)).to eq(service.send(:files_manifest_content, one_game.first))
+      end
+
+      it "writes the links manifest's own content under links_manifest.md" do
+        service = build_service(one_game)
+        zip_data = service.call
+        name = zip_entries(zip_data).find { |e| e.end_with?("links_manifest.md") }
+
+        expect(zip_file_content(zip_data, name)).to eq(service.send(:links_manifest_content, one_game.first))
       end
 
       it "writes each scene's own info and posts content" do
