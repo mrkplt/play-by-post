@@ -60,7 +60,7 @@ RSpec.describe FizzySweepService do
       expect(payload.fetch("description")).to include("Submitted by: #{feedback.user.email}")
     end
 
-    it "uses the email when the submitter has no display name" do
+    it "captures the submitter's email on the card" do
       captured = stub_http_response(Net::HTTPCreated.new("1.1", "201", "Created"))
 
       described_class.create_card(feedback)
@@ -69,14 +69,14 @@ RSpec.describe FizzySweepService do
       expect(payload.fetch("description")).to include("Submitted by: #{feedback.user.email}")
     end
 
-    it "uses the email when the submitter's display name is blank" do
+    it "omits the submitted-by line when there is no submitter" do
       captured = stub_http_response(Net::HTTPCreated.new("1.1", "201", "Created"))
-      allow(feedback.user).to receive(:display_name).and_return("")
+      allow(feedback).to receive(:user).and_return(nil)
 
       described_class.create_card(feedback)
 
       payload = JSON.parse(captured[:request].body).fetch("card")
-      expect(payload.fetch("description")).to include("Submitted by: #{feedback.user.email}")
+      expect(payload.fetch("description")).not_to include("Submitted by:")
     end
 
     it "omits the submitted-from line when the entry has no URL" do

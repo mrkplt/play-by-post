@@ -1,7 +1,8 @@
 import { Controller } from "@hotwired/stimulus"
 
-// The feedback modal, opened from the nav drawer. On open it captures the URL
-// of the page the user is on into a hidden field. Submitting posts via fetch so
+// The feedback modal, opened from the nav drawer. On open it captures the path
+// (with any query parameters) of the page the user is on into a hidden field.
+// Submitting posts via fetch so
 // the page never navigates — on success the modal swaps to an in-place "thanks"
 // panel; the user stays exactly where they were. Cancel/backdrop/Escape dismiss.
 export default class extends Controller {
@@ -9,7 +10,7 @@ export default class extends Controller {
 
   open() {
     this.reset()
-    this.urlTarget.value = window.location.href
+    this.urlTarget.value = `${window.location.pathname}${window.location.search}`
     this.modalTarget.hidden = false
     document.body.style.overflow = "hidden"
     this.fieldTarget.focus()
