@@ -8,8 +8,8 @@ gem "propshaft"
 gem "tailwindcss-rails"
 # Icon library [https://github.com/Rails-Designer/icons]
 gem "icons"
-gem "resend"
-gem "aws-sdk-s3", require: false, group: :production
+gem "resend", "~> 1.6"
+gem "aws-sdk-s3", "~> 1.228", require: false, group: :production
 
 # Error tracking — reports to GlitchTip (self-hosted, Sentry-protocol compatible)
 gem "sentry-ruby"
@@ -18,9 +18,9 @@ gem "sentry-rails"
 # SQLite everywhere, including production. In production the database files live
 # on a mounted volume shared by the web and worker containers — see
 # docker-compose.coolify.yml and docs/CONFIGURATION.md.
-gem "sqlite3", ">= 2.1"
+gem "sqlite3", "~> 2.9"
 # Use the Puma web server [https://github.com/puma/puma]
-gem "puma", ">= 5.0"
+gem "puma", "~> 8.0"
 # Use JavaScript with ESM import maps [https://github.com/rails/importmap-rails]
 gem "importmap-rails"
 # Hotwire's SPA-like page accelerator [https://turbo.hotwired.dev]
@@ -74,7 +74,7 @@ gem "draper"
 group :development, :test do
   gem "debug", platforms: %i[ mri windows ], require: "debug/prelude"
   gem "brakeman", require: false
-  gem "rubocop", ">= 1.86", require: false
+  gem "rubocop", "~> 1.88", require: false
   gem "rubocop-rails-omakase", require: false
   gem "rspec-rails"
   gem "factory_bot_rails"
