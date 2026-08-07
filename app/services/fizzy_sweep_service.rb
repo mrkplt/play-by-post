@@ -24,6 +24,16 @@ module FizzySweepService
   # Raises on a non-success response or missing configuration.
   sig { params(feedback: Feedback).void }
   def self.create_card(feedback)
+    location = post_card(title: title_for(feedback), description: description_for(feedback))
+    Rails.logger.debug("Fizzy card created for feedback ##{feedback.id}: #{location}")
+  end
+
+  # POSTs a single card to the board. Cards created through the API are
+  # untriaged, so they land in Fizzy's "Maybe?" column. Returns the Location
+  # header (the new card's URL); raises on a non-success response or missing
+  # configuration.
+  sig { params(title: String, description: String).returns(T.nilable(String)) }
+  def self.post_card(title:, description:)
     config = Rails.application.credentials.fizzy
     validate_config!(config)
 
@@ -32,7 +42,7 @@ module FizzySweepService
     request["Authorization"] = "Bearer #{config.access_token}"
     request["Content-Type"] = "application/json"
     request["Accept"] = "application/json"
-    request.body = JSON.generate(card: { title: title_for(feedback), description: description_for(feedback) })
+    request.body = JSON.generate(card: { title: title, description: description })
 
     response = Net::HTTP.start(uri.hostname, uri.port, use_ssl: uri.scheme == "https") do |http|
       http.request(request)
@@ -42,7 +52,7 @@ module FizzySweepService
       raise "Fizzy card creation failed: #{response.code} #{response.message}"
     end
 
-    Rails.logger.debug("Fizzy card created for feedback ##{feedback.id}: #{response["Location"]}")
+    response["Location"]
   end
 
   sig { params(config: T.untyped).void }
@@ -71,8 +81,7 @@ module FizzySweepService
 
     user = feedback.user
     if user
-      name = user.display_name.presence || user.email
-      lines << "Submitted by: #{name}"
+      lines << "Submitted by: #{user.email}"
     end
 
     lines.join("\n\n")
