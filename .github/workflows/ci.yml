@@ -78,13 +78,18 @@ jobs:
           echo "  $UPDATABLE updatable, $PINNED pinned by dependency constraints"
           if [ "$UPDATABLE" -gt 5 ]; then
             echo "  Updatable count ($UPDATABLE) exceeds threshold (5)."
-            echo "  Run: bundle update && git add Gemfile.lock && git commit -m 'Update outdated gems'"
+            echo ""
+            echo "  Remediation: run 'bundle update' (no arguments), then commit the lockfile."
+            echo "  This is normal maintenance — do it now, do not document for later."
             exit 1
           fi
           if [ "$PINNED" -gt 8 ]; then
             echo "  Pinned count ($PINNED) exceeds threshold (8)."
-            echo "  For each pinned gem, check if its blocker has a newer release that relaxes the constraint."
-            echo "  Update blockers where possible; document the rest in context/GEM_PINNED.md for later work."
+            echo ""
+            echo "  Remediation: for each pinned gem, check if its blocker has a newer release"
+            echo "  that relaxes the constraint. Update blockers where possible. Document the"
+            echo "  rest in context/GEM_PINNED.md with gem name, current constraint, blocker,"
+            echo "  and why it matters. This is normal maintenance — do it now."
             exit 1
           fi
 
