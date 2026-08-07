@@ -1,0 +1,39 @@
+<div class="flex flex-col gap-3">
+  <div class="bg-danger/10 border border-danger/40 rounded-card px-3 py-2.5 text-sm text-danger-soft">
+    <span class="font-bold">Warning:</span> Links point off this site. Following them leaves Flail Whale, and this site has no control over what you find there.
+  </div>
+
+  <% if gm? %>
+    <%= link_to "New Link", new_game_game_link_path(game),
+          class: "block w-full text-center bg-accent text-accent-ink rounded-control py-2.5 font-bold text-[13px] no-underline" %>
+  <% end %>
+
+  <% if any_links? %>
+    <div class="bg-card border border-card-border rounded-card overflow-hidden">
+      <% game_links.each_with_index do |link, i| %>
+        <div class="<%= row_classes(i) %>">
+          <%= link_to link.url, target: "_blank", rel: "noopener noreferrer",
+                class: "flex-1 min-w-0 no-underline" do %>
+            <span class="block text-sm font-bold text-ink truncate"><%= link.description %></span>
+            <span class="block text-xs text-muted-2 truncate"><%= link.url %></span>
+          <% end %>
+
+          <% if gm? %>
+            <div class="flex items-center gap-3 flex-shrink-0">
+              <%= link_to "Edit", edit_game_game_link_path(game, link), class: "text-xs font-semibold text-accent no-underline" %>
+              <%= button_to "Delete", game_game_link_path(game, link), method: :delete,
+                    form: { data: {
+                      controller: "form-confirm",
+                      action: "submit->form-confirm#confirm",
+                      form_confirm_message_value: "Delete this link?"
+                    } },
+                    class: "text-xs font-semibold text-danger bg-transparent border-0 cursor-pointer p-0" %>
+            </div>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+  <% else %>
+    <p class="text-muted-2 text-sm">No links yet.</p>
+  <% end %>
+</div>

@@ -69,6 +69,7 @@ class GamePurgeJob < ApplicationJob
       Character.where(id: character_ids).in_batches.delete_all
       GameFile.where(game_id: game.id).in_batches.delete_all
       Page.where(game_id: game.id).in_batches.delete_all
+      GameLink.where(game_id: game.id).in_batches.delete_all
       Invitation.where(game_id: game.id).in_batches.delete_all
       GameMember.where(game_id: game.id).in_batches.delete_all
       GameExportRequest.where(game_id: game.id).in_batches.delete_all

@@ -31,4 +31,10 @@ class GamePresenter < BasePresenter
   def pages
     @model.pages.order(:title).to_a
   end
+
+  # The game's links, newest first — the data behind the Links tab.
+  sig { returns(T::Array[GameLink]) }
+  def links
+    @model.game_links.order(created_at: :desc).to_a
+  end
 end
