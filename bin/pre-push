@@ -78,11 +78,12 @@ OUTDATED=$(bundle outdated 2>/dev/null || true)
 if [ -z "$OUTDATED" ]; then
   echo "  All gems up to date."
 else
-  COUNT=$(echo "$OUTDATED" | grep -cE "^\S+\s+\S+\s+\S+")
   echo "$OUTDATED"
-  if [ "$COUNT" -gt 5 ]; then
+  # Count only gems we can actually update (not blocked by dependency constraints)
+  CHANGES=$(bundle update --dry-run 2>/dev/null | grep -cE "Installing|Fetching" || true)
+  if [ "$CHANGES" -gt 5 ]; then
     echo ""
-    echo "Outdated gem count ($COUNT) exceeds threshold (5). Run bundle update and commit the lockfile."
+    echo "Updatable gem count ($CHANGES) exceeds threshold (5). Run bundle update and commit the lockfile."
     exit 1
   fi
 fi
