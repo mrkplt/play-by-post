@@ -29,7 +29,7 @@ class Game < ApplicationRecord
   has_many :invitations, dependent: :destroy
   # No dependent: cascade — GamePurgeJob collects and deletes a purged game's
   # export requests (and their archive blobs) explicitly.
-  has_many :game_export_requests
+  has_many :game_export_requests # rubocop:disable Rails/HasManyOrHasOneDependent
 
   validates :name, presence: true, length: { maximum: 200 }
 
