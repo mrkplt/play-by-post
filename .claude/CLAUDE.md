@@ -217,13 +217,16 @@ Each is a self-contained executable that owns its pass/fail (`exit 1` on violati
 The `pre-push` hook and CI enforce two outdated-gem thresholds — this is normal
 maintenance, not out of scope for any task:
 
-- **Updatable > 5:** gems with newer versions we can pull in. Fix: `bundle update`
-  (no arguments — updates everything allowed by the Gemfile). Commit the lockfile.
-- **Pinned > 8:** gems stuck behind a dependency's version constraint. For each
-  pinned gem, check whether its blocker has a newer release that relaxes the
-  constraint. Update blockers where possible; document the rest in
-  `context/GEM_PINNED.md` with the gem name, current constraint, blocker, and
-  why it matters. This file is the source of truth for known pinned gems.
+- **Updatable > 5:** "There are too many out of date gems in this project, you
+  need to bundle update and add it to the commit. This is normal maintenance, and
+  is within scope of the task." Fix: `bundle update` (no arguments), commit the
+  lockfile.
+- **Pinned > 8:** "One or many gems are very out of date. You need to tell the
+  user you can not push, you need direction on what to do next. You are at an
+  impasse." For each pinned gem, check whether its blocker has a newer release
+  that relaxes the constraint. Update blockers where possible; document the rest
+  in `context/GEM_PINNED.md` with the gem name, current constraint, blocker, and
+  why it matters.
 
 Both gates block the push and CI. Do not skip or lower the thresholds — the
 point is to surface drift early so it stays manageable.

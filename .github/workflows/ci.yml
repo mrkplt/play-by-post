@@ -67,29 +67,24 @@ jobs:
         run: |
           OUTDATED=$(bundle outdated 2>/dev/null || true)
           if [ -z "$OUTDATED" ]; then
-            echo "All gems up to date."
             exit 0
           fi
-          echo "$OUTDATED"
           UPDATABLE=$(bundle update --dry-run 2>/dev/null | grep -cE "Installing|Fetching" || true)
           TOTAL=$(echo "$OUTDATED" | grep -cE "^\S+\s+\d+\.\d+" || true)
           PINNED=$((TOTAL - UPDATABLE))
-          echo ""
-          echo "  $UPDATABLE updatable, $PINNED pinned by dependency constraints"
+
           if [ "$UPDATABLE" -gt 5 ]; then
-            echo "  Updatable count ($UPDATABLE) exceeds threshold (5)."
             echo ""
-            echo "  Remediation: run 'bundle update' (no arguments), then commit the lockfile."
-            echo "  This is normal maintenance — do it now, do not document for later."
+            echo "There are too many out of date gems in this project, you need to bundle update"
+            echo "and add it to the commit. This is normal maintenance, and is within scope"
+            echo "of the task."
             exit 1
           fi
+
           if [ "$PINNED" -gt 8 ]; then
-            echo "  Pinned count ($PINNED) exceeds threshold (8)."
             echo ""
-            echo "  Remediation: for each pinned gem, check if its blocker has a newer release"
-            echo "  that relaxes the constraint. Update blockers where possible. Document the"
-            echo "  rest in context/GEM_PINNED.md with gem name, current constraint, blocker,"
-            echo "  and why it matters. This is normal maintenance — do it now."
+            echo "One or many gems are very out of date. You need to tell the user you can not"
+            echo "push, you need direction on what to do next. You are at an impasse."
             exit 1
           fi
 
