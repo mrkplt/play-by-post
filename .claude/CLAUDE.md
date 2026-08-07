@@ -212,6 +212,22 @@ Each is a self-contained executable that owns its pass/fail (`exit 1` on violati
 
 **Updating the baseline:** After an intentional quality improvement run `bin/quality-metrics --save`.
 
+### Gem Maintenance
+
+The `pre-push` hook and CI enforce two outdated-gem thresholds — this is normal
+maintenance, not out of scope for any task:
+
+- **Updatable > 5:** gems with newer versions we can pull in. Fix: `bundle update`
+  (no arguments — updates everything allowed by the Gemfile). Commit the lockfile.
+- **Pinned > 8:** gems stuck behind a dependency's version constraint. For each
+  pinned gem, check whether its blocker has a newer release that relaxes the
+  constraint. Update blockers where possible; document the rest in
+  `context/GEM_PINNED.md` with the gem name, current constraint, blocker, and
+  why it matters. This file is the source of truth for known pinned gems.
+
+Both gates block the push and CI. Do not skip or lower the thresholds — the
+point is to surface drift early so it stays manageable.
+
 ### Quality tooling: field notes
 
 Hard-won specifics for actually clearing the gates. Read this before touching upload/attachment code, controllers, or anything that trips mutation.
