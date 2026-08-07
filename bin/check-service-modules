@@ -1,0 +1,95 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Enforces the convention that stateless process classes — services that only
+# encapsulate a process and hold no state — are modules, not classes:
+#
+#   prefer a module over a class unless we need instances
+#
+# Incremental by design: only services added or modified relative to
+# origin/master are inspected, so pre-existing stateless classes (e.g.
+# AttachmentUploader, ExportDelivery, MarkdownRenderer) are not forced into
+# refactors. New or edited service files must not introduce a class that
+# carries no instance state.
+#
+# A service is considered stateless (and therefore should be a module) when its
+# file defines a class that has no initialize, no instance/class variables, no
+# attr_* accessors, is not an exception subclass, and is not subclassed
+# elsewhere.
+#
+# To resolve a failure, convert the class to a module with module methods:
+#   class X -> module X, X.new.foo(...) -> X.foo(...)
+
+require "ripper"
+require "set"
+
+ROOT = File.expand_path("..", __dir__)
+SERVICES_DIR = File.join(ROOT, "app/services")
+
+ERROR_SUPERCLASS = /(?:Error|Exception)\z/
+
+def changed_service_files
+  tracked = `git -C #{ROOT} diff --name-only --diff-filter=AM origin/master`.lines.map(&:strip)
+  untracked = `git -C #{ROOT} ls-files --others --exclude-standard`.lines.map(&:strip)
+  (tracked + untracked)
+    .grep(%r{\Aapp/services/.*\.rb\z})
+    .map { |relative| File.join(ROOT, relative) }
+    .select { |path| File.exist?(path) }
+end
+
+def class_definitions(source)
+  source.scan(/\bclass\s+([A-Z]\w*)\s*(?:<\s*([A-Za-z_:]+))?/)
+end
+
+def error_class?(superclass)
+  !superclass.nil? && superclass.match?(ERROR_SUPERCLASS)
+end
+
+def subclassed_anywhere?(name)
+  pattern = /class\s+\w+\s*<\s*\b#{Regexp.escape(name)}\b/
+  Dir.glob("#{ROOT}/app/**/*.rb").any? do |file|
+    File.foreach(file).any? { |line| line.match?(pattern) }
+  end
+end
+
+# True when the file defines a class that carries no instance state and is not
+# an exception or a base class — i.e. it should be a module.
+def stateless_class?(source)
+  tokens = Ripper.lex(source)
+  types = tokens.map { |token| token[1] }
+  idents = tokens.select { |token| token[1] == :on_ident }.map { |token| token[2] }
+
+  return false unless tokens.any? { |token| token[1] == :on_kw && token[2] == "class" }
+  return false if idents.include?("initialize")
+  return false if types.include?(:on_ivar) || types.include?(:on_cvar)
+  return false if idents.any? { |ident| ident.match?(/\Aattr_(?:reader|writer|accessor)\z/) }
+
+  definitions = class_definitions(source)
+  return false if definitions.all? { |_, superclass| error_class?(superclass) }
+  return false if definitions.any? { |name, _| subclassed_anywhere?(name) }
+
+  true
+end
+
+violations = changed_service_files.filter_map do |path|
+  source = File.read(path)
+  next nil unless stateless_class?(source)
+
+  name = class_definitions(source).first&.first || File.basename(path, ".rb").split("_").map(&:capitalize).join
+  [ name, path.delete_prefix("#{ROOT}/") ]
+end
+
+if violations.empty?
+  puts "Service-module check: OK (no stateless classes introduced in changed services)"
+  exit 0
+else
+  puts "Service-module check: FAIL"
+  puts "The following changed services are stateless classes and should be modules:\n\n"
+  violations.each do |name, path|
+    puts "  #{name.ljust(40)} #{path}"
+  end
+  puts "\nA service that only encapsulates a process (no instance state) should be a"
+  puts "module with module methods rather than a class. Convert it (class X -> module X,"
+  puts "X.new.foo(...) -> X.foo(...)) before this branch can be pushed."
+  exit 1
+end

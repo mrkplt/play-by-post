@@ -35,6 +35,9 @@ bin/check-design-tokens || exit 1
 echo "==> Mutant coverage registration check"
 bin/check-mutant-coverage || exit 1
 
+echo "==> Stateless services are modules (service-module check)"
+bin/check-service-modules || exit 1
+
 echo "==> Policy coverage (every authorizable model has a policy)"
 bin/check-policy-coverage || exit 1
 
