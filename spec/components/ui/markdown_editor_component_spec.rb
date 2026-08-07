@@ -28,7 +28,7 @@ RSpec.describe Ui::MarkdownEditorComponent, type: :component do
       expect(textarea["style"]).to eq("max-height: 320px")
       expect(textarea["class"]).to eq("markdown-editor w-full overflow-y-auto")
       preview = page.find("[data-markdown-preview-target='preview']")
-      expect(preview["class"]).to eq("markdown-base min-h-12 bg-canvas empty:hidden overflow-y-auto")
+      expect(preview["class"]).to eq("markdown-base min-h-12 bg-canvas overflow-y-auto")
       expect(preview["style"]).to eq("max-height: 256px")
     end
 
@@ -39,7 +39,7 @@ RSpec.describe Ui::MarkdownEditorComponent, type: :component do
       expect(textarea["class"]).to eq("markdown-editor w-full overflow-y-auto")
       preview = page.find("[data-markdown-preview-target='preview']")
       expect(preview["style"]).to be_nil
-      expect(preview["class"]).to eq("markdown-base min-h-12 bg-canvas empty:hidden")
+      expect(preview["class"]).to eq("markdown-base min-h-12 bg-canvas")
     end
 
     it "caps only the preview with :preview" do
@@ -104,7 +104,7 @@ RSpec.describe Ui::MarkdownEditorComponent, type: :component do
       textarea = page.find("textarea[name='feedback[body]']")
       expect(textarea["class"]).to eq("markdown-editor w-full overflow-y-auto px-3 bg-card")
       preview = page.find("[data-markdown-preview-target='preview']")
-      expect(preview["class"]).to eq("markdown-base min-h-12 bg-canvas empty:hidden overflow-y-auto post-content border")
+      expect(preview["class"]).to eq("markdown-base min-h-12 bg-canvas overflow-y-auto post-content border")
       expect(page).to have_css("div.mb-3[data-controller~='markdown-preview']")
     end
   end
@@ -113,7 +113,7 @@ RSpec.describe Ui::MarkdownEditorComponent, type: :component do
     it "joins the edit and preview classes into single strings" do
       component = described_class.new(form: build_form_builder, field: :body)
       expect(component.edit_classes).to eq("markdown-editor w-full overflow-y-auto")
-      expect(component.preview_classes).to eq("markdown-base min-h-12 bg-canvas empty:hidden overflow-y-auto")
+      expect(component.preview_classes).to eq("markdown-base min-h-12 bg-canvas overflow-y-auto")
     end
   end
 
