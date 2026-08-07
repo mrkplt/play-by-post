@@ -2,7 +2,7 @@
      class="fixed inset-0 z-[1000] flex items-center justify-center p-4"
      data-action="click->feedback#closeOnBackdrop keydown@document->feedback#closeOnEscape">
   <div class="absolute inset-0 bg-black/60" data-feedback-backdrop></div>
-  <div class="relative bg-card rounded-card w-full max-w-3xl max-h-[calc(90vh_-_30px)] flex flex-col overflow-hidden">
+  <div class="relative bg-card rounded-card w-full max-w-3xl max-h-[calc(90vh_-_4vh)] flex flex-col overflow-hidden">
     <%# Form panel — submitted via fetch so the page never navigates. %>
     <div data-feedback-target="formPanel">
       <%= form_with url: submit_path, scope: :feedback, method: :post,
