@@ -71,10 +71,17 @@ jobs:
             exit 0
           fi
           echo "$OUTDATED"
-          CHANGES=$(bundle update --dry-run 2>/dev/null | grep -cE "Installing|Fetching" || true)
-          if [ "$CHANGES" -gt 5 ]; then
-            echo ""
-            echo "Updatable gem count ($CHANGES) exceeds threshold (5). Run bundle update and commit the lockfile."
+          UPDATABLE=$(bundle update --dry-run 2>/dev/null | grep -cE "Installing|Fetching" || true)
+          TOTAL=$(echo "$OUTDATED" | grep -cE "^\S+\s+\d+\.\d+" || true)
+          PINNED=$((TOTAL - UPDATABLE))
+          echo ""
+          echo "  $UPDATABLE updatable, $PINNED pinned by dependency constraints"
+          if [ "$UPDATABLE" -gt 5 ]; then
+            echo "  Updatable count ($UPDATABLE) exceeds threshold (5). Run bundle update and commit the lockfile."
+            exit 1
+          fi
+          if [ "$PINNED" -gt 10 ]; then
+            echo "  Pinned count ($PINNED) exceeds threshold (10). Dependency constraints are accumulating — review whether blockers have newer releases."
             exit 1
           fi
 
