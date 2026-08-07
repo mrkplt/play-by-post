@@ -11,6 +11,8 @@ export default class extends Controller {
   }
 
   update() {
-    this.previewTarget.innerHTML = marked.parse(this.inputTarget.value || "")
+    if (this.hasPreviewTarget) {
+      this.previewTarget.innerHTML = marked.parse(this.inputTarget.value || "")
+    }
   }
 }
