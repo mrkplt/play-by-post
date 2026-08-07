@@ -11,3 +11,7 @@ production:
     class: GamePurgeSweepJob
     schedule: "0 5 * * *"  # Daily at 5am UTC
     queue: default
+  feedback_sweep:
+    class: FeedbackSweepJob
+    schedule: "0 * * * *"  # Hourly
+    queue: default

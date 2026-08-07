@@ -23,4 +23,12 @@ RSpec.describe Feedback, type: :model do
       expect(build_stubbed(:feedback, url: nil)).to be_valid
     end
   end
+
+  describe ".unswept" do
+    it "selects entries that have not been swept into Fizzy" do
+      sql = unquoted_sql(Feedback.unswept)
+
+      expect(sql).to include("feedback.swept_at IS NULL")
+    end
+  end
 end

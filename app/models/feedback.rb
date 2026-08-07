@@ -9,4 +9,10 @@ class Feedback < ApplicationRecord
   belongs_to :user
 
   validates :body, presence: true
+
+  # Entries not yet imported into the Fizzy board (FeedbackSweepJob).
+  sig { returns(ActiveRecord::Relation) }
+  def self.unswept
+    where(swept_at: nil)
+  end
 end

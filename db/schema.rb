@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_05_100000) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_06_120000) do
   create_table "action_mailbox_inbound_emails", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "message_checksum", null: false
@@ -84,9 +84,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_05_100000) do
   create_table "feedback", force: :cascade do |t|
     t.text "body", null: false
     t.datetime "created_at", null: false
+    t.datetime "swept_at"
     t.datetime "updated_at", null: false
     t.string "url"
     t.integer "user_id", null: false
+    t.index ["swept_at"], name: "index_feedback_on_swept_at"
     t.index ["user_id"], name: "index_feedback_on_user_id"
   end
 

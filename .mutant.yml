@@ -102,6 +102,7 @@ matcher:
     - GameExportService
     - MarkdownRenderer
     - SceneSummaryService
+    - FizzySweepService
     # Controllers
     - ActionMailbox::Ingresses::Resend::InboundEmailsController
     - Webhooks::DeployController
@@ -129,6 +130,7 @@ matcher:
     - CoolifyDeployJob
     - GamePurgeSweepJob
     - GamePurgeJob
+    - FeedbackSweepJob
     # Mailers
     - NotificationMailer
     - InvitationMailer
