@@ -20,7 +20,7 @@
 # To resolve a failure, convert the class to a module with module methods:
 #   class X -> module X, X.new.foo(...) -> X.foo(...)
 
-require "ripper"
+require "prism"
 require "set"
 
 ROOT = File.expand_path("..", __dir__)
@@ -55,13 +55,14 @@ end
 # True when the file defines a class that carries no instance state and is not
 # an exception or a base class — i.e. it should be a module.
 def stateless_class?(source)
-  tokens = Ripper.lex(source)
-  types = tokens.map { |token| token[1] }
-  idents = tokens.select { |token| token[1] == :on_ident }.map { |token| token[2] }
+  result = Prism.lex(source)
+  types = result.value.map { |token, _| token.type }
+  idents = result.value.select { |token, _| token.type == :IDENTIFIER }
+                       .map { |token, _| token.value }
 
-  return false unless tokens.any? { |token| token[1] == :on_kw && token[2] == "class" }
+  return false unless types.include?(:KEYWORD_CLASS)
   return false if idents.include?("initialize")
-  return false if types.include?(:on_ivar) || types.include?(:on_cvar)
+  return false if types.include?(:INSTANCE_VARIABLE) || types.include?(:CLASS_VARIABLE)
   return false if idents.any? { |ident| ident.match?(/\Aattr_(?:reader|writer|accessor)\z/) }
 
   definitions = class_definitions(source)

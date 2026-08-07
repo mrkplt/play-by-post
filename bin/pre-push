@@ -72,3 +72,28 @@ SKIP_COVERAGE=1 bundle exec rspec \
 rm -f storage/test_worker_*.sqlite3
 
 echo "All fast checks passed. Heavy tier (system specs, mutation, quality gate) runs in CI on the PR — or locally via bin/full-check."
+
+echo "==> Outdated gems"
+OUTDATED=$(bundle outdated 2>/dev/null || true)
+if [ -z "$OUTDATED" ]; then
+  echo "  All gems up to date."
+else
+  UPDATABLE=$(bundle update --dry-run 2>/dev/null | grep -cE "Installing|Fetching" || true)
+  TOTAL=$(echo "$OUTDATED" | grep -cE "^\S+\s+\d+\.\d+" || true)
+  PINNED=$((TOTAL - UPDATABLE))
+
+  if [ "$UPDATABLE" -gt 5 ]; then
+    echo ""
+    echo "There are too many out of date gems in this project, you need to bundle update"
+    echo "and add it to the commit. This is normal maintenance, and is within scope"
+    echo "of the task."
+    exit 1
+  fi
+
+  if [ "$PINNED" -gt 8 ]; then
+    echo ""
+    echo "One or many gems are very out of date. You need to tell the user you can not"
+    echo "push, you need direction on what to do next. You are at an impasse."
+    exit 1
+  fi
+fi

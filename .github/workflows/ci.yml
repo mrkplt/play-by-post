@@ -48,6 +48,46 @@ jobs:
       - name: Scan for security vulnerabilities in JavaScript dependencies
         run: bin/ci-run bin/importmap audit
 
+  outdated_gems:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: .ruby-version
+          bundler-cache: true
+
+      - name: Check for outdated gems
+        run: |
+          OUTDATED=$(bundle outdated 2>/dev/null || true)
+          if [ -z "$OUTDATED" ]; then
+            exit 0
+          fi
+          UPDATABLE=$(bundle update --dry-run 2>/dev/null | grep -cE "Installing|Fetching" || true)
+          TOTAL=$(echo "$OUTDATED" | grep -cE "^\S+\s+\d+\.\d+" || true)
+          PINNED=$((TOTAL - UPDATABLE))
+
+          if [ "$UPDATABLE" -gt 5 ]; then
+            echo ""
+            echo "There are too many out of date gems in this project, you need to bundle update"
+            echo "and add it to the commit. This is normal maintenance, and is within scope"
+            echo "of the task."
+            exit 1
+          fi
+
+          if [ "$PINNED" -gt 8 ]; then
+            echo ""
+            echo "One or many gems are very out of date. You need to tell the user you can not"
+            echo "push, you need direction on what to do next. You are at an impasse."
+            exit 1
+          fi
+
   lint:
     runs-on: ubuntu-latest
     steps:
@@ -356,7 +396,7 @@ jobs:
   # cache warmed by `build`, so this rebuild is fast.
   publish:
     runs-on: ubuntu-24.04-arm
-    needs: [scan_ruby, scan_js, lint, typecheck, test, mutation, quality_gate, build]
+    needs: [scan_ruby, scan_js, lint, typecheck, outdated_gems, test, mutation, quality_gate, build]
     if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/v'))
 
     permissions:
