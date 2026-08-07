@@ -48,6 +48,36 @@ jobs:
       - name: Scan for security vulnerabilities in JavaScript dependencies
         run: bin/ci-run bin/importmap audit
 
+  outdated_gems:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: .ruby-version
+          bundler-cache: true
+
+      - name: Check for outdated gems
+        run: |
+          OUTDATED=$(bundle outdated 2>/dev/null || true)
+          if [ -z "$OUTDATED" ]; then
+            echo "All gems up to date."
+            exit 0
+          fi
+          COUNT=$(echo "$OUTDATED" | grep -cE "^\S+\s+\S+\s+\S+")
+          echo "$OUTDATED"
+          if [ "$COUNT" -gt 5 ]; then
+            echo ""
+            echo "Outdated gem count ($COUNT) exceeds threshold (5). Run bundle update and commit the lockfile."
+            exit 1
+          fi
+
   lint:
     runs-on: ubuntu-latest
     steps:
@@ -356,7 +386,7 @@ jobs:
   # cache warmed by `build`, so this rebuild is fast.
   publish:
     runs-on: ubuntu-24.04-arm
-    needs: [scan_ruby, scan_js, lint, typecheck, test, mutation, quality_gate, build]
+    needs: [scan_ruby, scan_js, lint, typecheck, outdated_gems, test, mutation, quality_gate, build]
     if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/v'))
 
     permissions:
