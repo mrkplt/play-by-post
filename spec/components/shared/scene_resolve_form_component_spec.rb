@@ -25,8 +25,8 @@ RSpec.describe Shared::SceneResolveFormComponent, type: :component do
     end
 
     it "wires the outcome field to the markdown toolbar and live preview" do
-      form = page.find("#resolve-form form", visible: :all)
-      expect(form["data-controller"]).to include("markdown-preview", "markdown-toolbar")
+      editor = page.find("#resolve-form [data-controller~='markdown-preview']", visible: :all)
+      expect(editor["data-controller"]).to include("markdown-toolbar")
       expect(page).to have_css("textarea.markdown-editor[data-markdown-preview-target='input']", visible: :all)
       expect(page).to have_css("[role='toolbar'][aria-label='Markdown formatting']", visible: :all)
       expect(page).to have_css("[data-markdown-preview-target='preview']", visible: :all)

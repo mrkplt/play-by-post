@@ -21,8 +21,7 @@ RSpec.describe Shared::FeedbackModalComponent, type: :component do
     end
 
     it "wires the feedback body to the markdown toolbar and live preview" do
-      form = page.find("form[action='/feedback']", visible: :all)
-      expect(form["data-controller"]).to include("markdown-preview", "markdown-toolbar")
+      expect(page).to have_css("[data-controller~='markdown-preview'][data-controller~='markdown-toolbar']", visible: :all)
       expect(page).to have_css("textarea.markdown-editor[data-markdown-preview-target='input']", visible: :all)
       expect(page).to have_css("[role='toolbar'][aria-label='Markdown formatting']", visible: :all)
       expect(page).to have_css("[data-markdown-preview-target='preview']", visible: :all)

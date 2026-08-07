@@ -7,7 +7,5 @@
       <span class="text-xs text-slate-400 flex-shrink-0 ml-2">Resolved <%= formatted_resolved_at %></span>
     <% end %>
   </div>
-  <div class="markdown-base prose prose-sm max-w-none text-slate-700">
-    <%= @summary.rendered_body.html_safe %>
-  </div>
+  <%= render Ui::MarkdownRenderComponent.new(text: @summary.body, content_class: "prose prose-sm max-w-none text-slate-700") %>
 </div>

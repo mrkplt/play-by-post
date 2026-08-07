@@ -18,20 +18,6 @@ RSpec.describe Shared::GameDetailsComponent, type: :component do
     end
   end
 
-  describe "#rendered_description" do
-    it "renders markdown emphasis as HTML" do
-      game = build_stubbed(:game, description: "A **grim** saga")
-      html = described_class.new(game: game).rendered_description
-      expect(html).to include("<strong>grim</strong>")
-    end
-
-    it "renders single newlines as line breaks" do
-      game = build_stubbed(:game, description: "line one\nline two")
-      html = described_class.new(game: game).rendered_description
-      expect(html).to include("<br>")
-    end
-  end
-
   it "renders the game name and an edit link" do
     render_inline(component)
     expect(page).to have_text("Ashfall Reaches")

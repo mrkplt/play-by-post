@@ -29,9 +29,4 @@ class Shared::PageDetailComponent < ApplicationComponent
   def body?
     @page.body.present?
   end
-
-  sig { returns(String) }
-  def rendered_body
-    MarkdownRenderer.render(@page.body)
-  end
 end

@@ -5,12 +5,6 @@ class SceneSummaryPresenter < BasePresenter
 
   sig { returns(String) }
   # mutant:disable
-  def rendered_body
-    MarkdownRenderer.render(@model.body)
-  end
-
-  sig { returns(String) }
-  # mutant:disable
   def status_label
     if @model.ai_generated? && @model.edited?
       "Edited"

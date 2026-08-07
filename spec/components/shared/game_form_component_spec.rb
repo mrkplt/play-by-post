@@ -61,7 +61,7 @@ RSpec.describe Shared::GameFormComponent, type: :component do
     it "wires the description field to the markdown toolbar and live preview" do
       render_inline(build_component)
 
-      expect(page).to have_css("form[data-controller~='markdown-preview'][data-controller~='markdown-toolbar']")
+      expect(page).to have_css("[data-controller~='markdown-preview'][data-controller~='markdown-toolbar']")
       expect(page).to have_css("textarea.markdown-editor[data-markdown-preview-target='input']")
       expect(page).to have_css("[role='toolbar'][aria-label='Markdown formatting']")
       expect(page).to have_css("[data-markdown-preview-target='preview']")

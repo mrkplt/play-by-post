@@ -87,6 +87,10 @@ matcher:
     - Ui::CardComponent
     - Ui::SectionLabelComponent
     - Ui::ToggleSwitchComponent
+    - Ui::MarkdownEditorComponent
+    - Ui::MarkdownEditorComponent::Config
+    - Ui::MarkdownRenderComponent
+    - Ui::MarkdownRenderComponent::Config
     - Ui::IconButtonComponent
     - Ui::SettingsRowComponent
     - Ui::PillTabsComponent

@@ -6,17 +6,6 @@ RSpec.describe PostPresenter do
 
   subject(:presenter) { described_class.new(post) }
 
-  describe "#rendered_content" do
-    it "renders markdown to HTML" do
-      expect(presenter.rendered_content).to include("<strong>bold</strong>")
-    end
-
-    it "returns empty string for blank content" do
-      allow(post).to receive(:content).and_return("")
-      expect(described_class.new(post).rendered_content).to eq("")
-    end
-  end
-
   describe "#formatted_created_at" do
     it "formats the timestamp" do
       expect(presenter.formatted_created_at).to eq("Jun 15, 2024 2:30 PM")

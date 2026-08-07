@@ -6,7 +6,7 @@
     <%# Form panel — submitted via fetch so the page never navigates. %>
     <div data-feedback-target="formPanel">
       <%= form_with url: submit_path, scope: :feedback, method: :post,
-            data: { controller: "markdown-preview markdown-toolbar", action: "submit->feedback#submit" },
+            data: { action: "submit->feedback#submit" },
             class: "p-5 flex flex-col gap-3 overflow-y-auto min-h-0" do |form| %>
         <h2 class="text-lg font-semibold text-row-ink">Send Feedback</h2>
         <p class="text-sm text-muted-2">
@@ -14,17 +14,14 @@
           note the page you're on. Markdown is supported.
         </p>
         <%= form.hidden_field :url, data: { feedback_target: "url" } %>
-        <%= render Shared::MarkdownToolbarComponent.new %>
-        <%= form.text_area :body, rows: 5, required: true, placeholder: "Your feedback…",
-              data: {
-                feedback_target: "field",
-                markdown_preview_target: "input",
-                markdown_toolbar_target: "input",
-                action: "input->markdown-preview#update"
-              },
-              class: "markdown-editor w-full px-3 py-2 border border-card-border border-t-0 rounded-b text-base bg-card max-h-64 resize-y overflow-y-auto" %>
-        <div data-markdown-preview-target="preview"
-             class="markdown-base border border-card-border rounded px-3 py-3 min-h-12 max-h-64 overflow-y-auto bg-canvas empty:hidden"></div>
+        <%= render Ui::MarkdownEditorComponent.new(
+              form: form, field: :body,
+              config: Ui::MarkdownEditorComponent::Config.new(scroll: :both, edit_height: 256, preview_height: 256),
+              placeholder: "Your feedback…",
+              required: true,
+              data: { feedback_target: "field" },
+              edit_class: "px-3 py-2 border border-card-border border-t-0 rounded-b text-base bg-card resize-y",
+              preview_class: "border border-card-border rounded px-3 py-3 mt-3") %>
         <p data-feedback-target="error" hidden class="text-sm text-danger">
           Something went wrong. Please try again.
         </p>

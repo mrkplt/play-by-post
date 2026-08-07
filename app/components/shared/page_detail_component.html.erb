@@ -10,7 +10,7 @@
 
   <div class="bg-card border border-card-border rounded-card p-4">
     <% if body? %>
-      <div class="markdown-base"><%= rendered_body %></div>
+      <%= render Ui::MarkdownRenderComponent.new(text: @page.body) %>
     <% else %>
       <p class="text-muted-2 m-0 text-sm">This page has no content yet.</p>
     <% end %>

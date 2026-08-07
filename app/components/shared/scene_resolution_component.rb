@@ -10,9 +10,4 @@ class Shared::SceneResolutionComponent < ApplicationComponent
   def initialize(scene:)
     @scene = T.let(scene, Scene)
   end
-
-  sig { returns(String) }
-  def rendered_resolution
-    MarkdownRenderer.render(@scene.resolution)
-  end
 end

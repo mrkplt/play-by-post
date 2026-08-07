@@ -1,17 +1,12 @@
 <div id="resolve-form" hidden class="bg-card border border-card-border rounded-card p-3">
-  <%= form_with url: resolve_path, method: :patch,
-      data: { controller: "markdown-preview markdown-toolbar" } do |f| %>
+  <%= form_with url: resolve_path, method: :patch do |f| %>
     <%= f.label :resolution, "Outcome (optional, markdown supported)", class: "block text-sm font-semibold mb-1" %>
-    <%= render Shared::MarkdownToolbarComponent.new %>
-    <%= f.text_area :resolution, rows: 3, placeholder: "What happened? What was gained or lost?",
-          class: "markdown-editor w-full px-3 py-2 border border-input-border border-t-0 rounded-b-control text-base bg-card text-ink placeholder:text-muted-2",
-          data: {
-            markdown_preview_target: "input",
-            markdown_toolbar_target: "input",
-            action: "input->markdown-preview#update"
-          } %>
-    <div data-markdown-preview-target="preview"
-         class="markdown-base border border-card-border rounded-card px-3 py-3 min-h-12 bg-canvas empty:hidden mt-2"></div>
+    <%= render Ui::MarkdownEditorComponent.new(
+          form: f, field: :resolution,
+          config: Ui::MarkdownEditorComponent::Config.new(scroll: :preview, preview_height: 256, rows: 3),
+          placeholder: "What happened? What was gained or lost?",
+          edit_class: "px-3 py-2 border border-input-border border-t-0 rounded-b-control text-base bg-card text-ink placeholder:text-muted-2",
+          preview_class: "border border-card-border rounded-card px-3 py-3 mt-2") %>
     <%= f.submit "Confirm — End Scene", class: "mt-2 bg-card text-danger border border-red-200 rounded-control px-4 py-2 text-sm cursor-pointer" %>
   <% end %>
 </div>

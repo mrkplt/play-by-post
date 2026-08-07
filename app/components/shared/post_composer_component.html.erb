@@ -1,7 +1,7 @@
 <%= form_with model: [@game, @scene, @post],
     multipart: true,
     data: {
-      controller: "markdown-preview post-draft markdown-toolbar",
+      controller: "post-draft",
       post_draft_save_url_value: save_draft_game_scene_posts_path(@game, @scene)
     } do |f| %>
   <% if @post.errors.any? %>
@@ -14,21 +14,18 @@
 
   <%= render Ui::SectionLabelComponent.new(html_class: "mb-2") do %>Post a Reply<% end %>
 
-  <div class="mb-3">
-    <%= render Shared::MarkdownToolbarComponent.new %>
-    <%= f.text_area :content, rows: 5,
+  <%= render Ui::MarkdownEditorComponent.new(
+        form: f, field: :content,
+        config: Ui::MarkdownEditorComponent::Config.new(scroll: :preview, preview_height: 256),
         value: @draft&.content.to_s,
         placeholder: "Write your post... (markdown)",
-        class: "markdown-editor w-full px-2.5 py-2 border border-input-border border-t-0 rounded-b-control text-base font-mono",
         data: {
-          markdown_preview_target: "input",
-          markdown_toolbar_target: "input",
           post_draft_target: "content",
           action: "input->markdown-preview#update input->post-draft#scheduleSave"
-        } %>
-  </div>
-
-  <div data-markdown-preview-target="preview" class="markdown-base post-content border border-card-border rounded-control px-3 py-3 mb-3 min-h-12 bg-canvas empty:hidden"></div>
+        },
+        edit_class: "px-2.5 py-2 border border-input-border border-t-0 rounded-b-control text-base",
+        preview_class: "post-content border border-card-border rounded-control px-3 py-3 mt-3",
+        wrapper_class: "mb-3") %>
 
   <% unless @game.images_disabled? %>
     <div class="mb-2">

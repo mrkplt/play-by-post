@@ -16,11 +16,6 @@ class PostPresenter < BasePresenter
   end
 
   sig { returns(String) }
-  def rendered_content
-    MarkdownRenderer.render(@model.content)
-  end
-
-  sig { returns(String) }
   def formatted_created_at
     @model.created_at.strftime("%b %-d, %Y %-I:%M %p")
   end
