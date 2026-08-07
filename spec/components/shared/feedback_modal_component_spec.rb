@@ -27,6 +27,14 @@ RSpec.describe Shared::FeedbackModalComponent, type: :component do
       expect(page).to have_css("[data-markdown-preview-target='preview']", visible: :all)
     end
 
+    it "gives the editor and preview the same fixed height inside a wide modal" do
+      modal = page.find("[data-testid='feedback-modal']", visible: :all)
+      expect(modal).to have_css(".max-w-3xl", visible: :all)
+      expect(page).to have_css("textarea.markdown-editor.h-64", visible: :all)
+      expect(page).to have_css("textarea.markdown-editor:not([class*='resize-y'])", visible: :all)
+      expect(page).to have_css("[data-markdown-preview-target='preview'].h-64", visible: :all)
+    end
+
     it "renders a hidden url field the controller fills on open" do
       expect(page).to have_css("input[type='hidden'][name='feedback[url]'][data-feedback-target='url']", visible: :all)
     end
