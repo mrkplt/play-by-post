@@ -2,7 +2,7 @@
      class="fixed inset-0 z-[1000] flex items-center justify-center p-4"
      data-action="click->feedback#closeOnBackdrop keydown@document->feedback#closeOnEscape">
   <div class="absolute inset-0 bg-black/60" data-feedback-backdrop></div>
-  <div class="relative bg-card rounded-card w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden">
+  <div class="relative bg-card rounded-card w-full max-w-3xl max-h-[calc(90vh_-_30px)] flex flex-col overflow-hidden">
     <%# Form panel — submitted via fetch so the page never navigates. %>
     <div data-feedback-target="formPanel">
       <%= form_with url: submit_path, scope: :feedback, method: :post,
@@ -16,12 +16,11 @@
         <%= form.hidden_field :url, data: { feedback_target: "url" } %>
         <%= render Ui::MarkdownEditorComponent.new(
               form: form, field: :body,
-              config: Ui::MarkdownEditorComponent::Config.new(scroll: :both, edit_height: 256, preview_height: 256),
+              config: Ui::MarkdownEditorComponent::Config.new(scroll: :edit, edit_height: 256, preview: false),
               placeholder: "Your feedback…",
               required: true,
               data: { feedback_target: "field" },
-              edit_class: "px-3 py-2 border border-card-border border-t-0 rounded-b text-base bg-card h-64",
-              preview_class: "border border-card-border rounded px-3 py-3 mt-3 h-64") %>
+              edit_class: "px-3 py-2 border border-card-border border-t-0 rounded-b text-base bg-card h-64") %>
         <p data-feedback-target="error" hidden class="text-sm text-danger">
           Something went wrong. Please try again.
         </p>

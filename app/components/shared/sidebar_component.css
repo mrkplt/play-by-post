@@ -98,7 +98,7 @@
      border and drop shadow, so it reads as a deliberate web layout instead of a
      phone screen stranded in an empty white window. */
   .app-frame {
-    @apply min-h-screen flex flex-col bg-canvas max-w-2xl mx-auto overflow-x-hidden;
+    @apply min-h-[calc(100vh_-_30px)] flex flex-col bg-canvas max-w-2xl mx-auto overflow-x-hidden;
   }
   .app-body {
     @apply flex-1 px-4 py-4 flex flex-col gap-3;

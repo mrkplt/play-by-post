@@ -84,5 +84,18 @@ RSpec.describe "Feedback", type: :feature do
       )
       expect(width).to be >= 375
     end
+
+    it "keeps the submit button on screen so feedback can be submitted" do
+      visit root_path
+      find('button[aria-label="Open navigation"]').click
+      click_button "Send Feedback"
+
+      submit_bottom = page.evaluate_script(
+        "document.querySelector('[data-testid=\"feedback-modal\"] input[type=\"submit\"]').getBoundingClientRect().bottom"
+      )
+      viewport_height = page.evaluate_script("window.innerHeight")
+
+      expect(submit_bottom).to be <= viewport_height
+    end
   end
 end

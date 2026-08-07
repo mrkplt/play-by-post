@@ -20,19 +20,21 @@ RSpec.describe Shared::FeedbackModalComponent, type: :component do
       expect(page).to have_css("textarea[name='feedback[body]'][data-feedback-target='field']", visible: :all)
     end
 
-    it "wires the feedback body to the markdown toolbar and live preview" do
+    it "wires the feedback body to the markdown toolbar" do
       expect(page).to have_css("[data-controller~='markdown-preview'][data-controller~='markdown-toolbar']", visible: :all)
       expect(page).to have_css("textarea.markdown-editor[data-markdown-preview-target='input']", visible: :all)
       expect(page).to have_css("[role='toolbar'][aria-label='Markdown formatting']", visible: :all)
-      expect(page).to have_css("[data-markdown-preview-target='preview']", visible: :all)
     end
 
-    it "gives the editor and preview the same fixed height inside a wide modal" do
-      modal = page.find("[data-testid='feedback-modal']", visible: :all)
-      expect(modal).to have_css(".max-w-3xl", visible: :all)
+    it "omits the markdown live preview so the modal stays short enough to submit on mobile" do
+      expect(page).to have_no_css("[data-markdown-preview-target='preview']", visible: :all)
+    end
+
+    it "caps the editor height inside a wide modal and keeps the card under the viewport" do
+      card = page.find("[data-testid='feedback-modal'] .max-w-3xl", visible: :all)
+      expect(card["class"]).to include("max-h-[calc(90vh_-_30px)]")
       expect(page).to have_css("textarea.markdown-editor.h-64", visible: :all)
       expect(page).to have_css("textarea.markdown-editor:not([class*='resize-y'])", visible: :all)
-      expect(page).to have_css("[data-markdown-preview-target='preview'].h-64", visible: :all)
     end
 
     it "renders a hidden url field the controller fills on open" do
