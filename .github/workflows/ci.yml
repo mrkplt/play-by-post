@@ -162,6 +162,22 @@ jobs:
       - name: Ratchet controller instance-variable counts
         run: bin/ci-run bin/check-controller-ivars
 
+  service_modules:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: .ruby-version
+
+      - name: Check stateless services are modules
+        run: bin/ci-run bin/check-service-modules
+
   test:
     runs-on: ubuntu-latest
 

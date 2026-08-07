@@ -141,6 +141,10 @@ Stored in `config/credentials/production.yml.enc`. Edit with
 | `deploy_webhook_secret` | `app/controllers/webhooks/deploy_controller.rb` | Optional — shared bearer secret GitHub Actions sends to `POST /webhooks/deploy`; must equal the `DEPLOY_WEBHOOK_SECRET` GitHub Actions secret. If unset, the deploy relay rejects all callers |
 | `coolify.deploy_url` | `app/jobs/coolify_deploy_job.rb` | Optional — Coolify's per-app deploy URL (`http://<internal-host>:<port>/api/v1/deploy?uuid=<app-uuid>`), reachable over the internal network. Required for auto-deploy |
 | `coolify.token` | `app/jobs/coolify_deploy_job.rb` | Optional — Coolify API token sent as `Authorization: Bearer`. Required for auto-deploy |
+| `fizzy.api_url` | `app/services/fizzy_sweep_service.rb` | Optional — base URL of the personal Fizzy instance (e.g. `https://fizzy.example.com`). Required for the hourly feedback sweep |
+| `fizzy.access_token` | `app/services/fizzy_sweep_service.rb` | Optional — Fizzy personal access token with write permission, sent as `Authorization: Bearer`. Required for the feedback sweep |
+| `fizzy.account_slug` | `app/services/fizzy_sweep_service.rb` | Optional — Fizzy account slug used in API paths. Required for the feedback sweep |
+| `fizzy.board_id` | `app/services/fizzy_sweep_service.rb` | Optional — Fizzy board that receives the feedback cards. Required for the feedback sweep |
 | `secret_key_base` | Rails internal (no explicit read site) | Yes — this is the live source. Do **not** also set the `SECRET_KEY_BASE` env var; it would override this, and divergence invalidates all signed cookies |
 
 Verified present as of this writing: `openrouter_api_key`, `resend_api_key`,
