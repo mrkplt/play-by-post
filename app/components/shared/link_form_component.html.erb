@@ -1,0 +1,26 @@
+<%= form_with model: [ game, game_link ], class: "flex flex-col gap-4" do |f| %>
+  <% if errors? %>
+    <div class="bg-tint-blue-bg border border-tint-blue-border rounded-card p-3 text-sm text-danger">
+      <% error_messages.each do |msg| %>
+        <div><%= msg %></div>
+      <% end %>
+    </div>
+  <% end %>
+
+  <div class="flex flex-col gap-1.5">
+    <%= f.label :description, class: "text-[11px] font-bold text-muted uppercase tracking-[0.05em]" %>
+    <%= f.text_field :description, autofocus: true, placeholder: "What this link is",
+          class: "w-full border border-input-border rounded-control px-3 py-2.5 text-sm text-ink bg-card placeholder:text-muted-2" %>
+  </div>
+
+  <div class="flex flex-col gap-1.5">
+    <%= f.label :url, class: "text-[11px] font-bold text-muted uppercase tracking-[0.05em]" %>
+    <%= f.url_field :url, placeholder: "https://example.com/",
+          class: "w-full border border-input-border rounded-control px-3 py-2.5 text-sm text-ink bg-card placeholder:text-muted-2" %>
+  </div>
+
+  <div class="flex gap-2 pt-1">
+    <%= f.submit submit_label, class: "flex-1 bg-accent text-accent-ink rounded-control py-2.5 font-bold text-[13px] border-0 cursor-pointer" %>
+    <%= link_to "Cancel", back_href, class: "flex-1 text-center border border-card-border text-ink rounded-control py-2.5 font-bold text-[13px] no-underline" %>
+  </div>
+<% end %>

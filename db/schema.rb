@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_06_120000) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_07_120000) do
   create_table "action_mailbox_inbound_emails", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "message_checksum", null: false
@@ -112,6 +112,15 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_06_120000) do
     t.integer "game_id", null: false
     t.datetime "updated_at", null: false
     t.index ["game_id"], name: "index_game_files_on_game_id"
+  end
+
+  create_table "game_links", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "description", null: false
+    t.integer "game_id", null: false
+    t.datetime "updated_at", null: false
+    t.string "url", null: false
+    t.index ["game_id"], name: "index_game_links_on_game_id"
   end
 
   create_table "game_members", force: :cascade do |t|
@@ -291,6 +300,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_06_120000) do
   add_foreign_key "game_export_requests", "games"
   add_foreign_key "game_export_requests", "users"
   add_foreign_key "game_files", "games"
+  add_foreign_key "game_links", "games"
   add_foreign_key "game_members", "games"
   add_foreign_key "game_members", "users"
   add_foreign_key "invitations", "games"

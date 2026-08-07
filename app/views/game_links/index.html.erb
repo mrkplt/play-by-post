@@ -1,0 +1,9 @@
+<% content_for :active_game_id, @game.id %>
+
+<%= render Shared::MobileFrameComponent.new do |frame| %>
+  <% frame.with_header do %>
+    <%= render Shared::PageHeaderComponent.new(title: "Links", leading: :back, back_href: game_path(@game, anchor: "links")) %>
+  <% end %>
+
+  <%= render Shared::GameLinksListComponent.new(game: @game, game_links: @game_links, is_gm: @game_presenter.gm?) %>
+<% end %>

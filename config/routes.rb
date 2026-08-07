@@ -63,6 +63,7 @@ Rails.application.routes.draw do
       resource :export, only: %i[create], controller: "game_exports"
       resources :game_files, only: %i[index create destroy]
       resources :pages, only: %i[new create show edit update destroy], param: :slug
+      resources :game_links, only: %i[index new create edit update destroy]
       resources :characters, only: %i[new create show edit update] do
         member do
           patch :archive
