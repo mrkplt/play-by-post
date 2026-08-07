@@ -13,5 +13,5 @@ production:
     queue: default
   feedback_sweep:
     class: FeedbackSweepJob
-    schedule: "0 * * * *"  # Hourly
+    schedule: "*/15 * * * *"  # Every 15 minutes
     queue: default

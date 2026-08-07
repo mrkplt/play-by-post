@@ -15,7 +15,7 @@ require "json"
 #     access_token: "<personal-access-token>"
 #     account_slug: "<account-slug>"
 #     board_id: "<board-id>"
-class FizzySweepService
+module FizzySweepService
   extend T::Sig
 
   class ConfigurationError < StandardError; end
@@ -23,7 +23,7 @@ class FizzySweepService
   # Creates a card for one feedback entry and logs its card URL on success.
   # Raises on a non-success response or missing configuration.
   sig { params(feedback: Feedback).void }
-  def create_card(feedback)
+  def self.create_card(feedback)
     config = Rails.application.credentials.fizzy
     validate_config!(config)
 
@@ -45,28 +45,27 @@ class FizzySweepService
     Rails.logger.debug("Fizzy card created for feedback ##{feedback.id}: #{response["Location"]}")
   end
 
-  private
-
   sig { params(config: T.untyped).void }
-  def validate_config!(config)
-    raise ConfigurationError, "fizzy.api_url is not configured" if config&.api_url.blank?
-    raise ConfigurationError, "fizzy.access_token is not configured" if config&.access_token.blank?
-    raise ConfigurationError, "fizzy.account_slug is not configured" if config&.account_slug.blank?
-    raise ConfigurationError, "fizzy.board_id is not configured" if config&.board_id.blank?
+  def self.validate_config!(config)
+    raise ConfigurationError, "fizzy is not configured" if config.blank?
+    raise ConfigurationError, "fizzy.api_url is not configured" if config.api_url.blank?
+    raise ConfigurationError, "fizzy.access_token is not configured" if config.access_token.blank?
+    raise ConfigurationError, "fizzy.account_slug is not configured" if config.account_slug.blank?
+    raise ConfigurationError, "fizzy.board_id is not configured" if config.board_id.blank?
   end
 
   sig { params(config: T.untyped).returns(String) }
-  def endpoint(config)
+  def self.endpoint(config)
     "#{config.api_url}/#{config.account_slug}/boards/#{config.board_id}/cards"
   end
 
   sig { params(feedback: Feedback).returns(String) }
-  def title_for(feedback)
+  def self.title_for(feedback)
     "Feedback ##{feedback.id}"
   end
 
   sig { params(feedback: Feedback).returns(String) }
-  def description_for(feedback)
+  def self.description_for(feedback)
     lines = [ feedback.body ]
     lines << "Submitted from: #{feedback.url}" if feedback.url.present?
 
@@ -78,4 +77,6 @@ class FizzySweepService
 
     lines.join("\n\n")
   end
+
+  private_class_method :validate_config!, :endpoint, :title_for, :description_for
 end

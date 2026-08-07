@@ -30,13 +30,15 @@ RSpec.describe FizzySweepService do
     captured
   end
 
-  describe "#create_card" do
+  describe ".create_card" do
     it "POSTs the card to the board's cards endpoint with a bearer token" do
       captured = stub_http_response(Net::HTTPCreated.new("1.1", "201", "Created"))
+      expect(Rails.logger).to receive(:debug).with(/Fizzy card created for feedback ##{feedback.id}:/)
 
-      described_class.new.create_card(feedback)
+      described_class.create_card(feedback)
 
       expect(captured[:hostname]).to eq("fizzy.example.com")
+      expect(captured[:port]).to eq(443)
       expect(captured[:use_ssl]).to be(true)
       expect(captured[:request].method).to eq("POST")
       expect(captured[:request].path).to eq("/mrkplt/boards/board-123/cards")
@@ -47,11 +49,12 @@ RSpec.describe FizzySweepService do
 
     it "sends the feedback as the card title and body" do
       captured = stub_http_response(Net::HTTPCreated.new("1.1", "201", "Created"))
+      feedback.id = 42
 
-      described_class.new.create_card(feedback)
+      described_class.create_card(feedback)
 
       payload = JSON.parse(captured[:request].body).fetch("card")
-      expect(payload.fetch("title")).to eq("Feedback ##{feedback.id}")
+      expect(payload.fetch("title")).to eq("Feedback #42")
       expect(payload.fetch("description")).to include(feedback.body)
       expect(payload.fetch("description")).to include("Submitted from: #{feedback.url}")
       expect(payload.fetch("description")).to include("Submitted by: #{feedback.user.email}")
@@ -60,7 +63,17 @@ RSpec.describe FizzySweepService do
     it "uses the email when the submitter has no display name" do
       captured = stub_http_response(Net::HTTPCreated.new("1.1", "201", "Created"))
 
-      described_class.new.create_card(feedback)
+      described_class.create_card(feedback)
+
+      payload = JSON.parse(captured[:request].body).fetch("card")
+      expect(payload.fetch("description")).to include("Submitted by: #{feedback.user.email}")
+    end
+
+    it "uses the email when the submitter's display name is blank" do
+      captured = stub_http_response(Net::HTTPCreated.new("1.1", "201", "Created"))
+      allow(feedback.user).to receive(:display_name).and_return("")
+
+      described_class.create_card(feedback)
 
       payload = JSON.parse(captured[:request].body).fetch("card")
       expect(payload.fetch("description")).to include("Submitted by: #{feedback.user.email}")
@@ -70,7 +83,17 @@ RSpec.describe FizzySweepService do
       captured = stub_http_response(Net::HTTPCreated.new("1.1", "201", "Created"))
       feedback.url = nil
 
-      described_class.new.create_card(feedback)
+      described_class.create_card(feedback)
+
+      payload = JSON.parse(captured[:request].body).fetch("card")
+      expect(payload.fetch("description")).not_to include("Submitted from:")
+    end
+
+    it "omits the submitted-from line when the URL is blank" do
+      captured = stub_http_response(Net::HTTPCreated.new("1.1", "201", "Created"))
+      feedback.url = ""
+
+      described_class.create_card(feedback)
 
       payload = JSON.parse(captured[:request].body).fetch("card")
       expect(payload.fetch("description")).not_to include("Submitted from:")
@@ -80,7 +103,7 @@ RSpec.describe FizzySweepService do
       allow(fizzy_config).to receive(:api_url).and_return("http://fizzy.internal")
       captured = stub_http_response(Net::HTTPCreated.new("1.1", "201", "Created"))
 
-      described_class.new.create_card(feedback)
+      described_class.create_card(feedback)
 
       expect(captured[:use_ssl]).to be(false)
     end
@@ -88,7 +111,7 @@ RSpec.describe FizzySweepService do
     it "raises when Fizzy returns a non-success response" do
       stub_http_response(Net::HTTPServerError.new("1.1", "500", "Internal Server Error"))
 
-      expect { described_class.new.create_card(feedback) }
+      expect { described_class.create_card(feedback) }
         .to raise_error(/Fizzy card creation failed: 500/)
     end
 
@@ -96,36 +119,36 @@ RSpec.describe FizzySweepService do
       it "raises ConfigurationError referencing api_url" do
         allow(fizzy_config).to receive(:api_url).and_return(nil)
 
-        expect { described_class.new.create_card(feedback) }
+        expect { described_class.create_card(feedback) }
           .to raise_error(FizzySweepService::ConfigurationError, /api_url/)
       end
 
       it "raises ConfigurationError referencing access_token" do
         allow(fizzy_config).to receive(:access_token).and_return(nil)
 
-        expect { described_class.new.create_card(feedback) }
+        expect { described_class.create_card(feedback) }
           .to raise_error(FizzySweepService::ConfigurationError, /access_token/)
       end
 
       it "raises ConfigurationError referencing account_slug" do
         allow(fizzy_config).to receive(:account_slug).and_return(nil)
 
-        expect { described_class.new.create_card(feedback) }
+        expect { described_class.create_card(feedback) }
           .to raise_error(FizzySweepService::ConfigurationError, /account_slug/)
       end
 
       it "raises ConfigurationError referencing board_id" do
         allow(fizzy_config).to receive(:board_id).and_return(nil)
 
-        expect { described_class.new.create_card(feedback) }
+        expect { described_class.create_card(feedback) }
           .to raise_error(FizzySweepService::ConfigurationError, /board_id/)
       end
 
       it "raises ConfigurationError when the fizzy credential is entirely absent" do
         allow(Rails.application.credentials).to receive(:fizzy).and_return(nil)
 
-        expect { described_class.new.create_card(feedback) }
-          .to raise_error(FizzySweepService::ConfigurationError)
+        expect { described_class.create_card(feedback) }
+          .to raise_error(FizzySweepService::ConfigurationError, /fizzy is not configured/)
       end
     end
   end

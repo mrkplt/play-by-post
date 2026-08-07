@@ -31,4 +31,40 @@ RSpec.describe Feedback, type: :model do
       expect(sql).to include("feedback.swept_at IS NULL")
     end
   end
+
+  describe "#sweep" do
+    before do
+      allow(FizzySweepService).to receive(:create_card)
+    end
+
+    it "creates a Fizzy card and stamps swept_at" do
+      feedback = build(:feedback)
+      expect(feedback).to receive(:update!).with(swept_at: instance_of(ActiveSupport::TimeWithZone))
+
+      feedback.sweep
+
+      expect(FizzySweepService).to have_received(:create_card).with(feedback)
+    end
+
+    it "leaves swept_at NULL and logs when the card cannot be created" do
+      feedback = build(:feedback)
+      feedback.id = 42
+      allow(FizzySweepService).to receive(:create_card).and_raise("boom")
+      expect(Rails.logger).to receive(:error).with(/Feedback #42 failed to sweep into Fizzy: boom/)
+      expect(feedback).not_to receive(:update!)
+
+      feedback.sweep
+    end
+
+    it "re-raises ConfigurationError so the job can log it once" do
+      feedback = build(:feedback)
+      allow(FizzySweepService).to receive(:create_card).and_raise(
+        FizzySweepService::ConfigurationError,
+        "fizzy.api_url is not configured"
+      )
+      expect(feedback).not_to receive(:update!)
+
+      expect { feedback.sweep }.to raise_error(FizzySweepService::ConfigurationError)
+    end
+  end
 end

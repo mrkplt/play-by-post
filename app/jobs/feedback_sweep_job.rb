@@ -13,30 +13,10 @@ class FeedbackSweepJob < ApplicationJob
 
   sig { void }
   def perform
-    unswept.find_each { |feedback| sweep(feedback) }
+    Feedback.unswept.find_each(&:sweep)
   rescue FizzySweepService::ConfigurationError => e
     # Missing credentials are not going to fix themselves mid-run; log once
     # and let the next hourly schedule attempt again.
     Rails.logger.error("FeedbackSweepJob: #{e.message}")
-  end
-
-  # Unimported entries — those not yet swept into Fizzy.
-  sig { returns(ActiveRecord::Relation) }
-  def unswept
-    Feedback.unswept
-  end
-
-  private
-
-  sig { params(feedback: Feedback).void }
-  def sweep(feedback)
-    FizzySweepService.new.create_card(feedback)
-    feedback.update!(swept_at: Time.current)
-  rescue FizzySweepService::ConfigurationError
-    raise
-  rescue StandardError => e
-    # Isolated failure: leave swept_at NULL so this entry is retried on the
-    # next run instead of blocking the rest of the sweep.
-    Rails.logger.error("FeedbackSweepJob: failed to sweep feedback ##{feedback.id}: #{e.message}")
   end
 end
