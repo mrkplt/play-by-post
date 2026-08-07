@@ -8,7 +8,16 @@
 # locally on demand via bin/full-check — your call which to wait on. This
 # hook exists to catch obvious breaks fast, not to duplicate the full
 # pipeline.
-export PATH="/opt/homebrew/opt/ruby/bin:$PATH"
+#
+# Git hooks run outside an interactive shell, so rbenv (which sets up the
+# .ruby-version shims) is not initialized here. Bootstrap it explicitly so the
+# checks run on the project's pinned interpreter instead of whatever Homebrew
+# ruby happens to be first in PATH — the vendored gems are built for the
+# .ruby-version ruby, not the Homebrew default.
+export PATH="/opt/homebrew/bin:$PATH"
+if command -v rbenv >/dev/null 2>&1; then
+  eval "$(rbenv init - bash)"
+fi
 
 if bin/docs-only; then
   echo "==> Docs-only change: skipping pre-push checks (CI will no-op them too)."
