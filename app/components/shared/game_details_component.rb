@@ -23,11 +23,6 @@ class Shared::GameDetailsComponent < ApplicationComponent
   end
 
   sig { returns(String) }
-  def rendered_description
-    MarkdownRenderer.render(@game.description)
-  end
-
-  sig { returns(String) }
   def edit_path
     helpers.edit_game_path(@game)
   end

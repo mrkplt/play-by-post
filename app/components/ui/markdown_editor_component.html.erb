@@ -1,0 +1,9 @@
+<div class="<%= wrapper_class %>" data-controller="markdown-preview markdown-toolbar">
+  <% if @config.toolbar %>
+    <%= render Shared::MarkdownToolbarComponent.new %>
+  <% end %>
+  <%= @form.text_area @field, **textarea_options %>
+  <% if @config.preview %>
+    <%= content_tag(:div, "", class: preview_classes, style: preview_max_height, data: { markdown_preview_target: "preview" }) %>
+  <% end %>
+</div>

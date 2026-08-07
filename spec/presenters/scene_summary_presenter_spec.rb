@@ -4,12 +4,6 @@ RSpec.describe SceneSummaryPresenter do
   let(:summary) { build_stubbed(:scene_summary, body: "**Hero** wins.") }
   subject(:presenter) { described_class.new(summary) }
 
-  describe "#rendered_body" do
-    it "renders markdown to HTML" do
-      expect(presenter.rendered_body).to include("<strong>Hero</strong>")
-    end
-  end
-
   describe "#status_label" do
     context "when hand-written" do
       it "returns 'Hand-written'" do

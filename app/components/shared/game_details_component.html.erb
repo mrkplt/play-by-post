@@ -4,7 +4,7 @@
     <%= link_to "Edit", edit_path, class: "text-xs font-bold text-accent no-underline" %>
   <% end %>
   <% if description? %>
-    <div class="markdown-base text-[13px] text-muted-2 border-t border-card-divider py-3"><%= rendered_description %></div>
+    <%= render Ui::MarkdownRenderComponent.new(text: @game.description, content_class: "text-[13px] text-muted-2 border-t border-card-divider py-3") %>
   <% else %>
     <p class="text-[11px] text-muted-2 m-0 border-t border-card-divider py-3">No description yet.</p>
   <% end %>

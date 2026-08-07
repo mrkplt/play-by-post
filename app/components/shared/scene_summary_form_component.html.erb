@@ -8,8 +8,7 @@
   <% end %>
 
   <div class="bg-white border border-slate-200 rounded-lg p-5">
-    <%= form_with model: @summary, url: game_scene_scene_summary_path(@game, @scene), local: true,
-        data: { controller: "markdown-preview markdown-toolbar" } do |f| %>
+    <%= form_with model: @summary, url: game_scene_scene_summary_path(@game, @scene), local: true do |f| %>
       <% if has_errors? %>
         <div class="mb-4 p-3 bg-red-50 border border-red-200 rounded text-red-800 text-sm">
           <strong><%= pluralize(error_count, "error") %>:</strong>
@@ -23,13 +22,13 @@
 
       <div class="mb-4">
         <%= f.label :body, "Summary", class: "block font-medium mb-1 text-sm" %>
-        <%= render Shared::MarkdownToolbarComponent.new %>
-        <%= f.text_area :body, rows: 10,
-            placeholder: "Write a narrative summary of this scene...",
-            class: "markdown-editor w-full px-3 py-2 border border-input-border border-t-0 rounded-b-control text-base font-mono text-sm",
-            data: { markdown_preview_target: "input", markdown_toolbar_target: "input", action: "input->markdown-preview#update" } %>
+        <%= render Ui::MarkdownEditorComponent.new(
+              form: f, field: :body,
+              config: Ui::MarkdownEditorComponent::Config.new(scroll: :preview, preview_height: 256, rows: 10),
+              placeholder: "Write a narrative summary of this scene...",
+              edit_class: "px-3 py-2 border border-input-border border-t-0 rounded-b-control text-base text-sm",
+              preview_class: "border border-card-border rounded-card px-3 py-3 mt-2") %>
         <p class="text-xs text-muted-2 mt-1">Markdown is supported.</p>
-        <div data-markdown-preview-target="preview" class="markdown-base border border-card-border rounded-card px-3 py-3 mt-2 min-h-12 bg-canvas empty:hidden"></div>
       </div>
 
       <div class="flex gap-2">

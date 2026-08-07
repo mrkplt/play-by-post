@@ -20,7 +20,7 @@
 
   <div class="bg-card border border-card-border rounded-card p-4">
     <% if @character.content.present? %>
-      <div class="markdown-base character-sheet-content"><%= render_markdown(@character.content) %></div>
+      <%= render Ui::MarkdownRenderComponent.new(text: @character.content, content_class: "character-sheet-content") %>
     <% else %>
       <p class="text-muted-2 m-0 text-sm">No sheet content yet.</p>
     <% end %>

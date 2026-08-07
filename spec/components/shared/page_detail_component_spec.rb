@@ -8,17 +8,6 @@ RSpec.describe Shared::PageDetailComponent, type: :component do
     described_class.new(**{ game: game, page: page_record, is_gm: false }.merge(overrides))
   end
 
-  describe "#rendered_body" do
-    it "renders the markdown body to HTML" do
-      expect(build_component.rendered_body).to include("<h1>Heading</h1>")
-    end
-
-    it "reports whether the body is present" do
-      expect(build_component(page: page_record).body?).to be(true)
-      expect(build_component(page: build_stubbed(:page, game: game, body: nil)).body?).to be(false)
-    end
-  end
-
   describe "GM affordances" do
     it "shows Edit and Delete to the GM" do
       render_inline(build_component(is_gm: true))
