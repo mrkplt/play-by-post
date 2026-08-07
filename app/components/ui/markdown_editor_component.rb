@@ -88,7 +88,7 @@ class Ui::MarkdownEditorComponent < ApplicationComponent
 
   sig { returns(String) }
   def preview_classes
-    classes = [ "markdown-base", "min-h-12", "bg-canvas", "empty:hidden" ]
+    classes = [ "markdown-base", "min-h-12", "bg-canvas" ]
     classes << "overflow-y-auto" if @config.preview_scroll?
     classes << @preview_class unless @preview_class.empty?
     classes.join(" ")
