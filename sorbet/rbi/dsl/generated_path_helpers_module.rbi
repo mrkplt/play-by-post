@@ -28,6 +28,9 @@ module GeneratedPathHelpersModule
   def edit_game_character_path(*args); end
 
   sig { params(args: T.untyped).returns(String) }
+  def edit_game_game_link_path(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
   def edit_game_page_path(*args); end
 
   sig { params(args: T.untyped).returns(String) }
@@ -68,6 +71,12 @@ module GeneratedPathHelpersModule
 
   sig { params(args: T.untyped).returns(String) }
   def game_game_files_path(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def game_game_link_path(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def game_game_links_path(*args); end
 
   sig { params(args: T.untyped).returns(String) }
   def game_page_path(*args); end
@@ -131,6 +140,9 @@ module GeneratedPathHelpersModule
 
   sig { params(args: T.untyped).returns(String) }
   def new_game_character_path(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def new_game_game_link_path(*args); end
 
   sig { params(args: T.untyped).returns(String) }
   def new_game_page_path(*args); end

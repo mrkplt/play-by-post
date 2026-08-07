@@ -125,5 +125,10 @@
     <section data-game-tabs-target="panel" data-panel="pages" hidden>
       <%= render Shared::GamePagesListComponent.new(game: @game, pages: @game_presenter.pages, is_gm: @game_presenter.gm?) %>
     </section>
+
+    <%# ===== Links panel ===== %>
+    <section data-game-tabs-target="panel" data-panel="links" hidden>
+      <%= render Shared::GameLinksListComponent.new(game: @game, game_links: @game_presenter.links, is_gm: @game_presenter.gm?) %>
+    </section>
   <% end %>
 </div>

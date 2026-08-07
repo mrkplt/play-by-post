@@ -25,6 +25,7 @@ class Game < ApplicationRecord
   has_many :characters, dependent: :destroy
   has_many :game_files, dependent: :destroy
   has_many :pages, dependent: :destroy
+  has_many :game_links, dependent: :destroy
   has_many :invitations, dependent: :destroy
   # No dependent: cascade — GamePurgeJob collects and deletes a purged game's
   # export requests (and their archive blobs) explicitly.

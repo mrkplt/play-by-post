@@ -36,6 +36,7 @@ matcher:
     - PostRead
     - Feedback
     - Page
+    - GameLink
     # Presenters
     - GameFilePresenter
     - GamePresenter
@@ -79,6 +80,8 @@ matcher:
     - Shared::PageFormComponent
     - Shared::PageDetailComponent
     - Shared::GamePagesListComponent
+    - Shared::GameLinksListComponent
+    - Shared::LinkFormComponent
     - Ui::BadgeComponent
     - Ui::BreadcrumbComponent
     - Ui::ButtonComponent
@@ -115,6 +118,7 @@ matcher:
     - PostsController
     - GameFilesController
     - PagesController
+    - GameLinksController
     - InvitationsController
     - GameMembersController
     - CharacterVersionsController
@@ -151,6 +155,7 @@ matcher:
     - InvitationPolicy
     - PostPolicy
     - GameFilePolicy
+    - GameLinkPolicy
     - SceneSummaryPolicy
     - CharacterVersionPolicy
     - UserProfilePolicy

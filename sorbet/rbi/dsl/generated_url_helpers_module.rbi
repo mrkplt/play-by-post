@@ -28,6 +28,9 @@ module GeneratedUrlHelpersModule
   def edit_game_character_url(*args); end
 
   sig { params(args: T.untyped).returns(String) }
+  def edit_game_game_link_url(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
   def edit_game_page_url(*args); end
 
   sig { params(args: T.untyped).returns(String) }
@@ -68,6 +71,12 @@ module GeneratedUrlHelpersModule
 
   sig { params(args: T.untyped).returns(String) }
   def game_game_files_url(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def game_game_link_url(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def game_game_links_url(*args); end
 
   sig { params(args: T.untyped).returns(String) }
   def game_page_url(*args); end
@@ -131,6 +140,9 @@ module GeneratedUrlHelpersModule
 
   sig { params(args: T.untyped).returns(String) }
   def new_game_character_url(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def new_game_game_link_url(*args); end
 
   sig { params(args: T.untyped).returns(String) }
   def new_game_page_url(*args); end
