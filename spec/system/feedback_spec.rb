@@ -49,6 +49,22 @@ RSpec.describe "Feedback", type: :feature do
       expect(page).to have_no_css("[data-testid='feedback-modal']", visible: true)
       expect(Feedback.count).to eq(0)
     end
+
+    it "keeps the modal within the viewport when feedback text is long, so it stays submittable" do
+      visit root_path
+
+      click_button "Send Feedback"
+      expect(page).to have_css("[data-testid='feedback-modal']", visible: true)
+
+      fill_in "feedback[body]", with: ("This is a very long piece of feedback. " * 400)
+
+      modal_height = page.evaluate_script(
+        "document.querySelector('[data-testid=\"feedback-modal\"]').getBoundingClientRect().height"
+      )
+      viewport_height = page.evaluate_script("window.innerHeight")
+
+      expect(modal_height).to be <= viewport_height
+    end
   end
 
   context "on mobile (drawer overlay)" do

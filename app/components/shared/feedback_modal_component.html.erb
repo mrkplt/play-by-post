@@ -2,12 +2,12 @@
      class="fixed inset-0 z-[1000] flex items-center justify-center p-4"
      data-action="click->feedback#closeOnBackdrop keydown@document->feedback#closeOnEscape">
   <div class="absolute inset-0 bg-black/60" data-feedback-backdrop></div>
-  <div class="relative bg-card rounded-card w-full max-w-sm flex flex-col overflow-hidden">
+  <div class="relative bg-card rounded-card w-full max-w-sm max-h-[90vh] flex flex-col overflow-hidden">
     <%# Form panel — submitted via fetch so the page never navigates. %>
     <div data-feedback-target="formPanel">
       <%= form_with url: submit_path, scope: :feedback, method: :post,
             data: { controller: "markdown-preview markdown-toolbar", action: "submit->feedback#submit" },
-            class: "p-5 flex flex-col gap-3" do |form| %>
+            class: "p-5 flex flex-col gap-3 overflow-y-auto min-h-0" do |form| %>
         <h2 class="text-lg font-semibold text-row-ink">Send Feedback</h2>
         <p class="text-sm text-muted-2">
           Tell us what's working, what's broken, or what you'd like to see. We'll
@@ -22,9 +22,9 @@
                 markdown_toolbar_target: "input",
                 action: "input->markdown-preview#update"
               },
-              class: "markdown-editor w-full px-3 py-2 border border-card-border border-t-0 rounded-b text-base bg-card" %>
+              class: "markdown-editor w-full px-3 py-2 border border-card-border border-t-0 rounded-b text-base bg-card max-h-64 resize-y overflow-y-auto" %>
         <div data-markdown-preview-target="preview"
-             class="markdown-base border border-card-border rounded px-3 py-3 min-h-12 bg-canvas empty:hidden"></div>
+             class="markdown-base border border-card-border rounded px-3 py-3 min-h-12 max-h-64 overflow-y-auto bg-canvas empty:hidden"></div>
         <p data-feedback-target="error" hidden class="text-sm text-danger">
           Something went wrong. Please try again.
         </p>
