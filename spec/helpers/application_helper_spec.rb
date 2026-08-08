@@ -37,13 +37,22 @@ RSpec.describe ApplicationHelper, type: :helper do
 
     it "adds a class attribute to the SVG when class is provided" do
       result = helper.icon("crown-03", class: "w-4 h-4")
+      expect(result).to include('<svg')
       expect(result).to include('class="w-4 h-4"')
+      # Verify the class is on the SVG element, not just anywhere in the result
+      svg_match = result.match(/<svg[^>]*>/)
+      expect(svg_match).to be_present
+      expect(svg_match[0]).to include('class="w-4 h-4"')
     end
 
     it "does not add a class attribute when class is not provided" do
       result = helper.icon("crown-03")
       # The gem adds its own class="size-6", but we should not add a duplicate
       expect(result.scan('class="').length).to eq(1)
+      # Verify the class is on the SVG element
+      svg_match = result.match(/<svg[^>]*>/)
+      expect(svg_match).to be_present
+      expect(svg_match[0]).to include('class="size-6"')
     end
 
     it "passes additional HTML options as arguments to the icon" do
