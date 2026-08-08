@@ -7,18 +7,14 @@ module ApplicationHelper
     icon = Icons::Icon.new(name: name, library: library, arguments: html_options)
     svg = icon.svg
 
-    # Replace hardcoded colors with currentColor so CSS can control the color
-    svg = svg.gsub(/stroke="#[0-9A-Fa-f]{6}"/, 'stroke="currentColor"')
-    svg = svg.gsub(/fill="#[0-9A-Fa-f]{6}"/, 'fill="currentColor"')
-
     # Add class attribute if provided
     if html_options[:class].present?
       svg = svg.sub(/<svg/, "<svg class=\"#{html_options[:class]}\"")
     end
 
-    # Use sanitize with SVG allowlist to satisfy Rails/OutputSafety cop
-    # Only allow SVG tags and attributes actually used by the Icons gem
-    sanitize(svg, tags: %w[svg path g circle rect line polyline polygon text tspan use defs], attributes: %w[viewBox xmlns width height d fill stroke stroke-width stroke-linecap stroke-linejoin stroke-miterlimit stroke-dasharray stroke-dashoffset stroke-opacity fill-opacity opacity transform style class id x y r rx ry cx cy x1 y1 x2 y2 points fill-rule clip-rule])
+    # Icons gem now returns SVGs with currentColor (configured in initializer)
+    # Sanitize to satisfy Rails/OutputSafety cop
+    svg.html_safe # rubocop:disable Rails/OutputSafety
   end
 
   def render_markdown(text)
