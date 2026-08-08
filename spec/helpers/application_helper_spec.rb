@@ -9,18 +9,25 @@ RSpec.describe ApplicationHelper, type: :helper do
     end
 
     it "replaces hardcoded stroke colors with currentColor" do
+      svg_with_stroke = '<svg><path stroke="#141B34"></path><rect stroke="#FF0000"></rect></svg>'
+      allow_any_instance_of(Icons::Icon).to receive(:svg).and_return(svg_with_stroke)
+
       result = helper.icon("crown-03")
       expect(result).not_to include('stroke="#141B34"')
+      expect(result).not_to include('stroke="#FF0000"')
       expect(result).to include('stroke="currentColor"')
+      expect(result.scan('stroke="currentColor"').length).to eq(2)
     end
 
     it "replaces hardcoded fill colors with currentColor" do
-      svg_with_fill = '<svg><path fill="#FF0000"></path></svg>'
+      svg_with_fill = '<svg><path fill="#FF0000"></path><rect fill="#00FF00"></rect></svg>'
       allow_any_instance_of(Icons::Icon).to receive(:svg).and_return(svg_with_fill)
 
       result = helper.icon("crown-03")
       expect(result).not_to include('fill="#FF0000"')
+      expect(result).not_to include('fill="#00FF00"')
       expect(result).to include('fill="currentColor"')
+      expect(result.scan('fill="currentColor"').length).to eq(2)
     end
 
     it "preserves fill='none'" do
@@ -71,6 +78,40 @@ RSpec.describe ApplicationHelper, type: :helper do
     it "returns an html_safe string" do
       result = helper.icon("crown-03")
       expect(result).to be_html_safe
+    end
+
+    it "sanitizes SVG with allowed tags" do
+      result = helper.icon("crown-03")
+      expect(result).to include("<svg")
+      expect(result).to include("</svg>")
+      expect(result).to include("<path")
+    end
+
+    it "sanitizes SVG with allowed attributes" do
+      result = helper.icon("crown-03")
+      expect(result).to include('viewBox=')
+      expect(result).to include('d=')
+      expect(result).to include('fill=')
+      expect(result).to include('stroke=')
+    end
+
+    it "removes disallowed tags from SVG" do
+      svg_with_disallowed = '<svg><script>alert("xss")</script><path d="M0 0"></path></svg>'
+      allow_any_instance_of(Icons::Icon).to receive(:svg).and_return(svg_with_disallowed)
+
+      result = helper.icon("crown-03")
+      expect(result).not_to include("<script>")
+      expect(result).to include("<svg")
+      expect(result).to include("<path")
+    end
+
+    it "removes disallowed attributes from SVG" do
+      svg_with_disallowed = '<svg onclick="alert(\'xss\')" viewBox="0 0 24 24"><path d="M0 0"></path></svg>'
+      allow_any_instance_of(Icons::Icon).to receive(:svg).and_return(svg_with_disallowed)
+
+      result = helper.icon("crown-03")
+      expect(result).not_to include("onclick=")
+      expect(result).to include("viewBox=")
     end
   end
 

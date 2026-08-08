@@ -17,7 +17,8 @@ module ApplicationHelper
     end
 
     # Use sanitize with SVG allowlist to satisfy Rails/OutputSafety cop
-    sanitize(svg, tags: %w[svg g path circle rect line polyline polygon text tspan use defs clipPath mask pattern linearGradient radialGradient stop animate set], attributes: %w[viewBox xmlns d fill stroke stroke-width stroke-linecap stroke-linejoin stroke-miterlimit stroke-dasharray stroke-dashoffset stroke-opacity fill-opacity opacity transform style class id x y width height r rx ry cx cy x1 y1 x2 y2 points d fill-rule clip-rule mask-type gradientUnits spreadMethod x1 y1 x2 y2 fx fy fr r offset stop-color stop-opacity])
+    # Only allow SVG tags and attributes actually used by the Icons gem
+    sanitize(svg, tags: %w[svg path g circle rect line polyline polygon text tspan use defs], attributes: %w[viewBox xmlns width height d fill stroke stroke-width stroke-linecap stroke-linejoin stroke-miterlimit stroke-dasharray stroke-dashoffset stroke-opacity fill-opacity opacity transform style class id x y r rx ry cx cy x1 y1 x2 y2 points fill-rule clip-rule])
   end
 
   def render_markdown(text)
