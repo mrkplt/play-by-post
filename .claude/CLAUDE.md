@@ -334,8 +334,8 @@ Hard-won specifics for actually clearing the gates. Read this before touching up
 ### Presenters & ViewComponents
 
 **Role split — enforce strictly:**
-- **Presenters hold presentation logic:** data transformation, display-ready strings, CSS class selection based on model state, formatted timestamps, derived boolean flags for rendering decisions.
-- **ViewComponents hold visual presentation:** HTML structure, which sub-components to render, slot content. A component's Ruby class may compute CSS class strings that are purely additive (e.g. combining a BASE constant with a variant), but must not inspect model state or branch on domain data.
+- **Presenters hold data transformation:** mutating model data into presentation-ready shape — formatted timestamps, display-ready strings, derived boolean flags, computed display values. Presenters do NOT handle CSS class selection or visual concerns.
+- **ViewComponents hold visual presentation:** HTML structure, CSS class selection based on model state, which sub-components to render, slot content. A component's Ruby class may compute CSS class strings that are purely additive (e.g. combining a BASE constant with a variant).
 
 **When implementing or updating a ViewComponent:**
 - Always introduce new ViewComponents instead of raw HTML — never hand-write bespoke screen markup
@@ -343,6 +343,40 @@ Hard-won specifics for actually clearing the gates. Read this before touching up
 - Variations on a theme should be parameterized (size variants, accent options, etc.) rather than creating separate components
 - **Gold standard patterns:** `Ui::IconComponent` (domain-specific mapping with size/accent parameters) and `Ui::MarkdownRenderComponent` (configurable rendering)
 - New components must be registered in `.mutant.yml` and have full test coverage
+
+**Component structure:**
+- Ruby class + ERB template pair in `app/components/{namespace}/{name}_component.rb` and `.html.erb`
+- Namespace by purpose: `Ui::*` for primitives (reusable across apps), `Shared::*` for domain-specific (project-specific)
+- Type annotations: `# typed: strict` on all component Ruby files
+
+**Variants & parameters:**
+- Parameterize variations rather than creating separate components (e.g., `Ui::IconComponent` handles size/accent)
+- Use constants for fixed options (like `SIZES`, `ICON_MAP` in the Icon component)
+- Provide sensible defaults so callers only specify what differs
+
+**Composition patterns:**
+- Use `renders_one` / `renders_many` for complex component composition (slots)
+- Use `content` for simple HTML wrapping
+- Extract reusable pieces as separate components rather than duplicating
+
+**Testing components:**
+- Component specs in `spec/components/{namespace}/`
+- Test all variants — iterate over constants like `SIZES.each_key` to ensure all combinations render
+- Use `render_inline` for assertions (not `render_component`)
+- Mock external dependencies — use `instance_double` for services/models
+
+**CSS handling:**
+- Tailwind only — no inline styles, no separate CSS files for new components
+- Compose classes from constants and parameters (like `BASE + variant`)
+- No raw hex — use design tokens from `@theme`
+
+**Documentation:**
+- Add Lookbook previews in `app/components/{namespace}/{name}_component_preview.rb`
+- Browse component gallery at `/lookbook` in dev
+
+**Migration patterns:**
+- Extract from views when HTML patterns repeat — replace partials, delete old partials once fully replaced
+- Refactor incrementally — don't rewrite entire views at once; extract one component at a time
 
 **ERB template rules — no logic in templates:**
 - No ternaries in output tags: `<%= a ? b : c %>` → extract a method
