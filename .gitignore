@@ -18,6 +18,9 @@ vendor/bundle/
 !/log/.keep
 !/tmp/.keep
 
+/coverage/*
+!/coverage/.keep
+
 # Ignore pidfiles, but keep the directory.
 /tmp/pids/*
 !/tmp/pids/
