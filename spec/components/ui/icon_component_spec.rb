@@ -110,6 +110,18 @@ RSpec.describe Ui::IconComponent, type: :component do
       expect(rendered).to have_css("svg")
     end
 
+    it "does not add class when html_options is empty" do
+      expect_any_instance_of(ApplicationHelper).to receive(:icon).with("crown-03", class: "w-4 h-4").and_return('<svg></svg>'.html_safe)
+      rendered = render_inline(described_class.new(name: :crown, html_options: {}))
+      expect(rendered).to have_css("svg")
+    end
+
+    it "does not add class when html_options[:class] is nil" do
+      expect_any_instance_of(ApplicationHelper).to receive(:icon).with("crown-03").and_return('<svg></svg>'.html_safe)
+      rendered = render_inline(described_class.new(name: :crown, html_options: { class: nil }))
+      expect(rendered).to have_css("svg")
+    end
+
     it "raises ArgumentError for unknown icon names" do
       expect { render_inline(described_class.new(name: :unknown)) }
         .to raise_error(ArgumentError, "Unknown icon: unknown")
