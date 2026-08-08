@@ -2,8 +2,7 @@ Icons.configure do |config|
   config.default_library = :hugeicons
 end
 
-# Configure Hugeicons to use currentColor for all fills/strokes
-# This happens at sync time, not runtime
+# Add currentColor transformations for Hugeicons (same pattern as Boxicons)
 module Icons
   class Configuration
     module Hugeicons
