@@ -5,8 +5,11 @@
 # `$XDG_CONFIG_HOME/git/ignore` or `~/.config/git/ignore`
 
 # Ignore bundler config.
+Procfile*
 /.bundle
 vendor/bundle/
+
+node_modules
 
 # Ignore all environment files.
 /.env*
@@ -16,6 +19,9 @@ vendor/bundle/
 /tmp/*
 !/log/.keep
 !/tmp/.keep
+
+/coverage/*
+!/coverage/.keep
 
 # Ignore pidfiles, but keep the directory.
 /tmp/pids/*

@@ -27,7 +27,7 @@ class Ui::IconComponent < ApplicationComponent
       html_options: T::Hash[Symbol, T.untyped]
     ).void
   end
-  def initialize(name:, size: :small, accent: false, **html_options)
+  def initialize(name:, size: :small, accent: false, html_options: {})
     @name = name
     @size = size
     @accent = accent
@@ -37,12 +37,7 @@ class Ui::IconComponent < ApplicationComponent
   sig { returns(String) }
   def call
     icon_name = ICON_MAP.fetch(@name) { raise ArgumentError, "Unknown icon: #{@name}" }
-    options = build_options
-    if options.empty?
-      helpers.icon(icon_name)
-    else
-      helpers.icon(icon_name, **options)
-    end
+    helpers.icon(icon_name, **build_options)
   end
 
   private
@@ -51,11 +46,11 @@ class Ui::IconComponent < ApplicationComponent
   def build_options
     classes = [ size_class ]
     classes << "text-accent" if @accent
-    if @html_options[:class]
-      custom_class = T.unsafe(@html_options.delete(:class))
-      classes << custom_class if custom_class
-    end
-    { class: classes.compact.join(" ") }.merge(@html_options)
+    # `@html_options[:class]` gates entry, so the deleted value is always truthy.
+    classes << T.unsafe(@html_options.delete(:class)) if @html_options[:class]
+    merged = { class: classes.join(" ") }.merge(@html_options)
+    merged.delete(:class) if merged[:class].to_s.empty?
+    merged
   end
 
   sig { returns(String) }
