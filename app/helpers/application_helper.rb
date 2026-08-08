@@ -7,9 +7,9 @@ module ApplicationHelper
     icon = Icons::Icon.new(name: name, library: library, arguments: html_options)
     svg = icon.svg
 
-    # Add class attribute if provided
+    # Replace or add class attribute if provided
     if html_options[:class].present?
-      svg = svg.sub(/<svg/, "<svg class=\"#{html_options[:class]}\"")
+      svg = svg.sub(/class="[^"]*"/, "class=\"#{html_options[:class]}\"")
     end
 
     svg.html_safe # rubocop:disable Rails/OutputSafety
