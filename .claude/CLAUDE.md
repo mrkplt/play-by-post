@@ -337,6 +337,13 @@ Hard-won specifics for actually clearing the gates. Read this before touching up
 - **Presenters hold presentation logic:** data transformation, display-ready strings, CSS class selection based on model state, formatted timestamps, derived boolean flags for rendering decisions.
 - **ViewComponents hold visual presentation:** HTML structure, which sub-components to render, slot content. A component's Ruby class may compute CSS class strings that are purely additive (e.g. combining a BASE constant with a variant), but must not inspect model state or branch on domain data.
 
+**When implementing or updating a ViewComponent:**
+- Always introduce new ViewComponents instead of raw HTML — never hand-write bespoke screen markup
+- Survey the codebase for similar implementations in HTML and refactor them into the component
+- Variations on a theme should be parameterized (size variants, accent options, etc.) rather than creating separate components
+- **Gold standard patterns:** `Ui::IconComponent` (domain-specific mapping with size/accent parameters) and `Ui::MarkdownRenderComponent` (configurable rendering)
+- New components must be registered in `.mutant.yml` and have full test coverage
+
 **ERB template rules — no logic in templates:**
 - No ternaries in output tags: `<%= a ? b : c %>` → extract a method
 - No Boolean-OR fallbacks in output tags: `<%= a || b %>` → extract a method
