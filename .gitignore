@@ -9,6 +9,8 @@ Procfile*
 /.bundle
 vendor/bundle/
 
+node_modules
+
 # Ignore all environment files.
 /.env*
 
