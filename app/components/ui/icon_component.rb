@@ -12,27 +12,54 @@ class Ui::IconComponent < ApplicationComponent
     cancel: "cancel-01"
   }.freeze, T::Hash[Symbol, String])
 
+  # Size variants
+  SIZES = T.let({
+    small: "w-4 h-4",
+    medium: "w-5 h-5",
+    extra_small: "w-[13px] h-[13px]"
+  }.freeze, T::Hash[Symbol, String])
+
   sig do
     params(
       name: Symbol,
-      class: T.nilable(String),
+      size: Symbol,
+      accent: T::Boolean,
       html_options: T::Hash[Symbol, T.untyped]
     ).void
   end
-  def initialize(name:, class: nil, **html_options)
+  def initialize(name:, size: :small, accent: false, **html_options)
     @name = name
-    @class = T.let(binding.local_variable_get(:class), T.nilable(String))
+    @size = size
+    @accent = accent
     @html_options = html_options
   end
 
   sig { returns(String) }
   def call
     icon_name = ICON_MAP.fetch(@name) { raise ArgumentError, "Unknown icon: #{@name}" }
-    options = @class ? { class: @class }.merge(@html_options) : @html_options
+    options = build_options
     if options.empty?
       helpers.icon(icon_name)
     else
       helpers.icon(icon_name, **options)
     end
+  end
+
+  private
+
+  sig { returns(T::Hash[Symbol, T.untyped]) }
+  def build_options
+    classes = [ size_class ]
+    classes << "text-accent" if @accent
+    if @html_options[:class]
+      custom_class = T.unsafe(@html_options.delete(:class))
+      classes << custom_class if custom_class
+    end
+    { class: classes.compact.join(" ") }.merge(@html_options)
+  end
+
+  sig { returns(String) }
+  def size_class
+    SIZES.fetch(@size) { raise ArgumentError, "Unknown size: #{@size}" }
   end
 end
