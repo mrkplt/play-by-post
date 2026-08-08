@@ -21,7 +21,7 @@ class Ui::IconComponent < ApplicationComponent
   end
   def initialize(name:, class: nil, **html_options)
     @name = name
-    @class = binding.local_variable_get(:class)
+    @class = T.let(binding.local_variable_get(:class), T.nilable(String))
     @html_options = html_options
   end
 
