@@ -11,7 +11,7 @@ class Scene < ApplicationRecord
   IMAGE_TYPES = %w[image/jpeg image/png image/gif image/webp].freeze
   IMAGE_MAX_SIZE = 10.megabytes
 
-  has_many :child_scenes, class_name: "Scene", foreign_key: :parent_scene_id, dependent: :nullify
+  has_many :child_scenes, class_name: "Scene", foreign_key: :parent_scene_id, dependent: :nullify, inverse_of: :parent_scene
   has_many :scene_participants, dependent: :destroy
   has_many :users, through: :scene_participants
   has_many :posts, dependent: :destroy

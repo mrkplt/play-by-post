@@ -193,7 +193,7 @@ class ScenesController < ApplicationController
 
   sig { void }
   def notify_new_scene
-    @scene.users.where.not(id: current_user.id).each do |recipient|
+    @scene.users.where.not(id: current_user.id).find_each do |recipient|
       next if NotificationPreference.muted?(@scene, recipient)
       NotificationMailer.new_scene(@scene, recipient).deliver_later
     end

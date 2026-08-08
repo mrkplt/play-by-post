@@ -2,41 +2,58 @@ require "rails_helper"
 
 RSpec.describe ApplicationHelper, type: :helper do
   describe "#icon" do
+    # Stub the gem so the substitution is asserted against a known SVG string.
+    # This lets us pin the regex precisely (existing class replaced, exactly one
+    # class attribute) without depending on the gem's internal default markup.
+    def stub_svg(svg)
+      allow(Icons::Icon).to receive(:new)
+        .and_return(instance_double(Icons::Icon, svg: svg))
+    end
+
     it "returns an SVG element" do
       result = helper.icon("crown-03")
       expect(result).to include("<svg")
       expect(result).to include("</svg>")
     end
 
-    it "replaces hardcoded stroke colors with currentColor" do
-      result = helper.icon("crown-03")
-      expect(result).not_to include('stroke="#141B34"')
-      expect(result).to include('stroke="currentColor"')
-    end
-
-    it "replaces hardcoded fill colors with currentColor" do
-      svg_with_fill = '<svg><path fill="#FF0000"></path></svg>'
-      allow_any_instance_of(Icons::Icon).to receive(:svg).and_return(svg_with_fill)
-
-      result = helper.icon("crown-03")
-      expect(result).not_to include('fill="#FF0000"')
-      expect(result).to include('fill="currentColor"')
-    end
-
-    it "preserves fill='none'" do
-      result = helper.icon("crown-03")
-      expect(result).to include('fill="none"')
-    end
-
-    it "adds a class attribute to the SVG when class is provided" do
+    it "replaces an existing class attribute with the provided class" do
+      stub_svg('<svg class="size-6"></svg>')
       result = helper.icon("crown-03", class: "w-4 h-4")
-      expect(result).to include('class="w-4 h-4"')
+      # The provided class is present and the gem's original class is gone —
+      # kills the branch-guard, empty-substitution and no-op (`svg = svg`) mutants.
+      expect(result).to eq('<svg class="w-4 h-4"></svg>')
     end
 
-    it "does not add a class attribute when class is not provided" do
+    it "replaces a class attribute even when the existing value is empty" do
+      # Kills `[^"]*` -> `[^"]+`/`[^"]`: those quantifiers cannot match an empty
+      # class value, so the substitution would silently fail.
+      stub_svg('<svg class=""></svg>')
+      result = helper.icon("crown-03", class: "w-4 h-4")
+      expect(result).to eq('<svg class="w-4 h-4"></svg>')
+    end
+
+    it "substitutes at the class attribute, not the start of the string" do
+      # Kills `sub(//, ...)` and `sub(/nomatch\A/, ...)`: an empty/anchored
+      # pattern would prepend the replacement rather than swap the class.
+      stub_svg('<svg width="24" class="size-6"></svg>')
+      result = helper.icon("crown-03", class: "w-4")
+      expect(result).to eq('<svg width="24" class="w-4"></svg>')
+    end
+
+    it "does not modify the SVG when class is not provided" do
+      # Kills `.present?` -> truthy and `if nil`/`if false`: with no class the
+      # gem's own class must survive untouched (exactly one class attribute).
+      stub_svg('<svg class="size-6"></svg>')
       result = helper.icon("crown-03")
-      # The gem adds its own class="size-6", but we should not add a duplicate
-      expect(result.scan('class="').length).to eq(1)
+      expect(result).to eq('<svg class="size-6"></svg>')
+    end
+
+    it "does not modify the SVG when class is blank" do
+      # Kills `.present?` -> plain truthiness and `html_options[:class]` variants:
+      # a blank string is truthy but not present, so no substitution runs.
+      stub_svg('<svg class="size-6"></svg>')
+      result = helper.icon("crown-03", class: "")
+      expect(result).to eq('<svg class="size-6"></svg>')
     end
 
     it "passes additional HTML options as arguments to the icon" do

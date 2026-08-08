@@ -1,2 +1,0 @@
-[phases.setup]
-aptPkgs = ["...", "ghostscript", "imagemagick", "poppler-utils"]

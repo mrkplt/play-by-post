@@ -6,3 +6,120 @@ inherit_gem: { rubocop-rails-omakase: rubocop.yml }
 # # Use `[a, [b, c]]` not `[ a, [ b, c ] ]`
 # Layout/SpaceInsideArrayLiteralBrackets:
 #   Enabled: false
+
+# --- Rails cops ---
+
+# Prefer after_commit :method over after_commit { ... }
+Rails/AfterCommitOverride:
+  Enabled: true
+
+# Check for index usage in add_column
+Rails/AddColumnIndex:
+  Enabled: true
+
+# Prefer assert_not over assert !
+Rails/AssertNot:
+  Enabled: true
+  Include:
+    - "spec/**/*"
+    - "test/**/*"
+
+# Check for presence validation without allow_blank/allow_nil
+Rails/Blank:
+  Enabled: true
+
+# Check for three-state boolean column
+Rails/ThreeStateBooleanColumn:
+  Enabled: true
+
+# Check for belongs_to required by default
+Rails/BelongsTo:
+  Enabled: true
+
+# Check for CreateTableWithTimestamps
+Rails/CreateTableWithTimestamps:
+  Enabled: true
+
+# Check for Date/Time comparisons
+Rails/Date:
+  Enabled: true
+
+# Check for deprecated ActiveModel errors methods
+Rails/DeprecatedActiveModelErrorsMethods:
+  Enabled: true
+
+# Check for duplicate association definitions
+Rails/DuplicateAssociation:
+  Enabled: true
+
+# Check for duplicate scope definitions
+Rails/DuplicateScope:
+  Enabled: true
+
+# Check for env var access in migrations
+Rails/EnvironmentComparison:
+  Enabled: true
+
+# Check for FilePath
+Rails/FilePath:
+  Enabled: true
+
+# Check for HasManyOrHasOneDependent
+Rails/HasManyOrHasOneDependent:
+  Enabled: true
+
+# Check for http status hardcoded
+Rails/HttpStatus:
+  Enabled: true
+
+# Check for inverse_of
+Rails/InverseOf:
+  Enabled: true
+
+# Check for output safety helper
+Rails/OutputSafety:
+  Enabled: true
+
+# Check for pluralization grammar
+Rails/PluralizationGrammar:
+  Enabled: true
+
+# Check for presence comparison
+Rails/Present:
+  Enabled: true
+
+# Check for refute methods
+Rails/RefuteMethods:
+  Enabled: true
+  Include:
+    - "spec/**/*"
+    - "test/**/*"
+
+# Check for relative date constant
+Rails/RelativeDateConstant:
+  Enabled: true
+
+# Check for render_inline
+Rails/RenderInline:
+  Enabled: true
+
+# Check for safe navigation with render
+Rails/SafeNavigation:
+  Enabled: true
+  ConvertTry: false
+
+# Check for find_by with nil
+Rails/FindBy:
+  Enabled: true
+
+# Check for find_each / find_in_batches
+Rails/FindEach:
+  Enabled: true
+
+# Check for where.not → exists
+Rails/WhereExists:
+  Enabled: true
+
+# Check for where.not → pick
+Rails/WhereNot:
+  Enabled: true

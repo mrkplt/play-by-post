@@ -98,6 +98,7 @@ matcher:
     - Ui::SettingsRowComponent
     - Ui::PillTabsComponent
     - Ui::FlashComponent
+    - Ui::IconComponent
     # Services
     - AttachmentUploader
     - ExportDelivery
