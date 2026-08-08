@@ -1,8 +1,0 @@
-[build]
-builder = "dockerfile"
-
-[deploy]
-dbMigrateCommand = "bundle exec rails db:migrate"
-healthcheckPath = "/up"
-healthcheckTimeout = 60
-restartPolicyType = "on_failure"
