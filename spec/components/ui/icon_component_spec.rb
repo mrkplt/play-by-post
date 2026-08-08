@@ -51,7 +51,7 @@ RSpec.describe Ui::IconComponent, type: :component do
     end
 
     it "accepts additional html_options" do
-      component = described_class.new(name: :crown, data: { testid: "crown-icon" })
+      component = described_class.new(name: :crown, html_options: { data: { testid: "crown-icon" } })
       expect(component).to be_a(described_class)
     end
   end
@@ -94,7 +94,19 @@ RSpec.describe Ui::IconComponent, type: :component do
 
     it "passes html_options to the icon helper" do
       expect_any_instance_of(ApplicationHelper).to receive(:icon).with("crown-03", class: "w-4 h-4", data: { testid: "crown-icon" }).and_return('<svg></svg>'.html_safe)
-      rendered = render_inline(described_class.new(name: :crown, data: { testid: "crown-icon" }))
+      rendered = render_inline(described_class.new(name: :crown, html_options: { data: { testid: "crown-icon" } }))
+      expect(rendered).to have_css("svg")
+    end
+
+    it "replaces custom class when provided" do
+      expect_any_instance_of(ApplicationHelper).to receive(:icon).with("crown-03", class: "w-4 h-4 custom-class").and_return('<svg></svg>'.html_safe)
+      rendered = render_inline(described_class.new(name: :crown, html_options: { class: "custom-class" }))
+      expect(rendered).to have_css("svg")
+    end
+
+    it "renders without options when no html_options provided" do
+      expect_any_instance_of(ApplicationHelper).to receive(:icon).with("crown-03", class: "w-4 h-4").and_return('<svg></svg>'.html_safe)
+      rendered = render_inline(described_class.new(name: :crown))
       expect(rendered).to have_css("svg")
     end
 

@@ -27,7 +27,7 @@ class Ui::IconComponent < ApplicationComponent
       html_options: T::Hash[Symbol, T.untyped]
     ).void
   end
-  def initialize(name:, size: :small, accent: false, **html_options)
+  def initialize(name:, size: :small, accent: false, html_options: {})
     @name = name
     @size = size
     @accent = accent
@@ -55,7 +55,9 @@ class Ui::IconComponent < ApplicationComponent
       custom_class = T.unsafe(@html_options.delete(:class))
       classes << custom_class if custom_class
     end
-    { class: classes.compact.join(" ") }.merge(@html_options)
+    merged = { class: classes.compact.join(" ") }.merge(@html_options)
+    merged.delete(:class) if merged[:class].to_s.empty?
+    merged
   end
 
   sig { returns(String) }
