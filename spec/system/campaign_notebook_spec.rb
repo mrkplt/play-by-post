@@ -24,7 +24,7 @@ RSpec.describe "Campaign Notebook", type: :feature do
 
       expect(page).to have_text("A wandering merchant")
 
-      # Inline edit — no navigation
+      # Inline edit from the entry's own show screen — no navigation
       current = page.current_path
       click_on "Edit"
       expect(page).to have_field("notebook_entry[title]", with: "A wandering merchant")
@@ -35,6 +35,9 @@ RSpec.describe "Campaign Notebook", type: :feature do
       expect(page).to have_text("A wandering merchant (updated)")
       expect(page.current_path).to eq(current)
 
+      visit game_notebook_entries_path(game)
+      board_path = page.current_path
+
       # Lane move via dropdown — no navigation
       within "#notebook_column_new" do
         select "Expand", from: "notebook_entry[status]"
@@ -42,14 +45,15 @@ RSpec.describe "Campaign Notebook", type: :feature do
 
       expect(page).to have_css("#notebook_column_expand", text: "A wandering merchant (updated)")
       expect(page).to have_no_css("#notebook_column_new", text: "A wandering merchant (updated)")
-      expect(page.current_path).to eq(current)
+      expect(page.current_path).to eq(board_path)
 
-      # Promote to a page
+      # Promote to a page — navigates to the newly created page
       within "#notebook_column_expand" do
         click_on "Promote"
       end
 
-      expect(page).to have_text("Promoted to: A wandering merchant (updated)")
+      expect(page).to have_current_path(%r{/games/\d+/pages/})
+      expect(page).to have_text("A wandering merchant (updated)")
 
       promoted_page = Page.find_by(title: "A wandering merchant (updated)")
       expect(promoted_page).to be_present
@@ -63,7 +67,7 @@ RSpec.describe "Campaign Notebook", type: :feature do
 
       expect(page).to have_no_text("Scrapped Idea")
 
-      click_on "Show discarded"
+      find("summary", text: "Show discarded").click
 
       expect(page).to have_text("Scrapped Idea")
     end
@@ -75,7 +79,7 @@ RSpec.describe "Campaign Notebook", type: :feature do
 
       click_on "Promote"
 
-      expect(page).to have_text("Promoted to: Standalone Idea")
+      expect(page).to have_text("Promoted to a page.")
       expect(Page.find_by(title: "Standalone Idea")).to be_present
     end
   end

@@ -194,23 +194,22 @@ RSpec.describe PostsController, type: :request do
       expect(post_record.reload.content).to eq("Updated content")
     end
 
-    it "renders turbo_stream on update" do
+    it "redirects to the scene even when Turbo requests turbo_stream" do
       post_record = create(:post, scene: scene, user: player)
       sign_in(player)
       patch game_scene_post_path(game, scene, post_record),
         params: { post: { content: "Updated" } },
         headers: { "Accept" => "text/vnd.turbo-stream.html" }
-      expect(response).to have_http_status(:ok)
+      expect(response).to redirect_to(game_scene_path(game, scene))
     end
 
-    it "includes updated content in turbo_stream response" do
+    it "persists updated content even when Turbo requests turbo_stream" do
       post_record = create(:post, scene: scene, user: player)
       sign_in(player)
       patch game_scene_post_path(game, scene, post_record),
         params: { post: { content: "Turbo updated content here" } },
         headers: { "Accept" => "text/vnd.turbo-stream.html" }
-      expect(response).to have_http_status(:ok)
-      expect(response.body).to include("Turbo updated content here")
+      expect(post_record.reload.content).to eq("Turbo updated content here")
     end
 
     it "redirects with alert when outside edit window" do

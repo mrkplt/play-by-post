@@ -30,10 +30,7 @@ class NotebookEntriesController < ApplicationController
     authorize @notebook_entry
 
     if @notebook_entry.save
-      respond_to do |format|
-        format.turbo_stream
-        format.html { redirect_to game_notebook_entry_path(@game, @notebook_entry), notice: "Entry created." }
-      end
+      redirect_to game_notebook_entry_path(@game, @notebook_entry), notice: "Entry created."
     else
       respond_to do |format|
         format.turbo_stream { render :create_failed }
@@ -62,15 +59,15 @@ class NotebookEntriesController < ApplicationController
     authorize @notebook_entry
 
     if @notebook_entry.update(notebook_entry_params)
-      respond_to do |format|
-        format.turbo_stream
-        format.html { redirect_to game_notebook_entry_path(@game, @notebook_entry), notice: "Entry updated." }
+      if inline_request?
+        render :update
+      else
+        redirect_to game_notebook_entry_path(@game, @notebook_entry), notice: "Entry updated."
       end
+    elsif inline_request?
+      render :update_failed
     else
-      respond_to do |format|
-        format.turbo_stream { render :update_failed }
-        format.html { render :edit, status: :unprocessable_content }
-      end
+      render :edit, status: :unprocessable_content
     end
   end
 
@@ -85,6 +82,10 @@ class NotebookEntriesController < ApplicationController
   def move
     authorize @notebook_entry, :update?
     @notebook_entry.update!(move_params)
+
+    respond_to do |format|
+      format.turbo_stream
+    end
   end
 
   sig { void }
@@ -96,10 +97,7 @@ class NotebookEntriesController < ApplicationController
       @notebook_entry.update!(status: "done", promoted_page: page)
     end
 
-    respond_to do |format|
-      format.turbo_stream
-      format.html { redirect_to game_page_path(@game, T.must(@notebook_entry.promoted_page)), notice: "Promoted to a page." }
-    end
+    redirect_to game_page_path(@game, T.must(@notebook_entry.promoted_page)), notice: "Promoted to a page."
   end
 
   private
@@ -124,6 +122,11 @@ class NotebookEntriesController < ApplicationController
   sig { params(game: Game).returns(T::Array[NotebookEntry]) }
   def entries_for(game)
     game.notebook_entries.order(:created_at).to_a
+  end
+
+  sig { returns(T::Boolean) }
+  def inline_request?
+    params[:inline].present?
   end
 
   sig { returns(ActionController::Parameters) }

@@ -79,12 +79,8 @@ class PostsController < ApplicationController
   def update
     authorize @post
     @post.update!(content: params[:post][:content], last_edited_at: Time.current) # mutant:disable
-    @post_presenter = PostPresenter.new(@post, scene_participants: @scene.scene_participants.includes(:character, :user).to_a) # mutant:disable
 
-    respond_to do |format|
-      format.turbo_stream
-      format.html { redirect_to game_scene_path(@game, @scene) }
-    end
+    redirect_to game_scene_path(@game, @scene)
   end
 
   private

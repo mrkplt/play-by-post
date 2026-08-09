@@ -99,13 +99,13 @@ RSpec.describe NotebookEntriesController, type: :request do
       expect(response).to have_http_status(:unprocessable_content)
     end
 
-    it "responds with a turbo_stream appending the card" do
+    it "redirects to the new entry's show page even when Turbo requests turbo_stream" do
       sign_in(gm)
       post game_notebook_entries_path(game),
         params: { notebook_entry: { title: "Streamed", body: "x" } },
         as: :turbo_stream
-      expect(response.media_type).to eq(Mime[:turbo_stream].to_s)
-      expect(response.body).to include("Streamed")
+      entry = NotebookEntry.find_by!(title: "Streamed")
+      expect(response).to redirect_to(game_notebook_entry_path(game, entry))
     end
 
     it "does not let an active player create an entry" do
@@ -159,13 +159,21 @@ RSpec.describe NotebookEntriesController, type: :request do
       expect(entry.reload.slug).to eq(original_slug)
     end
 
-    it "responds with a turbo_stream replacing the card in read mode" do
+    it "responds with a turbo_stream replacing the card in read mode for an inline (board) edit" do
+      sign_in(gm)
+      patch game_notebook_entry_path(game, entry),
+        params: { notebook_entry: { title: "Streamed Update" }, inline: "1" },
+        as: :turbo_stream
+      expect(response.media_type).to eq(Mime[:turbo_stream].to_s)
+      expect(response.body).to include("Streamed Update")
+    end
+
+    it "redirects to show for a non-inline edit even when Turbo requests turbo_stream" do
       sign_in(gm)
       patch game_notebook_entry_path(game, entry),
         params: { notebook_entry: { title: "Streamed Update" } },
         as: :turbo_stream
-      expect(response.media_type).to eq(Mime[:turbo_stream].to_s)
-      expect(response.body).to include("Streamed Update")
+      expect(response).to redirect_to(game_notebook_entry_path(game, entry))
     end
 
     it "edit responds with a turbo_stream replacing the card in edit mode" do
@@ -245,11 +253,11 @@ RSpec.describe NotebookEntriesController, type: :request do
       expect(response).to redirect_to(game_page_path(game, page))
     end
 
-    it "creates a page and responds via turbo_stream" do
+    it "redirects to the promoted page even when Turbo requests turbo_stream" do
       sign_in(gm)
       post promote_game_notebook_entry_path(game, entry), as: :turbo_stream
-      expect(response.media_type).to eq(Mime[:turbo_stream].to_s)
-      expect(response.body).to include("Promoted to")
+      page = Page.last
+      expect(response).to redirect_to(game_page_path(game, page))
     end
 
     it "is a no-op on re-promotion — no duplicate page" do

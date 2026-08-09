@@ -64,8 +64,10 @@ RSpec.describe "Posts", type: :feature do
       visit game_scene_path(game, scene)
       fill_in "Write your post... (markdown)", with: "Orginal typo here."
       click_on "POST"
+      expect(page).to have_text("Orginal typo here.")
 
       click_on "Edit"
+      expect(page).to have_field(with: "Orginal typo here.")
       find("textarea").fill_in with: "Original text here."
       click_on "Save"
 

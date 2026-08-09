@@ -1,6 +1,7 @@
 <div id="<%= dom_id(notebook_entry) %>" class="<%= card_classes %>">
   <% if edit_mode? %>
     <%= form_with model: [ game, notebook_entry ], data: { turbo_stream: true }, class: "flex flex-col gap-2" do |f| %>
+      <%= hidden_field_tag :inline, "1" %>
       <%= f.text_field :title, autofocus: true, placeholder: "Entry title",
             class: "w-full border border-input-border rounded-control px-2.5 py-2 text-sm text-ink bg-card placeholder:text-muted-2" %>
 
