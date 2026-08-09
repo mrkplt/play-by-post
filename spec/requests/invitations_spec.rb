@@ -55,6 +55,35 @@ RSpec.describe InvitationsController, type: :request do
     end
   end
 
+  describe "POST /games/:game_id/player_management/invitations/:id/resend" do
+    let!(:invitation) { create(:invitation, game: game) }
+
+    it "GM can resend a pending invitation without creating a new one" do
+      sign_in(gm)
+      original_token = invitation.token
+      expect {
+        post resend_game_player_management_invitation_path(game, invitation)
+      }.not_to change(Invitation, :count)
+      expect(invitation.reload.token).to eq(original_token)
+      expect(response).to redirect_to(game_path(game, anchor: "roster"))
+      expect(flash[:notice]).to match(/resent/i)
+    end
+
+    it "sends the invitation email again" do
+      sign_in(gm)
+      expect {
+        post resend_game_player_management_invitation_path(game, invitation)
+      }.to change { ActionMailer::Base.deliveries.count }.by(1)
+      expect(ActionMailer::Base.deliveries.last.to).to eq([ invitation.email ])
+    end
+
+    it "player cannot resend an invitation" do
+      sign_in(player)
+      post resend_game_player_management_invitation_path(game, invitation)
+      expect(response).to redirect_to(game_path(game))
+    end
+  end
+
   describe "GET /invitations/:token/accept" do
     let(:invitation) { create(:invitation, game: game) }
 

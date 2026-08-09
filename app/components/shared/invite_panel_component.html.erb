@@ -10,9 +10,14 @@
   <%= render Ui::CardComponent.new do %>
     <% pending_invitations.each_with_index do |inv, i| %>
       <%= render Ui::SettingsRowComponent.new(label: inv.email, sub: sent_label(inv), last: last?(i)) do %>
-        <%= form_with url: cancel_url(inv), method: :delete, class: "inline" do |f| %>
-          <%= f.submit "Cancel", class: "text-[11px] font-bold text-danger bg-transparent border-0 cursor-pointer p-0" %>
-        <% end %>
+        <div class="flex gap-3 items-center">
+          <%= form_with url: resend_url(inv), method: :post, class: "inline" do |f| %>
+            <%= f.submit "Resend", class: "text-[11px] font-bold text-accent bg-transparent border-0 cursor-pointer p-0" %>
+          <% end %>
+          <%= form_with url: cancel_url(inv), method: :delete, class: "inline" do |f| %>
+            <%= f.submit "Cancel", class: "text-[11px] font-bold text-danger bg-transparent border-0 cursor-pointer p-0" %>
+          <% end %>
+        </div>
       <% end %>
     <% end %>
   <% end %>

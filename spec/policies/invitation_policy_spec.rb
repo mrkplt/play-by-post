@@ -11,17 +11,19 @@ RSpec.describe InvitationPolicy do
     allow(invitation).to receive(:game).and_return(game)
   end
 
-  describe "#create? / #destroy? (GM of the invitation's game)" do
+  describe "#create? / #destroy? / #resend? (GM of the invitation's game)" do
     it "are true for the GM" do
       allow(game).to receive(:game_master?).with(user).and_return(true)
       expect(policy.create?).to be(true)
       expect(policy.destroy?).to be(true)
+      expect(policy.resend?).to be(true)
     end
 
     it "are false for a non-GM" do
       allow(game).to receive(:game_master?).with(user).and_return(false)
       expect(policy.create?).to be(false)
       expect(policy.destroy?).to be(false)
+      expect(policy.resend?).to be(false)
     end
   end
 end

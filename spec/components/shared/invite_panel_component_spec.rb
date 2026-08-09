@@ -31,10 +31,11 @@ RSpec.describe Shared::InvitePanelComponent, type: :component do
       expect(component.pending?).to be(true)
     end
 
-    it "renders each pending invitation with a cancel control" do
+    it "renders each pending invitation with resend and cancel controls" do
       render_inline(component)
       expect(page).to have_text("Pending Invitations")
       expect(page).to have_text("pending@example.com")
+      expect(page).to have_button("Resend")
       expect(page).to have_button("Cancel")
     end
 
@@ -56,6 +57,11 @@ RSpec.describe Shared::InvitePanelComponent, type: :component do
     it "targets the invitation member route for cancellation" do
       render_inline(component)
       expect(page).to have_css("form[action='/games/#{game.id}/player_management/invitations/#{invitation.id}']")
+    end
+
+    it "targets the invitation resend route for resending" do
+      render_inline(component)
+      expect(page).to have_css("form[action='/games/#{game.id}/player_management/invitations/#{invitation.id}/resend']")
     end
   end
 end
