@@ -1,1 +1,5 @@
-<button class="<%= classes %>"<%= " disabled" if @disabled %>><%= content %></button>
+<% if link? %>
+  <%= link_to content, url, **link_options %>
+<% else %>
+  <%= content_tag :button, content, **button_options %>
+<% end %>

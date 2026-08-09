@@ -71,6 +71,10 @@ matcher:
     - Shared::SidebarComponent
     - Shared::TreeNodeComponent
     - Shared::GameHeaderComponent
+    - Shared::HeaderComponent
+    - Shared::GameNavComponent
+    - Shared::BreadcrumbsComponent
+    - Shared::PageActionsComponent
     - Shared::NavDrawerComponent
     - Shared::GameCardComponent
     - Shared::RosterRowComponent
