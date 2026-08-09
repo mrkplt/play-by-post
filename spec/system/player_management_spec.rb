@@ -59,7 +59,16 @@ RSpec.describe "Player Management", type: :feature do
       find("input[name='invitation[email]']").fill_in with: "invited@example.com"
       click_on "Invite"
 
-      expect(ActionMailer::Base.deliveries.map(&:to).flatten).to include("invited@example.com")
+      mail = nil
+      Timeout.timeout(Capybara.default_max_wait_time) do
+        loop do
+          mail = ActionMailer::Base.deliveries.find { |m| m.to.include?("invited@example.com") }
+          break if mail
+          sleep 0.05
+        end
+      end
+
+      expect(mail.to).to include("invited@example.com")
     end
 
     it "invited player can accept and join the game" do

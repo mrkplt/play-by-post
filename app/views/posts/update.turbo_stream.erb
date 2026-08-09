@@ -1,8 +1,0 @@
-<%= turbo_stream.replace dom_id(@post) do %>
-  <%= render Shared::PostItemComponent.new(
-        post: @post_presenter,
-        game: @game,
-        current_user: current_user,
-        scene: @scene
-      ) %>
-<% end %>

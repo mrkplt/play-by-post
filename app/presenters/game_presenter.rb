@@ -37,4 +37,11 @@ class GamePresenter < BasePresenter
   def links
     @model.game_links.order(created_at: :desc).to_a
   end
+
+  # The game's notebook entries, grouped by kanban lane (oldest first within
+  # each lane) — the data behind the GM-only Notebook tab's board.
+  sig { returns(T::Hash[String, T::Array[NotebookEntry]]) }
+  def notebook_entries
+    @model.notebook_entries.order(:created_at).to_a.group_by(&:status)
+  end
 end

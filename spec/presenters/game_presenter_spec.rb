@@ -46,6 +46,23 @@ RSpec.describe GamePresenter do
     end
   end
 
+  describe "#notebook_entries" do
+    it "returns the game's notebook entries grouped by status, ordered by created_at" do
+      new_entry = build_stubbed(:notebook_entry, status: "new")
+      expand_entry = build_stubbed(:notebook_entry, status: "expand")
+      all_rel = double("all notebook entries")
+      ordered_rel = double("ordered notebook entries")
+      allow(game).to receive(:notebook_entries).and_return(all_rel)
+      allow(all_rel).to receive(:order).with(:created_at).and_return(ordered_rel)
+      allow(ordered_rel).to receive(:to_a).and_return([ new_entry, expand_entry ])
+
+      expect(presenter.notebook_entries).to eq(
+        "new" => [ new_entry ],
+        "expand" => [ expand_entry ]
+      )
+    end
+  end
+
   it "delegates model methods to the game" do
     expect(presenter.name).to eq(game.name)
   end

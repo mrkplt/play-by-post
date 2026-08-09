@@ -445,6 +445,20 @@ class Game
     sig { params(value: T::Enumerable[::Invitation]).void }
     def invitations=(value); end
 
+    # This method is created by ActiveRecord on the `Game` class because it declared `has_many :notebook_entries`.
+    # 🔗 [Rails guide for `has_many` association](https://guides.rubyonrails.org/association_basics.html#the-has-many-association)
+    sig { returns(::NotebookEntry::PrivateCollectionProxy) }
+    def notebook_entries; end
+
+    sig { params(value: T::Enumerable[::NotebookEntry]).void }
+    def notebook_entries=(value); end
+
+    sig { returns(T::Array[T.untyped]) }
+    def notebook_entry_ids; end
+
+    sig { params(ids: T::Array[T.untyped]).returns(T::Array[T.untyped]) }
+    def notebook_entry_ids=(ids); end
+
     sig { returns(T::Array[T.untyped]) }
     def page_ids; end
 

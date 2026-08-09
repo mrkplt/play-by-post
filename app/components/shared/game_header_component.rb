@@ -55,12 +55,14 @@ class Shared::GameHeaderComponent < ApplicationComponent
 
   sig { returns(T::Array[Ui::PillTabsComponent::Tab]) }
   def tabs
-    [
+    base = [
       Ui::PillTabsComponent::Tab.new(label: "Scenes", panel: :scenes),
       Ui::PillTabsComponent::Tab.new(label: "Roster", panel: :roster),
       Ui::PillTabsComponent::Tab.new(label: "Files", panel: :files),
       Ui::PillTabsComponent::Tab.new(label: "Pages", panel: :pages),
       Ui::PillTabsComponent::Tab.new(label: "Links", panel: :links)
     ]
+    base << Ui::PillTabsComponent::Tab.new(label: "Notebook", panel: :notebook) if @is_gm
+    base
   end
 end

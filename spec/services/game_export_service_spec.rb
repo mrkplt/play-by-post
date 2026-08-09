@@ -487,6 +487,30 @@ RSpec.describe GameExportService do
     end
   end
 
+  describe "#notebook_entry_content" do
+    let(:service) { described_class.new(build_stubbed(:user), []) }
+
+    def content(entry)
+      service.send(:notebook_entry_content, entry)
+    end
+
+    it "titles the entry as an h1" do
+      expect(content(build_stubbed(:notebook_entry, title: "Wandering Merchant"))).to include("# Wandering Merchant")
+    end
+
+    it "includes the status" do
+      expect(content(build_stubbed(:notebook_entry, status: "expand"))).to include("**Status:** expand")
+    end
+
+    it "includes the markdown body" do
+      expect(content(build_stubbed(:notebook_entry, body: "Shows up **twice**."))).to include("Shows up **twice**.")
+    end
+
+    it "notes an empty body rather than writing nothing" do
+      expect(content(build_stubbed(:notebook_entry, body: nil))).to include("_No content._")
+    end
+  end
+
   describe "#slugify" do
     let(:service) { described_class.new(build_stubbed(:user), []) }
 
@@ -557,6 +581,16 @@ RSpec.describe GameExportService do
       allow(game).to receive(:pages).and_return(c)
 
       service.send(:pages_for, game)
+
+      expect(c).to have_received(:order).with(:title)
+    end
+
+    it "loads notebook entries ordered by title" do
+      game = build_stubbed(:game)
+      c = chain
+      allow(game).to receive(:notebook_entries).and_return(c)
+
+      service.send(:notebook_entries_for, game)
 
       expect(c).to have_received(:order).with(:title)
     end
@@ -686,8 +720,11 @@ RSpec.describe GameExportService do
     let(:export_user) { build_stubbed(:user) }
     let(:gm_member) { build_stubbed(:game_member, role: "game_master", status: "active") }
 
-    def build_service(games, scenes: [], characters: [], versions: [], pages: [])
-      games.each { |g| allow(g).to receive(:member_for).with(export_user).and_return(gm_member) }
+    def build_service(games, scenes: [], characters: [], versions: [], pages: [], notebook_entries: [], gm: true)
+      games.each do |g|
+        allow(g).to receive(:member_for).with(export_user).and_return(gm_member)
+        allow(g).to receive(:game_master?).with(export_user).and_return(gm)
+      end
       described_class.new(export_user, games).tap do |service|
         allow(service).to receive(:export_scenes_for).and_return(scenes)
         allow(service).to receive(:members_for).and_return([])
@@ -698,6 +735,7 @@ RSpec.describe GameExportService do
         allow(service).to receive(:characters_for).and_return(characters)
         allow(service).to receive(:versions_for).and_return(versions)
         allow(service).to receive(:pages_for).and_return(pages)
+        allow(service).to receive(:notebook_entries_for).and_return(notebook_entries)
       end
     end
 
@@ -763,6 +801,18 @@ RSpec.describe GameExportService do
 
       expect(entries).to include(a_string_matching(%r{pages/lore\.md$}))
       expect(entries).to include(a_string_matching(%r{pages/lore-2\.md$}))
+    end
+
+    it "writes a markdown file per notebook entry for the GM, slugged from the title" do
+      entries = entries_for(one_game, gm: true, notebook_entries: [ build_stubbed(:notebook_entry, title: "Wandering Merchant") ])
+
+      expect(entries).to include(a_string_matching(%r{notebook/wandering-merchant\.md$}))
+    end
+
+    it "does not write a notebook directory for a non-GM, even with entries stubbed" do
+      entries = entries_for(one_game, gm: false, notebook_entries: [ build_stubbed(:notebook_entry, title: "Secret Plan") ])
+
+      expect(entries).not_to include(a_string_matching(%r{notebook/}))
     end
 
     context "with several games" do
@@ -843,6 +893,15 @@ RSpec.describe GameExportService do
 
         expect(zip_file_content(zip_data, name)).to eq(service.send(:page_content, one_page))
       end
+
+      it "writes each notebook entry's own content under notebook/{slug}.md" do
+        one_entry = build_stubbed(:notebook_entry, title: "Wandering Merchant")
+        service = build_service(one_game, gm: true, notebook_entries: [ one_entry ])
+        zip_data = service.call
+        name = zip_entries(zip_data).find { |e| e.end_with?("wandering-merchant.md") }
+
+        expect(zip_file_content(zip_data, name)).to eq(service.send(:notebook_entry_content, one_entry))
+      end
     end
   end
 
@@ -859,6 +918,12 @@ RSpec.describe GameExportService do
       # entry paths, per-membership scene selection, multi-game roots and slug
       # disambiguation — which is exactly what #call integrates. Every content
       # builder feeding it is covered above without a connection.
+
+      it "includes the game's notebook entries under notebook/" do
+        create(:notebook_entry, game: game, title: "Wandering Merchant")
+        entries = zip_entries(zip_data)
+        expect(entries).to include(a_string_matching(%r{notebook/wandering-merchant\.md$}))
+      end
     end
 
     context "single game, active player" do
@@ -869,6 +934,12 @@ RSpec.describe GameExportService do
         create(:scene, :private, game: game, title: "Secret Scene")
         entries = zip_entries(GameExportService.new(player_user, [ game ]).call)
         expect(entries).not_to include(a_string_matching(%r{secret-scene}))
+      end
+
+      it "never includes notebook content, even though the game has entries" do
+        create(:notebook_entry, game: game, title: "Secret Plan")
+        entries = zip_entries(zip_data)
+        expect(entries).not_to include(a_string_matching(%r{notebook/}))
       end
     end
 

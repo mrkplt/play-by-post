@@ -175,7 +175,9 @@ RSpec.describe "Games", type: :feature do
       fill_in "Name", with: "New Campaign"
       click_on "Create game"
 
-      expect(page).to have_link(href: game_player_management_path(Game.last))
+      expect(page).to have_text("New Campaign")
+      game = Game.find_by!(name: "New Campaign")
+      expect(page).to have_link(href: game_player_management_path(game))
     end
 
     it "requires a name" do

@@ -66,6 +66,12 @@ Rails.application.routes.draw do
       resources :game_files, only: %i[index create destroy]
       resources :pages, only: %i[new create show edit update destroy], param: :slug
       resources :game_links, only: %i[index new create edit update destroy]
+      resources :notebook_entries, only: %i[index new create show edit update destroy], param: :slug do
+        member do
+          patch :move
+          post :promote
+        end
+      end
       resources :characters, only: %i[new create show edit update] do
         member do
           patch :archive

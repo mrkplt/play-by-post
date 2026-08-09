@@ -31,6 +31,7 @@ RSpec.describe GamePurgeJob, type: :job, db: true do
     records[:game_file] = create(:game_file, game: game)
     records[:page] = create(:page, game: game)
     records[:game_link] = create(:game_link, game: game)
+    records[:notebook_entry] = create(:notebook_entry, game: game)
     records[:export] = create(:game_export_request, user: gm, game: game)
 
     parent.image.attach(io: StringIO.new("s"), filename: "scene-#{suffix}.png", content_type: "image/png")
@@ -53,6 +54,7 @@ RSpec.describe GamePurgeJob, type: :job, db: true do
       Character.exists?(r[:character].id) && CharacterVersion.exists?(r[:character_version].id) &&
       GameFile.exists?(r[:game_file].id) && Page.exists?(r[:page].id) &&
       GameLink.exists?(r[:game_link].id) &&
+      NotebookEntry.exists?(r[:notebook_entry].id) &&
       Invitation.exists?(r[:invitation].id) &&
       GameMember.where(id: r[:memberships].map(&:id)).count == 2 &&
       GameExportRequest.exists?(r[:export].id) &&
@@ -97,6 +99,7 @@ RSpec.describe GamePurgeJob, type: :job, db: true do
         expect(GameFile.where(id: target[:game_file].id)).to be_empty
         expect(Page.where(id: target[:page].id)).to be_empty
         expect(GameLink.where(id: target[:game_link].id)).to be_empty
+        expect(NotebookEntry.where(id: target[:notebook_entry].id)).to be_empty
         expect(Invitation.where(id: target[:invitation].id)).to be_empty
         expect(GameMember.where(id: target[:memberships].map(&:id))).to be_empty
         expect(GameExportRequest.where(id: target[:export].id)).to be_empty

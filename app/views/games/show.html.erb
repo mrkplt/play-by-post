@@ -130,5 +130,12 @@
     <section data-game-tabs-target="panel" data-panel="links" hidden>
       <%= render Shared::GameLinksListComponent.new(game: @game, game_links: @game_presenter.links, is_gm: @game_presenter.gm?) %>
     </section>
+
+    <%# ===== Notebook panel (GM only) ===== %>
+    <% if @game_presenter.gm? %>
+      <section data-game-tabs-target="panel" data-panel="notebook" hidden>
+        <%= render Shared::NotebookBoardComponent.new(game: @game, entries_by_status: @game_presenter.notebook_entries) %>
+      </section>
+    <% end %>
   <% end %>
 </div>

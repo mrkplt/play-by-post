@@ -37,6 +37,7 @@ matcher:
     - Feedback
     - Page
     - GameLink
+    - NotebookEntry
     # Presenters
     - GameFilePresenter
     - GamePresenter
@@ -82,6 +83,10 @@ matcher:
     - Shared::GamePagesListComponent
     - Shared::GameLinksListComponent
     - Shared::LinkFormComponent
+    - Shared::NotebookFormComponent
+    - Shared::NotebookCardComponent
+    - Shared::NotebookBoardComponent
+    - Shared::NotebookDetailComponent
     - Ui::BadgeComponent
     - Ui::BreadcrumbComponent
     - Ui::ButtonComponent
@@ -120,6 +125,7 @@ matcher:
     - GameFilesController
     - PagesController
     - GameLinksController
+    - NotebookEntriesController
     - InvitationsController
     - GameMembersController
     - CharacterVersionsController
@@ -157,6 +163,7 @@ matcher:
     - PostPolicy
     - GameFilePolicy
     - GameLinkPolicy
+    - NotebookEntryPolicy
     - SceneSummaryPolicy
     - CharacterVersionPolicy
     - UserProfilePolicy
