@@ -84,13 +84,12 @@ RSpec.describe Shared::CharacterFormComponent, type: :component do
   end
 
   describe "new-character rendering" do
-    it "renders the name field, markdown toolbar, sheet editor and submit control" do
+    it "renders the name field, markdown toolbar, sheet editor and a form id for the external submit button" do
       render_inline(build_component(character: new_character))
       expect(page).to have_field("Name")
       expect(page).to have_css("div[role='toolbar'][aria-label='Markdown formatting']")
       expect(page).to have_css("textarea.markdown-editor[data-markdown-toolbar-target='input']")
-      expect(page).to have_button("Create Character")
-      expect(page).to have_link("Cancel", href: path(:game_path, game))
+      expect(page).to have_css("form#new_character_form")
     end
 
     it "omits the owner selector, visibility toggle and archive action" do
@@ -109,12 +108,11 @@ RSpec.describe Shared::CharacterFormComponent, type: :component do
   end
 
   describe "edit-character rendering" do
-    it "renders the visibility toggle, archive action and edit cancel href for a GM" do
+    it "renders the visibility toggle, archive action, and a per-record form id for a GM" do
       render_inline(build_component(character: existing_character, can_assign_owner: true))
       expect(page).to have_field("Hide from other players")
       expect(page).to have_button("Archive character")
-      expect(page).to have_button("Save")
-      expect(page).to have_link("Cancel", href: path(:game_character_path, game, existing_character))
+      expect(page).to have_css("form#edit_character_#{existing_character.id}_form")
     end
 
     it "renders a restore action when the character is archived" do

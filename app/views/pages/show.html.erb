@@ -2,7 +2,10 @@
 
 <%= render Shared::MobileFrameComponent.new do |frame| %>
   <% frame.with_header do %>
-    <%= render Shared::PageHeaderComponent.new(title: @page.title, leading: :back, back_href: game_path(@game, anchor: "pages")) %>
+    <%= render Shared::HeaderComponent.new(
+          title: @page.title,
+          breadcrumbs: Shared::BreadcrumbsComponent.new(game: @game),
+          secondary_nav: Shared::GameNavComponent.new(game: @game, active_tab: :pages, is_gm: policy(@game).update?, mode: :link)) %>
   <% end %>
 
   <%= render Shared::PageDetailComponent.new(game: @game, page: @page, is_gm: policy(@page).update?) %>

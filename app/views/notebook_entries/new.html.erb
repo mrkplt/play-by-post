@@ -2,7 +2,21 @@
 
 <%= render Shared::MobileFrameComponent.new do |frame| %>
   <% frame.with_header do %>
-    <%= render Shared::PageHeaderComponent.new(title: "New Entry", leading: :back, back_href: game_notebook_entries_path(@game)) %>
+    <%= render Shared::HeaderComponent.new(
+          title: "New Entry",
+          breadcrumbs: Shared::BreadcrumbsComponent.new(game: @game),
+          secondary_nav: Shared::GameNavComponent.new(game: @game, active_tab: :notebook, is_gm: true, mode: :link)) %>
+  <% end %>
+
+  <% frame.with_footer do %>
+    <%= render Shared::PageActionsComponent.new do |actions| %>
+      <% actions.with_primary do %>
+        <%= render Ui::ButtonComponent.new(html_options: { type: "submit", form: "notebook_entry_new_form_element" }) { "Create Entry" } %>
+      <% end %>
+      <% actions.with_cancel do %>
+        <%= render Ui::ButtonComponent.new(variant: :secondary, url: game_notebook_entries_path(@game)) { "Cancel" } %>
+      <% end %>
+    <% end %>
   <% end %>
 
   <%= render Shared::NotebookFormComponent.new(game: @game, notebook_entry: @notebook_entry) %>

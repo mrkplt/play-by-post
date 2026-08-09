@@ -34,6 +34,11 @@ class Shared::NotebookFormComponent < ApplicationComponent
     new_record? ? helpers.game_notebook_entries_path(@game) : helpers.game_notebook_entry_path(@game, @notebook_entry)
   end
 
+  sig { returns(String) }
+  def form_id
+    new_record? ? "notebook_entry_new_form_element" : "notebook_entry_#{T.must(@notebook_entry.id)}_edit_form_element"
+  end
+
   sig { returns(T::Boolean) }
   def errors?
     @notebook_entry.errors.any?

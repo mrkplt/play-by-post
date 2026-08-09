@@ -28,6 +28,14 @@ RSpec.describe NotebookEntriesController, type: :request do
       expect(response.body).to include("Idea")
     end
 
+    it "renders the universal header nav affordances" do
+      sign_in(gm)
+      get game_notebook_entries_path(game)
+      expect_hamburger_present
+      expect_breadcrumb(game.name)
+      expect_active_tab("Notebook")
+    end
+
     it "is denied to an active player" do
       sign_in(player)
       get game_notebook_entries_path(game)
@@ -75,6 +83,14 @@ RSpec.describe NotebookEntriesController, type: :request do
       sign_in(player)
       get new_game_notebook_entry_path(game)
       expect(response).to redirect_to(game_path(game))
+    end
+
+    it "renders the universal header nav affordances" do
+      sign_in(gm)
+      get new_game_notebook_entry_path(game)
+      expect_hamburger_present
+      expect_breadcrumb(game.name)
+      expect_active_tab("Notebook")
     end
   end
 

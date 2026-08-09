@@ -2,7 +2,21 @@
 
 <%= render Shared::MobileFrameComponent.new do |frame| %>
   <% frame.with_header do %>
-    <%= render Shared::PageHeaderComponent.new(title: "New Character", leading: :back, back_href: game_path(@game)) %>
+    <%= render Shared::HeaderComponent.new(
+          title: "New Character",
+          breadcrumbs: Shared::BreadcrumbsComponent.new(game: @game),
+          secondary_nav: Shared::GameNavComponent.new(game: @game, active_tab: :roster, is_gm: policy(@game).update?, mode: :link)) %>
+  <% end %>
+
+  <% frame.with_footer do %>
+    <%= render Shared::PageActionsComponent.new do |actions| %>
+      <% actions.with_primary do %>
+        <%= render Ui::ButtonComponent.new(html_options: { type: "submit", form: "new_character_form" }) { "Create Character" } %>
+      <% end %>
+      <% actions.with_cancel do %>
+        <%= render Ui::ButtonComponent.new(variant: :secondary, url: game_path(@game)) { "Cancel" } %>
+      <% end %>
+    <% end %>
   <% end %>
 
   <%= render Shared::CharacterFormComponent.new(

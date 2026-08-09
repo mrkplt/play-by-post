@@ -81,6 +81,11 @@ class Shared::CharacterFormComponent < ApplicationComponent
     new_record? ? helpers.game_path(@game) : helpers.game_character_path(@game, @character)
   end
 
+  sig { returns(String) }
+  def form_id
+    new_record? ? "new_character_form" : "edit_character_#{T.must(@character.id)}_form"
+  end
+
   sig { returns(T::Boolean) }
   def errors?
     @character.errors.any?

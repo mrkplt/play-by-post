@@ -36,6 +36,11 @@ class Shared::PageFormComponent < ApplicationComponent
     new_record? ? helpers.game_path(@game, anchor: "pages") : helpers.game_page_path(@game, @page)
   end
 
+  sig { returns(String) }
+  def form_id
+    new_record? ? "new_page_form" : "edit_page_#{T.must(@page.id)}_form"
+  end
+
   sig { returns(T::Boolean) }
   def errors?
     @page.errors.any?

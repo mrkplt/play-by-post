@@ -53,6 +53,14 @@ RSpec.describe PagesController, type: :request do
       get game_page_path(game, page)
       expect(request.path).to include(page.slug)
     end
+
+    it "renders the universal header nav affordances" do
+      sign_in(player)
+      get game_page_path(game, page)
+      expect_hamburger_present
+      expect_breadcrumb(game.name)
+      expect_active_tab("Pages")
+    end
   end
 
   describe "GET new" do
@@ -66,6 +74,14 @@ RSpec.describe PagesController, type: :request do
       sign_in(player)
       get new_game_page_path(game)
       expect(response).to redirect_to(game_path(game, anchor: "pages"))
+    end
+
+    it "renders the universal header nav affordances" do
+      sign_in(gm)
+      get new_game_page_path(game)
+      expect_hamburger_present
+      expect_breadcrumb(game.name)
+      expect_active_tab("Pages")
     end
   end
 
@@ -121,6 +137,14 @@ RSpec.describe PagesController, type: :request do
       sign_in(player)
       patch game_page_path(game, page), params: { page: { title: "Hacked" } }
       expect(page.reload.title).to eq("Original")
+    end
+
+    it "renders the universal header nav affordances on edit" do
+      sign_in(gm)
+      get edit_game_page_path(game, page)
+      expect_hamburger_present
+      expect_breadcrumb(game.name)
+      expect_active_tab("Pages")
     end
   end
 

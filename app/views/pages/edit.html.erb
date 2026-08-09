@@ -2,7 +2,21 @@
 
 <%= render Shared::MobileFrameComponent.new do |frame| %>
   <% frame.with_header do %>
-    <%= render Shared::PageHeaderComponent.new(title: "Edit — #{@page.title}", leading: :back, back_href: game_page_path(@game, @page)) %>
+    <%= render Shared::HeaderComponent.new(
+          title: "Edit — #{@page.title}",
+          breadcrumbs: Shared::BreadcrumbsComponent.new(game: @game),
+          secondary_nav: Shared::GameNavComponent.new(game: @game, active_tab: :pages, is_gm: policy(@game).update?, mode: :link)) %>
+  <% end %>
+
+  <% frame.with_footer do %>
+    <%= render Shared::PageActionsComponent.new do |actions| %>
+      <% actions.with_primary do %>
+        <%= render Ui::ButtonComponent.new(html_options: { type: "submit", form: "edit_page_#{@page.id}_form" }) { "Save" } %>
+      <% end %>
+      <% actions.with_cancel do %>
+        <%= render Ui::ButtonComponent.new(variant: :secondary, url: game_page_path(@game, @page)) { "Cancel" } %>
+      <% end %>
+    <% end %>
   <% end %>
 
   <%= render Shared::PageFormComponent.new(game: @game, page: @page) %>
