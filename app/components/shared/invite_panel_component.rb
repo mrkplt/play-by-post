@@ -32,6 +32,11 @@ class Shared::InvitePanelComponent < ApplicationComponent
   end
 
   sig { params(invitation: Invitation).returns(String) }
+  def resend_url(invitation)
+    helpers.resend_game_player_management_invitation_path(@game, invitation)
+  end
+
+  sig { params(invitation: Invitation).returns(String) }
   def sent_label(invitation)
     "Sent #{helpers.time_ago_in_words(invitation.created_at)} ago"
   end

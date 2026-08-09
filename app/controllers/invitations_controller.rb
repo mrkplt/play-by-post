@@ -31,6 +31,14 @@ class InvitationsController < ApplicationController
   end
 
   sig { void }
+  def resend
+    invitation = @game.invitations.find(params[:id])
+    authorize invitation, :resend?
+    InvitationMailer.invite(invitation).deliver_later
+    redirect_to game_path(@game, anchor: "roster"), notice: "Invitation resent to #{invitation.email}."
+  end
+
+  sig { void }
   def accept
     @invitation = Invitation.find_by(token: params[:token])
 

@@ -4,10 +4,6 @@
 
 Play-by-Post TTRPG — Rails 8 app for asynchronous tabletop RPGs. GMs and players collaborate on scenes through threaded posts, with email notifications and reply-by-email.
 
-- [Product requirements](../context/REQUIREMENTS.md)
-
-**IMPORTANT:** When implementing or modifying any feature, `context/REQUIREMENTS.md` must be updated to reflect the new or changed behaviour before the work is considered complete.
-
 ---
 
 ## Working With the Owner

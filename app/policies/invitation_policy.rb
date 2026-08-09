@@ -16,6 +16,12 @@ class InvitationPolicy < ApplicationPolicy
     gm?
   end
 
+  # Only the GM resends a pending invitation.
+  sig { returns(T::Boolean) }
+  def resend?
+    gm?
+  end
+
   private
 
   sig { returns(T::Boolean) }

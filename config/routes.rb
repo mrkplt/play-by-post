@@ -57,7 +57,9 @@ Rails.application.routes.draw do
         end
       end
       resource :player_management, only: %i[show], controller: "player_management" do
-        resources :invitations, only: %i[create destroy]
+        resources :invitations, only: %i[create destroy] do
+          post :resend, on: :member
+        end
         resources :game_members, only: %i[update]
       end
       resource :export, only: %i[create], controller: "game_exports"
