@@ -88,7 +88,7 @@ RSpec.describe NotebookEntriesController, type: :request do
       entry = NotebookEntry.last
       expect(entry.slug).to match(/\A[a-zA-Z0-9]{16}\z/)
       expect(entry.status).to eq("new")
-      expect(response).to redirect_to(game_notebook_entry_path(game, entry))
+      expect(response).to redirect_to(game_notebook_entries_path(game))
     end
 
     it "re-renders on validation failure" do
@@ -99,13 +99,12 @@ RSpec.describe NotebookEntriesController, type: :request do
       expect(response).to have_http_status(:unprocessable_content)
     end
 
-    it "redirects to the new entry's show page even when Turbo requests turbo_stream" do
+    it "redirects to the index even when Turbo requests turbo_stream" do
       sign_in(gm)
       post game_notebook_entries_path(game),
         params: { notebook_entry: { title: "Streamed", body: "x" } },
         as: :turbo_stream
-      entry = NotebookEntry.find_by!(title: "Streamed")
-      expect(response).to redirect_to(game_notebook_entry_path(game, entry))
+      expect(response).to redirect_to(game_notebook_entries_path(game))
     end
 
     it "does not let an active player create an entry" do

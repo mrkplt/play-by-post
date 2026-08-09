@@ -30,7 +30,7 @@ class NotebookEntriesController < ApplicationController
     authorize @notebook_entry
 
     if @notebook_entry.save
-      redirect_to game_notebook_entry_path(@game, @notebook_entry), notice: "Entry created."
+      redirect_to game_notebook_entries_path(@game), notice: "Entry created."
     else
       respond_to do |format|
         format.turbo_stream { render :create_failed }
