@@ -1,0 +1,9 @@
+<% content_for :active_game_id, @game.id %>
+
+<%= render Shared::MobileFrameComponent.new do |frame| %>
+  <% frame.with_header do %>
+    <%= render Shared::PageHeaderComponent.new(title: "Notebook", leading: :back, back_href: game_path(@game, anchor: "notebook")) %>
+  <% end %>
+
+  <%= render Shared::NotebookBoardComponent.new(game: @game, entries_by_status: @entries.group_by(&:status)) %>
+<% end %>

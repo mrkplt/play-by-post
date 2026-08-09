@@ -1,0 +1,30 @@
+<div class="flex flex-col gap-4">
+  <%= link_to "New Entry", new_game_notebook_entry_path(game),
+        class: "block w-full text-center bg-accent text-accent-ink rounded-control py-2.5 font-bold text-[13px] no-underline" %>
+
+  <div class="grid grid-cols-1 gap-4">
+    <% visible_statuses.each do |status| %>
+      <div>
+        <%= render Ui::SectionLabelComponent.new do %><%= column_label(status) %><% end %>
+        <div id="<%= column_id(status) %>" class="flex flex-col gap-2 mt-1">
+          <% entries_for(status).each do |entry| %>
+            <%= render Shared::NotebookCardComponent.new(game: game, notebook_entry: entry) %>
+          <% end %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+
+  <details class="mt-1">
+    <summary class="text-xs font-bold text-muted-2 cursor-pointer">Show discarded</summary>
+    <div id="<%= column_id("discard") %>" class="flex flex-col gap-2 mt-2">
+      <% if any_discarded? %>
+        <% discarded_entries.each do |entry| %>
+          <%= render Shared::NotebookCardComponent.new(game: game, notebook_entry: entry) %>
+        <% end %>
+      <% else %>
+        <p class="text-muted-2 text-xs">Nothing discarded.</p>
+      <% end %>
+    </div>
+  </details>
+</div>

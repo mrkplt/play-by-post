@@ -58,8 +58,13 @@ RSpec.describe Shared::GameHeaderComponent, type: :component do
     end
   end
 
-  it "exposes the five tabs" do
-    labels = described_class.new(game: game, title: "x").tabs.map(&:label)
+  it "exposes the five tabs to a non-GM" do
+    labels = described_class.new(game: game, title: "x", is_gm: false).tabs.map(&:label)
     expect(labels).to eq(%w[Scenes Roster Files Pages Links])
+  end
+
+  it "adds a Notebook tab for the GM" do
+    labels = described_class.new(game: game, title: "x", is_gm: true).tabs.map(&:label)
+    expect(labels).to eq(%w[Scenes Roster Files Pages Links Notebook])
   end
 end

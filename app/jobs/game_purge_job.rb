@@ -68,6 +68,9 @@ class GamePurgeJob < ApplicationJob
       CharacterVersion.where(character_id: character_ids).in_batches.delete_all
       Character.where(id: character_ids).in_batches.delete_all
       GameFile.where(game_id: game.id).in_batches.delete_all
+      # NotebookEntry may reference a Page via promoted_page_id, so it is
+      # deleted before Page.
+      NotebookEntry.where(game_id: game.id).in_batches.delete_all
       Page.where(game_id: game.id).in_batches.delete_all
       GameLink.where(game_id: game.id).in_batches.delete_all
       Invitation.where(game_id: game.id).in_batches.delete_all

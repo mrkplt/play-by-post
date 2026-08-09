@@ -1,0 +1,3 @@
+<%= turbo_stream.replace dom_id(@notebook_entry) do %>
+  <%= render Shared::NotebookCardComponent.new(game: @game, notebook_entry: @notebook_entry, mode: :read) %>
+<% end %>

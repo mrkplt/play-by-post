@@ -31,6 +31,9 @@ module GeneratedPathHelpersModule
   def edit_game_game_link_path(*args); end
 
   sig { params(args: T.untyped).returns(String) }
+  def edit_game_notebook_entry_path(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
   def edit_game_page_path(*args); end
 
   sig { params(args: T.untyped).returns(String) }
@@ -77,6 +80,12 @@ module GeneratedPathHelpersModule
 
   sig { params(args: T.untyped).returns(String) }
   def game_game_links_path(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def game_notebook_entries_path(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def game_notebook_entry_path(*args); end
 
   sig { params(args: T.untyped).returns(String) }
   def game_page_path(*args); end
@@ -139,10 +148,16 @@ module GeneratedPathHelpersModule
   def mark_read_game_scene_post_path(*args); end
 
   sig { params(args: T.untyped).returns(String) }
+  def move_game_notebook_entry_path(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
   def new_game_character_path(*args); end
 
   sig { params(args: T.untyped).returns(String) }
   def new_game_game_link_path(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def new_game_notebook_entry_path(*args); end
 
   sig { params(args: T.untyped).returns(String) }
   def new_game_page_path(*args); end
@@ -173,6 +188,9 @@ module GeneratedPathHelpersModule
 
   sig { params(args: T.untyped).returns(String) }
   def profile_path(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def promote_game_notebook_entry_path(*args); end
 
   sig { params(args: T.untyped).returns(String) }
   def rails_blob_path(*args); end
@@ -257,6 +275,9 @@ module GeneratedPathHelpersModule
 
   sig { params(args: T.untyped).returns(String) }
   def rails_storage_redirect_path(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def resend_game_player_management_invitation_path(*args); end
 
   sig { params(args: T.untyped).returns(String) }
   def resolve_game_scene_path(*args); end

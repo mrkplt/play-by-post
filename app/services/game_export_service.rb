@@ -53,6 +53,11 @@ class GameExportService
     write_scenes(zip, prefix, game, scenes)
     write_characters(zip, prefix, game, scenes)
     write_pages(zip, prefix, game)
+    # Notebook content is GM-eyes-only regardless of general export
+    # eligibility — gated on the GM check specifically (policy.update? is
+    # GamePolicy's GM predicate), not policy.export?, since a player
+    # exporting their own visible/participating slice must never receive it.
+    write_notebook_entries(zip, prefix, game) if policy.update?
   end
 
   # Applies the export scope the policy decided (:all / :participating / :visible).
@@ -330,6 +335,31 @@ class GameExportService
     lines.join("\n")
   end
 
+  # --- Notebook (GM only, see #build_game) ---
+
+  sig { params(zip: Zip::OutputStream, prefix: String, game: Game).void }
+  def write_notebook_entries(zip, prefix, game)
+    slug_tracker = T.let({}, T::Hash[String, Integer])
+
+    notebook_entries_for(game).each do |entry|
+      slug = unique_slug(slugify(entry.title), slug_tracker)
+      zip.put_next_entry("#{prefix}notebook/#{slug}.md")
+      zip.write(notebook_entry_content(entry))
+    end
+  end
+
+  sig { params(entry: NotebookEntry).returns(String) }
+  def notebook_entry_content(entry)
+    lines = []
+    lines << "# #{entry.title}"
+    lines << ""
+    lines << "**Status:** #{entry.status}"
+    lines << ""
+    lines << (entry.body.presence || "_No content._")
+    lines << ""
+    lines.join("\n")
+  end
+
   # --- Reads -------------------------------------------------------------
   # Every database read the export performs lives here, each returning a plain
   # array. Specs covering the rendered output stub these and hand back built
@@ -348,6 +378,11 @@ class GameExportService
   sig { params(game: Game).returns(T::Array[Page]) }
   def pages_for(game)
     game.pages.order(:title).to_a
+  end
+
+  sig { params(game: Game).returns(T::Array[NotebookEntry]) }
+  def notebook_entries_for(game)
+    game.notebook_entries.order(:title).to_a
   end
 
   sig { params(game: Game).returns(T::Array[GameLink]) }
