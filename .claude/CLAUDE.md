@@ -32,6 +32,37 @@ decisions, not opening positions.
 - **Re-stating a concern after it has been heard is second-guessing.** Once they
   have responded to a concern, it is settled. Proceed.
 
+### Planning and decisions
+
+- **Decide on evidence now; do not defer a decision into a spike.** "We are writing a
+  plan, not a plan for a plan contingent on a plan." A gating "Phase 1 spike: investigate
+  X, then re-target everything" is almost always a decision dodged. If X can be answered by
+  research (docs, a grep, a measurement), answer it and write the decision in — with the
+  rationale that settled it. Example this earned: the media-templates-vs-CSS question was
+  headed for a gating spike; researching it (Turbo restoration-visit caching is unfixable
+  for UA variants; the "contortions" being deleted were ~3 CSS rules) decided it outright
+  (keep CSS), and the spike vanished.
+- **Finish the work in scope — do not spin cleanup into new cards.** "Not finishing the
+  work originally is how we got here." The 25 unstandardized `button_to` sites and the
+  stale `Ui::ButtonComponent` existed *because* earlier cleanup was deferred to tickets that
+  never happened. Consolidation a task touches (adopting an existing primitive, deleting
+  dead code, deduping) is part of that task, not a follow-up. (Mirrors the gem-maintenance
+  rule: normal maintenance, in scope.)
+- **Subagents report facts; keep/drop and prioritization are the owner's.** A survey agent
+  called four extractions "low value" — from line-count, not measurement — and was wrong:
+  it missed that a badge cluster recurred across four files and that buttons bypassed an
+  existing primitive. Have agents surface locations, counts, coupling, gate-exposure; make
+  the value judgment yourself, and never let an agent's "not worth it" pre-filter what the
+  owner sees.
+- **Verify agent claims against the code before trusting them.** Review agents in this repo
+  hallucinated a "5 existing callers" count (there were zero) and a phantom line-number
+  drift (the numbers were correct). A 10-second grep caught each. Cross-check any
+  load-bearing claim — especially file:line references and "X already exists" — before it
+  drives work.
+- **A plan handed to an implementer is a spec, not a negotiation history.** Strip the
+  discarded options, the "why we chose this," the review-round attributions. Put file:line
+  references *inline at the instruction that needs them*, not in an addendum.
+
 ---
 
 ## Technology Stack
@@ -385,6 +416,18 @@ Hard-won specifics for actually clearing the gates. Read this before touching up
 **Other rules:**
 - Happy path and error path in the same controller action must render the same component. Never mix a ViewComponent in one branch and a partial in the other. Delete old partials once fully replaced.
 - Component namespaces: `Ui::*` for primitives, `Shared::*` for domain components.
+
+**Components own their content — they are not thin HTML wrappers.** A "status badge row" or a "labeled control row" component holds its labels/controls/conditions and *is* the pattern; wrapping an already-shared primitive (e.g. nesting two `Ui::BadgeComponent` renders inside conditionals) only to add a container is not extraction. But a component takes **derived, presentation-ready data, never a raw model**: `Shared::StatusBadgeRowComponent` takes a pre-computed `[{label:, variant:}]` array (a presenter picks the symbolic `variant:` from `Ui::BadgeComponent`'s palette) — it does not receive a `Scene`/`Character` and compute `.private?`/`.resolved?` itself. That would violate the presenter/component split and force a `T.any(...)` sig across model shapes.
+
+### Navigation architecture (target shell)
+
+The app has **two-tier navigation**, and the fix for "varying presentation" is that *one* header renders on every screen (varying markup per screen is the bug, not the goal):
+- **Tier 1 (site-wide):** the hamburger opens the global nav drawer (`Shared::NavDrawerComponent`, always in the DOM via `application.html.erb`). The drawer only *opens* if a hamburger button (`data-action="click->sidebar#open"`) is on the page — so every header must render one. A back-arrow-only header is a nav dead-end.
+- **Tier 2 (in-game):** the pill tabs (`Ui::PillTabsComponent`, `:switch` = client-side panels on `games/show`, `:link` = cross-page).
+
+**The universal-header pattern:** one `Header` component on every screen, exposing a **generic `secondary_nav:` slot** (plus nilable `gear:`/`breadcrumbs:`). A screen passes the section's menu into the slot — `GameNav` for game sections, nothing for a plain page, another section's menu later — with no change to `Header`. "Which menu" is a passed-in component, never a hand-rolled per-screen layout. This is the standardization mechanism; reuse the `renders_one` slot idiom already in `Shared::MobileFrameComponent` (header/footer slots — the footer is where a page's action buttons belong, not mid-body).
+
+Responsive is **CSS `@media` at 1024px**, not template variants (evaluated and rejected: UA gives device-class not viewport-width, and Turbo restoration visits serve a cached variant with no re-negotiation). The live conditional-nav CSS is only ~3 rules; don't mistake it for complexity worth a variant split.
 
 ### Forms & text fields
 
