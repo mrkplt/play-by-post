@@ -26,6 +26,14 @@ RSpec.describe CharacterVersionsController, type: :request do
       expect(response).to have_http_status(:ok)
     end
 
+    it "renders the universal header nav affordances" do
+      sign_in(player)
+      get game_character_character_version_path(game, character, version)
+      expect_hamburger_present
+      expect_breadcrumb(game.name)
+      expect_active_tab("Roster")
+    end
+
     it "shows editor email when editor has no display name" do
       nameless = create(:user)
       create(:game_member, game: game, user: nameless)

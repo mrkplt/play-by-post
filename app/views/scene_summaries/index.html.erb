@@ -1,8 +1,25 @@
-<%= render(Ui::BreadcrumbComponent.new) do %>
-  <%= link_to "Games", root_path %> &rsaquo;
-  <%= link_to @game.name, game_path(@game) %> &rsaquo;
-  Campaign Log
-<% end %>
+<% content_for :active_game_id, @game.id %>
 
-<%= render Shared::SceneSummaryIndexPageComponent.new(
-      game: @game, summaries: @summaries, pagy: @pagy, is_gm: @game_presenter.gm?) %>
+<%= render Shared::MobileFrameComponent.new do |frame| %>
+  <% frame.with_header do %>
+    <%= render Shared::HeaderComponent.new(
+          title: "Campaign Log",
+          breadcrumbs: Shared::BreadcrumbsComponent.new(game: @game),
+          secondary_nav: Shared::GameNavComponent.new(game: @game, active_tab: :scenes, is_gm: @game_presenter.gm?, mode: :link)) %>
+  <% end %>
+
+  <% frame.with_footer do %>
+    <%= render Shared::PageActionsComponent.new do |actions| %>
+      <% actions.with_primary do %>
+        <%= render Ui::ButtonComponent.new(url: game_scene_summaries_path(@game, format: :rss)) do %>RSS Feed<% end %>
+      <% end %>
+      <% if @game_presenter.gm? %>
+        <% actions.with_cancel do %>
+          <%= render Ui::ButtonComponent.new(variant: :secondary, url: edit_game_path(@game)) do %>Edit Game<% end %>
+        <% end %>
+      <% end %>
+    <% end %>
+  <% end %>
+
+  <%= render Shared::SceneSummaryIndexPageComponent.new(game: @game, summaries: @summaries, pagy: @pagy) %>
+<% end %>

@@ -1,4 +1,4 @@
-<div id="resolve-form" hidden class="bg-card border border-card-border rounded-card p-3">
+<div data-resolve-toggle-target="form" hidden class="bg-card border border-card-border rounded-card p-3">
   <%= form_with url: resolve_path, method: :patch do |f| %>
     <%= f.label :resolution, "Outcome (optional, markdown supported)", class: "block text-sm font-semibold mb-1" %>
     <%= render Ui::MarkdownEditorComponent.new(

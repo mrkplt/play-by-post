@@ -41,6 +41,16 @@ RSpec.describe Shared::SceneFormComponent, type: :component do
     end
   end
 
+  describe "form_id" do
+    it "gives the full form a stable id for the external submit button" do
+      expect(build_component(quick: false).form_id).to eq("new_scene_form")
+    end
+
+    it "gives the quick form a distinct id" do
+      expect(build_component(quick: true).form_id).to eq("quick_scene_form")
+    end
+  end
+
   describe "errors" do
     it "reports no errors on a clean scene" do
       component = build_component
@@ -53,18 +63,6 @@ RSpec.describe Shared::SceneFormComponent, type: :component do
       component = build_component
       expect(component.errors?).to be(true)
       expect(component.error_messages).to include("Something went wrong")
-    end
-  end
-
-  describe "#character_checked?" do
-    it "is true when the character id is in the selected set" do
-      component = build_component(selected_character_ids: [ character.id.to_s ])
-      expect(component.character_checked?(character)).to be(true)
-    end
-
-    it "is false when the character id is not selected" do
-      component = build_component(selected_character_ids: [ "999" ])
-      expect(component.character_checked?(character)).to be(false)
     end
   end
 
@@ -88,16 +86,15 @@ RSpec.describe Shared::SceneFormComponent, type: :component do
       ))
     end
 
-    it "renders every full-form field and the submit/cancel controls" do
+    it "renders every full-form field inside the new-scene form" do
       render_full
+      expect(page).to have_css("form#new_scene_form")
       expect(page).to have_field("Title (optional — defaults to date/time)")
       expect(page).to have_text("Participants")
       expect(page).to have_text("Seraphina Vex")
       expect(page).to have_select("Parent scene (optional)", with_options: [ "The Tavern" ])
       expect(page).to have_field("Private scene")
       expect(page).to have_field("Scene image (optional)")
-      expect(page).to have_button("Create Scene")
-      expect(page).to have_link("Cancel", href: "/games/#{game.id}")
     end
 
     it "pre-checks selected characters" do
@@ -122,10 +119,10 @@ RSpec.describe Shared::SceneFormComponent, type: :component do
       ))
     end
 
-    it "renders only the title field plus the quick submit control" do
+    it "renders only the title field inside the quick-scene form" do
       render_quick
+      expect(page).to have_css("form#quick_scene_form")
       expect(page).to have_field("Title (optional — defaults to date/time)")
-      expect(page).to have_button("Create Quick Scene")
       expect(page).not_to have_text("Participants")
       expect(page).not_to have_field("Private scene")
     end

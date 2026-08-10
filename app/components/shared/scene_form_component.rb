@@ -74,6 +74,11 @@ class Shared::SceneFormComponent < ApplicationComponent
   end
 
   sig { returns(String) }
+  def form_id
+    @quick ? "quick_scene_form" : "new_scene_form"
+  end
+
+  sig { returns(String) }
   def cancel_href
     @back_href
   end
@@ -86,11 +91,6 @@ class Shared::SceneFormComponent < ApplicationComponent
   sig { returns(T::Array[String]) }
   def error_messages
     @scene.errors.full_messages
-  end
-
-  sig { params(character: Character).returns(T::Boolean) }
-  def character_checked?(character)
-    @selected_character_ids.include?(character.id.to_s)
   end
 
   # The parent scene carried into a quick scene, so it can round-trip through a

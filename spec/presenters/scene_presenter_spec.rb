@@ -35,6 +35,92 @@ RSpec.describe ScenePresenter do
     end
   end
 
+  describe "#mute_toggle_label" do
+    it "returns Unmute notifications when muted" do
+      expect(presenter.mute_toggle_label(true)).to eq("Unmute notifications")
+    end
+
+    it "returns Mute notifications when not muted" do
+      expect(presenter.mute_toggle_label(false)).to eq("Mute notifications")
+    end
+  end
+
+  describe "#recoverable_draft" do
+    let(:draft) { build_stubbed(:post, :draft, scene: scene) }
+
+    it "is the draft when the scene is resolved" do
+      allow(scene).to receive(:resolved?).and_return(true)
+      expect(presenter.recoverable_draft(draft)).to eq(draft)
+    end
+
+    it "is nil when the scene is not resolved, even with a draft present" do
+      allow(scene).to receive(:resolved?).and_return(false)
+      expect(presenter.recoverable_draft(draft)).to be_nil
+    end
+
+    it "is nil when there is no draft, even on a resolved scene" do
+      allow(scene).to receive(:resolved?).and_return(true)
+      expect(presenter.recoverable_draft(nil)).to be_nil
+    end
+  end
+
+  describe "#page_action" do
+    let(:active_membership) { build_stubbed(:game_member) }
+    let(:removed_membership) { build_stubbed(:game_member, :removed) }
+
+    def page_action_for(scene, membership:, **overrides)
+      described_class.new(scene).page_action(
+        **{ is_gm: false, is_participant: false, membership: membership }.merge(overrides)
+      )
+    end
+
+    it "is :join for an eligible non-participant, non-GM, active member on an open public scene" do
+      expect(page_action_for(scene, membership: active_membership)).to eq(:join)
+    end
+
+    it "is nil when already a participant" do
+      expect(page_action_for(scene, membership: active_membership, is_participant: true)).to be_nil
+    end
+
+    it "is nil for the GM" do
+      expect(page_action_for(scene, membership: active_membership, is_gm: true)).to be_nil
+    end
+
+    it "is nil for a private scene" do
+      private_scene = build(:scene, :private)
+      expect(page_action_for(private_scene, membership: active_membership)).to be_nil
+    end
+
+    it "is nil when membership is not active" do
+      expect(page_action_for(scene, membership: removed_membership)).to be_nil
+    end
+
+    it "is nil when there is no membership at all" do
+      expect(page_action_for(scene, membership: nil)).to be_nil
+    end
+
+    it "is nil for a resolved scene (not :join — resolved scenes fall through to :write_summary)" do
+      resolved_scene = build(:scene, :resolved)
+      expect(page_action_for(resolved_scene, membership: active_membership)).to be_nil
+    end
+
+    it "is :write_summary for the GM on a resolved scene with no summary yet" do
+      resolved_scene = build(:scene, :resolved)
+      expect(page_action_for(resolved_scene, membership: active_membership, is_gm: true)).to eq(:write_summary)
+    end
+
+    it "is nil for a resolved scene that already has a summary" do
+      resolved_scene = build(:scene, :resolved)
+      create(:scene_summary, scene: resolved_scene)
+      expect(page_action_for(resolved_scene, membership: active_membership, is_gm: true)).to be_nil
+    end
+
+    it "is nil for a non-GM on a resolved scene" do
+      resolved_scene = build(:scene, :resolved)
+      expect(page_action_for(resolved_scene, membership: active_membership, is_gm: false, is_participant: true)).to be_nil
+    end
+  end
+
   describe "#parent_option_label" do
     context "when active" do
       it { expect(presenter.parent_option_label).to eq(scene.title) }
@@ -56,6 +142,49 @@ RSpec.describe ScenePresenter do
       let(:scene) { build(:scene, :resolved) }
 
       it { expect(presenter.status_label).to eq("Resolved") }
+    end
+  end
+
+  describe "#status_badges" do
+    it "is empty for an ordinary public active scene" do
+      expect(presenter.status_badges).to eq([])
+    end
+
+    it "includes only Resolved for a resolved public scene" do
+      scene = build(:scene, :resolved)
+      expect(described_class.new(scene).status_badges).to eq([ { label: "Resolved", variant: :gray } ])
+    end
+
+    it "includes only Private for a private active scene" do
+      scene = build(:scene, :private)
+      expect(described_class.new(scene).status_badges).to eq([ { label: "Private", variant: :yellow } ])
+    end
+
+    it "includes both Private and Resolved, in that order, for a private resolved scene" do
+      scene = build(:scene, :private, :resolved)
+      expect(described_class.new(scene).status_badges).to eq([
+        { label: "Private", variant: :yellow },
+        { label: "Resolved", variant: :gray }
+      ])
+    end
+  end
+
+  describe "#tree_status_badges" do
+    it "always includes the Active status badge for an active scene" do
+      expect(presenter.tree_status_badges).to eq([ { label: "Active", variant: :green } ])
+    end
+
+    it "always includes the Resolved status badge for a resolved scene" do
+      scene = build(:scene, :resolved)
+      expect(described_class.new(scene).tree_status_badges).to eq([ { label: "Resolved", variant: :gray } ])
+    end
+
+    it "adds Private after the status badge for a private scene" do
+      scene = build(:scene, :private)
+      expect(described_class.new(scene).tree_status_badges).to eq([
+        { label: "Active", variant: :green },
+        { label: "Private", variant: :yellow }
+      ])
     end
   end
 

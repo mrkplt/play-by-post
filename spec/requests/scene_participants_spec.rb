@@ -101,6 +101,21 @@ RSpec.describe SceneParticipantsController, type: :request do
       zara_pos = response.body.index("Zara the Fierce")
       expect(aaron_pos).to be < zara_pos
     end
+
+    it "renders the universal header nav affordances" do
+      sign_in(gm)
+      get edit_game_scene_participants_path(game, scene)
+      expect_hamburger_present
+      expect_breadcrumb(game.name)
+      expect_active_tab("Scenes")
+    end
+
+    it "renders visible text on the primary and cancel page-action buttons" do
+      sign_in(gm)
+      get edit_game_scene_participants_path(game, scene)
+      expect(response.body).to include(">Update Participants<")
+      expect(response.body).to include(">Cancel<")
+    end
   end
 
   describe "PATCH /games/:game_id/scenes/:scene_id/participants" do

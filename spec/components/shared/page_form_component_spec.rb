@@ -27,15 +27,29 @@ RSpec.describe Shared::PageFormComponent, type: :component do
     end
   end
 
-  describe "cancel link (back_href)" do
-    it "points a new page's cancel at the game pages tab" do
-      render_inline(build_component(page: new_page))
-      expect(page).to have_link("Cancel", href: path(:game_path, game, anchor: "pages"))
+  describe "back_href" do
+    it "points a new page's back_href at the game pages tab" do
+      component = build_component(page: new_page)
+      render_inline(component)
+      expect(component.back_href).to eq(path(:game_path, game, anchor: "pages"))
     end
 
-    it "points an edit's cancel at the page itself" do
+    it "points an edit's back_href at the page itself" do
+      component = build_component(page: existing_page)
+      render_inline(component)
+      expect(component.back_href).to eq(path(:game_page_path, game, existing_page))
+    end
+  end
+
+  describe "form_id" do
+    it "gives new and edit forms distinct, stable ids for the external submit button" do
+      render_inline(build_component(page: new_page))
+      expect(page).to have_css("form#new_page_form")
+    end
+
+    it "scopes the edit form id to the record" do
       render_inline(build_component(page: existing_page))
-      expect(page).to have_link("Cancel", href: path(:game_page_path, game, existing_page))
+      expect(page).to have_css("form#edit_page_#{existing_page.id}_form")
     end
   end
 

@@ -1,4 +1,4 @@
-<%= form_with model: [ game, scene ], multipart: true, class: "flex flex-col gap-4" do |f| %>
+<%= form_with model: [ game, scene ], multipart: true, html: { id: form_id }, class: "flex flex-col gap-4" do |f| %>
   <% if errors? %>
     <div class="bg-tint-blue-bg border border-tint-blue-border rounded-card p-3 text-sm text-danger">
       <% error_messages.each do |msg| %>
@@ -21,25 +21,10 @@
   <% else %>
     <div class="flex flex-col gap-2">
       <%= render Ui::SectionLabelComponent.new do %>Participants<% end %>
-      <p class="text-[11px] text-muted-2 m-0">Select characters to include. The GM is always included automatically.</p>
-      <div class="bg-card border border-card-border rounded-card px-3.5 py-1">
-        <% players_with_characters.each do |player, characters| %>
-          <div class="py-2 border-b border-card-divider last:border-b-0">
-            <div class="text-[13px] font-semibold text-ink"><%= player.display_name_or_email %></div>
-            <% if characters.empty? %>
-              <div class="text-[11px] text-muted-2 pl-4 mt-1">No active characters</div>
-            <% else %>
-              <% characters.each do |character| %>
-                <label class="flex items-center gap-2 pl-4 mt-1 text-[13px] text-body-ink cursor-pointer">
-                  <%= check_box_tag "character_ids[]", character.id, character_checked?(character), id: nil,
-                        class: "accent-accent" %>
-                  <%= character.name %>
-                </label>
-              <% end %>
-            <% end %>
-          </div>
-        <% end %>
-      </div>
+      <%= render Shared::ParticipantCheckboxListComponent.new(
+            players_with_characters: players_with_characters,
+            selected_character_ids: selected_character_ids,
+            variant: :card) %>
     </div>
 
     <div class="flex flex-col gap-1.5">
@@ -60,9 +45,4 @@
       <p class="text-[11px] text-muted-2 m-0">JPEG, PNG, GIF, or WebP. Max 10MB.</p>
     </div>
   <% end %>
-
-  <div class="flex gap-2 pt-1">
-    <%= f.submit submit_label, class: "flex-1 bg-accent text-accent-ink rounded-control py-2.5 font-bold text-[13px] border-0 cursor-pointer" %>
-    <%= link_to "Cancel", cancel_href, class: "flex-1 text-center border border-card-border text-ink rounded-control py-2.5 font-bold text-[13px] no-underline" %>
-  </div>
 <% end %>

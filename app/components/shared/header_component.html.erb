@@ -6,13 +6,13 @@
       <span class="text-2xl leading-none">&#9776;</span>
     <% end %>
 
-    <% if show_crown? %>
+    <% if crown? %>
       <%= helpers.icon "crown-03", class: "w-4 h-4 text-accent mr-0.5 flex-shrink-0" %>
     <% end %>
 
-    <h1 class="text-white font-bold text-base m-0 truncate"><%= title %></h1>
+    <h1 class="<%= title_classes %>"><%= title %></h1>
 
-    <% if show_gear? %>
+    <% if gear? %>
       <div class="flex-1"></div>
       <%= render Ui::IconButtonComponent.new(href: gear_path, align: :center, label: "Game settings") do %>
         <%= helpers.icon "settings-01", class: "w-5 h-5" %>
@@ -20,5 +20,11 @@
     <% end %>
   </div>
 
-  <%= render Ui::PillTabsComponent.new(tabs: tabs, active: active_tab, mode: :switch) %>
+  <% if breadcrumbs? %>
+    <%= render breadcrumbs %>
+  <% end %>
+
+  <% if secondary_nav? %>
+    <%= render secondary_nav %>
+  <% end %>
 </header>

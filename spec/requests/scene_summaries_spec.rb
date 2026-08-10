@@ -88,6 +88,27 @@ RSpec.describe SceneSummariesController, type: :request do
       newer_pos = response.body.index(newer_summary.body)
       expect(newer_pos).to be < older_pos
     end
+
+    it "renders the universal header nav affordances" do
+      sign_in(player)
+      get game_scene_summaries_path(game)
+      expect_hamburger_present
+      expect_breadcrumb(game.name)
+      expect_active_tab("Scenes")
+    end
+
+    it "renders visible text on the RSS Feed and Edit Game page-action buttons for the GM" do
+      sign_in(gm)
+      get game_scene_summaries_path(game)
+      expect(response.body).to include(">RSS Feed<")
+      expect(response.body).to include(">Edit Game<")
+    end
+
+    it "does not render the Edit Game page-action button for a player" do
+      sign_in(player)
+      get game_scene_summaries_path(game)
+      expect(response.body).not_to include(">Edit Game<")
+    end
   end
 
   # ── index (RSS) ───────────────────────────────────────────────────────────
@@ -143,6 +164,20 @@ RSpec.describe SceneSummariesController, type: :request do
       sign_in(gm)
       get new_game_scene_scene_summary_path(game, active_scene)
       expect(response).to redirect_to(game_scene_path(game, active_scene))
+    end
+
+    it "renders the universal header nav affordances" do
+      sign_in(gm)
+      get new_game_scene_scene_summary_path(game, resolved_scene)
+      expect_hamburger_present
+      expect_breadcrumb(game.name)
+    end
+
+    it "renders visible text on the primary and cancel page-action buttons" do
+      sign_in(gm)
+      get new_game_scene_scene_summary_path(game, resolved_scene)
+      expect(response.body).to include(">Save Summary<")
+      expect(response.body).to include(">Cancel<")
     end
   end
 
@@ -201,6 +236,22 @@ RSpec.describe SceneSummariesController, type: :request do
       get edit_game_scene_scene_summary_path(game, resolved_scene)
       expect(response).to redirect_to(game_scene_path(game, resolved_scene))
       expect(flash[:alert]).to be_present
+    end
+
+    it "renders the universal header nav affordances" do
+      create(:scene_summary, scene: resolved_scene)
+      sign_in(gm)
+      get edit_game_scene_scene_summary_path(game, resolved_scene)
+      expect_hamburger_present
+      expect_breadcrumb(game.name)
+    end
+
+    it "renders visible text on the primary and cancel page-action buttons" do
+      create(:scene_summary, scene: resolved_scene)
+      sign_in(gm)
+      get edit_game_scene_scene_summary_path(game, resolved_scene)
+      expect(response.body).to include(">Update Summary<")
+      expect(response.body).to include(">Cancel<")
     end
   end
 

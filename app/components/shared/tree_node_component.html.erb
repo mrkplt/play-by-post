@@ -6,10 +6,7 @@
     <span class="whitespace-nowrap">
       <%= link_to @scene.title, game_scene_path(@game, @scene), class: @scene.tree_link_css_class %>
     </span>
-    <%= render(Ui::BadgeComponent.new(variant: @scene.resolved? ? :gray : :green)) { @scene.status_label } %>
-    <% if @scene.private? %>
-      <%= render(Ui::BadgeComponent.new(variant: :yellow)) { "Private" } %>
-    <% end %>
+    <%= render Shared::StatusBadgeRowComponent.new(badges: @scene.tree_status_badges) %>
     <span class="text-xs text-slate-400 ml-auto whitespace-nowrap">
       <%= @scene.formatted_created_at %>
     </span>

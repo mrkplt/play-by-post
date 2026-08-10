@@ -1,5 +1,5 @@
 <div id="new_notebook_entry_form">
-  <%= form_with model: [ game, notebook_entry ], class: "flex flex-col gap-4" do |f| %>
+  <%= form_with model: [ game, notebook_entry ], html: { id: form_id }, class: "flex flex-col gap-4" do |f| %>
     <% if errors? %>
       <div class="bg-tint-blue-bg border border-tint-blue-border rounded-card p-3 text-sm text-danger">
         <% error_messages.each do |msg| %>
@@ -24,9 +24,5 @@
             preview_class: "border border-card-border rounded-card px-3 py-3 mt-4") %>
     </div>
 
-    <div class="flex gap-2 pt-1">
-      <%= f.submit submit_label, class: "flex-1 bg-accent text-accent-ink rounded-control py-2.5 font-bold text-[13px] border-0 cursor-pointer" %>
-      <%= link_to "Cancel", back_href, class: "flex-1 text-center border border-card-border text-ink rounded-control py-2.5 font-bold text-[13px] no-underline" %>
-    </div>
   <% end %>
 </div>

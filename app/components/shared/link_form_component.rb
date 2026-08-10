@@ -35,6 +35,11 @@ class Shared::LinkFormComponent < ApplicationComponent
     helpers.game_game_links_path(@game)
   end
 
+  sig { returns(String) }
+  def form_id
+    new_record? ? "new_game_link_form" : "edit_game_link_#{@game_link.id}_form"
+  end
+
   sig { returns(T::Boolean) }
   def errors?
     @game_link.errors.any?

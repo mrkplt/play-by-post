@@ -74,13 +74,19 @@ rm -f storage/test_worker_*.sqlite3
 echo "All fast checks passed. Heavy tier (system specs, mutation, quality gate) runs in CI on the PR — or locally via bin/full-check."
 
 echo "==> Outdated gems"
-OUTDATED=$(bundle outdated 2>/dev/null || true)
+# `bundle outdated --parseable` prints one line per outdated gem; a gem held
+# back by a Gemfile/dependency constraint carries a ", requested <constraint>"
+# clause, so those lines are the PINNED set and the rest are UPDATABLE by a
+# plain `bundle update`. (Do NOT use `bundle update --dry-run` — Bundler 4.x
+# rejects that switch, which silently forced UPDATABLE to 0 and misclassified
+# every updatable gem as pinned.)
+OUTDATED=$(bundle outdated --parseable 2>/dev/null | grep -E "^\S+ \(newest" || true)
 if [ -z "$OUTDATED" ]; then
   echo "  All gems up to date."
 else
-  UPDATABLE=$(bundle update --dry-run 2>/dev/null | grep -cE "Installing|Fetching" || true)
-  TOTAL=$(echo "$OUTDATED" | grep -cE "^\S+\s+\d+\.\d+" || true)
-  PINNED=$((TOTAL - UPDATABLE))
+  TOTAL=$(echo "$OUTDATED" | grep -c . || true)
+  PINNED=$(echo "$OUTDATED" | grep -c "requested" || true)
+  UPDATABLE=$((TOTAL - PINNED))
 
   if [ "$UPDATABLE" -gt 5 ]; then
     echo ""

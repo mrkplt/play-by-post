@@ -1,6 +1,6 @@
 <%= render Shared::MobileFrameComponent.new do |frame| %>
   <% frame.with_header do %>
-    <%= render Shared::PageHeaderComponent.new(title: "Profile", leading: :back, back_href: root_path) %>
+    <%= render Shared::HeaderComponent.new(title: "Profile") %>
   <% end %>
 
   <%# Display Name %>

@@ -27,15 +27,29 @@ RSpec.describe Shared::NotebookFormComponent, type: :component do
     end
   end
 
-  describe "cancel link (back_href)" do
-    it "points a new entry's cancel at the notebook index" do
-      render_inline(build_component(notebook_entry: new_entry))
-      expect(page).to have_link("Cancel", href: path(:game_notebook_entries_path, game))
+  describe "back_href" do
+    it "points a new entry's back_href at the notebook index" do
+      component = build_component(notebook_entry: new_entry)
+      render_inline(component)
+      expect(component.back_href).to eq(path(:game_notebook_entries_path, game))
     end
 
-    it "points an edit's cancel at the entry itself" do
+    it "points an edit's back_href at the entry itself" do
+      component = build_component(notebook_entry: existing_entry)
+      render_inline(component)
+      expect(component.back_href).to eq(path(:game_notebook_entry_path, game, existing_entry))
+    end
+  end
+
+  describe "form_id" do
+    it "gives the new form a stable id for the external submit button" do
+      render_inline(build_component(notebook_entry: new_entry))
+      expect(page).to have_css("form#notebook_entry_new_form_element")
+    end
+
+    it "scopes the edit form id to the record, avoiding the dom_id(entry) Turbo Stream target" do
       render_inline(build_component(notebook_entry: existing_entry))
-      expect(page).to have_link("Cancel", href: path(:game_notebook_entry_path, game, existing_entry))
+      expect(page).to have_css("form#notebook_entry_#{existing_entry.id}_edit_form_element")
     end
   end
 

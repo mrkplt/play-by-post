@@ -139,5 +139,36 @@ RSpec.describe PlayerManagementController, type: :request do
       get game_player_management_path(game)
       expect(response.body).not_to include("Banned Person")
     end
+
+    it "renders Remove/Ban controls as status-param links for an active member" do
+      member = game.member_for(player)
+      sign_in(gm)
+      get game_player_management_path(game)
+      expect(response.body).to include(game_player_management_game_member_path(game, member, status: "removed"))
+      expect(response.body).to include(game_player_management_game_member_path(game, member, status: "banned"))
+    end
+
+    it "renders visible text on the Remove, Ban, and Export controls" do
+      sign_in(gm)
+      get game_player_management_path(game)
+      expect(response.body).to include(">Remove<")
+      expect(response.body).to include(">Ban<")
+      expect(response.body).to include(">Export Game<")
+    end
+
+    it "renders a Reinstate control as a status-param link for a removed member" do
+      member = game.member_for(player)
+      member.update!(status: "removed")
+      sign_in(gm)
+      get game_player_management_path(game)
+      expect(response.body).to include(game_player_management_game_member_path(game, member, status: "active"))
+    end
+
+    it "renders the universal header nav affordances" do
+      sign_in(gm)
+      get game_player_management_path(game)
+      expect_hamburger_present
+      expect_breadcrumb(game.name)
+    end
   end
 end

@@ -2,7 +2,9 @@
 
 <%= render Shared::MobileFrameComponent.new do |frame| %>
   <% frame.with_header do %>
-    <%= render Shared::PageHeaderComponent.new(title: "Edit Game", leading: :back, back_href: game_path(@game)) %>
+    <%= render Shared::HeaderComponent.new(
+          title: "Edit Game",
+          breadcrumbs: Shared::BreadcrumbsComponent.new(game: @game)) %>
   <% end %>
 
   <%= render Ui::SectionLabelComponent.new do %>Game Details<% end %>

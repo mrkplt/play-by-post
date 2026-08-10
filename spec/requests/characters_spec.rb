@@ -29,6 +29,21 @@ RSpec.describe CharactersController, type: :request do
       get new_game_character_path(game)
       expect(response).to have_http_status(:redirect)
     end
+
+    it "renders the universal header nav affordances (hamburger, breadcrumb, Roster active)" do
+      sign_in(gm)
+      get new_game_character_path(game)
+      expect_hamburger_present
+      expect_breadcrumb(game.name)
+      expect_active_tab("Roster")
+    end
+
+    it "renders visible text on the primary and cancel page-action buttons" do
+      sign_in(gm)
+      get new_game_character_path(game)
+      expect(response.body).to include(">Create Character<")
+      expect(response.body).to include(">Cancel<")
+    end
   end
 
   describe "POST /games/:game_id/characters" do
@@ -76,6 +91,14 @@ RSpec.describe CharactersController, type: :request do
       sign_in(player)
       get game_character_path(game, character)
       expect(response).to have_http_status(:ok)
+    end
+
+    it "renders the universal header nav affordances" do
+      sign_in(player)
+      get game_character_path(game, character)
+      expect_hamburger_present
+      expect_breadcrumb(game.name)
+      expect_active_tab("Roster")
     end
 
     it "shows player email prefix when user has no display name" do
@@ -150,6 +173,21 @@ RSpec.describe CharactersController, type: :request do
       sign_in(gm)
       get edit_game_character_path(game, character)
       expect(response).to have_http_status(:ok)
+    end
+
+    it "renders the universal header nav affordances" do
+      sign_in(player)
+      get edit_game_character_path(game, character)
+      expect_hamburger_present
+      expect_breadcrumb(game.name)
+      expect_active_tab("Roster")
+    end
+
+    it "renders visible text on the primary and cancel page-action buttons" do
+      sign_in(player)
+      get edit_game_character_path(game, character)
+      expect(response.body).to include(">Save<")
+      expect(response.body).to include(">Cancel<")
     end
   end
 

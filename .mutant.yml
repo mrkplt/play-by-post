@@ -48,6 +48,7 @@ matcher:
     # Components
     - Shared::AiSummariesToggleComponent
     - Shared::RssTokenComponent
+    - Shared::ProfileFormComponent
     - Shared::SceneSummaryComponent
     - Shared::SceneSummaryEntryComponent
     - Shared::SceneSummaryFormComponent
@@ -57,6 +58,9 @@ matcher:
     - Shared::GalleryComponent
     - Shared::NavShellComponent
     - Shared::PostComposerComponent
+    - Shared::DraftRecoveryComponent
+    - Shared::ChildSceneListComponent
+    - Shared::ControlRowComponent
     - Shared::PostItemComponent
     - Shared::CharacterFormComponent
     - Shared::MarkdownToolbarComponent
@@ -64,17 +68,21 @@ matcher:
     - Shared::PostEditFormComponent
     - Shared::SceneCardComponent
     - Shared::SceneResolutionComponent
+    - Shared::StatusBadgeRowComponent
     - Shared::SceneResolveFormComponent
     - Shared::SceneFormComponent
+    - Shared::ParticipantCheckboxListComponent
     - Shared::GameFormComponent
     - Shared::GameDetailsComponent
     - Shared::SidebarComponent
     - Shared::TreeNodeComponent
-    - Shared::GameHeaderComponent
+    - Shared::HeaderComponent
+    - Shared::GameNavComponent
+    - Shared::BreadcrumbsComponent
+    - Shared::PageActionsComponent
     - Shared::NavDrawerComponent
     - Shared::GameCardComponent
     - Shared::RosterRowComponent
-    - Shared::PageHeaderComponent
     - Shared::MobileFrameComponent
     - Shared::DeleteGameComponent
     - Shared::FeedbackModalComponent

@@ -182,6 +182,22 @@ RSpec.describe PostsController, type: :request do
       get edit_game_scene_post_path(game, scene, post)
       expect(response).to redirect_to(game_scene_path(game, scene))
     end
+
+    it "renders the universal header nav affordances" do
+      post = create(:post, scene: scene, user: player)
+      sign_in(player)
+      get edit_game_scene_post_path(game, scene, post)
+      expect_hamburger_present
+      expect_breadcrumb(game.name)
+    end
+
+    it "renders visible text on the primary and cancel page-action buttons" do
+      post = create(:post, scene: scene, user: player)
+      sign_in(player)
+      get edit_game_scene_post_path(game, scene, post)
+      expect(response.body).to include(">Save<")
+      expect(response.body).to include(">Cancel<")
+    end
   end
 
   describe "PATCH /games/:game_id/scenes/:scene_id/posts/:id (update)" do

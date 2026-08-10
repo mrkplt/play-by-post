@@ -98,6 +98,20 @@ RSpec.describe ScenesController, type: :request do
       get game_scenes_path(game)
       expect(response.body).to include("No scenes yet")
     end
+
+    it "renders the universal header nav affordances" do
+      sign_in(gm)
+      get game_scenes_path(game)
+      expect_hamburger_present
+      expect_breadcrumb(game.name)
+      expect_active_tab("Scenes")
+    end
+
+    it "renders visible text on the New Scene page-action button" do
+      sign_in(gm)
+      get game_scenes_path(game)
+      expect(response.body).to include(">New Scene<")
+    end
   end
 
   describe "GET /games/:game_id/scenes/new" do
@@ -235,6 +249,14 @@ RSpec.describe ScenesController, type: :request do
       get new_game_scene_path(game, parent_scene_id: parent.id)
       expect(response.body).to include("href=\"#{game_scene_path(game, parent)}\">Cancel")
     end
+
+    it "renders the universal header nav affordances" do
+      sign_in(gm)
+      get new_game_scene_path(game)
+      expect_hamburger_present
+      expect_breadcrumb(game.name)
+      expect_active_tab("Scenes")
+    end
   end
 
   describe "GET /games/:game_id/scenes/:id" do
@@ -255,6 +277,14 @@ RSpec.describe ScenesController, type: :request do
       sign_in(player)
       get game_scene_path(game, scene)
       expect(response).to have_http_status(:ok)
+    end
+
+    it "renders the universal header nav affordances" do
+      sign_in(gm)
+      get game_scene_path(game, scene)
+      expect_hamburger_present
+      expect_breadcrumb(game.name)
+      expect_active_tab("Scenes")
     end
 
     context "private scene visibility (check_scene_visibility!)" do
@@ -402,6 +432,39 @@ RSpec.describe ScenesController, type: :request do
         sign_in(gm)
         get game_scene_path(game, scene)
         expect(response.body).not_to include("Join Scene")
+      end
+
+      it "renders visible text on the Join Scene page-action button" do
+        sign_in(player)
+        get game_scene_path(game, scene)
+        expect(response.body).to include(">Join Scene<")
+      end
+    end
+
+    context "write summary button (GM, resolved scene, no summary)" do
+      it "shows Write Summary to the GM on a resolved scene with no summary" do
+        resolved_scene = create(:scene, :resolved, game: game)
+        create(:scene_participant, scene: resolved_scene, user: gm)
+        sign_in(gm)
+        get game_scene_path(game, resolved_scene)
+        expect(response.body).to include(">Write Summary<")
+      end
+
+      it "does not show Write Summary once a summary exists" do
+        resolved_scene = create(:scene, :resolved, game: game)
+        create(:scene_participant, scene: resolved_scene, user: gm)
+        create(:scene_summary, scene: resolved_scene)
+        sign_in(gm)
+        get game_scene_path(game, resolved_scene)
+        expect(response.body).not_to include("Write Summary")
+      end
+
+      it "does not show Write Summary to a non-GM" do
+        resolved_scene = create(:scene, :resolved, game: game)
+        create(:scene_participant, scene: resolved_scene, user: player)
+        sign_in(player)
+        get game_scene_path(game, resolved_scene)
+        expect(response.body).not_to include("Write Summary")
       end
     end
 

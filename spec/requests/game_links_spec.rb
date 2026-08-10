@@ -47,6 +47,14 @@ RSpec.describe GameLinksController, type: :request do
       get game_game_links_path(game)
       expect(response).to have_http_status(:redirect)
     end
+
+    it "renders the universal header nav affordances" do
+      sign_in(player)
+      get game_game_links_path(game)
+      expect_hamburger_present
+      expect_breadcrumb(game.name)
+      expect_active_tab("Links")
+    end
   end
 
   describe "GET new" do
@@ -60,6 +68,21 @@ RSpec.describe GameLinksController, type: :request do
       sign_in(player)
       get new_game_game_link_path(game)
       expect(response).to redirect_to(game_game_links_path(game))
+    end
+
+    it "renders the universal header nav affordances" do
+      sign_in(gm)
+      get new_game_game_link_path(game)
+      expect_hamburger_present
+      expect_breadcrumb(game.name)
+      expect_active_tab("Links")
+    end
+
+    it "renders visible text on the primary and cancel page-action buttons" do
+      sign_in(gm)
+      get new_game_game_link_path(game)
+      expect(response.body).to include(">Create Link<")
+      expect(response.body).to include(">Cancel<")
     end
   end
 
@@ -116,6 +139,21 @@ RSpec.describe GameLinksController, type: :request do
       sign_in(player)
       patch game_game_link_path(game, link), params: { game_link: { description: "Hacked" } }
       expect(link.reload.description).to eq("Original")
+    end
+
+    it "renders the universal header nav affordances" do
+      sign_in(gm)
+      get edit_game_game_link_path(game, link)
+      expect_hamburger_present
+      expect_breadcrumb(game.name)
+      expect_active_tab("Links")
+    end
+
+    it "renders visible text on the primary and cancel page-action buttons" do
+      sign_in(gm)
+      get edit_game_game_link_path(game, link)
+      expect(response.body).to include(">Save<")
+      expect(response.body).to include(">Cancel<")
     end
   end
 
