@@ -1,0 +1,7 @@
+<% if any? %>
+  <div class="flex gap-1 flex-wrap">
+    <% badges.each do |badge| %>
+      <%= render(Ui::BadgeComponent.new(variant: badge[:variant])) { badge[:label] } %>
+    <% end %>
+  </div>
+<% end %>

@@ -22,6 +22,11 @@ RSpec.describe Ui::ButtonComponent, type: :component do
     expect(rendered(html_options: { type: "submit" }) { "Label" }).to have_css("button[type='submit']")
   end
 
+  it "appends an html_options class rather than replacing the variant/size classes" do
+    button = rendered(variant: :text, html_options: { class: "text-danger" }) { "Ban" }.find("button")
+    expect(button[:class]).to include("text-danger", "cursor-pointer", "bg-transparent")
+  end
+
   describe "all variants render without error" do
     Ui::ButtonComponent::VARIANTS.each_key do |variant|
       it variant.to_s do
@@ -90,6 +95,11 @@ RSpec.describe Ui::ButtonComponent, type: :component do
 
     it "disables pointer events and dims when disabled" do
       expect(rendered(url: "/games/1", disabled: true) { "Go" }).to have_css("a.opacity-50")
+    end
+
+    it "appends an html_options class rather than replacing the variant/size classes" do
+      link = rendered(url: "/games/1", variant: :text, html_options: { class: "text-danger" }) { "Ban" }.find("a")
+      expect(link[:class]).to include("text-danger", "cursor-pointer", "bg-transparent")
     end
   end
 end

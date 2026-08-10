@@ -85,10 +85,13 @@ RSpec.describe "Player Management", type: :feature do
     it "GM can remove a player" do
       visit game_player_management_path(game)
 
-      within(:xpath, "//div[contains(@class,'items-center')][.//span[normalize-space()='#{player.display_name}']]") do
-        click_on "Remove"
+      accept_confirm("Remove this player? They keep read-only access.") do
+        within(:xpath, "//div[contains(@class,'items-center')][.//span[normalize-space()='#{player.display_name}']]") do
+          click_on "Remove"
+        end
       end
 
+      expect(page).to have_text("Player status updated.")
       expect(game.member_for(player).reload.status).to eq("removed")
     end
 
@@ -154,10 +157,13 @@ RSpec.describe "Player Management", type: :feature do
     it "GM can ban a player" do
       visit game_player_management_path(game)
 
-      within(:xpath, "//div[contains(@class,'items-center')][.//span[normalize-space()='#{player.display_name}']]") do
-        click_on "Ban"
+      accept_confirm("Ban this player? This permanently revokes all access and cannot be undone easily.") do
+        within(:xpath, "//div[contains(@class,'items-center')][.//span[normalize-space()='#{player.display_name}']]") do
+          click_on "Ban"
+        end
       end
 
+      expect(page).to have_text("Player status updated.")
       expect(game.member_for(player).reload.status).to eq("banned")
     end
 

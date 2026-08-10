@@ -84,15 +84,30 @@ class Ui::ButtonComponent < ApplicationComponent
     data
   end
 
+  # A link with method: performs a non-GET action (the same thing button_to
+  # would do), not a navigation — role="button" reflects that for assistive
+  # tech and lets it be found/clicked as a button in tests, same as a real
+  # <button>. A plain GET link (no method:, e.g. Cancel) stays an unadorned
+  # link.
   sig { returns(T::Hash[Symbol, T.untyped]) }
   def link_options
-    { class: classes, data: link_data }.merge(@html_options)
+    opts = { class: merged_classes, data: link_data }.merge(@html_options.except(:class))
+    opts[:role] = "button" if @method
+    opts
   end
 
   sig { returns(T::Hash[Symbol, T.untyped]) }
   def button_options
-    opts = { type: "button", class: classes }.merge(@html_options)
+    opts = { type: "button", class: merged_classes }.merge(@html_options.except(:class))
     opts[:disabled] = true if @disabled
     opts
+  end
+
+  # `html_options[:class]` is additive (e.g. a caller-supplied text-color
+  # override) — it must not replace the base/variant/size classes.
+  sig { returns(String) }
+  def merged_classes
+    extra = @html_options[:class]
+    extra.present? ? "#{classes} #{extra}" : classes
   end
 end

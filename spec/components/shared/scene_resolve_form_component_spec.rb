@@ -8,7 +8,7 @@ RSpec.describe Shared::SceneResolveFormComponent, type: :component do
 
   subject(:component) { described_class.new(game: game, scene: scene) }
 
-  # The form lives inside the `hidden` #resolve-form wrapper, so its contents
+  # The form lives inside the `hidden` [data-resolve-toggle-target='form'] wrapper, so its contents
   # are inspected with visible: :all.
   describe "rendering" do
     before { render_inline(component) }
@@ -20,12 +20,12 @@ RSpec.describe Shared::SceneResolveFormComponent, type: :component do
     end
 
     it "keeps the End Scene toggle target and confirm button" do
-      expect(page).to have_css("#resolve-form[hidden]", visible: :all)
+      expect(page).to have_css("[data-resolve-toggle-target='form'][hidden]", visible: :all)
       expect(page).to have_button("Confirm — End Scene", visible: :all)
     end
 
     it "wires the outcome field to the markdown toolbar and live preview" do
-      editor = page.find("#resolve-form [data-controller~='markdown-preview']", visible: :all)
+      editor = page.find("[data-resolve-toggle-target='form'] [data-controller~='markdown-preview']", visible: :all)
       expect(editor["data-controller"]).to include("markdown-toolbar")
       expect(page).to have_css("textarea.markdown-editor[data-markdown-preview-target='input']", visible: :all)
       expect(page).to have_css("[role='toolbar'][aria-label='Markdown formatting']", visible: :all)

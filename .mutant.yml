@@ -58,6 +58,9 @@ matcher:
     - Shared::GalleryComponent
     - Shared::NavShellComponent
     - Shared::PostComposerComponent
+    - Shared::DraftRecoveryComponent
+    - Shared::ChildSceneListComponent
+    - Shared::ControlRowComponent
     - Shared::PostItemComponent
     - Shared::CharacterFormComponent
     - Shared::MarkdownToolbarComponent
@@ -65,6 +68,7 @@ matcher:
     - Shared::PostEditFormComponent
     - Shared::SceneCardComponent
     - Shared::SceneResolutionComponent
+    - Shared::StatusBadgeRowComponent
     - Shared::SceneResolveFormComponent
     - Shared::SceneFormComponent
     - Shared::ParticipantCheckboxListComponent

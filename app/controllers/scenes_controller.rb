@@ -73,6 +73,14 @@ class ScenesController < ApplicationController
     @scene_presenter = ScenePresenter.new(@scene)
     participants = @scene.scene_participants.includes(:character, :user).to_a
     @post_presenters = @posts.map { |post| PostPresenter.new(post, scene_participants: participants) }
+    @page_action = @scene_presenter.page_action(
+      is_gm: @game_presenter.gm?,
+      is_participant: @is_participant,
+      membership_active: @current_membership&.active? || false
+    )
+    # The composer disappears once a scene resolves, so a leftover draft is
+    # only worth surfacing as a recovery notice in that state.
+    @recoverable_draft = @scene.resolved? ? @draft : nil
   end
 
   sig { void }

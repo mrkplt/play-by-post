@@ -1,0 +1,7 @@
+<% if any? %>
+  <p class="text-[11px] text-muted-2 m-0 flex flex-wrap gap-x-2">
+    <% child_scenes.each do |child| %>
+      <span>&#10549; <%= link_to child.title, game_scene_path(game, child), class: "text-accent" %></span>
+    <% end %>
+  </p>
+<% end %>
