@@ -98,6 +98,20 @@ RSpec.describe ScenesController, type: :request do
       get game_scenes_path(game)
       expect(response.body).to include("No scenes yet")
     end
+
+    it "renders the universal header nav affordances" do
+      sign_in(gm)
+      get game_scenes_path(game)
+      expect_hamburger_present
+      expect_breadcrumb(game.name)
+      expect_active_tab("Scenes")
+    end
+
+    it "renders visible text on the New Scene page-action button" do
+      sign_in(gm)
+      get game_scenes_path(game)
+      expect(response.body).to include(">New Scene<")
+    end
   end
 
   describe "GET /games/:game_id/scenes/new" do
@@ -234,6 +248,14 @@ RSpec.describe ScenesController, type: :request do
       sign_in(gm)
       get new_game_scene_path(game, parent_scene_id: parent.id)
       expect(response.body).to include("href=\"#{game_scene_path(game, parent)}\">Cancel")
+    end
+
+    it "renders the universal header nav affordances" do
+      sign_in(gm)
+      get new_game_scene_path(game)
+      expect_hamburger_present
+      expect_breadcrumb(game.name)
+      expect_active_tab("Scenes")
     end
   end
 

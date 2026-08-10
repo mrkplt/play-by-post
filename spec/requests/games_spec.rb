@@ -143,6 +143,12 @@ RSpec.describe GamesController, type: :request do
 
       expect(response).to have_http_status(:ok)
     end
+
+    it "renders the universal header nav affordances with no breadcrumb" do
+      sign_in(gm)
+      get root_path
+      expect_hamburger_present
+    end
   end
 
   describe "GET /games/new" do
@@ -301,6 +307,23 @@ RSpec.describe GamesController, type: :request do
   end
 
   describe "GET /games/:id" do
+    it "renders the universal header nav affordances (hamburger, gear, Scenes active, GM crown)" do
+      sign_in(gm)
+      get game_path(game)
+      expect_hamburger_present
+      expect_active_tab("Scenes")
+      expect(page_node).to have_css("[href='#{game_player_management_path(game)}']")
+      expect(page_node).to have_css("svg, img")
+    end
+
+    it "renders the header without a crown icon for a non-GM player" do
+      sign_in(player)
+      get game_path(game)
+      doc = Nokogiri::HTML.parse(response.body)
+      header = doc.at_css("header")
+      expect(header.inner_html).not_to include("crown")
+    end
+
     it "shows character player email prefix when no display name is set" do
       player_no_name = create(:user)
       create(:game_member, game: game, user: player_no_name)

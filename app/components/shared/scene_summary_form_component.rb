@@ -26,6 +26,11 @@ class Shared::SceneSummaryFormComponent < ApplicationComponent
     editing? ? "Update Summary" : "Save Summary"
   end
 
+  sig { returns(String) }
+  def form_id
+    editing? ? "scene_summary_edit_form" : "scene_summary_new_form"
+  end
+
   sig { returns(T::Boolean) }
   def show_ai_notice?
     editing? && @summary.ai_generated?
@@ -34,12 +39,6 @@ class Shared::SceneSummaryFormComponent < ApplicationComponent
   sig { returns(T::Boolean) }
   def has_errors?
     @summary.errors.any?
-  end
-
-  sig { returns(Integer) }
-  # mutant:disable
-  def error_count
-    @summary.errors.count
   end
 
   sig { returns(T::Array[String]) }

@@ -21,6 +21,10 @@ RSpec.describe Shared::SceneSummaryFormComponent, type: :component do
       expect(component.submit_label).to eq("Save Summary")
     end
 
+    it "form_id returns the new-form id" do
+      expect(component.form_id).to eq("scene_summary_new_form")
+    end
+
     it "show_ai_notice? returns false" do
       expect(component.show_ai_notice?).to be(false)
     end
@@ -29,14 +33,9 @@ RSpec.describe Shared::SceneSummaryFormComponent, type: :component do
       expect(component.has_errors?).to be(false)
     end
 
-    it "renders the heading" do
+    it "renders a form with the new-form id" do
       render_inline(component)
-      expect(page).to have_text("Write Scene Summary")
-    end
-
-    it "renders a Save Summary button" do
-      render_inline(component)
-      expect(page).to have_button("Save Summary")
+      expect(page).to have_css("form#scene_summary_new_form")
     end
 
     it "does not render the AI notice" do
@@ -62,9 +61,13 @@ RSpec.describe Shared::SceneSummaryFormComponent, type: :component do
       expect(component.submit_label).to eq("Update Summary")
     end
 
-    it "renders the Update Summary button" do
+    it "form_id returns the edit-form id" do
+      expect(component.form_id).to eq("scene_summary_edit_form")
+    end
+
+    it "renders a form with the edit-form id" do
       render_inline(component)
-      expect(page).to have_button("Update Summary")
+      expect(page).to have_css("form#scene_summary_edit_form")
     end
   end
 
@@ -103,15 +106,6 @@ RSpec.describe Shared::SceneSummaryFormComponent, type: :component do
     end
   end
 
-  context "rendering the Cancel link" do
-    let(:summary) { SceneSummary.new }
-
-    it "renders a Cancel link pointing to the scene" do
-      render_inline(described_class.new(game: game, scene: scene, summary: summary))
-      expect(page).to have_link("Cancel", href: /scenes/)
-    end
-  end
-
   context "when the summary has validation errors" do
     let(:summary) do
       s = SceneSummary.new
@@ -123,10 +117,6 @@ RSpec.describe Shared::SceneSummaryFormComponent, type: :component do
 
     it "has_errors? returns true" do
       expect(component.has_errors?).to be(true)
-    end
-
-    it "error_count returns the error count" do
-      expect(component.error_count).to eq(1)
     end
 
     it "error_messages returns the messages" do

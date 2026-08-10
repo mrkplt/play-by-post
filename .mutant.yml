@@ -48,6 +48,7 @@ matcher:
     # Components
     - Shared::AiSummariesToggleComponent
     - Shared::RssTokenComponent
+    - Shared::ProfileFormComponent
     - Shared::SceneSummaryComponent
     - Shared::SceneSummaryEntryComponent
     - Shared::SceneSummaryFormComponent
@@ -66,11 +67,11 @@ matcher:
     - Shared::SceneResolutionComponent
     - Shared::SceneResolveFormComponent
     - Shared::SceneFormComponent
+    - Shared::ParticipantCheckboxListComponent
     - Shared::GameFormComponent
     - Shared::GameDetailsComponent
     - Shared::SidebarComponent
     - Shared::TreeNodeComponent
-    - Shared::GameHeaderComponent
     - Shared::HeaderComponent
     - Shared::GameNavComponent
     - Shared::BreadcrumbsComponent
@@ -78,7 +79,6 @@ matcher:
     - Shared::NavDrawerComponent
     - Shared::GameCardComponent
     - Shared::RosterRowComponent
-    - Shared::PageHeaderComponent
     - Shared::MobileFrameComponent
     - Shared::DeleteGameComponent
     - Shared::FeedbackModalComponent

@@ -3,8 +3,11 @@
 <div data-controller="game-tabs">
   <%= render Shared::MobileFrameComponent.new do |frame| %>
     <% frame.with_header do %>
-      <%= render Shared::GameHeaderComponent.new(
-            game: @game, title: @game.name, is_gm: @game_presenter.gm?, active_tab: :scenes, show_gear: true) %>
+      <%= render Shared::HeaderComponent.new(
+            title: @game.name,
+            crown: @game_presenter.gm?,
+            gear: game_player_management_path(@game),
+            secondary_nav: Shared::GameNavComponent.new(game: @game, active_tab: :scenes, is_gm: @game_presenter.gm?, mode: :switch)) %>
     <% end %>
 
     <%# ===== Scenes panel ===== %>
