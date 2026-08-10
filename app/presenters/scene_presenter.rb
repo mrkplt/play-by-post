@@ -88,6 +88,14 @@ class ScenePresenter < BasePresenter
     muted ? "Unmute notifications" : "Mute notifications"
   end
 
+  # The draft worth surfacing as a recovery notice: the composer disappears
+  # once a scene resolves, so a leftover draft is only worth recovering in
+  # that state. `draft` is whatever the controller found (or nil).
+  sig { params(draft: T.nilable(Post)).returns(T.nilable(Post)) }
+  def recoverable_draft(draft)
+    @model.resolved? ? draft : nil
+  end
+
   # The scene screen's single footer page-action, if any: :join for an
   # eligible non-participant on an open public scene, :write_summary for the
   # GM on a resolved scene with no summary yet, or nil (no footer action).
@@ -97,10 +105,11 @@ class ScenePresenter < BasePresenter
     params(
       is_gm: T::Boolean,
       is_participant: T::Boolean,
-      membership_active: T::Boolean
+      membership: T.nilable(GameMember)
     ).returns(T.nilable(Symbol))
   end
-  def page_action(is_gm:, is_participant:, membership_active:)
+  def page_action(is_gm:, is_participant:, membership:)
+    membership_active = membership.present? && membership.active?
     if !is_participant && !is_gm && !@model.private? && !@model.resolved? && membership_active
       :join
     elsif is_gm && @model.resolved? && @model.scene_summary.blank?

@@ -45,53 +45,79 @@ RSpec.describe ScenePresenter do
     end
   end
 
+  describe "#recoverable_draft" do
+    let(:draft) { build_stubbed(:post, :draft, scene: scene) }
+
+    it "is the draft when the scene is resolved" do
+      allow(scene).to receive(:resolved?).and_return(true)
+      expect(presenter.recoverable_draft(draft)).to eq(draft)
+    end
+
+    it "is nil when the scene is not resolved, even with a draft present" do
+      allow(scene).to receive(:resolved?).and_return(false)
+      expect(presenter.recoverable_draft(draft)).to be_nil
+    end
+
+    it "is nil when there is no draft, even on a resolved scene" do
+      allow(scene).to receive(:resolved?).and_return(true)
+      expect(presenter.recoverable_draft(nil)).to be_nil
+    end
+  end
+
   describe "#page_action" do
-    def page_action_for(scene, **overrides)
+    let(:active_membership) { build_stubbed(:game_member) }
+    let(:removed_membership) { build_stubbed(:game_member, :removed) }
+
+    def page_action_for(scene, membership:, **overrides)
       described_class.new(scene).page_action(
-        **{ is_gm: false, is_participant: false, membership_active: true }.merge(overrides)
+        **{ is_gm: false, is_participant: false, membership: membership }.merge(overrides)
       )
     end
 
     it "is :join for an eligible non-participant, non-GM, active member on an open public scene" do
-      expect(page_action_for(scene)).to eq(:join)
+      expect(page_action_for(scene, membership: active_membership)).to eq(:join)
     end
 
     it "is nil when already a participant" do
-      expect(page_action_for(scene, is_participant: true)).to be_nil
+      expect(page_action_for(scene, membership: active_membership, is_participant: true)).to be_nil
     end
 
     it "is nil for the GM" do
-      expect(page_action_for(scene, is_gm: true)).to be_nil
+      expect(page_action_for(scene, membership: active_membership, is_gm: true)).to be_nil
     end
 
     it "is nil for a private scene" do
       private_scene = build(:scene, :private)
-      expect(page_action_for(private_scene)).to be_nil
+      expect(page_action_for(private_scene, membership: active_membership)).to be_nil
     end
 
     it "is nil when membership is not active" do
-      expect(page_action_for(scene, membership_active: false)).to be_nil
+      expect(page_action_for(scene, membership: removed_membership)).to be_nil
+    end
+
+    it "is nil when there is no membership at all" do
+      expect(page_action_for(scene, membership: nil)).to be_nil
     end
 
     it "is nil for a resolved scene (not :join — resolved scenes fall through to :write_summary)" do
       resolved_scene = build(:scene, :resolved)
-      expect(page_action_for(resolved_scene)).to be_nil
+      expect(page_action_for(resolved_scene, membership: active_membership)).to be_nil
     end
 
     it "is :write_summary for the GM on a resolved scene with no summary yet" do
       resolved_scene = build(:scene, :resolved)
-      expect(page_action_for(resolved_scene, is_gm: true)).to eq(:write_summary)
+      expect(page_action_for(resolved_scene, membership: active_membership, is_gm: true)).to eq(:write_summary)
     end
 
     it "is nil for a resolved scene that already has a summary" do
       resolved_scene = build(:scene, :resolved)
       create(:scene_summary, scene: resolved_scene)
-      expect(page_action_for(resolved_scene, is_gm: true)).to be_nil
+      expect(page_action_for(resolved_scene, membership: active_membership, is_gm: true)).to be_nil
     end
 
     it "is nil for a non-GM on a resolved scene" do
       resolved_scene = build(:scene, :resolved)
-      expect(page_action_for(resolved_scene, is_gm: false, is_participant: true)).to be_nil
+      expect(page_action_for(resolved_scene, membership: active_membership, is_gm: false, is_participant: true)).to be_nil
     end
   end
 

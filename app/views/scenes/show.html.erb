@@ -8,7 +8,7 @@
           secondary_nav: Shared::GameNavComponent.new(game: @game, active_tab: :scenes, is_gm: @game_presenter.gm?, mode: :link)) %>
   <% end %>
 
-  <% case @page_action %>
+  <% case @scene_presenter.page_action(is_gm: @game_presenter.gm?, is_participant: @is_participant, membership: @current_membership) %>
   <% when :join %>
     <% frame.with_footer do %>
       <%= render Shared::PageActionsComponent.new do |actions| %>
@@ -99,7 +99,7 @@
             summary: SceneSummaryPresenter.new(@scene.scene_summary), game: @game, scene: @scene, is_gm: @game_presenter.gm?) %>
     <% end %>
 
-    <%= render Shared::DraftRecoveryComponent.new(game: @game, scene: @scene, draft: @recoverable_draft) %>
+    <%= render Shared::DraftRecoveryComponent.new(game: @game, scene: @scene, draft: @scene_presenter.recoverable_draft(@draft)) %>
 
     <%# Composer %>
     <% if @scene_presenter.can_post?(current_user) %>
