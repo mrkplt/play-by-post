@@ -2,7 +2,20 @@
 
 <%= render Shared::MobileFrameComponent.new do |frame| %>
   <% frame.with_header do %>
-    <%= render Shared::PageHeaderComponent.new(title: "Edit Post", leading: :back, back_href: game_scene_path(@game, @scene)) %>
+    <%= render Shared::HeaderComponent.new(
+          title: "Edit Post",
+          breadcrumbs: Shared::BreadcrumbsComponent.new(game: @game)) %>
+  <% end %>
+
+  <% frame.with_footer do %>
+    <%= render Shared::PageActionsComponent.new do |actions| %>
+      <% actions.with_primary do %>
+        <%= render Ui::ButtonComponent.new(html_options: { type: "submit", form: "edit_post_#{@post.id}_form" }) do %>Save<% end %>
+      <% end %>
+      <% actions.with_cancel do %>
+        <%= render Ui::ButtonComponent.new(variant: :secondary, url: game_scene_path(@game, @scene)) do %>Cancel<% end %>
+      <% end %>
+    <% end %>
   <% end %>
 
   <%= render Shared::PostEditFormComponent.new(game: @game, scene: @scene, post: @post) %>

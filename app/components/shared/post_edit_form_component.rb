@@ -22,4 +22,9 @@ class Shared::PostEditFormComponent < ApplicationComponent
 
   sig { returns(Post) }
   attr_reader :post
+
+  sig { returns(String) }
+  def form_id
+    "edit_post_#{@post.id}_form"
+  end
 end

@@ -156,6 +156,12 @@ RSpec.describe GamesController, type: :request do
       get new_game_path
       expect(response).to have_http_status(:redirect)
     end
+
+    it "renders the universal header nav affordances with no breadcrumb" do
+      sign_in(gm)
+      get new_game_path
+      expect_hamburger_present
+    end
   end
 
   describe "POST /games" do
@@ -206,6 +212,13 @@ RSpec.describe GamesController, type: :request do
     it "unauthenticated user is redirected" do
       get edit_game_path(game)
       expect(response).to have_http_status(:redirect)
+    end
+
+    it "renders the universal header nav affordances" do
+      sign_in(gm)
+      get edit_game_path(game)
+      expect_hamburger_present
+      expect_breadcrumb(game.name)
     end
   end
 

@@ -23,15 +23,29 @@ RSpec.describe Shared::LinkFormComponent, type: :component do
     end
   end
 
-  describe "cancel link (back_href)" do
-    it "points cancel at the links index" do
-      render_inline(build_component(game_link: new_link))
-      expect(page).to have_link("Cancel", href: Rails.application.routes.url_helpers.game_game_links_path(game))
+  describe "back_href" do
+    it "points a new link's back_href at the links index" do
+      component = build_component(game_link: new_link)
+      render_inline(component)
+      expect(component.back_href).to eq(Rails.application.routes.url_helpers.game_game_links_path(game))
     end
 
-    it "points an edit's cancel at the links index too" do
+    it "points an edit's back_href at the links index too" do
+      component = build_component(game_link: existing_link)
+      render_inline(component)
+      expect(component.back_href).to eq(Rails.application.routes.url_helpers.game_game_links_path(game))
+    end
+  end
+
+  describe "form_id" do
+    it "gives new and edit forms distinct, stable ids for the external submit button" do
+      render_inline(build_component(game_link: new_link))
+      expect(page).to have_css("form#new_game_link_form")
+    end
+
+    it "scopes the edit form id to the record" do
       render_inline(build_component(game_link: existing_link))
-      expect(page).to have_link("Cancel", href: Rails.application.routes.url_helpers.game_game_links_path(game))
+      expect(page).to have_css("form#edit_game_link_#{existing_link.id}_form")
     end
   end
 

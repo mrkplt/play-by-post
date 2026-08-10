@@ -83,7 +83,7 @@ class Shared::CharacterFormComponent < ApplicationComponent
 
   sig { returns(String) }
   def form_id
-    new_record? ? "new_character_form" : "edit_character_#{T.must(@character.id)}_form"
+    new_record? ? "new_character_form" : "edit_character_#{@character.id}_form"
   end
 
   sig { returns(T::Boolean) }

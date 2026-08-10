@@ -83,6 +83,13 @@ RSpec.describe PagesController, type: :request do
       expect_breadcrumb(game.name)
       expect_active_tab("Pages")
     end
+
+    it "renders visible text on the primary and cancel page-action buttons" do
+      sign_in(gm)
+      get new_game_page_path(game)
+      expect(response.body).to include(">Create Page<")
+      expect(response.body).to include(">Cancel<")
+    end
   end
 
   describe "POST create" do
@@ -145,6 +152,13 @@ RSpec.describe PagesController, type: :request do
       expect_hamburger_present
       expect_breadcrumb(game.name)
       expect_active_tab("Pages")
+    end
+
+    it "renders visible text on the primary and cancel page-action buttons" do
+      sign_in(gm)
+      get edit_game_page_path(game, page)
+      expect(response.body).to include(">Save<")
+      expect(response.body).to include(">Cancel<")
     end
   end
 

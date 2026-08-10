@@ -40,6 +40,14 @@ RSpec.describe GameFilesController, type: :request do
       expect(response.body).not_to include("Upload File")
     end
 
+    it "renders the universal header nav affordances" do
+      sign_in(player)
+      get game_game_files_path(game)
+      expect_hamburger_present
+      expect_breadcrumb(game.name)
+      expect_active_tab("Files")
+    end
+
     it "orders files newest first" do
       sign_in(gm)
       older = create(:game_file, game: game, filename: "older.pdf", created_at: 2.days.ago)

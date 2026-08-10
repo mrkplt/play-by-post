@@ -37,6 +37,13 @@ RSpec.describe CharactersController, type: :request do
       expect_breadcrumb(game.name)
       expect_active_tab("Roster")
     end
+
+    it "renders visible text on the primary and cancel page-action buttons" do
+      sign_in(gm)
+      get new_game_character_path(game)
+      expect(response.body).to include(">Create Character<")
+      expect(response.body).to include(">Cancel<")
+    end
   end
 
   describe "POST /games/:game_id/characters" do
@@ -174,6 +181,13 @@ RSpec.describe CharactersController, type: :request do
       expect_hamburger_present
       expect_breadcrumb(game.name)
       expect_active_tab("Roster")
+    end
+
+    it "renders visible text on the primary and cancel page-action buttons" do
+      sign_in(player)
+      get edit_game_character_path(game, character)
+      expect(response.body).to include(">Save<")
+      expect(response.body).to include(">Cancel<")
     end
   end
 

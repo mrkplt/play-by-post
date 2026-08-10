@@ -92,6 +92,13 @@ RSpec.describe NotebookEntriesController, type: :request do
       expect_breadcrumb(game.name)
       expect_active_tab("Notebook")
     end
+
+    it "renders visible text on the primary and cancel page-action buttons" do
+      sign_in(gm)
+      get new_game_notebook_entry_path(game)
+      expect(response.body).to include(">Create Entry<")
+      expect(response.body).to include(">Cancel<")
+    end
   end
 
   describe "POST create" do

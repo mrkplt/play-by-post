@@ -11,10 +11,10 @@
   <% frame.with_footer do %>
     <%= render Shared::PageActionsComponent.new do |actions| %>
       <% actions.with_primary do %>
-        <%= render Ui::ButtonComponent.new(html_options: { type: "submit", form: "notebook_entry_#{@notebook_entry.id}_edit_form_element" }) { "Save" } %>
+        <%= render Ui::ButtonComponent.new(html_options: { type: "submit", form: "notebook_entry_#{@notebook_entry.id}_edit_form_element" }) do %>Save<% end %>
       <% end %>
       <% actions.with_cancel do %>
-        <%= render Ui::ButtonComponent.new(variant: :secondary, url: game_notebook_entry_path(@game, @notebook_entry)) { "Cancel" } %>
+        <%= render Ui::ButtonComponent.new(variant: :secondary, url: game_notebook_entry_path(@game, @notebook_entry)) do %>Cancel<% end %>
       <% end %>
     <% end %>
   <% end %>

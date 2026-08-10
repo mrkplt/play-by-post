@@ -36,7 +36,7 @@ class Shared::NotebookFormComponent < ApplicationComponent
 
   sig { returns(String) }
   def form_id
-    new_record? ? "notebook_entry_new_form_element" : "notebook_entry_#{T.must(@notebook_entry.id)}_edit_form_element"
+    new_record? ? "notebook_entry_new_form_element" : "notebook_entry_#{@notebook_entry.id}_edit_form_element"
   end
 
   sig { returns(T::Boolean) }

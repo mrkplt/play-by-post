@@ -20,10 +20,13 @@ RSpec.describe Shared::PostEditFormComponent, type: :component do
     expect(page).to have_css("textarea", text: "Original body")
   end
 
-  it "renders a live preview target and save/cancel controls" do
+  it "renders a live preview target" do
     render_form
     expect(page).to have_css("[data-markdown-preview-target='preview']")
-    expect(page).to have_button("Save")
-    expect(page).to have_link("Cancel", href: Rails.application.routes.url_helpers.game_scene_path(game, scene))
+  end
+
+  it "gives the form a stable id for the external submit button" do
+    render_form
+    expect(page).to have_css("form#edit_post_#{post_record.id}_form")
   end
 end

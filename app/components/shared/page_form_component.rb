@@ -38,7 +38,7 @@ class Shared::PageFormComponent < ApplicationComponent
 
   sig { returns(String) }
   def form_id
-    new_record? ? "new_page_form" : "edit_page_#{T.must(@page.id)}_form"
+    new_record? ? "new_page_form" : "edit_page_#{@page.id}_form"
   end
 
   sig { returns(T::Boolean) }

@@ -14,6 +14,12 @@ RSpec.describe ProfilesController, type: :request do
       get profile_path
       expect(response).to have_http_status(:redirect)
     end
+
+    it "renders the universal header nav affordances with no breadcrumb" do
+      sign_in(user)
+      get profile_path
+      expect_hamburger_present
+    end
   end
 
   describe "GET /profile/edit" do

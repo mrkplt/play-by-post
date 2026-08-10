@@ -2,7 +2,9 @@
 
 <%= render Shared::MobileFrameComponent.new do |frame| %>
   <% frame.with_header do %>
-    <%= render Shared::PageHeaderComponent.new(title: "Game Settings", leading: :back, back_href: game_path(@game)) %>
+    <%= render Shared::HeaderComponent.new(
+          title: "Game Settings",
+          breadcrumbs: Shared::BreadcrumbsComponent.new(game: @game)) %>
   <% end %>
 
   <% if @game_presenter.gm? %>
@@ -21,21 +23,23 @@
                 sub: @member_characters[member.user_id],
                 last: i == @members.length - 1) do %>
             <% if member.active? %>
-              <%= form_with url: game_player_management_game_member_path(@game, member), method: :patch, class: "inline" do |f| %>
-                <%= f.hidden_field :status, value: "removed" %>
-                <%= f.submit "Remove", class: "text-[11px] font-bold text-row-ink bg-transparent border-0 cursor-pointer p-0",
-                      data: { confirm: "Remove this player? They keep read-only access." } %>
-              <% end %>
-              <%= form_with url: game_player_management_game_member_path(@game, member), method: :patch, class: "inline" do |f| %>
-                <%= f.hidden_field :status, value: "banned" %>
-                <%= f.submit "Ban", class: "text-[11px] font-bold text-danger bg-transparent border-0 cursor-pointer p-0",
-                      data: { confirm: "Ban this player? This permanently revokes all access and cannot be undone easily." } %>
-              <% end %>
+              <%= render Ui::ButtonComponent.new(
+                    variant: :text,
+                    url: game_player_management_game_member_path(@game, member, status: "removed"),
+                    method: :patch,
+                    confirm: "Remove this player? They keep read-only access.",
+                    html_options: { class: "text-row-ink" }) do %>Remove<% end %>
+              <%= render Ui::ButtonComponent.new(
+                    variant: :text,
+                    url: game_player_management_game_member_path(@game, member, status: "banned"),
+                    method: :patch,
+                    confirm: "Ban this player? This permanently revokes all access and cannot be undone easily.",
+                    html_options: { class: "text-danger" }) do %>Ban<% end %>
             <% elsif member.removed? %>
-              <%= form_with url: game_player_management_game_member_path(@game, member), method: :patch, class: "inline" do |f| %>
-                <%= f.hidden_field :status, value: "active" %>
-                <%= f.submit "Reinstate", class: "text-[11px] font-bold text-accent bg-transparent border-0 cursor-pointer p-0" %>
-              <% end %>
+              <%= render Ui::ButtonComponent.new(
+                    variant: :text,
+                    url: game_player_management_game_member_path(@game, member, status: "active"),
+                    method: :patch) do %>Reinstate<% end %>
             <% end %>
           <% end %>
         <% end %>
@@ -58,8 +62,7 @@
   <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do %>Export<% end %>
   <%= render Ui::CardComponent.new do %>
     <%= render Ui::SettingsRowComponent.new(label: "This game", sub: @export_notice, last: true) do %>
-      <%= button_to "Export Game", game_export_path(@game), method: :post,
-            class: "text-[11px] font-bold text-accent bg-transparent border-0 cursor-pointer p-0" %>
+      <%= render Ui::ButtonComponent.new(variant: :text, url: game_export_path(@game), method: :post) do %>Export Game<% end %>
     <% end %>
   <% end %>
 
