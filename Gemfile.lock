@@ -270,6 +270,8 @@ GEM
       logger
       mime-types-data (~> 3.2025, >= 3.2025.0507)
     mime-types-data (3.2026.0701)
+    mini_magick (5.3.3)
+      logger
     mini_mime (1.1.5)
     minitest (6.0.6)
       drb (~> 2.0)
@@ -617,6 +619,7 @@ DEPENDENCIES
   kamal
   letter_opener_web
   lookbook
+  mini_magick (~> 5.0)
   mutant-rspec
   pagy (~> 43.4)
   propshaft
