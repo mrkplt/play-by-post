@@ -1,8 +1,7 @@
 require "rails_helper"
 
-# rack-attack is disabled in the test env by default. Enable it here and swap in
-# a fresh MemoryStore per example so throttle counters actually accumulate and
-# don't leak across examples. Both globals are restored in the ensure block.
+# rack-attack is off in test; enable it and use a fresh MemoryStore per example
+# (restored after) so counters accumulate without leaking across examples.
 RSpec.describe "rack-attack throttling", type: :request do
   around do |example|
     original_enabled = Rack::Attack.enabled

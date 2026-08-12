@@ -1,11 +1,7 @@
 require "rails_helper"
 
-# Direct unit coverage of the TurnstileVerification module, exercised through a
-# minimal host controller so the module's own logic (enabled-guard, token
-# extraction, remote_ip passing, the failure hook) is asserted at the module
-# level rather than only end-to-end through the real controllers.
+# Unit coverage of the module via a minimal host controller.
 RSpec.describe TurnstileVerification do
-  # Bare controller that includes the module and exposes its private methods.
   let(:controller_class) do
     Class.new(ActionController::Base) do
       include TurnstileVerification

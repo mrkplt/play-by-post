@@ -1,15 +1,8 @@
 # typed: strict
 
-# Cloudflare Turnstile widget — a mostly-invisible bot challenge dropped into a
-# form. Renders the `cf-turnstile` container (which the Cloudflare script hydrates
-# into a hidden `cf-turnstile-response` input on the form) plus the loader script.
-#
-# When Turnstile is disabled (the test environment, or a build without keys) the
-# component renders nothing, so forms elsewhere aren't forced to satisfy a token.
-#
-# Server-side verification of the produced token is TurnstileVerifier's job,
-# invoked via the TurnstileVerification controller module — rendering the widget
-# alone does not enforce anything.
+# Cloudflare Turnstile widget for a form: the `cf-turnstile` container plus the
+# loader script. Renders nothing when Turnstile is disabled. Enforcement is
+# server-side (TurnstileVerifier via TurnstileVerification), not here.
 class Ui::TurnstileWidgetComponent < ApplicationComponent
   extend T::Sig
 

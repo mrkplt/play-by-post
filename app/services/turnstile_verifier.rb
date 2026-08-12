@@ -2,19 +2,14 @@
 
 require "net/http"
 
-# Verifies a Cloudflare Turnstile token server-side against the siteverify API.
+# Verifies a Cloudflare Turnstile token against the siteverify API.
 #
-# Fail-open policy: rate-limiting (rack-attack) is the always-on abuse backstop,
-# so if Cloudflare's siteverify is unreachable, times out, or returns something
-# unparseable, this returns `true` (allow) rather than locking users out during a
-# Cloudflare outage. It fails **closed** (returns `false`) only on the two cases
-# that indicate an actual failed human check: a blank token, or a well-formed
-# siteverify response that explicitly reports `success: false`.
+# Fails OPEN (returns true) on any outage — unreachable, timeout, unparseable —
+# because rack-attack is the abuse backstop; a Cloudflare outage must not block
+# logins. Fails CLOSED only on a blank token or an explicit `success: false`.
 class TurnstileVerifier
   extend T::Sig
 
-  # Total budget for the siteverify round-trip. Short so a hung Cloudflare can't
-  # stall a form submit — on timeout we fail open.
   OPEN_TIMEOUT = T.let(2, Integer)
   READ_TIMEOUT = T.let(3, Integer)
 
@@ -31,21 +26,19 @@ class TurnstileVerifier
 
   sig { returns(T::Boolean) }
   def verify
-    # A missing token is a failed check, not an outage — fail closed.
     return false if @token.blank?
 
     response = post_siteverify
     parse_success(response.body)
   rescue StandardError => e
-    # Network error, timeout, DNS failure, etc. — fail open; the throttle covers us.
     Rails.logger.warn("Turnstile siteverify unreachable, failing open: #{e.class}: #{e.message}")
     true
   end
 
   private
 
-  # Return type is T.untyped so specs can stub the HTTP boundary with a plain
-  # double — sorbet-runtime rejects RSpec doubles against a concrete type.
+  # T.untyped so specs can stub with a plain double (sorbet-runtime rejects
+  # doubles against a concrete return type).
   sig { returns(T.untyped) }
   def post_siteverify
     uri = URI.parse(Turnstile::SITEVERIFY_URL)
@@ -68,9 +61,7 @@ class TurnstileVerifier
     data
   end
 
-  # Decides the outcome on the response's `success` flag. An unparseable body
-  # raises JSON::ParserError, which propagates to #verify's outer rescue and
-  # fails open there — no separate rescue needed here.
+  # An unparseable body raises and is caught by #verify's fail-open rescue.
   sig { params(body: String).returns(T::Boolean) }
   def parse_success(body)
     JSON.parse(body).fetch("success", false) == true
