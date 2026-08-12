@@ -35,8 +35,8 @@ RSpec.describe Ui::TurnstileWidgetComponent, type: :component do
     expect(page).not_to have_css("div.cf-turnstile[data-action]")
   end
 
-  it "raises on an unknown theme" do
-    expect { described_class.new(theme: :neon) }.to raise_error(ArgumentError, /Unknown theme/)
+  it "raises on an unknown theme, naming the offending theme" do
+    expect { described_class.new(theme: :neon) }.to raise_error(ArgumentError, /Unknown theme: neon/)
   end
 
   describe "all themes render without error" do

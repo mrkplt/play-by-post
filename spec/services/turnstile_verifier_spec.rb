@@ -59,38 +59,57 @@ RSpec.describe TurnstileVerifier do
     end
 
     describe "request construction" do
-      it "posts the secret, token, and remote_ip to the siteverify URL" do
-        captured = nil
-        allow(Net::HTTP).to receive(:start) do |*_args, &blk|
+      # Captures both the positional args passed to Net::HTTP.start (host, port,
+      # options) and the request object, so the request target and body are both
+      # asserted.
+      def capture_request(&run)
+        captured = {}
+        allow(Net::HTTP).to receive(:start) do |*args, **kwargs, &blk|
+          captured[:args] = args
+          captured[:kwargs] = kwargs
           http = instance_double(Net::HTTP)
           allow(http).to receive(:request) do |req|
-            captured = req
+            captured[:request] = req
             double("Net::HTTPResponse", body: { success: true }.to_json)
           end
           blk.call(http)
         end
+        run.call
+        captured
+      end
 
-        described_class.verify(token: "the-token", remote_ip: "203.0.113.7")
+      it "connects to the Cloudflare siteverify host over SSL with the configured timeouts" do
+        uri = URI.parse(Turnstile::SITEVERIFY_URL)
+        captured = capture_request { described_class.verify(token: "t") }
 
-        expect(captured.body).to include("secret=#{Turnstile.secret_key}")
-        expect(captured.body).to include("response=the-token")
-        expect(captured.body).to include("remoteip=203.0.113.7")
+        expect(captured[:args][0]).to eq(uri.hostname)
+        expect(captured[:args][1]).to eq(uri.port)
+        expect(captured[:kwargs]).to include(
+          use_ssl: true,
+          open_timeout: TurnstileVerifier::OPEN_TIMEOUT,
+          read_timeout: TurnstileVerifier::READ_TIMEOUT
+        )
+      end
+
+      it "posts the secret, token, and remote_ip in the form body" do
+        captured = capture_request { described_class.verify(token: "the-token", remote_ip: "203.0.113.7") }
+        body = captured[:request].body
+
+        expect(body).to include("secret=#{Turnstile.secret_key}")
+        expect(body).to include("response=the-token")
+        expect(body).to include("remoteip=203.0.113.7")
+      end
+
+      it "coerces the token to a string in the body" do
+        # Guards against dropping `.to_s`: set_form_data requires string values,
+        # so a non-string token must be coerced.
+        captured = capture_request { described_class.verify(token: "12345", remote_ip: nil) }
+        expect(captured[:request].body).to include("response=12345")
       end
 
       it "omits remoteip when none is given" do
-        captured = nil
-        allow(Net::HTTP).to receive(:start) do |*_args, &blk|
-          http = instance_double(Net::HTTP)
-          allow(http).to receive(:request) do |req|
-            captured = req
-            double("Net::HTTPResponse", body: { success: true }.to_json)
-          end
-          blk.call(http)
-        end
-
-        described_class.verify(token: "the-token")
-
-        expect(captured.body).not_to include("remoteip")
+        captured = capture_request { described_class.verify(token: "the-token") }
+        expect(captured[:request].body).not_to include("remoteip")
       end
     end
   end
