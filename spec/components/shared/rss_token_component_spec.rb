@@ -5,7 +5,7 @@ require "rails_helper"
 RSpec.describe Shared::RssTokenComponent, type: :component do
   def component(**overrides)
     described_class.new(**{
-      scope_label: "All games",
+      scope_label: "Curse of Strahd",
       feed_url: nil,
       form_path: "/profile/generate_rss_token",
       revoke_path: "/profile/revoke_rss_token"

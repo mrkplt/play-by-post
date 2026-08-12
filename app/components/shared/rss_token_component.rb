@@ -1,7 +1,7 @@
 # typed: strict
 
-# One RSS-feed scope row: an account-level ("All games") scope or a single game.
-# Takes derived, presentation-ready data — never a raw RssToken/Game plus logic.
+# One RSS-feed row for a single game. Takes derived, presentation-ready data —
+# never a raw RssToken/Game plus logic.
 # The presenter decides the label, the feed URL (present only when a token
 # exists), and the form paths/params; this component owns the markup. Reusable
 # on the profile now and an in-game location later.

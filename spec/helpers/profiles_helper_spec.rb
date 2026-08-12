@@ -13,10 +13,6 @@ RSpec.describe ProfilesHelper, type: :helper do
   end
 
   describe "#rss_scope_param" do
-    it "is empty for the account-level scope (no game)" do
-      expect(helper.rss_scope_param(nil)).to eq({})
-    end
-
     it "carries the game_id for a game scope" do
       game = build_stubbed(:game)
       expect(helper.rss_scope_param(game)).to eq(game_id: game.id)
@@ -24,13 +20,13 @@ RSpec.describe ProfilesHelper, type: :helper do
   end
 
   describe "#profile_rss_scopes", db: true do
-    it "returns the user's RSS scopes" do
+    it "returns the user's RSS scopes, one per game" do
       user = create(:user)
       create(:game_member, game: create(:game, name: "Alpha"), user: user)
 
       labels = helper.profile_rss_scopes(user).map(&:label)
 
-      expect(labels).to eq([ "All games", "Alpha" ])
+      expect(labels).to eq([ "Alpha" ])
     end
   end
 end

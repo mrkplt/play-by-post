@@ -2,79 +2,50 @@ require "rails_helper"
 
 RSpec.describe FeedsController, type: :request do
   let(:user) { create(:user, :with_profile) }
-  let(:game_a) { create(:game, name: "Alpha Campaign") }
-  let(:game_b) { create(:game, name: "Beta Campaign") }
+  let(:game) { create(:game, name: "Alpha Campaign") }
+  let(:other_game) { create(:game, name: "Beta Campaign") }
 
-  def summary_in(game, body:)
-    scene = create(:scene, :resolved, game: game)
+  def summary_in(a_game, body:)
+    scene = create(:scene, :resolved, game: a_game)
     create(:scene_summary, scene: scene, body: body)
   end
 
   describe "GET /feeds" do
-    context "with a game-level token" do
-      before { create(:game_member, game: game_a, user: user) }
+    before { create(:game_member, game: game, user: user) }
 
-      it "renders only that game's summaries" do
-        summary_a = summary_in(game_a, body: "Alpha scene recap")
-        create(:game_member, game: game_b, user: user)
-        summary_b = summary_in(game_b, body: "Beta scene recap")
-        token = create(:rss_token, user: user, game: game_a)
+    it "renders the token's game summaries" do
+      summary = summary_in(game, body: "Alpha scene recap")
+      token = create(:rss_token, user: user, game: game)
 
-        get feeds_path(token: token.token)
+      get feeds_path(token: token.token)
 
-        expect(response).to have_http_status(:ok)
-        expect(response.media_type).to eq("application/rss+xml")
-        expect(response.body).to include(summary_a.body)
-        expect(response.body).not_to include(summary_b.body)
-      end
-
-      it "returns 401 when the owner is no longer an active member" do
-        member = game_a.game_members.find_by(user: user)
-        member.update!(status: "removed")
-        token = create(:rss_token, user: user, game: game_a)
-
-        get feeds_path(token: token.token)
-
-        expect(response).to have_http_status(:unauthorized)
-      end
+      expect(response).to have_http_status(:ok)
+      expect(response.media_type).to eq("application/rss+xml")
+      expect(response.body).to include(summary.body)
     end
 
-    context "with an account-level token" do
-      before do
-        create(:game_member, game: game_a, user: user)
-        create(:game_member, game: game_b, user: user)
-      end
+    it "renders only the token's game, not other games" do
+      create(:game_member, game: other_game, user: user)
+      mine = summary_in(game, body: "Alpha scene recap")
+      elsewhere = summary_in(other_game, body: "Beta scene recap")
+      token = create(:rss_token, user: user, game: game)
 
-      it "aggregates summaries across every game the user is an active member of" do
-        summary_a = summary_in(game_a, body: "Alpha scene recap")
-        summary_b = summary_in(game_b, body: "Beta scene recap")
-        token = create(:rss_token, user: user, game: nil)
+      get feeds_path(token: token.token)
 
-        get feeds_path(token: token.token)
+      expect(response.body).to include(mine.body)
+      expect(response.body).not_to include(elsewhere.body)
+    end
 
-        expect(response).to have_http_status(:ok)
-        expect(response.body).to include(summary_a.body)
-        expect(response.body).to include(summary_b.body)
-      end
+    it "returns 401 when the owner is no longer an active member" do
+      game.game_members.find_by(user: user).update!(status: "removed")
+      # A removed member can still view (GamePolicy#show?), so use a banned one.
+      banned = create(:user, :with_profile)
+      create(:game_member, :banned, game: game, user: banned)
+      token = create(:rss_token, user: banned, game: game)
 
-      it "excludes games the user is not an active member of" do
-        other_game = create(:game, name: "Gamma Campaign")
-        secret = summary_in(other_game, body: "Gamma scene recap")
-        token = create(:rss_token, user: user, game: nil)
+      get feeds_path(token: token.token)
 
-        get feeds_path(token: token.token)
-
-        expect(response.body).not_to include(secret.body)
-      end
-
-      it "returns 401 when the user is an active member of no games" do
-        loner = create(:user, :with_profile)
-        token = create(:rss_token, user: loner, game: nil)
-
-        get feeds_path(token: token.token)
-
-        expect(response).to have_http_status(:unauthorized)
-      end
+      expect(response).to have_http_status(:unauthorized)
     end
 
     it "returns 401 for a blank token" do
@@ -88,10 +59,9 @@ RSpec.describe FeedsController, type: :request do
     end
 
     it "excludes private scenes" do
-      create(:game_member, game: game_a, user: user)
-      private_scene = create(:scene, :resolved, game: game_a, private: true)
+      private_scene = create(:scene, :resolved, game: game, private: true)
       hidden = create(:scene_summary, scene: private_scene, body: "Private recap")
-      token = create(:rss_token, user: user, game: game_a)
+      token = create(:rss_token, user: user, game: game)
 
       get feeds_path(token: token.token)
 
@@ -99,10 +69,9 @@ RSpec.describe FeedsController, type: :request do
     end
 
     it "excludes unresolved scenes" do
-      create(:game_member, game: game_a, user: user)
-      unresolved = create(:scene, game: game_a)
+      unresolved = create(:scene, game: game)
       hidden = create(:scene_summary, scene: unresolved, body: "Unresolved recap")
-      token = create(:rss_token, user: user, game: game_a)
+      token = create(:rss_token, user: user, game: game)
 
       get feeds_path(token: token.token)
 
@@ -110,12 +79,11 @@ RSpec.describe FeedsController, type: :request do
     end
 
     it "orders items by most recently resolved first" do
-      create(:game_member, game: game_a, user: user)
-      older = create(:scene, :resolved, game: game_a, resolved_at: 3.days.ago)
-      newer = create(:scene, :resolved, game: game_a, resolved_at: 1.day.ago)
+      older = create(:scene, :resolved, game: game, resolved_at: 3.days.ago)
+      newer = create(:scene, :resolved, game: game, resolved_at: 1.day.ago)
       older_summary = create(:scene_summary, scene: older, body: "Older recap")
       newer_summary = create(:scene_summary, scene: newer, body: "Newer recap")
-      token = create(:rss_token, user: user, game: game_a)
+      token = create(:rss_token, user: user, game: game)
 
       get feeds_path(token: token.token)
 

@@ -4,22 +4,17 @@ class RssToken < ApplicationRecord
   extend T::Sig
 
   belongs_to :user
-  belongs_to :game, optional: true
+  belongs_to :game
 
   validates :token, presence: true, uniqueness: true
-  # A user may hold at most one account-level token (game_id nil) and one token
-  # per game. Rails builds `WHERE game_id IS NULL` for the nil scope, so this
-  # rejects a second account-level token — which the DB composite index cannot
-  # (SQLite treats NULLs as distinct). This validation is authoritative.
+  # A user holds at most one token per game.
   validates :user_id, uniqueness: { scope: :game_id }
 
   before_validation :generate_token, on: :create
 
-  scope :account_level, -> { where(game_id: nil) }
-
-  sig { params(user: User, game: T.nilable(Game)).returns(ActiveRecord::Relation) }
+  sig { params(user: User, game: Game).returns(ActiveRecord::Relation) }
   def self.for_user_scope(user, game)
-    where(user_id: user.id, game_id: game&.id)
+    where(user_id: user.id, game_id: game.id)
   end
 
   sig { void }

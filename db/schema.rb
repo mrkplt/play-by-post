@@ -223,14 +223,13 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_12_120000) do
 
   create_table "rss_tokens", force: :cascade do |t|
     t.datetime "created_at", null: false
-    t.integer "game_id"
+    t.integer "game_id", null: false
     t.string "token", null: false
     t.datetime "updated_at", null: false
     t.integer "user_id", null: false
     t.index ["game_id"], name: "index_rss_tokens_on_game_id"
     t.index ["token"], name: "index_rss_tokens_on_token", unique: true
     t.index ["user_id", "game_id"], name: "index_rss_tokens_on_user_id_and_game_id", unique: true
-    t.index ["user_id"], name: "index_rss_tokens_account_level", unique: true, where: "game_id IS NULL"
   end
 
   create_table "scene_participants", force: :cascade do |t|

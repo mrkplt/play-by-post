@@ -163,7 +163,6 @@ matcher:
     - SceneMailbox
     # Helpers
     - ApplicationHelper
-    - FeedsHelper
     - ProfilesHelper
     # Policies
     - ApplicationPolicy

@@ -81,16 +81,13 @@ class ProfilesController < ApplicationController
     @profile = current_user.user_profile || current_user.build_user_profile
   end
 
-  # Resolves the optional game_id for an RSS scope action. Blank means the
-  # account-level scope (nil game). A present game_id is authorized through
-  # GamePolicy#show? (viewable member: GM, active, or removed) — Pundit raises
-  # NotAuthorizedError for a banned or non-member, refusing the action.
-  sig { returns(T.nilable(Game)) }
+  # Resolves the game an RSS scope action targets. Every token is game-scoped,
+  # so game_id is required. The game is authorized through GamePolicy#show?
+  # (viewable member: GM, active, or removed) — Pundit raises NotAuthorizedError
+  # for a banned or non-member, refusing the action.
+  sig { returns(Game) }
   def rss_scope_game
-    game_id = params[:game_id]
-    return nil if game_id.blank?
-
-    game = Game.find(game_id)
+    game = Game.find(params.require(:game_id))
     authorize game, :show?
     game
   end

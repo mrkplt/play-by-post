@@ -85,15 +85,6 @@ RSpec.describe ProfilesController, type: :request do
   end
 
   describe "POST /profile/generate_rss_token" do
-    it "creates an account-level token when no game_id is given" do
-      sign_in(user)
-      expect {
-        post generate_rss_token_profile_path
-      }.to change(RssToken.account_level, :count).by(1)
-      expect(response).to redirect_to(profile_path)
-      expect(flash[:notice]).to match(/generated/i)
-    end
-
     it "creates a game-scoped token for a member game" do
       game = create(:game)
       create(:game_member, game: game, user: user)
@@ -101,21 +92,35 @@ RSpec.describe ProfilesController, type: :request do
       expect {
         post generate_rss_token_profile_path, params: { game_id: game.id }
       }.to change { RssToken.where(user: user, game: game).count }.by(1)
+      expect(response).to redirect_to(profile_path)
+      expect(flash[:notice]).to match(/generated/i)
     end
 
-    it "rotates the existing token for that scope only" do
+    it "rotates the existing token for that game" do
       game = create(:game)
       create(:game_member, game: game, user: user)
-      account_token = create(:rss_token, user: user, game: nil)
-      old_game_token = create(:rss_token, user: user, game: game)
+      old_token = create(:rss_token, user: user, game: game)
       sign_in(user)
 
       expect {
         post generate_rss_token_profile_path, params: { game_id: game.id }
       }.not_to change(RssToken, :count)
 
-      expect(RssToken.find_by(id: old_game_token.id)).to be_nil
-      expect(RssToken.find_by(id: account_token.id)).to be_present
+      expect(RssToken.find_by(id: old_token.id)).to be_nil
+    end
+
+    it "leaves other games' tokens untouched when rotating" do
+      game = create(:game)
+      other = create(:game)
+      create(:game_member, game: game, user: user)
+      create(:game_member, game: other, user: user)
+      other_token = create(:rss_token, user: user, game: other)
+      create(:rss_token, user: user, game: game)
+      sign_in(user)
+
+      post generate_rss_token_profile_path, params: { game_id: game.id }
+
+      expect(RssToken.find_by(id: other_token.id)).to be_present
     end
 
     it "refuses a game the user is not a member of via the authorization policy" do
@@ -137,27 +142,28 @@ RSpec.describe ProfilesController, type: :request do
       expect(flash[:alert]).to match(/not authorized/i)
     end
 
+    it "rejects a request with no game_id" do
+      sign_in(user)
+      expect {
+        post generate_rss_token_profile_path
+      }.not_to change(RssToken, :count)
+      expect(response).to redirect_to(root_path)
+    end
+
     it "unauthenticated user is redirected" do
-      post generate_rss_token_profile_path
-      expect(response).to have_http_status(:redirect)
+      game = create(:game)
+      post generate_rss_token_profile_path, params: { game_id: game.id }
+      expect(response).to redirect_to(new_user_session_path)
     end
   end
 
   describe "DELETE /profile/revoke_rss_token" do
-    it "destroys the account-level token and redirects" do
-      sign_in(user)
-      create(:rss_token, user: user, game: nil)
-      expect {
-        delete revoke_rss_token_profile_path
-      }.to change(RssToken.account_level, :count).by(-1)
-      expect(response).to redirect_to(profile_path)
-      expect(flash[:notice]).to match(/revoked/i)
-    end
-
     it "destroys only the named game's token" do
       game = create(:game)
+      other = create(:game)
       create(:game_member, game: game, user: user)
-      create(:rss_token, user: user, game: nil)
+      create(:game_member, game: other, user: user)
+      keep = create(:rss_token, user: user, game: other)
       create(:rss_token, user: user, game: game)
       sign_in(user)
 
@@ -165,12 +171,16 @@ RSpec.describe ProfilesController, type: :request do
         delete revoke_rss_token_profile_path, params: { game_id: game.id }
       }.to change { RssToken.where(user: user, game: game).count }.by(-1)
 
-      expect(RssToken.account_level.where(user: user)).to be_present
+      expect(RssToken.find_by(id: keep.id)).to be_present
+      expect(response).to redirect_to(profile_path)
+      expect(flash[:notice]).to match(/revoked/i)
     end
 
     it "refuses a game the user is not a member of and revokes nothing" do
       game = create(:game)
-      create(:rss_token, user: user, game: nil)
+      member_game = create(:game)
+      create(:game_member, game: member_game, user: user)
+      create(:rss_token, user: user, game: member_game)
       sign_in(user)
 
       expect {
@@ -180,17 +190,20 @@ RSpec.describe ProfilesController, type: :request do
       expect(flash[:alert]).to match(/not authorized/i)
     end
 
-    it "does nothing when no token exists for the scope" do
+    it "does nothing when no token exists for the game" do
+      game = create(:game)
+      create(:game_member, game: game, user: user)
       sign_in(user)
       expect {
-        delete revoke_rss_token_profile_path
+        delete revoke_rss_token_profile_path, params: { game_id: game.id }
       }.not_to change(RssToken, :count)
       expect(response).to redirect_to(profile_path)
     end
 
     it "unauthenticated user is redirected" do
-      delete revoke_rss_token_profile_path
-      expect(response).to have_http_status(:redirect)
+      game = create(:game)
+      delete revoke_rss_token_profile_path, params: { game_id: game.id }
+      expect(response).to redirect_to(new_user_session_path)
     end
   end
 

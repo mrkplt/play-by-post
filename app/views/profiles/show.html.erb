@@ -24,7 +24,7 @@
     <% end %>
   </div>
 
-  <%# RSS Feed Tokens — one scope per row (account-level + per game) %>
+  <%# RSS Feed Tokens — one row per game the user belongs to %>
   <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do %>RSS Feed Tokens<% end %>
   <%= render Ui::CardComponent.new do %>
     <% profile_rss_scopes(current_user).each do |scope| %>
