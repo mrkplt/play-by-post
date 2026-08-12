@@ -2,7 +2,9 @@
 
 class FeedbackController < ApplicationController
   extend T::Sig
+  include TurnstileVerification
 
+  before_action :verify_turnstile!, only: :create
   after_action :verify_authorized
 
   # Submitted from the nav-drawer modal via fetch (see feedback_controller.js),

@@ -32,6 +32,14 @@ class ApplicationController
 end
 
 class Devise::Passwordless::SessionsController
+  class << self
+    # Inherited from AbstractController::Callbacks::ClassMethods; the gem RBI
+    # doesn't give this controller its ActionController ancestry, so declare the
+    # class-level filter macros the controller uses here.
+    sig { params(names: T.untyped, blk: T.untyped).void }
+    def before_action(*names, &blk); end
+  end
+
   sig { returns(T.untyped) }
   def resource; end
 

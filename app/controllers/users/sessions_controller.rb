@@ -2,6 +2,9 @@
 
 class Users::SessionsController < Devise::Passwordless::SessionsController
   extend T::Sig
+  include TurnstileVerification
+
+  before_action :verify_turnstile!, only: :create
 
   sig { void }
   def create
@@ -20,5 +23,16 @@ class Users::SessionsController < Devise::Passwordless::SessionsController
     resource.send_magic_link(remember_me: true)
     @email_sent = true
     render :new
+  end
+
+  private
+
+  # Re-render the sign-in form (same view as the blank-email failure) when the
+  # bot check fails, instead of the module's default bare 403.
+  sig { void }
+  def turnstile_verification_failed
+    flash.now[:alert] = "Please complete the verification challenge and try again."
+    self.resource = User.new
+    render :new, status: :unprocessable_content
   end
 end
