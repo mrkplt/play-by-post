@@ -6,12 +6,10 @@
 # closed here in two layers — Redcarpet's `filter_html: true`, then a Rails
 # `sanitize` with an explicit tag allowlist and an href-only attribute allowlist
 # (which also strips unsafe URI schemes like `javascript:`/`data:`). All prose
-# fields must render through this class; never `raw`/`html_safe` user input.
+# fields must render through this module; never `raw`/`html_safe` user input.
 # The contract is pinned by spec/services/markdown_renderer_spec.rb.
-class MarkdownRenderer
+module MarkdownRenderer
   extend T::Sig
-
-  include ActionView::Helpers::SanitizeHelper
 
   ALLOWED_TAGS = T.let(
     %w[p br strong em del a ul ol li h1 h2 h3 h4 h5 h6 blockquote pre code hr table thead tbody tr th td].freeze,
@@ -21,24 +19,21 @@ class MarkdownRenderer
 
   sig { params(text: T.nilable(String)).returns(String) }
   def self.render(text)
-    new.render(text)
-  end
-
-  sig { params(text: T.nilable(String)).returns(String) }
-  def render(text)
     return "" if text.blank?
 
-    T.must(sanitize(
+    # ActionController::Base.helpers.sanitize is the SanitizeHelper bound to a
+    # concrete view context, so its `safe_list_sanitizer` resolves correctly
+    # from a module method (unlike `extend SanitizeHelper`, whose `sanitize`
+    # would look the sanitizer up on Module).
+    T.cast(T.unsafe(ActionController::Base.helpers).sanitize(
       markdown_parser.render(text),
       tags: ALLOWED_TAGS,
       attributes: ALLOWED_ATTRIBUTES
-    ))
+    ), String)
   end
 
-  private
-
   sig { returns(Redcarpet::Markdown) }
-  def markdown_parser
+  def self.markdown_parser
     renderer = Redcarpet::Render::HTML.new(
       hard_wrap: true,
       no_images: true,
