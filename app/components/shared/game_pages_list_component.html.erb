@@ -7,10 +7,20 @@
   <% if any_pages? %>
     <div class="bg-card border border-card-border rounded-card overflow-hidden">
       <% pages.each_with_index do |page, i| %>
-        <%= link_to game_page_path(game, page), class: row_classes(i) do %>
-          <span class="flex-1 text-sm font-bold text-ink truncate"><%= page.title %></span>
-          <span class="text-muted-2 text-sm">&rsaquo;</span>
-        <% end %>
+        <div class="<%= row_classes(i) %>">
+          <%= link_to game_page_path(game, page), class: "flex-1 min-w-0 no-underline" do %>
+            <span class="block text-sm font-bold text-ink truncate"><%= page.title %></span>
+          <% end %>
+
+          <% if gm? %>
+            <div class="flex items-center gap-3 flex-shrink-0">
+              <%= link_to "Edit", edit_game_page_path(game, page), class: "text-xs font-semibold text-accent no-underline" %>
+              <%= button_to "Delete", game_page_path(game, page), method: :delete,
+                    form: { data: { turbo_confirm: "Delete this page? This cannot be undone." } },
+                    class: "text-xs font-semibold text-danger bg-transparent border-0 cursor-pointer p-0" %>
+            </div>
+          <% end %>
+        </div>
       <% end %>
     </div>
   <% else %>
