@@ -106,6 +106,16 @@ Already reused by controllers *and* views — these become policy bodies:
 
 - `users/sessions_controller.rb` — Devise magic-link (authentication, not authz)
 - `invitations_controller#accept` — `skip_before_action :authenticate_user!`; token-gated
+- `feeds_controller#show` (`GET /feeds`) — `skip_before_action :authenticate_user!`,
+  but **still policy-authorized**: the RSS token is an identity credential, reverse-
+  looked-up to its owning user and game. That user becomes the Pundit actor (an
+  overridden `pundit_user`), and the game is authorized through `GamePolicy#show?`
+  exactly like a session request — so a token whose owner has been banned or dropped
+  from the game stops working. An absent/unknown token has no user or game to
+  authorize, so it `skip_authorization` + `head :unauthorized` (the only allowlisted
+  skip). Every RSS token is game-scoped; a user holds at most one per game
+  (`validates :user_id, uniqueness: { scope: :game_id }`). Tokens are managed on the
+  profile page and purged with their game by `GamePurgeJob`.
 - `webhooks/deploy_controller.rb` — signature-gated webhook, no `current_user`
 - `action_mailbox/ingresses/resend/inbound_emails_controller.rb` — Svix-signed ingress
 

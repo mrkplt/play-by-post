@@ -62,19 +62,21 @@ RSpec.describe SceneSummariesController, type: :request do
       expect(response).to have_http_status(:ok)
     end
 
-    it "redirects a banned member to sign-in" do
+    it "denies a banned member via the authorization policy" do
       banned_user = create(:user, :with_profile)
       create(:game_member, :banned, game: game, user: banned_user)
       sign_in(banned_user)
       get game_scene_summaries_path(game)
-      expect(response).to redirect_to(new_user_session_path)
+      expect(response).to have_http_status(:redirect)
+      expect(flash[:alert]).to match(/not authorized/i)
     end
 
-    it "redirects a signed-in non-member to sign-in" do
+    it "denies a signed-in non-member via the authorization policy" do
       outsider = create(:user, :with_profile)
       sign_in(outsider)
       get game_scene_summaries_path(game)
-      expect(response).to redirect_to(new_user_session_path)
+      expect(response).to have_http_status(:redirect)
+      expect(flash[:alert]).to match(/not authorized/i)
     end
 
     it "returns summaries ordered by resolved_at descending" do
@@ -97,10 +99,9 @@ RSpec.describe SceneSummariesController, type: :request do
       expect_active_tab("Scenes")
     end
 
-    it "renders visible text on the RSS Feed and Edit Game page-action buttons for the GM" do
+    it "renders visible text on the Edit Game page-action button for the GM" do
       sign_in(gm)
       get game_scene_summaries_path(game)
-      expect(response.body).to include(">RSS Feed<")
       expect(response.body).to include(">Edit Game<")
     end
 
@@ -108,40 +109,6 @@ RSpec.describe SceneSummariesController, type: :request do
       sign_in(player)
       get game_scene_summaries_path(game)
       expect(response.body).not_to include(">Edit Game<")
-    end
-  end
-
-  # ── index (RSS) ───────────────────────────────────────────────────────────
-
-  describe "GET /games/:game_id/scene_summaries.rss" do
-    it "returns 200 for an active member (session auth)" do
-      sign_in(player)
-      get game_scene_summaries_path(game, format: :rss)
-      expect(response).to have_http_status(:ok)
-      expect(response.media_type).to eq("application/rss+xml")
-    end
-
-    it "returns 200 with a valid RSS token" do
-      rss_token = create(:rss_token, user: player)
-      get game_scene_summaries_path(game, format: :rss, token: rss_token.token)
-      expect(response).to have_http_status(:ok)
-    end
-
-    it "returns 401 with no token and no session" do
-      get game_scene_summaries_path(game, format: :rss)
-      expect(response).to have_http_status(:unauthorized)
-    end
-
-    it "returns 401 for a revoked/invalid token" do
-      get game_scene_summaries_path(game, format: :rss, token: "bogus-token")
-      expect(response).to have_http_status(:unauthorized)
-    end
-
-    it "returns 401 when token owner is not a game member" do
-      outsider = create(:user, :with_profile)
-      rss_token = create(:rss_token, user: outsider)
-      get game_scene_summaries_path(game, format: :rss, token: rss_token.token)
-      expect(response).to have_http_status(:unauthorized)
     end
   end
 

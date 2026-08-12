@@ -8,13 +8,10 @@
           secondary_nav: Shared::GameNavComponent.new(game: @game, active_tab: :scenes, is_gm: @game_presenter.gm?, mode: :link)) %>
   <% end %>
 
-  <% frame.with_footer do %>
-    <%= render Shared::PageActionsComponent.new do |actions| %>
-      <% actions.with_primary do %>
-        <%= render Ui::ButtonComponent.new(url: game_scene_summaries_path(@game, format: :rss)) do %>RSS Feed<% end %>
-      <% end %>
-      <% if @game_presenter.gm? %>
-        <% actions.with_cancel do %>
+  <% if @game_presenter.gm? %>
+    <% frame.with_footer do %>
+      <%= render Shared::PageActionsComponent.new do |actions| %>
+        <% actions.with_primary do %>
           <%= render Ui::ButtonComponent.new(variant: :secondary, url: edit_game_path(@game)) do %>Edit Game<% end %>
         <% end %>
       <% end %>

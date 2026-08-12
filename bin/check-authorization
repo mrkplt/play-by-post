@@ -26,6 +26,7 @@ ALLOWED_SKIPS = {
   "invitations_controller.rb" => "accept is public (token-gated, no current_user)",
   "posts_controller.rb"       => "draft plumbing gated by participant/write checks; a draft is always the user's own",
   "scene_summaries_controller.rb" => "index is a public / RSS listing with its own access rules",
+  "feeds_controller.rb"       => "an invalid/absent RSS token has no user or game to authorize; the valid path authorizes the game via GamePolicy#show?"
 }.freeze
 
 missing_net = []

@@ -109,6 +109,7 @@ matcher:
     - Ui::MarkdownRenderComponent::Config
     - Ui::IconButtonComponent
     - Ui::SettingsRowComponent
+    - Ui::SecretFieldComponent
     - Ui::PillTabsComponent
     - Ui::FlashComponent
     - Ui::IconComponent
@@ -142,8 +143,10 @@ matcher:
     - ProfilesController
     - PlayerManagementController
     - FeedbackController
+    - FeedsController
     - Users::SessionsController
     - TurnstileVerification
+    - TokenBearerAuthentication
     # Jobs
     - PostDigestJob
     - ExportJob
@@ -161,6 +164,7 @@ matcher:
     - SceneMailbox
     # Helpers
     - ApplicationHelper
+    - ProfilesHelper
     # Policies
     - ApplicationPolicy
     - ApplicationPolicy::Scope
