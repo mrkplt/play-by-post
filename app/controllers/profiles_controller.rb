@@ -43,19 +43,15 @@ class ProfilesController < ApplicationController
   sig { void }
   def generate_rss_token
     authorize @profile, :manage?
-    game = rss_scope_game
-
-    RssToken.for_user_scope(current_user, game).destroy_all
-    RssToken.create!(user: current_user, game: game)
+    current_user.rss_token&.destroy
+    current_user.create_rss_token!
     redirect_to profile_path, notice: "RSS token generated."
   end
 
   sig { void }
   def revoke_rss_token
     authorize @profile, :manage?
-    game = rss_scope_game
-
-    RssToken.for_user_scope(current_user, game).destroy_all
+    current_user.rss_token&.destroy
     redirect_to profile_path, notice: "RSS token revoked."
   end
 
@@ -79,16 +75,5 @@ class ProfilesController < ApplicationController
   sig { void }
   def set_profile
     @profile = current_user.user_profile || current_user.build_user_profile
-  end
-
-  # Resolves the game an RSS scope action targets. Every token is game-scoped,
-  # so game_id is required. The game is authorized through GamePolicy#show?
-  # (viewable member: GM, active, or removed) — Pundit raises NotAuthorizedError
-  # for a banned or non-member, refusing the action.
-  sig { returns(Game) }
-  def rss_scope_game
-    game = Game.find(params.require(:game_id))
-    authorize game, :show?
-    game
   end
 end

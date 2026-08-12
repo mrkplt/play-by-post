@@ -1,17 +1,20 @@
-<%= render Ui::SettingsRowComponent.new(label: scope_label, last: !token_present? && !divide?) do %>
-  <div class="flex items-center gap-3">
-    <%= button_to action_label, form_path, method: :post, params: scope_param,
-          class: Shared::RssTokenComponent::ACTION_CLASSES,
-          data: rotate_data %>
-    <% if token_present? %>
-      <%= button_to "Revoke", revoke_path, method: :delete, params: scope_param,
-            class: Shared::RssTokenComponent::DANGER_CLASSES,
-            data: { confirm: "Revoking this token will stop its feed subscriptions. Continue?" } %>
+<div class="bg-card border border-card-border rounded-card px-3.5">
+  <% if token_present? %>
+    <%= render Ui::SettingsRowComponent.new(label: "Campaign log feed", sub: "Revoke to invalidate existing links", last: false) do %>
+      <%= button_to "Rotate", generate_path, method: :post,
+            class: "text-[11px] font-bold text-accent bg-transparent border-0 cursor-pointer p-0",
+            data: { confirm: "Rotating your token will invalidate all existing feed URLs. Continue?" } %>
+      <%= button_to "Revoke", revoke_path, method: :delete,
+            class: "text-[11px] font-bold text-danger bg-transparent border-0 cursor-pointer p-0",
+            data: { confirm: "Revoking your token will stop all feed subscriptions. Continue?" } %>
     <% end %>
-  </div>
-<% end %>
-<% if token_present? %>
-  <%= render Ui::SettingsRowComponent.new(label: "Feed URL", last: !divide?) do %>
-    <%= render Ui::SecretFieldComponent.new(value: feed_url, label: "#{scope_label} feed URL") %>
+    <%= render Ui::SettingsRowComponent.new(label: "Your token", last: true) do %>
+      <code class="text-[11px] bg-canvas px-2 py-1 rounded break-all text-row-ink"><%= token_value %></code>
+    <% end %>
+  <% else %>
+    <%= render Ui::SettingsRowComponent.new(label: "Campaign log feed", sub: "Read-only access to your game feeds", last: true) do %>
+      <%= button_to "Generate", generate_path, method: :post,
+            class: "text-[11px] font-bold text-accent bg-transparent border-0 cursor-pointer p-0" %>
+    <% end %>
   <% end %>
-<% end %>
+</div>
