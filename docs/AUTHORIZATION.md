@@ -106,6 +106,16 @@ Already reused by controllers *and* views — these become policy bodies:
 
 - `users/sessions_controller.rb` — Devise magic-link (authentication, not authz)
 - `invitations_controller#accept` — `skip_before_action :authenticate_user!`; token-gated
+- `feeds_controller#show` (`GET /feeds`) — `skip_before_action :authenticate_user!`;
+  RSS-token-gated. The token is the sole input: an `RssToken` is reverse-looked-up,
+  its scope resolved from `game_id`. A game-level token (`game_id` set) renders only
+  that game; an account-level token (`game_id` nil) aggregates every game the owner
+  is an **active** member of. Membership is re-checked per request, so a removed
+  member's live token stops working. A user holds at most one account-level token and
+  one per game — enforced by `RssToken`'s `validates :user_id, uniqueness: { scope:
+  :game_id }` (a partial DB index backs the account-level case, which the composite
+  index cannot since SQLite treats NULLs as distinct). Tokens are managed on the
+  profile page; game-scoped tokens are purged with their game by `GamePurgeJob`.
 - `webhooks/deploy_controller.rb` — signature-gated webhook, no `current_user`
 - `action_mailbox/ingresses/resend/inbound_emails_controller.rb` — Svix-signed ingress
 

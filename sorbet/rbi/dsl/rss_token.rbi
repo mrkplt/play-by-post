@@ -361,8 +361,17 @@ class RssToken
   end
 
   module GeneratedAssociationMethods
+    sig { params(args: T.untyped, blk: T.untyped).returns(::Game) }
+    def build_game(*args, &blk); end
+
     sig { params(args: T.untyped, blk: T.untyped).returns(::User) }
     def build_user(*args, &blk); end
+
+    sig { params(args: T.untyped, blk: T.untyped).returns(::Game) }
+    def create_game(*args, &blk); end
+
+    sig { params(args: T.untyped, blk: T.untyped).returns(::Game) }
+    def create_game!(*args, &blk); end
 
     sig { params(args: T.untyped, blk: T.untyped).returns(::User) }
     def create_user(*args, &blk); end
@@ -370,8 +379,26 @@ class RssToken
     sig { params(args: T.untyped, blk: T.untyped).returns(::User) }
     def create_user!(*args, &blk); end
 
+    sig { returns(T.nilable(::Game)) }
+    def game; end
+
+    sig { params(value: T.nilable(::Game)).void }
+    def game=(value); end
+
+    sig { returns(T::Boolean) }
+    def game_changed?; end
+
+    sig { returns(T::Boolean) }
+    def game_previously_changed?; end
+
+    sig { returns(T.nilable(::Game)) }
+    def reload_game; end
+
     sig { returns(T.nilable(::User)) }
     def reload_user; end
+
+    sig { void }
+    def reset_game; end
 
     sig { void }
     def reset_user; end
@@ -390,6 +417,9 @@ class RssToken
   end
 
   module GeneratedAssociationRelationMethods
+    sig { params(args: T.untyped, blk: T.untyped).returns(PrivateAssociationRelation) }
+    def account_level(*args, &blk); end
+
     sig { returns(PrivateAssociationRelation) }
     def all; end
 
@@ -584,6 +614,51 @@ class RssToken
     sig { void }
     def created_at_will_change!; end
 
+    sig { returns(T.nilable(::Integer)) }
+    def game_id; end
+
+    sig { params(value: T.nilable(::Integer)).returns(T.nilable(::Integer)) }
+    def game_id=(value); end
+
+    sig { returns(T::Boolean) }
+    def game_id?; end
+
+    sig { returns(T.nilable(::Integer)) }
+    def game_id_before_last_save; end
+
+    sig { returns(T.untyped) }
+    def game_id_before_type_cast; end
+
+    sig { returns(T::Boolean) }
+    def game_id_came_from_user?; end
+
+    sig { returns(T.nilable([T.nilable(::Integer), T.nilable(::Integer)])) }
+    def game_id_change; end
+
+    sig { returns(T.nilable([T.nilable(::Integer), T.nilable(::Integer)])) }
+    def game_id_change_to_be_saved; end
+
+    sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
+    def game_id_changed?(from: T.unsafe(nil), to: T.unsafe(nil)); end
+
+    sig { returns(T.nilable(::Integer)) }
+    def game_id_in_database; end
+
+    sig { returns(T.nilable([T.nilable(::Integer), T.nilable(::Integer)])) }
+    def game_id_previous_change; end
+
+    sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
+    def game_id_previously_changed?(from: T.unsafe(nil), to: T.unsafe(nil)); end
+
+    sig { returns(T.nilable(::Integer)) }
+    def game_id_previously_was; end
+
+    sig { returns(T.nilable(::Integer)) }
+    def game_id_was; end
+
+    sig { void }
+    def game_id_will_change!; end
+
     sig { returns(::Integer) }
     def id; end
 
@@ -678,6 +753,9 @@ class RssToken
     def restore_created_at!; end
 
     sig { void }
+    def restore_game_id!; end
+
+    sig { void }
     def restore_id!; end
 
     sig { void }
@@ -697,6 +775,12 @@ class RssToken
 
     sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
     def saved_change_to_created_at?(from: T.unsafe(nil), to: T.unsafe(nil)); end
+
+    sig { returns(T.nilable([T.nilable(::Integer), T.nilable(::Integer)])) }
+    def saved_change_to_game_id; end
+
+    sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
+    def saved_change_to_game_id?(from: T.unsafe(nil), to: T.unsafe(nil)); end
 
     sig { returns(T.nilable([::Integer, ::Integer])) }
     def saved_change_to_id; end
@@ -867,6 +951,9 @@ class RssToken
     def will_save_change_to_created_at?(from: T.unsafe(nil), to: T.unsafe(nil)); end
 
     sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
+    def will_save_change_to_game_id?(from: T.unsafe(nil), to: T.unsafe(nil)); end
+
+    sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
     def will_save_change_to_id?(from: T.unsafe(nil), to: T.unsafe(nil)); end
 
     sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
@@ -883,6 +970,9 @@ class RssToken
   end
 
   module GeneratedRelationMethods
+    sig { params(args: T.untyped, blk: T.untyped).returns(PrivateRelation) }
+    def account_level(*args, &blk); end
+
     sig { returns(PrivateRelation) }
     def all; end
 

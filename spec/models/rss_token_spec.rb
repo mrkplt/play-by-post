@@ -7,6 +7,12 @@ RSpec.describe RssToken, type: :model do
       token = create(:rss_token, user: user)
       expect(token.user).to eq(user)
     end
+
+    it "optionally belongs to game" do
+      reflection = RssToken.reflect_on_association(:game)
+      expect(reflection.macro).to eq(:belongs_to)
+      expect(reflection.options[:optional]).to be(true)
+    end
   end
 
   describe "validations" do
@@ -19,6 +25,93 @@ RSpec.describe RssToken, type: :model do
         .find { |v| v.is_a?(ActiveRecord::Validations::UniquenessValidator) }
 
       expect(validator).to be_present
+    end
+
+    it "declares user uniqueness scoped to game" do
+      validator = RssToken.validators_on(:user_id)
+        .find { |v| v.is_a?(ActiveRecord::Validations::UniquenessValidator) }
+
+      expect(validator).to be_present
+      expect(validator.options[:scope]).to eq(:game_id)
+    end
+
+    it "rejects a second account-level token for the same user", db: true do
+      user = create(:user)
+      create(:rss_token, user: user, game: nil)
+
+      duplicate = build(:rss_token, user: user, game: nil)
+
+      expect(duplicate).not_to be_valid
+    end
+
+    it "rejects a second token for the same user and game", db: true do
+      user = create(:user)
+      game = create(:game)
+      create(:rss_token, user: user, game: game)
+
+      duplicate = build(:rss_token, user: user, game: game)
+
+      expect(duplicate).not_to be_valid
+    end
+
+    it "allows an account-level token and a game-level token together", db: true do
+      user = create(:user)
+      game = create(:game)
+      create(:rss_token, user: user, game: nil)
+
+      game_token = build(:rss_token, user: user, game: game)
+
+      expect(game_token).to be_valid
+    end
+
+    it "allows tokens for the same user in different games", db: true do
+      user = create(:user)
+      create(:rss_token, user: user, game: create(:game))
+
+      other = build(:rss_token, user: user, game: create(:game))
+
+      expect(other).to be_valid
+    end
+  end
+
+  describe ".account_level" do
+    it "filters to tokens with no game" do
+      expect(RssToken.account_level.where_values_hash).to eq("game_id" => nil)
+    end
+  end
+
+  describe ".for_user_scope" do
+    it "scopes by user and game" do
+      user = build_stubbed(:user)
+      game = build_stubbed(:game)
+
+      expect(RssToken.for_user_scope(user, game).where_values_hash)
+        .to eq("user_id" => user.id, "game_id" => game.id)
+    end
+
+    it "treats a nil game as account-level" do
+      user = build_stubbed(:user)
+
+      expect(RssToken.for_user_scope(user, nil).where_values_hash)
+        .to eq("user_id" => user.id, "game_id" => nil)
+    end
+
+    it "retrieves the matching token for a user and game", db: true do
+      user = create(:user)
+      game = create(:game)
+      match = create(:rss_token, user: user, game: game)
+      create(:rss_token, user: user, game: nil)
+      create(:rss_token, user: create(:user), game: game)
+
+      expect(RssToken.for_user_scope(user, game)).to contain_exactly(match)
+    end
+
+    it "retrieves the account-level token for a nil game", db: true do
+      user = create(:user)
+      match = create(:rss_token, user: user, game: nil)
+      create(:rss_token, user: user, game: create(:game))
+
+      expect(RssToken.for_user_scope(user, nil)).to contain_exactly(match)
     end
   end
 

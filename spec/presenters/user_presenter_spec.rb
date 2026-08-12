@@ -108,4 +108,46 @@ RSpec.describe UserPresenter do
       end
     end
   end
+
+  describe "#rss_scopes", db: true do
+    let(:user) { create(:user) }
+    let(:game_a) { create(:game, name: "Alpha") }
+    let(:game_b) { create(:game, name: "Beta") }
+
+    before do
+      create(:game_member, game: game_a, user: user)
+      create(:game_member, game: game_b, user: user)
+    end
+
+    it "leads with an account-level scope" do
+      scope = described_class.new(user).rss_scopes.first
+
+      expect(scope.label).to eq("All games")
+      expect(scope.game).to be_nil
+    end
+
+    it "adds one scope per non-banned game, ordered by name" do
+      scopes = described_class.new(user).rss_scopes
+
+      expect(scopes.map(&:label)).to eq([ "All games", "Alpha", "Beta" ])
+      expect(scopes[1].game).to eq(game_a)
+    end
+
+    it "pairs each scope with its existing token" do
+      account_token = create(:rss_token, user: user, game: nil)
+      game_token = create(:rss_token, user: user, game: game_a)
+
+      scopes = described_class.new(user).rss_scopes
+
+      expect(scopes[0].token).to eq(account_token)
+      expect(scopes[1].token).to eq(game_token)
+      expect(scopes[2].token).to be_nil
+    end
+
+    it "marks only the final scope as last" do
+      scopes = described_class.new(user).rss_scopes
+
+      expect(scopes.map(&:last)).to eq([ false, false, true ])
+    end
+  end
 end

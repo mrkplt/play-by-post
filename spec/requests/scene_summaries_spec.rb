@@ -111,40 +111,6 @@ RSpec.describe SceneSummariesController, type: :request do
     end
   end
 
-  # ── index (RSS) ───────────────────────────────────────────────────────────
-
-  describe "GET /games/:game_id/scene_summaries.rss" do
-    it "returns 200 for an active member (session auth)" do
-      sign_in(player)
-      get game_scene_summaries_path(game, format: :rss)
-      expect(response).to have_http_status(:ok)
-      expect(response.media_type).to eq("application/rss+xml")
-    end
-
-    it "returns 200 with a valid RSS token" do
-      rss_token = create(:rss_token, user: player)
-      get game_scene_summaries_path(game, format: :rss, token: rss_token.token)
-      expect(response).to have_http_status(:ok)
-    end
-
-    it "returns 401 with no token and no session" do
-      get game_scene_summaries_path(game, format: :rss)
-      expect(response).to have_http_status(:unauthorized)
-    end
-
-    it "returns 401 for a revoked/invalid token" do
-      get game_scene_summaries_path(game, format: :rss, token: "bogus-token")
-      expect(response).to have_http_status(:unauthorized)
-    end
-
-    it "returns 401 when token owner is not a game member" do
-      outsider = create(:user, :with_profile)
-      rss_token = create(:rss_token, user: outsider)
-      get game_scene_summaries_path(game, format: :rss, token: rss_token.token)
-      expect(response).to have_http_status(:unauthorized)
-    end
-  end
-
   # ── new ───────────────────────────────────────────────────────────────────
 
   describe "GET /games/:game_id/scenes/:scene_id/scene_summary/new" do

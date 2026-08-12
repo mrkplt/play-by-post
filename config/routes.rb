@@ -82,10 +82,14 @@ Rails.application.routes.draw do
     end
   end
 
-  # Campaign log index and RSS feed — accessible with RSS token (no session required)
+  # Campaign log index (HTML, signed-in members)
   resources :games, only: [] do
     resources :scene_summaries, only: %i[index]
   end
+
+  # Scoped RSS feed — the token is the sole input; its scope (account vs game) is
+  # resolved by reverse lookup. No session required.
+  get "feeds", to: "feeds#show", defaults: { format: :rss }
 
   root "games#index"
 end

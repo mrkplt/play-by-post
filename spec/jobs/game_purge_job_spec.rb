@@ -33,6 +33,9 @@ RSpec.describe GamePurgeJob, type: :job, db: true do
     records[:game_link] = create(:game_link, game: game)
     records[:notebook_entry] = create(:notebook_entry, game: game)
     records[:export] = create(:game_export_request, user: gm, game: game)
+    records[:rss_token] = create(:rss_token, game: game, user: player)
+    # An account-level token for the same user must survive the purge.
+    records[:account_rss_token] = create(:rss_token, game: nil, user: player)
 
     parent.image.attach(io: StringIO.new("s"), filename: "scene-#{suffix}.png", content_type: "image/png")
     post.image.attach(io: StringIO.new("p"), filename: "post-#{suffix}.png", content_type: "image/png")
@@ -58,6 +61,7 @@ RSpec.describe GamePurgeJob, type: :job, db: true do
       Invitation.exists?(r[:invitation].id) &&
       GameMember.where(id: r[:memberships].map(&:id)).count == 2 &&
       GameExportRequest.exists?(r[:export].id) &&
+      RssToken.exists?(r[:rss_token].id) &&
       ActiveStorage::Blob.where(filename: r[:blob_filenames]).count == 4
   end
 
@@ -103,7 +107,14 @@ RSpec.describe GamePurgeJob, type: :job, db: true do
         expect(Invitation.where(id: target[:invitation].id)).to be_empty
         expect(GameMember.where(id: target[:memberships].map(&:id))).to be_empty
         expect(GameExportRequest.where(id: target[:export].id)).to be_empty
+        expect(RssToken.where(id: target[:rss_token].id)).to be_empty
         expect(ActiveStorage::Blob.where(filename: target[:blob_filenames])).to be_empty
+      end
+
+      it "leaves the owner's account-level RSS token untouched" do
+        described_class.new.perform(target[:game].id)
+
+        expect(RssToken.where(id: target[:account_rss_token].id)).to be_present
       end
 
       it "leaves every other game's records and artifacts untouched" do

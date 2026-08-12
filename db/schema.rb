@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_09_100000) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_12_120000) do
   create_table "action_mailbox_inbound_emails", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "message_checksum", null: false
@@ -223,11 +223,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_09_100000) do
 
   create_table "rss_tokens", force: :cascade do |t|
     t.datetime "created_at", null: false
+    t.integer "game_id"
     t.string "token", null: false
     t.datetime "updated_at", null: false
     t.integer "user_id", null: false
+    t.index ["game_id"], name: "index_rss_tokens_on_game_id"
     t.index ["token"], name: "index_rss_tokens_on_token", unique: true
-    t.index ["user_id"], name: "index_rss_tokens_on_user_id", unique: true
+    t.index ["user_id", "game_id"], name: "index_rss_tokens_on_user_id_and_game_id", unique: true
+    t.index ["user_id"], name: "index_rss_tokens_account_level", unique: true, where: "game_id IS NULL"
   end
 
   create_table "scene_participants", force: :cascade do |t|
@@ -328,6 +331,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_09_100000) do
   add_foreign_key "post_reads", "users"
   add_foreign_key "posts", "scenes"
   add_foreign_key "posts", "users"
+  add_foreign_key "rss_tokens", "games"
   add_foreign_key "rss_tokens", "users"
   add_foreign_key "scene_participants", "characters"
   add_foreign_key "scene_participants", "scenes"

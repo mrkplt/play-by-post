@@ -24,9 +24,20 @@
     <% end %>
   </div>
 
-  <%# RSS Feed Token %>
-  <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do %>RSS Feed Token<% end %>
-  <%= render Shared::RssTokenComponent.new(rss_token: current_user.rss_token) %>
+  <%# RSS Feed Tokens — one scope per row (account-level + per game) %>
+  <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do %>RSS Feed Tokens<% end %>
+  <%= render Ui::CardComponent.new do %>
+    <% profile_rss_scopes(current_user).each do |scope| %>
+      <%= render Shared::RssTokenComponent.new(
+            scope_label: scope.label,
+            feed_url: rss_feed_url(scope.token),
+            form_path: generate_rss_token_profile_path,
+            revoke_path: revoke_rss_token_profile_path,
+            scope_param: rss_scope_param(scope.game),
+            last: scope.last
+          ) %>
+    <% end %>
+  <% end %>
 
   <%# Export %>
   <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do %>Export<% end %>

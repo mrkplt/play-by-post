@@ -11,7 +11,7 @@
   <% frame.with_footer do %>
     <%= render Shared::PageActionsComponent.new do |actions| %>
       <% actions.with_primary do %>
-        <%= render Ui::ButtonComponent.new(url: game_scene_summaries_path(@game, format: :rss)) do %>RSS Feed<% end %>
+        <%= render Ui::ButtonComponent.new(url: profile_path) do %>RSS Feed<% end %>
       <% end %>
       <% if @game_presenter.gm? %>
         <% actions.with_cancel do %>

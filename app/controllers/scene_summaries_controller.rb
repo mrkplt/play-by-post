@@ -15,25 +15,13 @@ class SceneSummariesController < ApplicationController
 
   sig { void }
   def index
-    respond_to do |format|
-      format.html do
-        unless user_signed_in? && game_access_granted?
-          redirect_to new_user_session_path
-          return
-        end
-        summaries = scene_summaries_for_game
-        @pagy, @summaries = pagy(summaries, limit: 20)
-        @game_presenter = GamePresenter.new(@game, current_user)
-      end
-      format.rss do
-        unless rss_access_allowed?(params[:token])
-          head :unauthorized
-          return
-        end
-        @summaries = scene_summaries_for_game.limit(20)
-        render layout: false
-      end
+    unless user_signed_in? && game_access_granted?
+      redirect_to new_user_session_path
+      return
     end
+    summaries = scene_summaries_for_game
+    @pagy, @summaries = pagy(summaries, limit: 20)
+    @game_presenter = GamePresenter.new(@game, current_user)
   end
 
   sig { void }
@@ -134,20 +122,6 @@ class SceneSummariesController < ApplicationController
       .where.not(scenes: { resolved_at: nil })
       .includes(:scene)
       .order("scenes.resolved_at DESC")
-  end
-
-  sig { params(token: T.nilable(String)).returns(T::Boolean) }
-  def rss_access_allowed?(token)
-    if user_signed_in?
-      return true if @game.active_members.exists?(user: current_user)
-    end
-
-    return false if token.blank?
-
-    rss_token = RssToken.find_by(token: token)
-    return false unless rss_token
-
-    @game.active_members.exists?(user_id: rss_token.user_id)
   end
 
   sig { returns(ActionController::Parameters) }
