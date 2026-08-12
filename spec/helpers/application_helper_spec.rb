@@ -90,15 +90,18 @@ RSpec.describe ApplicationHelper, type: :helper do
       expect(result).to be_html_safe
     end
 
-    # Guards the real vendored SVG assets (not a stub): the Hugeicons set ships
-    # stroke-style icons as fill="none" outlines. A build-time sync once baked
-    # fill="currentColor" onto every <path>, which filled the gear solid instead
-    # of drawing an outline. These pin the intended per-icon fill so a future
-    # re-sync re-baking fill fails here rather than in the UI.
+    # Guards the real vendored SVG assets (not a stub) so a future re-sync that
+    # re-bakes fills fails here rather than in the UI. The settings gear is a
+    # single filled path with the center circle punched out as a hole via
+    # fill-rule="evenodd" (filled gear, hollow center); the crown is filled; the
+    # cancel X is an unfilled stroke.
     describe "vendored SVG asset fills" do
-      it "renders the settings gear as an outline (no path fill)" do
+      it "renders the settings gear filled with a hollow center (evenodd hole)" do
         result = helper.icon("settings-01")
-        expect(result.scan(/fill="[^"]*"/).uniq).to eq([ 'fill="none"' ])
+        expect(result).to include('fill="currentColor"')
+        expect(result).to include('fill-rule="evenodd"')
+        # A single path (both subpaths merged) so the evenodd hole applies.
+        expect(result.scan("<path").size).to eq(1)
       end
 
       it "keeps the crown filled" do
