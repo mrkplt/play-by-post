@@ -44,7 +44,6 @@ class ProfilesController < ApplicationController
   def generate_rss_token
     authorize @profile, :manage?
     game = rss_scope_game
-    return if performed?
 
     RssToken.for_user_scope(current_user, game).destroy_all
     RssToken.create!(user: current_user, game: game)
@@ -55,7 +54,6 @@ class ProfilesController < ApplicationController
   def revoke_rss_token
     authorize @profile, :manage?
     game = rss_scope_game
-    return if performed?
 
     RssToken.for_user_scope(current_user, game).destroy_all
     redirect_to profile_path, notice: "RSS token revoked."
@@ -84,22 +82,16 @@ class ProfilesController < ApplicationController
   end
 
   # Resolves the optional game_id for an RSS scope action. Blank means the
-  # account-level scope (nil game). A present game_id must name a game the user
-  # is a non-banned member of, otherwise the action is refused.
+  # account-level scope (nil game). A present game_id is authorized through
+  # GamePolicy#show? (viewable member: GM, active, or removed) — Pundit raises
+  # NotAuthorizedError for a banned or non-member, refusing the action.
   sig { returns(T.nilable(Game)) }
   def rss_scope_game
     game_id = params[:game_id]
     return nil if game_id.blank?
 
-    membership = current_user.game_members
-      .where.not(status: "banned")
-      .find_by(game_id: game_id)
-
-    unless membership
-      redirect_to profile_path, alert: "You are not a member of that game."
-      return nil
-    end
-
-    membership.game
+    game = Game.find(game_id)
+    authorize game, :show?
+    game
   end
 end

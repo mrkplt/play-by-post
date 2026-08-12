@@ -118,13 +118,23 @@ RSpec.describe ProfilesController, type: :request do
       expect(RssToken.find_by(id: account_token.id)).to be_present
     end
 
-    it "refuses a game the user is not a member of" do
+    it "refuses a game the user is not a member of via the authorization policy" do
       game = create(:game)
       sign_in(user)
       expect {
         post generate_rss_token_profile_path, params: { game_id: game.id }
       }.not_to change(RssToken, :count)
-      expect(flash[:alert]).to match(/not a member/i)
+      expect(flash[:alert]).to match(/not authorized/i)
+    end
+
+    it "refuses a game the user is banned from via the authorization policy" do
+      game = create(:game)
+      create(:game_member, :banned, game: game, user: user)
+      sign_in(user)
+      expect {
+        post generate_rss_token_profile_path, params: { game_id: game.id }
+      }.not_to change(RssToken, :count)
+      expect(flash[:alert]).to match(/not authorized/i)
     end
 
     it "unauthenticated user is redirected" do
@@ -167,7 +177,7 @@ RSpec.describe ProfilesController, type: :request do
         delete revoke_rss_token_profile_path, params: { game_id: game.id }
       }.not_to change(RssToken, :count)
 
-      expect(flash[:alert]).to match(/not a member/i)
+      expect(flash[:alert]).to match(/not authorized/i)
     end
 
     it "does nothing when no token exists for the scope" do
