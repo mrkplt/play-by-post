@@ -68,13 +68,11 @@ class TurnstileVerifier
     data
   end
 
-  # A parseable response decides the outcome on its `success` flag. An
-  # unparseable body is treated as an outage — fail open.
+  # Decides the outcome on the response's `success` flag. An unparseable body
+  # raises JSON::ParserError, which propagates to #verify's outer rescue and
+  # fails open there — no separate rescue needed here.
   sig { params(body: String).returns(T::Boolean) }
   def parse_success(body)
     JSON.parse(body).fetch("success", false) == true
-  rescue JSON::ParserError => e
-    Rails.logger.warn("Turnstile siteverify returned unparseable body, failing open: #{e.message}")
-    true
   end
 end

@@ -56,6 +56,12 @@ RSpec.describe TurnstileVerifier do
         stub_siteverify(body: "<html>502 Bad Gateway</html>")
         expect(described_class.verify(token: "tok")).to be(true)
       end
+
+      it "logs a warning when failing open" do
+        allow(Net::HTTP).to receive(:start).and_raise(Errno::ECONNREFUSED)
+        expect(Rails.logger).to receive(:warn).with(/failing open/)
+        described_class.verify(token: "tok")
+      end
     end
 
     describe "request construction" do
