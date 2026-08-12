@@ -35,6 +35,39 @@ RSpec.describe Shared::GamePagesListComponent, type: :component do
       expect(page).to have_link("New Page")
     end
 
+    it "shows an inline Edit link per row for the GM" do
+      render_inline(build_component(is_gm: true))
+      expect(page).to have_link("Edit", href: Rails.application.routes.url_helpers.edit_game_page_path(game, pages.first))
+      expect(page.all("a", text: "Edit").size).to eq(pages.size)
+    end
+
+    it "shows an inline Delete button per row for the GM" do
+      render_inline(build_component(is_gm: true))
+      expect(page).to have_button("Delete", count: pages.size)
+    end
+
+    it "targets the page's destroy route from each Delete button" do
+      render_inline(build_component(is_gm: true))
+      form = page.find("form[action='#{Rails.application.routes.url_helpers.game_page_path(game, pages.first)}']")
+      expect(form).to have_field("_method", type: :hidden, with: "delete")
+    end
+
+    it "guards each Delete with an are-you-sure confirmation" do
+      render_inline(build_component(is_gm: true))
+      expect(page).to have_css("form[data-turbo-confirm]", count: pages.size)
+    end
+
+    it "hides inline Edit and Delete from a non-GM" do
+      render_inline(build_component(is_gm: false))
+      expect(page).to have_no_link("Edit")
+      expect(page).to have_no_button("Delete")
+    end
+
+    it "no longer renders the chevron affordance" do
+      render_inline(build_component(is_gm: false))
+      expect(page).to have_no_text("›")
+    end
+
     it "hides the New Page action from a non-GM" do
       render_inline(build_component(is_gm: false))
       expect(page).to have_no_link("New Page")
