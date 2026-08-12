@@ -62,19 +62,21 @@ RSpec.describe SceneSummariesController, type: :request do
       expect(response).to have_http_status(:ok)
     end
 
-    it "redirects a banned member to sign-in" do
+    it "denies a banned member via the authorization policy" do
       banned_user = create(:user, :with_profile)
       create(:game_member, :banned, game: game, user: banned_user)
       sign_in(banned_user)
       get game_scene_summaries_path(game)
-      expect(response).to redirect_to(new_user_session_path)
+      expect(response).to have_http_status(:redirect)
+      expect(flash[:alert]).to match(/not authorized/i)
     end
 
-    it "redirects a signed-in non-member to sign-in" do
+    it "denies a signed-in non-member via the authorization policy" do
       outsider = create(:user, :with_profile)
       sign_in(outsider)
       get game_scene_summaries_path(game)
-      expect(response).to redirect_to(new_user_session_path)
+      expect(response).to have_http_status(:redirect)
+      expect(flash[:alert]).to match(/not authorized/i)
     end
 
     it "returns summaries ordered by resolved_at descending" do
@@ -97,10 +99,9 @@ RSpec.describe SceneSummariesController, type: :request do
       expect_active_tab("Scenes")
     end
 
-    it "renders visible text on the RSS Feed and Edit Game page-action buttons for the GM" do
+    it "renders visible text on the Edit Game page-action button for the GM" do
       sign_in(gm)
       get game_scene_summaries_path(game)
-      expect(response.body).to include(">RSS Feed<")
       expect(response.body).to include(">Edit Game<")
     end
 

@@ -3,22 +3,17 @@
 class SceneSummariesController < ApplicationController
   extend T::Sig
 
-  skip_before_action :authenticate_user!, only: [ :index ]
-
   before_action :set_game
   before_action :require_game_access!, only: %i[new create edit update destroy]
   before_action :set_scene, only: %i[new create edit update destroy]
   before_action :require_resolved_scene!, only: %i[new create]
   before_action :require_gm!, only: %i[new create edit update destroy]
   before_action :set_summary, only: %i[edit update destroy]
-  after_action :verify_authorized, except: :index
+  after_action :verify_authorized
 
   sig { void }
   def index
-    unless user_signed_in? && game_access_granted?
-      redirect_to new_user_session_path
-      return
-    end
+    authorize @game, :show?
     summaries = scene_summaries_for_game
     @pagy, @summaries = pagy(summaries, limit: 20)
     @game_presenter = GamePresenter.new(@game, current_user)
