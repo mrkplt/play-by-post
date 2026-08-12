@@ -74,9 +74,6 @@ class GamePurgeJob < ApplicationJob
       Page.where(game_id: game.id).in_batches.delete_all
       GameLink.where(game_id: game.id).in_batches.delete_all
       Invitation.where(game_id: game.id).in_batches.delete_all
-      # Only game-scoped RSS tokens belong to this game; account-level tokens
-      # (game_id nil) survive a game purge.
-      RssToken.where(game_id: game.id).in_batches.delete_all
       GameMember.where(game_id: game.id).in_batches.delete_all
       GameExportRequest.where(game_id: game.id).in_batches.delete_all
       game.delete

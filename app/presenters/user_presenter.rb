@@ -34,23 +34,4 @@ class UserPresenter < BasePresenter
       .includes(:game)
       .sort_by { |m| m.game&.name.to_s }
   end
-
-  # One RSS-feed scope per row for the profile page: one per non-banned game,
-  # each paired with its existing token if any and a `last` flag so the view
-  # needs no index arithmetic. The view turns these into feed URLs and form
-  # params.
-  RssScope = Struct.new(:label, :game, :token, :last, keyword_init: true)
-
-  sig { returns(T::Array[RssScope]) }
-  def rss_scopes
-    tokens_by_game = @model.rss_tokens.index_by(&:game_id)
-
-    scopes = drawer_memberships.map do |membership|
-      game = T.must(membership.game)
-      RssScope.new(label: game.name, game: game, token: tokens_by_game[game.id], last: false)
-    end
-
-    T.must(scopes.last).last = true unless scopes.empty?
-    scopes
-  end
 end
