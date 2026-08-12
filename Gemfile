@@ -59,6 +59,9 @@ gem "activerecord-session_store"
 # Authorization — per-model policy objects
 gem "pundit"
 
+# Edge rate-limiting / abuse throttling (infrastructure-tier hard stop)
+gem "rack-attack"
+
 # Markdown rendering
 gem "redcarpet"
 

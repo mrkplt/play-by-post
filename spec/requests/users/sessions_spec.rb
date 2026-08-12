@@ -121,4 +121,56 @@ RSpec.describe Users::SessionsController, type: :request do
       expect(response).not_to redirect_to(root_path)
     end
   end
+
+  # Turnstile bot-check enforcement on #create. Turnstile is off in test by
+  # default; force it on and stub the verifier to drive the failure override
+  # (turnstile_verification_failed) with tight assertions so its body is pinned.
+  describe "POST /users/sign_in with Turnstile enabled" do
+    before { allow(Turnstile).to receive(:enabled?).and_return(true) }
+
+    context "when the token verifies" do
+      before { allow(TurnstileVerifier).to receive(:verify).and_return(true) }
+
+      it "creates the user and renders the confirmation" do
+        expect {
+          post user_session_path, params: { user: { email: "verified@example.com" }, "cf-turnstile-response" => "ok" }
+        }.to change(User, :count).by(1)
+        expect(response).to have_http_status(:ok)
+        expect(response.body).to include("Check your email")
+      end
+    end
+
+    context "when the token fails" do
+      before { allow(TurnstileVerifier).to receive(:verify).and_return(false) }
+
+      it "does not create a user" do
+        expect {
+          post user_session_path, params: { user: { email: "bot@example.com" }, "cf-turnstile-response" => "bad" }
+        }.not_to change(User, :count)
+      end
+
+      it "does not send a magic-link email" do
+        expect {
+          post user_session_path, params: { user: { email: "bot@example.com" }, "cf-turnstile-response" => "bad" }
+        }.not_to change { ActionMailer::Base.deliveries.count }
+      end
+
+      it "re-renders the sign-in form with unprocessable_content status" do
+        post user_session_path, params: { user: { email: "bot@example.com" }, "cf-turnstile-response" => "bad" }
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(response.body).to include("Sign in")
+        expect(response.body).not_to include("Check your email")
+      end
+
+      it "shows the verification-challenge alert" do
+        post user_session_path, params: { user: { email: "bot@example.com" }, "cf-turnstile-response" => "bad" }
+        expect(response.body).to include("Please complete the verification challenge and try again.")
+      end
+
+      it "does not leave the email pre-filled (resource reset to a blank User)" do
+        post user_session_path, params: { user: { email: "bot@example.com" }, "cf-turnstile-response" => "bad" }
+        expect(response.body).not_to include('value="bot@example.com"')
+      end
+    end
+  end
 end

@@ -112,6 +112,8 @@ Safe defaults exist; set only to override.
 | `PORT` | `config/puma.rb:31` | `3000`. Thruster terminates HTTP on 80 in front of Puma |
 | `WEB_CONCURRENCY` | `config/puma.rb` | Puma worker count |
 | `PIDFILE` | `config/puma.rb:44` | unset |
+| `TURNSTILE_SITE_KEY` | `config/initializers/turnstile.rb` | Cloudflare test site key (always passes). Fallback for the `turnstile.site_key` credential; prefer the credential in production |
+| `TURNSTILE_SECRET_KEY` | `config/initializers/turnstile.rb` | Cloudflare test secret key (always passes). Fallback for the `turnstile.secret_key` credential; prefer the credential in production |
 
 ## 3. Environment variables — do NOT set in production
 
@@ -145,6 +147,8 @@ Stored in `config/credentials/production.yml.enc`. Edit with
 | `fizzy.access_token` | `app/services/fizzy_sweep_service.rb` | Optional — Fizzy personal access token with write permission, sent as `Authorization: Bearer`. Required for the feedback sweep |
 | `fizzy.account_slug` | `app/services/fizzy_sweep_service.rb` | Optional — Fizzy account slug used in API paths. Required for the feedback sweep |
 | `fizzy.board_id` | `app/services/fizzy_sweep_service.rb` | Optional — Fizzy board that receives the feedback cards. Required for the feedback sweep |
+| `turnstile.site_key` | `config/initializers/turnstile.rb` | **Yes in production** — Cloudflare Turnstile public site key, embedded in the widget. Falls back to `TURNSTILE_SITE_KEY` env, then to Cloudflare's always-pass test key. If left as the test key in prod, the bot check provides **no protection** |
+| `turnstile.secret_key` | `config/initializers/turnstile.rb` | **Yes in production** — Cloudflare Turnstile secret key, used server-side by `TurnstileVerifier` against siteverify. Falls back to `TURNSTILE_SECRET_KEY` env, then to the always-pass test key |
 | `secret_key_base` | Rails internal (no explicit read site) | Yes — this is the live source. Do **not** also set the `SECRET_KEY_BASE` env var; it would override this, and divergence invalidates all signed cookies |
 
 Verified present as of this writing: `openrouter_api_key`, `resend_api_key`,
@@ -157,6 +161,44 @@ without exposing values:
 ActionMailbox uses **no ingress password**; the Resend inbound webhook is authenticated by
 Svix HMAC-SHA256 signature verification in the controller
 (`config/initializers/action_mailbox.rb`).
+
+---
+
+## Abuse protection (Turnstile + rate-limiting)
+
+Two independent, layered defenses. See `context/2026-08-12-abuse-protection-plan.md`.
+
+**Cloudflare Turnstile — bot detection on forms.** A mostly-invisible challenge on
+the magic-link sign-in form and the feedback modal. Keys resolve
+credential → env → Cloudflare's always-pass **test keys** (`config/initializers/turnstile.rb`),
+so dev, test, and the credential-less asset-precompile build work with no real keys.
+
+- **You must provision real keys in production credentials** (`turnstile.site_key` /
+  `turnstile.secret_key`) before this protects anything. Left on the test key, the
+  widget renders but every token passes.
+- Server-side verification (`TurnstileVerifier`) **fails open**: if Cloudflare's
+  siteverify is unreachable or times out, the request is allowed — rate-limiting
+  (below) is the backstop, so a Cloudflare outage can't lock users out of sign-in.
+  It fails **closed** only on a blank token or an explicit `success: false`.
+- Turnstile is skipped entirely in the test env (`Turnstile.enabled?` is false there);
+  specs that exercise it stub `Turnstile.enabled?` to `true`.
+
+**rack-attack — edge rate-limiting (infrastructure hard stop).** Middleware, runs
+before Rails, backed by the app's Solid Cache store (`config/initializers/rack_attack.rb`).
+No configuration required; limits are code constants:
+
+| Surface | Path | Limits |
+|---|---|---|
+| Magic-link sign-in | `POST /users/sign_in` | 10/3min per IP · 5/3min per normalized email |
+| Invitation accept | `GET /invitations/:token/accept` | 20/min per IP · 10/min per token |
+| Inbound email webhook | `POST /mail/inbound` | 30/min per IP (Svix signature is the primary gate) |
+
+Throttled requests get a `429` with `Retry-After`. rack-attack is **disabled in the
+test env by default**; throttle specs enable it and swap in a MemoryStore.
+
+House rule: rack-attack is the **edge / infrastructure** layer (coarse IP/token/email
+hard stops). Per-actor **application** quotas (e.g. requests/hour per API key) are
+reserved for Rails 8.1's controller-level `rate_limit` — not used yet.
 
 ---
 
