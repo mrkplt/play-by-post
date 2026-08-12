@@ -14,6 +14,16 @@ class Page < ApplicationRecord
 
   belongs_to :game
 
+  # A notebook entry may be "promoted" into a Page, recording the resulting
+  # page id on the entry. Deleting the page must NOT delete the entry — it
+  # un-promotes it (nullifies the reference), so the entry survives as an
+  # ordinary card. Without this, SQLite's FK on notebook_entries.promoted_page_id
+  # raises on destroy (GlitchTip WEBAPP-5). GamePurgeJob deletes both tables
+  # wholesale, so the purge path is unaffected.
+  has_many :promoted_from_entries, class_name: "NotebookEntry",
+           foreign_key: :promoted_page_id, dependent: :nullify,
+           inverse_of: :promoted_page
+
   validates :title, presence: true, length: { maximum: 200 }
   validates :slug, presence: true, uniqueness: true
 

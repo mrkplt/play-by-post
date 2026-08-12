@@ -43,6 +43,20 @@
   --color-danger: #9c3a3a;
   --color-danger-soft: #7a3a3a;
 
+  /* Avatar initials backgrounds (non-blue tones live here; blue reuses tint) */
+  --color-avatar-muted: #c2beb6;    /* warm grey avatar */
+  --color-avatar-blue: #94a8c9;     /* blue avatar */
+
+  /* Badge tones — dark chip backgrounds with tinted text/border. Defined as
+     tokens (not arbitrary hex utilities) so the classes are actually compiled
+     into the stylesheet; see context/DESIGN_TOKEN_COMPILATION.md. */
+  --color-badge-danger-bg: #3a1717;
+  --color-badge-danger-text: #e28a8a;
+  --color-badge-danger-border: #5c2121;
+  --color-badge-gold-bg: #3a3020;
+  --color-badge-gold-text: #e2c48a;
+  --color-badge-gold-border: #5c4a2c;
+
   /* Radii */
   --radius-control: 8px;            /* buttons / inputs */
   --radius-card: 10px;              /* cards */

@@ -22,6 +22,13 @@ RSpec.describe Shared::PageDetailComponent, type: :component do
     end
   end
 
+  describe "title" do
+    it "renders the page title as a heading" do
+      render_inline(build_component)
+      expect(page).to have_css("h1", text: "Lore")
+    end
+  end
+
   describe "empty state" do
     it "shows a placeholder when there is no body" do
       render_inline(build_component(page: build_stubbed(:page, game: game, body: nil)))

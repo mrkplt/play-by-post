@@ -5,6 +5,13 @@ RSpec.describe Page do
     it "belongs to a game" do
       expect(described_class.reflect_on_association(:game).macro).to eq(:belongs_to)
     end
+
+    it "nullifies promoted-from notebook entries on destroy" do
+      association = described_class.reflect_on_association(:promoted_from_entries)
+      expect(association.macro).to eq(:has_many)
+      expect(association.options[:dependent]).to eq(:nullify)
+      expect(association.options[:foreign_key]).to eq(:promoted_page_id)
+    end
   end
 
   describe "validations" do

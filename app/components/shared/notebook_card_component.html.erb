@@ -22,7 +22,9 @@
     <span class="text-sm font-bold text-ink"><%= notebook_entry.title %></span>
 
     <% if body? %>
-      <%= render Ui::MarkdownRenderComponent.new(text: excerpt, content_class: "text-xs text-muted") %>
+      <div class="max-h-[7.5rem] overflow-hidden">
+        <%= render Ui::MarkdownRenderComponent.new(text: body, content_class: "text-xs text-muted") %>
+      </div>
     <% else %>
       <p class="text-muted-2 m-0 text-xs">No content yet.</p>
     <% end %>

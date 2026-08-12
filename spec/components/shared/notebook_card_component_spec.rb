@@ -15,21 +15,19 @@ RSpec.describe Shared::NotebookCardComponent, type: :component do
     end
   end
 
-  describe "#excerpt" do
-    it "renders short bodies in full" do
-      short = build_stubbed(:notebook_entry, game: game, body: "short body")
-      expect(build_component(notebook_entry: short).excerpt).to include("short body")
-    end
+  describe "body clamping" do
+    it "renders the full body (clamped by CSS, not truncated) inside a height-capped wrapper" do
+      long = build_stubbed(:notebook_entry, game: game, slug: "longbodyslug1234", body: "a" * 500)
+      render_inline(build_component(notebook_entry: long))
 
-    it "truncates long bodies" do
-      long = build_stubbed(:notebook_entry, game: game, body: "a" * 500)
-      excerpt = build_component(notebook_entry: long).excerpt
-      expect(excerpt).to include("…")
+      wrapper = page.find("div.max-h-\\[7\\.5rem\\].overflow-hidden")
+      expect(wrapper).to have_text("a" * 500)
+      expect(wrapper.text).not_to include("…")
     end
   end
 
   describe "read mode" do
-    it "renders the title, excerpt, lane select, and GM actions" do
+    it "renders the title, body, lane select, and GM actions" do
       render_inline(build_component)
 
       expect(page).to have_text("Idea")

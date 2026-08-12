@@ -57,11 +57,11 @@ RSpec.describe Ui::BadgeComponent, type: :component do
     end
 
     it "danger applies the dark-surface danger tint" do
-      expect(rendered(variant: :danger) { "Banned" }).to have_css("span.text-\\[\\#e28a8a\\]", text: "Banned")
+      expect(rendered(variant: :danger) { "Banned" }).to have_css("span.text-badge-danger-text", text: "Banned")
     end
 
     it "goldish applies the dark-surface gold tint" do
-      expect(rendered(variant: :goldish) { "GM" }).to have_css("span.text-\\[\\#e2c48a\\]", text: "GM")
+      expect(rendered(variant: :goldish) { "GM" }).to have_css("span.text-badge-gold-text", text: "GM")
     end
   end
 end

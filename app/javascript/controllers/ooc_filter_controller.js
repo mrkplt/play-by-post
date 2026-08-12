@@ -28,7 +28,7 @@ export default class extends Controller {
     if (!track || !thumb) return
     track.setAttribute("aria-checked", String(this.hiding))
     track.classList.toggle("bg-accent", this.hiding)
-    track.classList.toggle("bg-[#3a3c42]", !this.hiding)
+    track.classList.toggle("bg-pill-idle", !this.hiding)
     thumb.classList.toggle("right-0.5", this.hiding)
     thumb.classList.toggle("left-0.5", !this.hiding)
   }

@@ -17,7 +17,8 @@ class NotebookEntry < ApplicationRecord
   STATUSES = %w[new expand done discard].freeze
 
   belongs_to :game
-  belongs_to :promoted_page, class_name: "Page", optional: true
+  belongs_to :promoted_page, class_name: "Page", optional: true,
+             inverse_of: :promoted_from_entries
 
   validates :title, presence: true, length: { maximum: 200 }
   validates :slug, presence: true, uniqueness: true

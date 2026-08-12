@@ -27,15 +27,15 @@ RSpec.describe Ui::AvatarComponent, type: :component do
   end
 
   it "applies dark tone" do
-    expect(rendered(name: "GM", tone: :dark)).to have_css("span.bg-\\[\\#3a3c42\\]")
+    expect(rendered(name: "GM", tone: :dark)).to have_css("span.bg-pill-idle")
   end
 
   it "applies muted tone" do
-    expect(rendered(name: "Kess", tone: :muted)).to have_css("span.bg-\\[\\#c2beb6\\]")
+    expect(rendered(name: "Kess", tone: :muted)).to have_css("span.bg-avatar-muted")
   end
 
   it "applies blue tone" do
-    expect(rendered(name: "Sera", tone: :blue)).to have_css("span.bg-\\[\\#94a8c9\\]")
+    expect(rendered(name: "Sera", tone: :blue)).to have_css("span.bg-avatar-blue")
   end
 
   it "applies lg size" do

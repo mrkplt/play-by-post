@@ -179,5 +179,18 @@ RSpec.describe PagesController, type: :request do
         delete game_page_path(game, page)
       }.not_to change(Page, :count)
     end
+
+    it "deletes a promoted page and un-promotes its notebook entry", :db do
+      sign_in(gm)
+      entry = create(:notebook_entry, game: game, promoted_page: page)
+
+      expect {
+        delete game_page_path(game, page)
+      }.to change(Page, :count).by(-1)
+
+      expect(response).to redirect_to(game_path(game, anchor: "pages"))
+      expect(entry.reload.promoted_page_id).to be_nil
+      expect(entry.promoted?).to be(false)
+    end
   end
 end
