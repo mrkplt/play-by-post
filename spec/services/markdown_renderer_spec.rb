@@ -37,6 +37,49 @@ RSpec.describe MarkdownRenderer do
     end
   end
 
+  describe "renderer options (each is load-bearing)" do
+    it "hard-wraps a single newline into <br> (hard_wrap)" do
+      expect(render("line one\nline two")).to include("<br>")
+    end
+
+    it "renders bare URLs as links (autolink)" do
+      out = render("visit https://example.com now")
+      expect(out).to include('<a href="https://example.com">https://example.com</a>')
+    end
+
+    it "renders pipe tables (tables)" do
+      out = render("| a | b |\n| - | - |\n| 1 | 2 |")
+      expect(out).to include("<table>")
+      expect(out).to include("<td>1</td>")
+    end
+
+    it "renders ~~text~~ as struck-through (strikethrough)" do
+      expect(render("~~gone~~")).to include("<del>gone</del>")
+    end
+
+    it "renders fenced code blocks (fenced_code_blocks)" do
+      out = render("```\nx = 1\n```")
+      expect(out).to include("<pre>")
+      expect(out).to include("<code>")
+      expect(out).to include("x = 1")
+    end
+
+    it "does not emphasize intra-word underscores (no_intra_emphasis)" do
+      out = render("foo_bar_baz")
+      expect(out).not_to include("<em>")
+      expect(out).to include("foo_bar_baz")
+    end
+
+    it "keeps markdown links as anchors (no_links: false)" do
+      expect(render("[site](https://example.com)")).to include("<a href=")
+    end
+
+    it "does not emit an <img> for markdown image syntax (no_images)" do
+      out = render("![alt text](https://example.com/x.png)")
+      expect(out).not_to include("<img")
+    end
+  end
+
   describe "XSS neutralization (security contract)" do
     it "strips <script> tags, keeping only text" do
       out = render("<script>alert(1)</script>")
