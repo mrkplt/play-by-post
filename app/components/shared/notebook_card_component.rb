@@ -4,14 +4,13 @@
 # Turbo Stream `replace` on `dom_id(notebook_entry)` can swap between them
 # in place, with no page navigation:
 #
-# - :read — title, a markdown excerpt, a lane <select> that submits itself via
+# - :read — title, the markdown body clamped to a fixed card height in CSS, a
+#   lane <select> that submits itself via
 #   Turbo on change, and GM actions (Edit / Promote / Delete).
 # - :edit — an inline form (title + markdown editor) posting to #update via
 #   Turbo Stream, with Save/Cancel.
 class Shared::NotebookCardComponent < ApplicationComponent
   extend T::Sig
-
-  EXCERPT_LENGTH = 160
 
   STATUS_LABELS = T.let({
     "new" => "New",
@@ -43,11 +42,12 @@ class Shared::NotebookCardComponent < ApplicationComponent
     @notebook_entry.body.present?
   end
 
-  sig { returns(String) }
-  def excerpt
-    body = @notebook_entry.body.to_s
-    truncated = body.length > EXCERPT_LENGTH ? "#{body[0, EXCERPT_LENGTH]}…" : body
-    MarkdownRenderer.render(truncated)
+  # Full markdown body. The kanban card clamps it to a fixed height in CSS
+  # (max-h + overflow-hidden) rather than truncating the text, so cards stay a
+  # uniform height without cutting the markdown mid-tag.
+  sig { returns(T.nilable(String)) }
+  def body
+    @notebook_entry.body
   end
 
   sig { returns(T::Boolean) }

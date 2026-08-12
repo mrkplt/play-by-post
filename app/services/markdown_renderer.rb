@@ -1,5 +1,13 @@
 # typed: strict
 
+# The single sanctioned path for turning user prose into HTML. SECURITY
+# CONTRACT: no user input may reach the page as executable code. Markdown
+# intrinsically allows a fallback to arbitrary inline HTML, so that fallback is
+# closed here in two layers — Redcarpet's `filter_html: true`, then a Rails
+# `sanitize` with an explicit tag allowlist and an href-only attribute allowlist
+# (which also strips unsafe URI schemes like `javascript:`/`data:`). All prose
+# fields must render through this class; never `raw`/`html_safe` user input.
+# The contract is pinned by spec/services/markdown_renderer_spec.rb.
 class MarkdownRenderer
   extend T::Sig
 

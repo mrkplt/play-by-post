@@ -20,7 +20,7 @@ class Ui::ToggleSwitchComponent < ApplicationComponent
   sig { returns(String) }
   def track_classes
     base = "w-8 h-[18px] rounded-[9px] relative transition-colors duration-150 flex-shrink-0"
-    tone = on? ? "bg-accent" : "bg-[#3a3c42]"
+    tone = on? ? "bg-accent" : "bg-pill-idle"
     [ base, tone, @html_class ].reject(&:empty?).join(" ")
   end
 

@@ -20,6 +20,11 @@ class Shared::PageDetailComponent < ApplicationComponent
   sig { returns(Page) }
   attr_reader :page
 
+  sig { returns(String) }
+  def title
+    @page.title
+  end
+
   sig { returns(T::Boolean) }
   def gm?
     @is_gm

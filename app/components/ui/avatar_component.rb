@@ -8,9 +8,9 @@ class Ui::AvatarComponent < ApplicationComponent
 
   TONES = T.let({
     gold:  "bg-accent text-accent-ink",
-    dark:  "bg-[#3a3c42] text-sidebar-text",
-    muted: "bg-[#c2beb6] text-ink",
-    blue:  "bg-[#94a8c9] text-tint-blue-strong"
+    dark:  "bg-pill-idle text-sidebar-text",
+    muted: "bg-avatar-muted text-ink",
+    blue:  "bg-avatar-blue text-tint-blue-strong"
   }.freeze, T::Hash[Symbol, String])
 
   SIZES = T.let({

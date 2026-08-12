@@ -14,8 +14,8 @@ RSpec.describe Ui::ToggleSwitchComponent, type: :component do
     expect(described_class.new(on: true).on?).to be true
   end
 
-  it "uses the idle track colour when off" do
-    expect(rendered).to have_css("span.bg-\\[\\#3a3c42\\]")
+  it "uses the idle track colour token when off" do
+    expect(rendered).to have_css("span.bg-pill-idle")
   end
 
   it "uses the gold track colour when on" do
@@ -44,7 +44,7 @@ RSpec.describe Ui::ToggleSwitchComponent, type: :component do
 
   it "builds the exact off track class string" do
     expect(described_class.new(on: false).track_classes)
-      .to eq("w-8 h-[18px] rounded-[9px] relative transition-colors duration-150 flex-shrink-0 bg-[#3a3c42]")
+      .to eq("w-8 h-[18px] rounded-[9px] relative transition-colors duration-150 flex-shrink-0 bg-pill-idle")
   end
 
   it "builds the exact on track class string" do
