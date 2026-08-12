@@ -146,6 +146,7 @@ matcher:
     - FeedsController
     - Users::SessionsController
     - TurnstileVerification
+    - TokenBearerAuthentication
     # Jobs
     - PostDigestJob
     - ExportJob

@@ -5,8 +5,16 @@
 # actor (pundit_user). The game is then authorized through GamePolicy#show? like
 # any other action — so a token whose owner has been removed or banned from the
 # game stops working, because show? re-checks membership.
+#
+# SECURITY: the token authorizes THIS request only. It never establishes a
+# session — no sign_in, no Warden set_user, no session/cookie write, and
+# pundit_user does not touch Current.user (which stays the session user, i.e.
+# nil here). So a guessed/brute-forced token cannot be traded for an in-app
+# session and used to impersonate the owner. The response is also no-store so a
+# token-bearing URL is never held in a shared cache. (Regression-tested.)
 class FeedsController < ApplicationController
   extend T::Sig
+  include TokenBearerAuthentication
 
   skip_before_action :authenticate_user!, only: [ :show ]
   after_action :verify_authorized
@@ -19,21 +27,17 @@ class FeedsController < ApplicationController
     rss_token = RssToken.find_by(token: params[:token])
     return unauthorized_feed unless rss_token
 
-    @feed_user = T.let(rss_token.user, T.nilable(User))
+    authenticate_bearer!(rss_token.user)
     @game = T.let(rss_token.game, T.nilable(Game))
     authorize T.must(@game), :show?
 
     @summaries = summaries_for(T.must(@game))
+    # The URL carries a secret token; keep the response out of shared/proxy caches.
+    response.headers["Cache-Control"] = "private, no-store"
     render layout: false
   end
 
   private
-
-  # Pundit authorizes as the token's owner rather than the (absent) session user.
-  sig { returns(T.nilable(User)) }
-  def pundit_user
-    @feed_user
-  end
 
   sig { params(game: Game).returns(ActiveRecord::Relation) }
   def summaries_for(game)

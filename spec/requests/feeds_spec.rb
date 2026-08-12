@@ -24,6 +24,35 @@ RSpec.describe FeedsController, type: :request do
       expect(response.body).to include(summary.body)
     end
 
+    it "establishes no session — a valid feed request cannot be traded for auth" do
+      token = create(:rss_token, user: user, game: game)
+
+      # A valid feed read must NOT sign the token's owner in. Otherwise a brute-
+      # forced token could bootstrap a session and impersonate the user in-app.
+      get feeds_path(token: token.token)
+      expect(response).to have_http_status(:ok)
+
+      # Same session, a protected in-app route: still unauthenticated.
+      get profile_path
+      expect(response).to redirect_to(new_user_session_path)
+    end
+
+    it "does not set a Warden session on the response" do
+      token = create(:rss_token, user: user, game: game)
+
+      get feeds_path(token: token.token)
+
+      expect(request.env["warden"].user).to be_nil
+    end
+
+    it "marks the token-bearing response uncacheable by shared caches" do
+      token = create(:rss_token, user: user, game: game)
+
+      get feeds_path(token: token.token)
+
+      expect(response.headers["Cache-Control"]).to include("no-store")
+    end
+
     it "renders only the token's game, not other games" do
       create(:game_member, game: other_game, user: user)
       mine = summary_in(game, body: "Alpha scene recap")
