@@ -222,8 +222,8 @@ RSpec.describe CharactersController, type: :request do
       sign_in(player)
       patch archive_game_character_path(game, character)
       expect(character.reload).not_to be_archived
-      expect(response).to redirect_to(game_character_path(game, character))
-      expect(flash[:alert]).to match(/only the gm/i)
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to match(/not authorized/i)
     end
   end
 
@@ -241,8 +241,8 @@ RSpec.describe CharactersController, type: :request do
       sign_in(player)
       patch restore_game_character_path(game, character)
       expect(character.reload.archived_at).not_to be_nil
-      expect(response).to redirect_to(game_character_path(game, character))
-      expect(flash[:alert]).to match(/only the gm/i)
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to match(/not authorized/i)
     end
   end
 

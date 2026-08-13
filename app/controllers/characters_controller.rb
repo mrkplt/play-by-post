@@ -9,7 +9,6 @@ class CharactersController < ApplicationController
   before_action :set_character, only: %i[show edit update archive restore]
   before_action :require_visible!, only: %i[show edit update archive restore]
   before_action :require_edit_access!, only: %i[edit update]
-  before_action :require_gm!, only: %i[archive restore]
   after_action :verify_authorized
 
   sig { void }
@@ -114,11 +113,6 @@ class CharactersController < ApplicationController
   sig { void }
   def require_edit_access!
     redirect_to game_character_path(@game, @character), alert: "You cannot edit this character." unless policy(@character).update?
-  end
-
-  sig { void }
-  def require_gm!
-    redirect_to game_character_path(@game, @character), alert: "Only the GM can archive or restore characters." unless policy(@character).archive?
   end
 
   sig { void }
