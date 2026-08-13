@@ -93,12 +93,8 @@ class NotebookEntriesController < ApplicationController
   def promote
     authorize @notebook_entry, :manage?
 
-    unless @notebook_entry.promoted?
-      page = @game.pages.create!(title: @notebook_entry.title, body: @notebook_entry.body)
-      @notebook_entry.update!(status: "done", promoted_page: page)
-    end
-
-    redirect_to game_page_path(@game, T.must(@notebook_entry.promoted_page)), notice: "Promoted to a page."
+    page = NotebookEntryPromotion.new(@notebook_entry).call
+    redirect_to game_page_path(@game, page), notice: "Promoted to a page."
   end
 
   private
