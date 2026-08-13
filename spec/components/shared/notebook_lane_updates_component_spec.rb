@@ -33,6 +33,18 @@ RSpec.describe Shared::NotebookLaneUpdatesComponent, type: :component do
     end
   end
 
+  describe "#replacement_disclosure_for" do
+    it "re-renders a disclosure lane expanded, so a GM sees the move they just made" do
+      component = build_component(notebook_entry: moved_entry(from: "new", to: "discard"))
+      expect(component.replacement_disclosure_for("discard")).to eq(:expanded)
+    end
+
+    it "leaves an always-visible lane without a disclosure" do
+      component = build_component(notebook_entry: moved_entry(from: "new", to: "expand"))
+      expect(component.replacement_disclosure_for("expand")).to eq(:none)
+    end
+  end
+
   describe "#lanes" do
     it "builds one lane component per affected status" do
       component = build_component(notebook_entry: moved_entry(from: "new", to: "expand"))

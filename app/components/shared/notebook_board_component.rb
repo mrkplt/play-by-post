@@ -15,12 +15,8 @@ class Shared::NotebookBoardComponent < ApplicationComponent
 
   VISIBLE_STATUSES = T.let(%w[new expand done].freeze, T::Array[String])
 
-  COLUMN_LABELS = T.let({
-    "new" => "New",
-    "expand" => "Expand",
-    "done" => "Done",
-    "discard" => "Discard"
-  }.freeze, T::Hash[String, String])
+  DISCARD_STATUS = T.let("discard", String)
+
 
   sig { params(game: Game, entries_by_status: T::Hash[String, T::Array[NotebookEntry]]).void }
   def initialize(game:, entries_by_status:)
@@ -34,11 +30,6 @@ class Shared::NotebookBoardComponent < ApplicationComponent
   sig { returns(T::Array[String]) }
   def visible_statuses
     VISIBLE_STATUSES
-  end
-
-  sig { params(status: String).returns(String) }
-  def column_label(status)
-    T.must(COLUMN_LABELS[status])
   end
 
   sig { params(status: String).returns(T::Array[NotebookEntry]) }
@@ -58,14 +49,16 @@ class Shared::NotebookBoardComponent < ApplicationComponent
     "notebook_column_#{status}"
   end
 
+  # A lane knows its own label and whether it hides behind a disclosure, so the
+  # board only says which entries belong to it.
   sig { params(status: String).returns(Shared::NotebookLaneComponent) }
   def lane_for(status)
     Shared::NotebookLaneComponent.new(game: game, status: status, entries: entries_for(status))
   end
 
-  sig { returns(Shared::NotebookLaneComponent) }
-  def discard_lane
-    lane_for("discard")
+  sig { returns(T::Array[Shared::NotebookLaneComponent]) }
+  def lanes
+    (visible_statuses + [ DISCARD_STATUS ]).map { |status| lane_for(status) }
   end
 
   sig { returns(T::Array[NotebookEntry]) }

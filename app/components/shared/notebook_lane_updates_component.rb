@@ -26,11 +26,26 @@ class Shared::NotebookLaneUpdatesComponent < ApplicationComponent
     [ @notebook_entry.status_previously_was, @notebook_entry.status ].compact.uniq
   end
 
+  # A lane behind a disclosure is re-rendered expanded: the GM only sees this
+  # swap because they just acted on that lane, so collapsing it again would
+  # hide the result of their own move.
   sig { returns(T::Array[Shared::NotebookLaneComponent]) }
   def lanes
     affected_statuses.map do |status|
-      Shared::NotebookLaneComponent.new(game: @game, status: status, entries: entries_in(status))
+      Shared::NotebookLaneComponent.new(
+        game: @game,
+        status: status,
+        entries: entries_in(status),
+        disclosure: replacement_disclosure_for(status)
+      )
     end
+  end
+
+  sig { params(status: String).returns(Symbol) }
+  def replacement_disclosure_for(status)
+    return :none if Shared::NotebookLaneComponent.disclosure_for(status) == :none
+
+    :expanded
   end
 
   sig { params(status: String).returns(T::Array[NotebookEntry]) }

@@ -17,14 +17,6 @@ RSpec.describe Shared::NotebookBoardComponent, type: :component do
     end
   end
 
-  describe "#column_label" do
-    Shared::NotebookBoardComponent::COLUMN_LABELS.each do |status, label|
-      it "labels #{status.inspect} as #{label.inspect}" do
-        expect(build_component.column_label(status)).to eq(label)
-      end
-    end
-  end
-
   describe "#column_id" do
     it "is stable and status-scoped, matching the move turbo_stream target" do
       expect(build_component.column_id("expand")).to eq("notebook_column_expand")

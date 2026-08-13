@@ -11,6 +11,22 @@ RSpec.describe Shared::NotebookLaneComponent, type: :component do
     described_class.new(**{ game: game, status: "new", entries: [] }.merge(overrides))
   end
 
+  describe ".label_for" do
+    Shared::NotebookLaneComponent::PRESENTATION.each do |status, presentation|
+      it "labels #{status.inspect} as #{presentation[:label].inspect}" do
+        expect(described_class.label_for(status)).to eq(presentation[:label])
+      end
+    end
+
+    it "covers every status the model allows" do
+      expect(described_class::PRESENTATION.keys).to match_array(NotebookEntry::STATUSES)
+    end
+
+    it "raises on a status it has no label for, rather than rendering blank" do
+      expect { described_class.label_for("nonsense") }.to raise_error(KeyError)
+    end
+  end
+
   describe ".empty_text_for" do
     it "words the discard lane's emptiness as expected, not as an oversight" do
       expect(described_class.empty_text_for("discard")).to eq(described_class::DISCARD_EMPTY_TEXT)
@@ -28,6 +44,69 @@ RSpec.describe Shared::NotebookLaneComponent, type: :component do
       expect(build_component(status: "expand").dom_id).to eq("notebook_column_expand")
       expect(build_component(status: "expand").dom_id)
         .to eq(Shared::NotebookBoardComponent.column_id("expand"))
+    end
+  end
+
+  describe "collapsing" do
+    it "renders as a plain labelled section by default" do
+      render_inline(build_component())
+      expect(page).to have_no_css("details")
+      expect(page).to have_text("New")
+    end
+
+    it "renders behind a disclosure when one is configured" do
+      render_inline(build_component(status: "discard"))
+      expect(page).to have_css("details summary", text: "Show discarded")
+    end
+
+    it "puts the discard lane behind a disclosure without being told to" do
+      render_inline(build_component(status: "discard"))
+      expect(page).to have_css("details")
+    end
+
+    it "starts closed when the disclosure is :collapsed" do
+      render_inline(build_component(disclosure: :collapsed))
+      expect(page).to have_no_css("details[open]")
+    end
+
+    it "starts open when the disclosure is :expanded" do
+      render_inline(build_component(disclosure: :expanded))
+      expect(page).to have_css("details[open]")
+    end
+
+    it "renders no disclosure at all when :none" do
+      render_inline(build_component(disclosure: :none))
+      expect(page).to have_no_css("details")
+    end
+
+    it "keeps the move target id behind a disclosure" do
+      render_inline(build_component(status: "discard", disclosure: :collapsed))
+      expect(page).to have_css("#notebook_column_discard", visible: :all)
+    end
+
+    it "renders every disclosure state the component declares" do
+      described_class::DISCLOSURES.each do |state|
+        expect { render_inline(build_component(disclosure: state)) }.not_to raise_error
+      end
+    end
+
+    it "resolves :default to whatever the status normally does" do
+      expect(build_component(status: "discard").disclosure).to eq(:collapsed)
+      expect(build_component(status: "new").disclosure).to eq(:none)
+    end
+
+    it "lets a caller override the status default" do
+      expect(build_component(status: "discard", disclosure: :expanded).disclosure).to eq(:expanded)
+    end
+
+    it "puts the discard lane behind a closed disclosure on the board" do
+      expect(Shared::NotebookLaneComponent.disclosure_for("discard")).to eq(:collapsed)
+    end
+
+    it "leaves the working lanes always visible" do
+      %w[new expand done].each do |status|
+        expect(Shared::NotebookLaneComponent.disclosure_for(status)).to eq(:none)
+      end
     end
   end
 

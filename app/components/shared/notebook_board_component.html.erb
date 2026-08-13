@@ -3,16 +3,8 @@
         class: "block w-full text-center bg-accent text-accent-ink rounded-control py-2.5 font-bold text-[13px] no-underline" %>
 
   <div class="grid grid-cols-1 gap-4">
-    <% visible_statuses.each do |status| %>
-      <div>
-        <%= render Ui::SectionLabelComponent.new do %><%= column_label(status) %><% end %>
-        <%= render lane_for(status) %>
-      </div>
+    <% lanes.each do |lane| %>
+      <%= render lane %>
     <% end %>
   </div>
-
-  <details class="mt-1">
-    <summary class="text-xs font-bold text-muted-2 cursor-pointer">Show discarded</summary>
-    <%= render discard_lane %>
-  </details>
 </div>

@@ -1,3 +1,15 @@
-<div id="<%= dom_id %>" class="flex flex-col gap-2 mt-1">
-  <%= render Shared::ListEntryComponent.new(rows: rows, empty_text: empty_text) %>
-</div>
+<% if collapsible? %>
+  <%= content_tag :details, **disclosure_attributes do %>
+    <summary class="text-xs font-bold text-muted-2 cursor-pointer"><%= label %></summary>
+    <div id="<%= dom_id %>" class="flex flex-col gap-2 mt-2">
+      <%= render Shared::ListEntryComponent.new(rows: rows, empty_text: empty_text) %>
+    </div>
+  <% end %>
+<% else %>
+  <div>
+    <%= render Ui::SectionLabelComponent.new do %><%= label %><% end %>
+    <div id="<%= dom_id %>" class="flex flex-col gap-2 mt-1">
+      <%= render Shared::ListEntryComponent.new(rows: rows, empty_text: empty_text) %>
+    </div>
+  </div>
+<% end %>
