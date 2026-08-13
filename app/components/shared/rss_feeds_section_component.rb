@@ -15,13 +15,13 @@ class Shared::RssFeedsSectionComponent < ApplicationComponent
     const :token, T.nilable(ApiToken)
   end
 
-  sig do
-    params(
-      memberships: T::Enumerable[GameMember],
-      tokens_by_game_id: T::Hash[Integer, ApiToken]
-    ).void
-  end
-  def initialize(memberships:, tokens_by_game_id:)
+  sig { params(user: User).void }
+  def initialize(user:)
+    memberships = user.game_members
+      .where.not(status: "banned")
+      .includes(:game)
+      .order("games.name")
+    tokens_by_game_id = user.api_tokens.where(scope: "rss").index_by(&:game_id)
     @rows = T.let(build_rows(memberships, tokens_by_game_id), T::Array[Row])
   end
 
