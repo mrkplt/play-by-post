@@ -7,10 +7,12 @@
 
       <%= render Ui::MarkdownEditorComponent.new(
             form: f, field: :body,
-            config: Ui::MarkdownEditorComponent::Config.new(scroll: :preview, preview_height: :sm, rows: 6),
+            config: Ui::MarkdownEditorComponent::Config.with_preview(
+              preview_height: :sm,
+              preview_class: "border border-card-border rounded-card px-2.5 py-2 mt-2"),
+            rows: 6,
             placeholder: "Write the entry in markdown…",
-            edit_class: "border border-input-border border-t-0 rounded-b-control px-2.5 py-2 text-sm text-ink bg-card placeholder:text-muted-2",
-            preview_class: "border border-card-border rounded-card px-2.5 py-2 mt-2") %>
+            edit_class: "border border-input-border border-t-0 rounded-b-control px-2.5 py-2 text-sm text-ink bg-card placeholder:text-muted-2") %>
 
       <div class="flex gap-2 pt-1">
         <%= f.submit "Save", class: "flex-1 bg-accent text-accent-ink rounded-control py-2 font-bold text-[12px] border-0 cursor-pointer" %>

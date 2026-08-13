@@ -1,10 +1,13 @@
 # typed: strict
 
-# A self-contained markdown editing surface: a formatting toolbar, a monospace
-# textarea and a live preview, all wired to the markdown-preview and
-# markdown-toolbar Stimulus controllers. Which regions cap their height and
-# scroll internally is configurable so the same editor fits both inline forms
-# and constrained modals.
+# A self-contained markdown editing surface: a monospace textarea wired to the
+# markdown-preview and markdown-toolbar Stimulus controllers, with regions laid
+# out around it.
+#
+# The editor does not know what a toolbar or a preview is. Its config carries a
+# collection of regions (see Region), each of which reports where it sits; the
+# editor renders those above and below the textarea. Adding a third region
+# later needs no change here.
 class Ui::MarkdownEditorComponent < ApplicationComponent
   extend T::Sig
 
@@ -17,23 +20,33 @@ class Ui::MarkdownEditorComponent < ApplicationComponent
     action: "input->markdown-preview#update"
   }.freeze, T::Hash[Symbol, T.untyped])
 
-  sig { params(form: ActionView::Helpers::FormBuilder, field: Symbol, config: Config, value: T.nilable(String), placeholder: T.nilable(String), required: T::Boolean, data: T::Hash[Symbol, T.untyped], edit_class: String, preview_class: String, wrapper_class: String).void }
-  def initialize(form:, field:, config: Config.new, value: nil, placeholder: nil, required: false, data: {}, edit_class: "", preview_class: "", wrapper_class: "")
+  sig { params(form: ActionView::Helpers::FormBuilder, field: Symbol, config: Config, rows: Integer, value: T.nilable(String), placeholder: T.nilable(String), required: T::Boolean, data: T::Hash[Symbol, T.untyped], edit_class: String, wrapper_class: String).void }
+  def initialize(form:, field:, config: Config.new, rows: 5, value: nil, placeholder: nil, required: false, data: {}, edit_class: "", wrapper_class: "")
     @form = form
     @field = field
     @config = config
+    @rows = rows
     @value = value
     @placeholder = placeholder
     @required = required
     @data = data
     @edit_class = edit_class
-    @preview_class = preview_class
     @wrapper_class = wrapper_class
   end
 
   sig { returns(String) }
   def wrapper_class
     @wrapper_class
+  end
+
+  sig { returns(T::Array[ViewComponent::Base]) }
+  def regions_above
+    @config.components_placed(:above)
+  end
+
+  sig { returns(T::Array[ViewComponent::Base]) }
+  def regions_below
+    @config.components_placed(:below)
   end
 
   sig { returns(String) }
@@ -44,22 +57,9 @@ class Ui::MarkdownEditorComponent < ApplicationComponent
     classes.join(" ")
   end
 
-  sig { returns(String) }
-  def preview_classes
-    classes = [ "markdown-base", "min-h-12", "bg-canvas" ]
-    classes << "overflow-y-auto" if @config.preview_scroll?
-    classes << @preview_class unless @preview_class.empty?
-    classes.join(" ")
-  end
-
   sig { returns(T.nilable(String)) }
   def edit_max_height
-    "max-height: #{Config::HEIGHTS.fetch(@config.edit_height)}" if @config.edit_scroll?
-  end
-
-  sig { returns(T.nilable(String)) }
-  def preview_max_height
-    "max-height: #{Config::HEIGHTS.fetch(@config.preview_height)}" if @config.preview_scroll?
+    @config.edit_max_height
   end
 
   sig { returns(T::Hash[Symbol, T.untyped]) }
@@ -70,7 +70,7 @@ class Ui::MarkdownEditorComponent < ApplicationComponent
   sig { returns(T::Hash[Symbol, T.untyped]) }
   def textarea_options
     options = {
-      rows: @config.rows,
+      rows: @rows,
       placeholder: @placeholder,
       required: @required,
       data: textarea_data,

@@ -106,6 +106,10 @@ matcher:
     - Ui::ToggleSwitchComponent
     - Ui::MarkdownEditorComponent
     - Ui::MarkdownEditorComponent::Config
+    - Ui::MarkdownEditorComponent::Region
+    - Ui::MarkdownEditorComponent::ToolbarRegion
+    - Ui::MarkdownEditorComponent::PreviewRegion
+    - Ui::MarkdownPreviewComponent
     - Ui::MarkdownRenderComponent
     - Ui::MarkdownRenderComponent::Config
     - Ui::IconButtonComponent

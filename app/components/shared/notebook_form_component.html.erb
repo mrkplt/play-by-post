@@ -18,10 +18,11 @@
       <%= f.label :body, "Body (markdown supported)", class: "text-[11px] font-bold text-muted uppercase tracking-[0.05em]" %>
       <%= render Ui::MarkdownEditorComponent.new(
             form: f, field: :body,
-            config: Ui::MarkdownEditorComponent::Config.new(scroll: :preview, preview_height: :md, rows: 14),
+            config: Ui::MarkdownEditorComponent::Config.with_preview(
+              preview_class: "border border-card-border rounded-card px-3 py-3 mt-4"),
+            rows: 14,
             placeholder: "Write the entry in markdown…",
-            edit_class: "border border-input-border border-t-0 rounded-b-control px-3 py-2.5 text-base text-ink bg-card placeholder:text-muted-2",
-            preview_class: "border border-card-border rounded-card px-3 py-3 mt-4") %>
+            edit_class: "border border-input-border border-t-0 rounded-b-control px-3 py-2.5 text-base text-ink bg-card placeholder:text-muted-2") %>
     </div>
 
   <% end %>

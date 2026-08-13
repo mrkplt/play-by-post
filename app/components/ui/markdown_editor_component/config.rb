@@ -1,9 +1,12 @@
 # typed: strict
 
-# Layout configuration for Ui::MarkdownEditorComponent. `scroll` selects which
-# regions cap their height and scroll internally; the heights are keys into
-# HEIGHTS, applied as max-height so overflowing content scrolls instead of
-# resizing the surrounding layout.
+# Layout configuration for Ui::MarkdownEditorComponent: how tall the textarea
+# is and which regions surround it.
+#
+# Regions are objects, not flags — a config carries the toolbar and preview it
+# wants, and omitting one is how you turn it off. That keeps each region's own
+# settings (the preview's height, its extra classes) with the region instead of
+# spread across the editor's parameter list.
 class Ui::MarkdownEditorComponent::Config
   extend T::Sig
 
@@ -18,41 +21,65 @@ class Ui::MarkdownEditorComponent::Config
     xl: "60vh"
   }.freeze, T::Hash[Symbol, String])
 
-  sig { params(scroll: Symbol, edit_height: Symbol, preview_height: Symbol, toolbar: T::Boolean, preview: T::Boolean, rows: Integer).void }
-  def initialize(scroll: :both, edit_height: :lg, preview_height: :md, toolbar: true, preview: true, rows: 5)
-    @scroll = scroll
-    @edit_height = edit_height
-    @preview_height = preview_height
-    @toolbar = toolbar
-    @preview = preview
-    @rows = rows
+  sig { returns(T::Array[Ui::MarkdownEditorComponent::Region]) }
+  def self.default_regions
+    [
+      Ui::MarkdownEditorComponent::ToolbarRegion.new,
+      Ui::MarkdownEditorComponent::PreviewRegion.new(height: :md)
+    ]
   end
 
-  sig { returns(Symbol) }
-  attr_reader :scroll
+  # The default surface: a toolbar above, a preview below capped at :md, and a
+  # textarea capped at :lg. Pass `regions: []` for a bare textarea.
+  sig do
+    params(
+      edit_height: T.nilable(Symbol),
+      regions: T::Array[Ui::MarkdownEditorComponent::Region]
+    ).void
+  end
+  def initialize(edit_height: :lg, regions: Ui::MarkdownEditorComponent::Config.default_regions)
+    @edit_height = edit_height
+    @regions = regions
+  end
 
-  sig { returns(Symbol) }
-  attr_reader :edit_height
+  # The overwhelmingly common surface: a toolbar, and a preview that differs
+  # from the default only in its classes. Spelling the region list out at each
+  # of those call sites buries the one thing that actually varies.
+  sig do
+    params(
+      preview_class: String,
+      edit_height: T.nilable(Symbol),
+      preview_height: Symbol
+    ).returns(Ui::MarkdownEditorComponent::Config)
+  end
+  def self.with_preview(preview_class:, edit_height: nil, preview_height: :md)
+    new(
+      edit_height: edit_height,
+      regions: [
+        Ui::MarkdownEditorComponent::ToolbarRegion.new,
+        Ui::MarkdownEditorComponent::PreviewRegion.new(height: preview_height, extra_class: preview_class)
+      ]
+    )
+  end
 
-  sig { returns(Symbol) }
-  attr_reader :preview_height
-
-  sig { returns(T::Boolean) }
-  attr_reader :toolbar
-
-  sig { returns(T::Boolean) }
-  attr_reader :preview
-
-  sig { returns(Integer) }
-  attr_reader :rows
+  sig { params(placement: Symbol).returns(T::Array[ViewComponent::Base]) }
+  def components_placed(placement)
+    @regions.select { |region| region.placement == placement }.map(&:component)
+  end
 
   sig { returns(T::Boolean) }
   def edit_scroll?
-    @scroll == :both || @scroll == :edit
+    !@edit_height.nil?
   end
 
-  sig { returns(T::Boolean) }
-  def preview_scroll?
-    @scroll == :both || @scroll == :preview
+  # The textarea's max-height declaration, nil when the textarea is uncapped.
+  # Config owns the scale, so it resolves the step here rather than handing a
+  # bare key out; HEIGHTS.fetch raises on a step outside the scale.
+  sig { returns(T.nilable(String)) }
+  def edit_max_height
+    height = @edit_height
+    return nil if height.nil?
+
+    "max-height: #{HEIGHTS.fetch(height)}"
   end
 end
