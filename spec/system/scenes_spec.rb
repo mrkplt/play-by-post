@@ -92,8 +92,8 @@ RSpec.describe "Scenes", type: :feature do
     it "redirects player who visits scene creation URL directly" do
       visit new_game_scene_path(game)
 
-      expect(page).to have_current_path(game_path(game))
-      expect(page).to have_text("Only the GM can create scenes")
+      expect(page).to have_current_path(root_path)
+      expect(page).to have_text("You are not authorized to perform this action")
     end
   end
 
@@ -224,8 +224,8 @@ RSpec.describe "Scenes", type: :feature do
       sign_in_as(player)
       visit edit_game_scene_participants_path(game, scene)
 
-      expect(page).to have_current_path(game_scene_path(game, scene))
-      expect(page).to have_text("Only the GM can edit participants")
+      expect(page).to have_current_path(root_path)
+      expect(page).to have_text("You are not authorized to perform this action")
     end
 
     it "GM can access edit participants" do

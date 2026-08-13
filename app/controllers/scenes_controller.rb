@@ -5,9 +5,7 @@ class ScenesController < ApplicationController
 
   before_action :set_game
   before_action :require_game_access!
-  before_action :require_gm!, only: %i[new create]
   before_action :set_scene, only: %i[show resolve toggle_notification_preference]
-  before_action :require_gm_to_resolve!, only: :resolve
   after_action :verify_authorized, except: :index
 
   sig { void }
@@ -119,18 +117,6 @@ class ScenesController < ApplicationController
   sig { void }
   def require_game_access!
     redirect_to root_path, alert: "You do not have access to this game." unless policy(@game).show?
-  end
-
-  sig { void }
-  def require_gm!
-    return if policy(@game).update?
-
-    redirect_to game_path(@game), alert: "Only the GM can create scenes."
-  end
-
-  sig { void }
-  def require_gm_to_resolve!
-    redirect_to game_scene_path(@game, @scene), alert: "Only the GM can resolve a scene." unless policy(@scene).resolve?
   end
 
   # Assembles the New Scene / Quick Scene form component from the current

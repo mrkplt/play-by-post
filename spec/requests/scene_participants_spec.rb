@@ -23,8 +23,8 @@ RSpec.describe SceneParticipantsController, type: :request do
     it "player is redirected with alert" do
       sign_in(player)
       get edit_game_scene_participants_path(game, scene)
-      expect(response).to redirect_to(game_scene_path(game, scene))
-      expect(flash[:alert]).to match(/only the gm/i)
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to match(/not authorized/i)
     end
 
     it "shows player email prefix when user has no display name" do
@@ -148,8 +148,8 @@ RSpec.describe SceneParticipantsController, type: :request do
     it "player cannot update participants" do
       sign_in(player)
       patch game_scene_participants_path(game, scene), params: { character_ids: [] }
-      expect(response).to redirect_to(game_scene_path(game, scene))
-      expect(flash[:alert]).to match(/only the gm/i)
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to match(/not authorized/i)
     end
   end
 

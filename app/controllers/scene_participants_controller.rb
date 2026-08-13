@@ -5,7 +5,6 @@ class SceneParticipantsController < ApplicationController
 
   before_action :set_game
   before_action :set_scene
-  before_action :require_gm!, only: %i[edit update]
   before_action :require_active_member_for_write!, only: %i[join]
   after_action :verify_authorized
 
@@ -54,7 +53,7 @@ class SceneParticipantsController < ApplicationController
   sig { void }
   def join
     authorize @scene, :join?
-    if @scene.private? && !policy(@game).update?
+    if @scene.private? && !policy(@scene).visible?
       redirect_to game_scene_path(@game, @scene), alert: "Cannot join a private scene."
       return
     end
@@ -78,13 +77,6 @@ class SceneParticipantsController < ApplicationController
   sig { void }
   def set_scene
     @scene = @game.scenes.find(params[:scene_id])
-  end
-
-  sig { void }
-  def require_gm!
-    return if policy(@game).update?
-
-    redirect_to game_scene_path(@game, @scene), alert: "Only the GM can edit participants."
   end
 
   sig { void }
