@@ -46,6 +46,8 @@ matcher:
     - ScenePresenter
     - UserPresenter
     # Components
+    - Ui::SecretFieldComponent
+    - Shared::RssFeedsSectionComponent
     - Shared::AiSummariesToggleComponent
     - Shared::ProfileFormComponent
     - Shared::SceneSummaryComponent
@@ -125,6 +127,8 @@ matcher:
     - ActionMailbox::Ingresses::Resend::InboundEmailsController
     - Webhooks::DeployController
     - SceneSummariesController
+    - RssController
+    - Profiles::ApiTokensController
     - GameExportsController
     - ScenesController
     - CharactersController
@@ -178,6 +182,7 @@ matcher:
     - CharacterVersionPolicy
     - UserProfilePolicy
     - FeedbackPolicy
+    - ApiTokenPolicy
 
 mutation:
   timeout: 20.0

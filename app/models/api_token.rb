@@ -8,10 +8,14 @@
 class ApiToken < ApplicationRecord
   extend T::Sig
 
+  # Recognised token purposes. "rss" is the campaign-log feed; "api" is reserved
+  # for the forthcoming data API.
+  SCOPES = T.let(%w[rss api].freeze, T::Array[String])
+
   belongs_to :user
   belongs_to :game
 
-  validates :scope, presence: true
+  validates :scope, presence: true, inclusion: { in: SCOPES }
   validates :token, presence: true, uniqueness: true
   validates :user_id, uniqueness: { scope: %i[scope game_id] }
 

@@ -64,6 +64,46 @@ RSpec.describe "Profiles", type: :feature do
     end
   end
 
+  describe "RSS feeds section" do
+    let(:game) { create(:game) }
+
+    before { create(:game_member, game: game, user: user) }
+
+    it "lists the user's game with a create-feed control" do
+      visit profile_path
+      # SectionLabelComponent uppercases via CSS; assert the rendered form.
+      expect(page).to have_text("RSS FEEDS")
+      expect(page).to have_text(game.name)
+      expect(page).to have_button("Create feed")
+    end
+
+    it "creates a feed token and reveals the copyable URL" do
+      visit profile_path
+      click_on "Create feed"
+
+      expect(page).to have_css(".secret-field")
+      expect(page).to have_button("Revoke")
+      # Masked by default; the real token is not in the visible input value.
+      masked = find(".secret-field__input").value
+      expect(masked).to match(/\A•+\z/)
+
+      token = user.api_tokens.find_by(game: game, scope: "rss")
+      click_on "Show"
+      expect(find(".secret-field__input").value).to include("token=#{token.token}")
+    end
+
+    it "revokes an existing feed token" do
+      create(:api_token, user: user, game: game, scope: "rss")
+      visit profile_path
+
+      expect(page).to have_button("Revoke")
+      click_on "Revoke"
+
+      expect(page).to have_button("Create feed")
+      expect(user.api_tokens.where(scope: "rss")).to be_empty
+    end
+  end
+
   describe "profile show page" do
     it "shows display name and email" do
       visit profile_path

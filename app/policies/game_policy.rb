@@ -50,6 +50,14 @@ class GamePolicy < ApplicationPolicy
     (membership&.game_master? || membership&.active?) || false
   end
 
+  # RSS feed access (machine-auth, DataApplicationController): the GM or an
+  # active member. Re-checked on every request so a removed/banned member's
+  # feed dies immediately even while their token still exists.
+  sig { returns(T::Boolean) }
+  def feed?
+    write_access?
+  end
+
   # Which scenes this user's export of the game includes: everything for the GM,
   # only participated scenes for a removed member, otherwise the normally-visible
   # set. Removed members export less than they can view (see REQUIREMENTS).

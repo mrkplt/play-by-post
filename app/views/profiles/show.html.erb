@@ -24,6 +24,10 @@
     <% end %>
   </div>
 
+  <%# RSS Feeds %>
+  <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do %>RSS Feeds<% end %>
+  <%= render Shared::RssFeedsSectionComponent.new(memberships: @memberships, tokens_by_game_id: @rss_tokens_by_game) %>
+
   <%# Export %>
   <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do %>Export<% end %>
   <div class="bg-card border border-card-border rounded-card px-3.5">

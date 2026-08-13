@@ -13,6 +13,7 @@ class ProfilesController < ApplicationController
       .where.not(status: "banned")
       .includes(:game)
       .order("games.name")
+    @rss_tokens_by_game = current_user.api_tokens.where(scope: "rss").index_by(&:game_id)
     @export_all_receipt = GameExportRequest.valid_receipt_for(current_user, nil)
   end
 
