@@ -129,6 +129,13 @@ RSpec.describe Ui::MarkdownEditorComponent, type: :component do
         .to eq("markdown-editor w-full #{described_class::EDIT_BASE} overflow-y-auto")
     end
 
+    it "assembles the edit classes into one space-joined string" do
+      component = described_class.new(form: build_form_builder, field: :body)
+      expect(component.edit_classes)
+        .to be_a(String)
+        .and eq("markdown-editor w-full #{described_class::EDIT_BASE} overflow-y-auto")
+    end
+
     it "styles the textarea identically whatever the caller configures" do
       render_editor
       styled = page.find("textarea[name='feedback[body]']")["class"]
@@ -155,6 +162,16 @@ RSpec.describe Ui::MarkdownEditorComponent, type: :component do
       expect(subject_config.edit_max_height).to eq("max-height: 40vh")
       expect(subject_config.components_placed(:above).map(&:class)).to eq([ Shared::MarkdownToolbarComponent ])
       expect(subject_config.components_placed(:below).map(&:class)).to eq([ Ui::MarkdownPreviewComponent ])
+    end
+
+    it "caps the default preview, so an editor does not grow without bound" do
+      preview = described_class.new.components_placed(:below).first
+      expect(preview.max_height).to eq("max-height: #{described_class::HEIGHTS.fetch(:md)}")
+    end
+
+    it "needs no content hook — most callers have no domain styling to add" do
+      preview = described_class.with_preview.components_placed(:below).first
+      expect(preview.classes).to eq("#{Ui::MarkdownPreviewComponent::BASE} overflow-y-auto")
     end
 
     it "builds the common toolbar-plus-preview surface with .with_preview" do
