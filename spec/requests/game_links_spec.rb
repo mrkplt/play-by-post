@@ -67,7 +67,8 @@ RSpec.describe GameLinksController, type: :request do
     it "is denied to an active player" do
       sign_in(player)
       get new_game_game_link_path(game)
-      expect(response).to redirect_to(game_game_links_path(game))
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to eq("You are not authorized to perform this action.")
     end
 
     it "renders the universal header nav affordances" do

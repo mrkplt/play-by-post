@@ -24,8 +24,8 @@ RSpec.describe InvitationsController, type: :request do
       sign_in(player)
       post game_player_management_invitations_path(game),
         params: { invitation: { email: "newplayer@example.com" } }
-      expect(response).to redirect_to(game_path(game))
-      expect(flash[:alert]).to match(/only the gm/i)
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to eq("You are not authorized to perform this action.")
     end
 
     it "redirects with notice on invalid email" do
@@ -51,7 +51,8 @@ RSpec.describe InvitationsController, type: :request do
     it "player cannot cancel an invitation" do
       sign_in(player)
       delete game_player_management_invitation_path(game, invitation)
-      expect(response).to redirect_to(game_path(game))
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to eq("You are not authorized to perform this action.")
     end
   end
 
@@ -80,7 +81,8 @@ RSpec.describe InvitationsController, type: :request do
     it "player cannot resend an invitation" do
       sign_in(player)
       post resend_game_player_management_invitation_path(game, invitation)
-      expect(response).to redirect_to(game_path(game))
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to eq("You are not authorized to perform this action.")
     end
   end
 

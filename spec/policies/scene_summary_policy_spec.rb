@@ -13,7 +13,19 @@ RSpec.describe SceneSummaryPolicy do
     allow(scene).to receive(:game).and_return(game)
   end
 
-  describe "#create? / #update? / #destroy? (GM only)" do
+  describe "#manage? (GM only)" do
+    it "is true for the GM" do
+      allow(game).to receive(:game_master?).with(user).and_return(true)
+      expect(policy.manage?).to be(true)
+    end
+
+    it "is false for a non-GM" do
+      allow(game).to receive(:game_master?).with(user).and_return(false)
+      expect(policy.manage?).to be(false)
+    end
+  end
+
+  describe "#create? / #update? / #destroy? (delegate to #manage?)" do
     it "are true for the GM" do
       allow(game).to receive(:game_master?).with(user).and_return(true)
       expect(policy.create?).to be(true)
