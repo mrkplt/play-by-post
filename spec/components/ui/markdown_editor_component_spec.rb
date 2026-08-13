@@ -25,17 +25,17 @@ RSpec.describe Ui::MarkdownEditorComponent, type: :component do
     it "caps the edit and preview regions by default (:both)" do
       render_editor
       textarea = page.find("textarea[name='feedback[body]']")
-      expect(textarea["style"]).to eq("max-height: 320px")
+      expect(textarea["style"]).to eq("max-height: 40vh")
       expect(textarea["class"]).to eq("markdown-editor w-full overflow-y-auto")
       preview = page.find("[data-markdown-preview-target='preview']")
       expect(preview["class"]).to eq("markdown-base min-h-12 bg-canvas overflow-y-auto")
-      expect(preview["style"]).to eq("max-height: 256px")
+      expect(preview["style"]).to eq("max-height: 30vh")
     end
 
     it "caps only the edit region with :edit" do
-      render_editor(config: described_class::Config.new(scroll: :edit, edit_height: 180))
+      render_editor(config: described_class::Config.new(scroll: :edit, edit_height: :sm))
       textarea = page.find("textarea[name='feedback[body]']")
-      expect(textarea["style"]).to eq("max-height: 180px")
+      expect(textarea["style"]).to eq("max-height: 20vh")
       expect(textarea["class"]).to eq("markdown-editor w-full overflow-y-auto")
       preview = page.find("[data-markdown-preview-target='preview']")
       expect(preview["style"]).to be_nil
@@ -43,11 +43,24 @@ RSpec.describe Ui::MarkdownEditorComponent, type: :component do
     end
 
     it "caps only the preview with :preview" do
-      render_editor(config: described_class::Config.new(scroll: :preview, preview_height: 120))
+      render_editor(config: described_class::Config.new(scroll: :preview, preview_height: :xl))
       textarea = page.find("textarea[name='feedback[body]']")
       expect(textarea["style"]).to be_nil
       expect(textarea["class"]).to eq("markdown-editor w-full")
-      expect(page).to have_css("[data-markdown-preview-target='preview'][style='max-height: 120px']")
+      expect(page).to have_css("[data-markdown-preview-target='preview'][style='max-height: 60vh']")
+    end
+
+    it "renders every step of the height scale" do
+      described_class::Config::HEIGHTS.each do |step, value|
+        render_editor(config: described_class::Config.new(scroll: :edit, edit_height: step))
+        expect(page.find("textarea[name='feedback[body]']")["style"]).to eq("max-height: #{value}")
+      end
+    end
+
+    it "rejects a height outside the scale rather than emitting an empty max-height" do
+      expect {
+        render_editor(config: described_class::Config.new(scroll: :edit, edit_height: :enormous))
+      }.to raise_error(KeyError)
     end
   end
 
@@ -121,8 +134,8 @@ RSpec.describe Ui::MarkdownEditorComponent, type: :component do
     it "defaults to :both scroll with sensible heights" do
       config = described_class.new
       expect(config.scroll).to eq(:both)
-      expect(config.edit_height).to eq(320)
-      expect(config.preview_height).to eq(256)
+      expect(config.edit_height).to eq(:lg)
+      expect(config.preview_height).to eq(:md)
       expect(config.toolbar).to be(true)
       expect(config.preview).to be(true)
       expect(config.rows).to eq(5)

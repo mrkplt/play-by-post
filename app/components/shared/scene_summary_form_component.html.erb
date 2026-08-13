@@ -17,7 +17,7 @@
     <%= f.label :body, "Summary", class: "text-[11px] font-bold text-muted uppercase tracking-[0.05em]" %>
     <%= render Ui::MarkdownEditorComponent.new(
           form: f, field: :body,
-          config: Ui::MarkdownEditorComponent::Config.new(scroll: :preview, preview_height: 256, rows: 10),
+          config: Ui::MarkdownEditorComponent::Config.new(scroll: :preview, preview_height: :md, rows: 10),
           placeholder: "Write a narrative summary of this scene...",
           edit_class: "border border-input-border border-t-0 rounded-b-control px-3 py-2.5 text-base text-ink bg-card placeholder:text-muted-2",
           preview_class: "border border-card-border rounded-card px-3 py-3 mt-4") %>

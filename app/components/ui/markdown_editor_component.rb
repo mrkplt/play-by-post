@@ -8,50 +8,8 @@
 class Ui::MarkdownEditorComponent < ApplicationComponent
   extend T::Sig
 
-  # Layout configuration. `scroll` selects which regions cap their height and
-  # scroll internally; the heights are px values applied as max-height so
-  # overflowing content scrolls instead of resizing the surrounding layout.
-  class Config
-    extend T::Sig
-
-    sig { params(scroll: Symbol, edit_height: Integer, preview_height: Integer, toolbar: T::Boolean, preview: T::Boolean, rows: Integer).void }
-    def initialize(scroll: :both, edit_height: 320, preview_height: 256, toolbar: true, preview: true, rows: 5)
-      @scroll = scroll
-      @edit_height = edit_height
-      @preview_height = preview_height
-      @toolbar = toolbar
-      @preview = preview
-      @rows = rows
-    end
-
-    sig { returns(Symbol) }
-    attr_reader :scroll
-
-    sig { returns(Integer) }
-    attr_reader :edit_height
-
-    sig { returns(Integer) }
-    attr_reader :preview_height
-
-    sig { returns(T::Boolean) }
-    attr_reader :toolbar
-
-    sig { returns(T::Boolean) }
-    attr_reader :preview
-
-    sig { returns(Integer) }
-    attr_reader :rows
-
-    sig { returns(T::Boolean) }
-    def edit_scroll?
-      @scroll == :both || @scroll == :edit
-    end
-
-    sig { returns(T::Boolean) }
-    def preview_scroll?
-      @scroll == :both || @scroll == :preview
-    end
-  end
+  # Layout configuration lives in Ui::MarkdownEditorComponent::Config
+  # (app/components/ui/markdown_editor_component/config.rb).
 
   DEFAULT_TEXTAREA_DATA = T.let({
     markdown_preview_target: "input",
@@ -96,12 +54,12 @@ class Ui::MarkdownEditorComponent < ApplicationComponent
 
   sig { returns(T.nilable(String)) }
   def edit_max_height
-    "max-height: #{@config.edit_height}px" if @config.edit_scroll?
+    "max-height: #{Config::HEIGHTS.fetch(@config.edit_height)}" if @config.edit_scroll?
   end
 
   sig { returns(T.nilable(String)) }
   def preview_max_height
-    "max-height: #{@config.preview_height}px" if @config.preview_scroll?
+    "max-height: #{Config::HEIGHTS.fetch(@config.preview_height)}" if @config.preview_scroll?
   end
 
   sig { returns(T::Hash[Symbol, T.untyped]) }

@@ -16,7 +16,7 @@
 
   <%= render Ui::MarkdownEditorComponent.new(
         form: f, field: :content,
-        config: Ui::MarkdownEditorComponent::Config.new(scroll: :preview, preview_height: 256),
+        config: Ui::MarkdownEditorComponent::Config.new(scroll: :preview, preview_height: :md),
         value: @draft&.content.to_s,
         placeholder: "Write your post... (markdown)",
         data: {

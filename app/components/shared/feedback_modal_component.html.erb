@@ -16,7 +16,7 @@
         <%= form.hidden_field :url, data: { feedback_target: "url" } %>
         <%= render Ui::MarkdownEditorComponent.new(
               form: form, field: :body,
-              config: Ui::MarkdownEditorComponent::Config.new(scroll: :edit, edit_height: 256, preview: false),
+              config: Ui::MarkdownEditorComponent::Config.new(scroll: :edit, edit_height: :md, preview: false),
               placeholder: "Your feedback…",
               required: true,
               data: { feedback_target: "field" },

@@ -7,19 +7,19 @@ class Ui::MarkdownEditorComponentPreview < ViewComponent::Preview
   def scroll_edit_and_preview
     render(Ui::MarkdownEditorComponent.new(
       form: form_builder, field: :content,
-      config: Ui::MarkdownEditorComponent::Config.new(scroll: :both, edit_height: 256, preview_height: 256)))
+      config: Ui::MarkdownEditorComponent::Config.new(scroll: :both, edit_height: :md, preview_height: :md)))
   end
 
   def scroll_edit_only
     render(Ui::MarkdownEditorComponent.new(
       form: form_builder, field: :content,
-      config: Ui::MarkdownEditorComponent::Config.new(scroll: :edit, edit_height: 256)))
+      config: Ui::MarkdownEditorComponent::Config.new(scroll: :edit, edit_height: :md)))
   end
 
   def scroll_preview_only
     render(Ui::MarkdownEditorComponent.new(
       form: form_builder, field: :content,
-      config: Ui::MarkdownEditorComponent::Config.new(scroll: :preview, preview_height: 256)))
+      config: Ui::MarkdownEditorComponent::Config.new(scroll: :preview, preview_height: :md)))
   end
 
   def without_toolbar

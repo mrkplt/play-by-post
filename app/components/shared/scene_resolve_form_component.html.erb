@@ -3,7 +3,7 @@
     <%= f.label :resolution, "Outcome (optional, markdown supported)", class: "block text-sm font-semibold mb-1" %>
     <%= render Ui::MarkdownEditorComponent.new(
           form: f, field: :resolution,
-          config: Ui::MarkdownEditorComponent::Config.new(scroll: :preview, preview_height: 256, rows: 3),
+          config: Ui::MarkdownEditorComponent::Config.new(scroll: :preview, preview_height: :md, rows: 3),
           placeholder: "What happened? What was gained or lost?",
           edit_class: "px-3 py-2 border border-input-border border-t-0 rounded-b-control text-base bg-card text-ink placeholder:text-muted-2",
           preview_class: "border border-card-border rounded-card px-3 py-3 mt-2") %>
