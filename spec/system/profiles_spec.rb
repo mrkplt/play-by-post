@@ -46,6 +46,17 @@ RSpec.describe "Profiles", type: :feature do
       expect(page).to have_css("[role='switch']")
     end
 
+    it "toggles the hide-OOC default from the profile" do
+      visit profile_path
+
+      toggle = find("[role='switch']")
+      expect(toggle["aria-checked"]).to eq("false")
+
+      page.execute_script(%q{document.querySelector('[data-controller="ooc-filter"] button').click()})
+
+      expect(page).to have_css("[role='switch'][aria-checked='true']")
+    end
+
     it "OOC posts are hidden on scene load when hide_ooc is enabled" do
       user.user_profile.update!(hide_ooc: true)
 

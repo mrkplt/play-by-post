@@ -1,7 +1,7 @@
 import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
-  static targets = ["indicator", "switch"]
+  static targets = ["button", "indicator", "switch"]
   static values = { hideOoc: Boolean, toggleUrl: String }
 
   connect() {
@@ -22,6 +22,9 @@ export default class extends Controller {
   // Reflect on/off state on the Ui::ToggleSwitch markup: move the thumb and
   // recolor the track.
   _updateSwitch() {
+    if (this.hasButtonTarget) {
+      this.buttonTarget.setAttribute("aria-label", this.hiding ? "Show OOC posts by default" : "Hide OOC posts by default")
+    }
     if (!this.hasSwitchTarget) return
     const track = this.switchTarget.querySelector("[role='switch']")
     const thumb = track && track.firstElementChild
