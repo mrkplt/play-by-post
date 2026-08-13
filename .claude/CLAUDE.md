@@ -315,7 +315,7 @@ Hard-won specifics for actually clearing the gates. Read this before touching up
 - `mutant` runs with `--jobs > 1` against SQLite can emit spurious `SQLite3::BusyException: database is locked` "neutral" failures. Re-run single-job (`--jobs 1 <Subject>`) to confirm a mutant is genuinely alive before chasing it.
 
 **ERB gate (bites every view edit):**
-- Inline Tailwind in a `.erb` **fails** the CSS-statements check. Move markup into a `Shared::*`/`Ui::*` ViewComponent (CSS is allowed/tracked there). RuboCop does not lint `.erb`, so `bin/rubocop <file.erb>` reports false syntax "offenses" — ignore; the real gate is `bin/quality-metrics`.
+- Inline Tailwind in a `.erb` **fails** the CSS-statements check. Move markup into a `Shared::*`/`Ui::*` ViewComponent (CSS is allowed/tracked there). RuboCop **does** now lint `.erb` (via `rubocop-erb` + the `herb` parser, enabled through `plugins:` in `.rubocop.yml`): `bin/rubocop` inspects the Ruby inside every `app/**/*.erb` and its offenses are real. That is distinct from the architectural ERB-logic gate in `bin/quality-metrics` (no ternary/`||`/control-flow in output tags) — rubocop-erb styles the Ruby that legitimately remains. **No inline `# rubocop:disable`** — fix the code (a render complex enough to tempt a disable is a view-model extraction candidate) or, as a last resort, remove/scope the rule in config.
 - `||` fallbacks, ternaries, and local assigns in ERB **output tags** fail the ERB-logic check. Extract to a presenter/component Ruby method (e.g. `error_message` returning `a || b`).
 
 **Mutation blast radius (a feature, not a trap):**

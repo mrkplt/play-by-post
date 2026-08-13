@@ -17,9 +17,14 @@ module MarkdownRenderer
   )
   ALLOWED_ATTRIBUTES = T.let(%w[href].freeze, T::Array[String])
 
-  sig { params(text: T.nilable(String)).returns(String) }
+  # Returns an ActiveSupport::SafeBuffer: this module IS the sanitization
+  # boundary (Redcarpet filter_html + Rails sanitize with an explicit allowlist),
+  # so its output is html-safe by construction and callers render it directly —
+  # no `.html_safe` at the view/component layer. `sanitize` already returns a
+  # SafeBuffer; we preserve that rather than casting it back to a bare String.
+  sig { params(text: T.nilable(String)).returns(ActiveSupport::SafeBuffer) }
   def self.render(text)
-    return "" if text.blank?
+    return ActiveSupport::SafeBuffer.new if text.blank?
 
     # ActionController::Base.helpers.sanitize is the SanitizeHelper bound to a
     # concrete view context, so its `safe_list_sanitizer` resolves correctly
@@ -29,7 +34,7 @@ module MarkdownRenderer
       markdown_parser.render(text),
       tags: ALLOWED_TAGS,
       attributes: ALLOWED_ATTRIBUTES
-    ), String)
+    ), ActiveSupport::SafeBuffer)
   end
 
   sig { returns(Redcarpet::Markdown) }

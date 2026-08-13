@@ -75,10 +75,10 @@ RSpec.describe Game, type: :model do
     end
 
     describe "export requests" do
-      it "are associated without a destroy cascade — GamePurgeJob deletes them explicitly" do
+      it "cascade on destroy, matching the other game associations" do
         reflection = Game.reflect_on_association(:game_export_requests)
         expect(reflection).to be_present
-        expect(reflection.options[:dependent]).to be_nil
+        expect(reflection.options[:dependent]).to eq(:destroy)
       end
     end
   end

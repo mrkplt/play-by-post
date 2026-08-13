@@ -1,0 +1,104 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Ratchets reek code smells: a changed app/ or lib/ file may not INCREASE its
+# smell count vs origin/master.
+#
+# Reek reports design smells (FeatureEnvy, TooManyStatements, DuplicateMethodCall,
+# LongParameterList, ...) that the bespoke bin/check-* guards don't cover. There
+# are ~270 pre-existing warnings across the tree, so this is progressive by
+# design — grandfathered smells stay, but a changed file's count can only go
+# down. New files must land at zero. A separate Fizzy card tracks driving the
+# backlog down and, eventually, tightening the ratchet.
+#
+# What reek checks and which detectors are on/off is configured in .reek.yml
+# (detectors that fight this project's own conventions — UtilityFunction vs the
+# service-module rule, InstanceVariableAssumption vs the presenter/component
+# pattern — are turned off there, with reasons). This script only does the
+# diff-scoped counting; it does not encode smell policy.
+
+require "json"
+require "open3"
+
+ROOT = File.expand_path("..", __dir__)
+
+def changed_ruby_files
+  tracked = `git -C #{ROOT} diff --name-only --diff-filter=AM origin/master`.lines.map(&:strip)
+  untracked = `git -C #{ROOT} ls-files --others --exclude-standard`.lines.map(&:strip)
+  (tracked + untracked)
+    .grep(%r{\A(?:app|lib)/.*\.rb\z})
+    .uniq
+    .select { |relative| File.exist?(File.join(ROOT, relative)) }
+end
+
+# Smell count for the working-tree copy of a file.
+def current_smell_count(relative)
+  out, _err, _status = Open3.capture3(
+    "bundle", "exec", "reek", "--format", "json", File.join(ROOT, relative), chdir: ROOT
+  )
+  parse_count(out)
+end
+
+# Smell count for the origin/master copy, fed to reek over stdin under the same
+# filename so .reek.yml path rules and the file's language still apply.
+def master_smell_count(relative)
+  old_source, status = Open3.capture2("git", "-C", ROOT, "show", "origin/master:#{relative}")
+  return 0 unless status.success? && !old_source.strip.empty?
+
+  out, _err, _s = Open3.capture3(
+    "bundle", "exec", "reek", "--format", "json", "--stdin-filename", relative,
+    stdin_data: old_source, chdir: ROOT
+  )
+  parse_count(out)
+end
+
+def parse_count(json_output)
+  JSON.parse(json_output).length
+rescue JSON::ParserError
+  # reek prints nothing parseable when a file has a syntax error mid-edit; treat
+  # as zero so the ratchet doesn't crash (rubocop/sorbet catch real syntax break).
+  0
+end
+
+files = changed_ruby_files
+
+if files.empty?
+  puts "Reek check: OK (no changed Ruby files to ratchet)"
+  exit 0
+end
+
+failures = []
+
+files.each do |relative|
+  new_count = current_smell_count(relative)
+  old_count = master_smell_count(relative)
+  delta = new_count - old_count
+  status = delta > 0 ? "FAIL" : "OK"
+  puts "  [#{status}] #{relative}: #{old_count} -> #{new_count} smell(s) (#{delta >= 0 ? '+' : ''}#{delta})"
+  failures << [ relative, old_count, new_count ] if delta > 0
+end
+
+if failures.empty?
+  puts "\nReek check: OK (no changed file increased its smell count)"
+  exit 0
+end
+
+puts "\nReek check: FAIL\n\n"
+failures.each do |relative, old_count, new_count|
+  puts "  #{relative}: #{old_count} -> #{new_count} smells"
+  puts "    see the specific smells: bundle exec reek #{relative}"
+end
+puts <<~REMEDY
+
+  A changed file added a reek code smell. Resolve the new smell(s) rather than
+  suppress them:
+    - TooManyStatements / TooManyMethods: extract a method or collaborator.
+    - FeatureEnvy: move the method to the class whose data it uses.
+    - DuplicateMethodCall: assign the repeated call to a local.
+    - LongParameterList / DataClump: introduce a parameter object.
+    - ControlParameter / BooleanParameter: split the method by the flag.
+  Run `bundle exec reek <file>` to see each smell and its doc link. Grandfathered
+  smells may remain; bring this file's count back to at most its origin/master
+  value. Detector policy (what's on/off, and why) lives in .reek.yml.
+REMEDY
+exit 1

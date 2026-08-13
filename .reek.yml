@@ -1,0 +1,47 @@
+# Reek configuration for the ratchet in bin/check-reek.
+#
+# Reek runs diff-scoped and ratcheted (a changed file may not add smells vs
+# origin/master), so this file is not about zeroing the ~400 pre-existing
+# warnings — it is about turning OFF detectors that fight this project's own
+# stated conventions (otherwise the ratchet would push against the architecture),
+# and leaving ON the detectors that catch genuine regressions.
+
+detectors:
+  # OFF — conflicts with check-service-modules, which REQUIRES stateless process
+  # classes to be modules of stateless methods. Reek reads every such method as a
+  # "utility function that should move," which is exactly the pattern the project
+  # mandates. Enabling it would pit two gates against each other.
+  UtilityFunction:
+    enabled: false
+
+  # OFF — fires on the standard ViewComponent/presenter pattern of reading an
+  # @ivar assigned in #initialize (BasePresenter < SimpleDelegator, component
+  # ctors). That pattern is intentional and enforced elsewhere; the check is noise
+  # here.
+  InstanceVariableAssumption:
+    enabled: false
+
+  # OFF — "module has no descriptive comment" is a documentation-style opinion,
+  # not a design smell, and many small Result/Config value objects don't warrant a
+  # comment. Not worth gating.
+  IrresponsibleModule:
+    enabled: false
+
+  # OFF — Rails/ActiveModel predicate and bang conventions (name? / name!) trip
+  # MissingSafeMethod and NilCheck constantly in idiomatic Rails code. Too noisy to
+  # ratchet usefully.
+  MissingSafeMethod:
+    enabled: false
+  NilCheck:
+    enabled: false
+
+# Reek only reads Ruby; point it away from non-source trees. (The ratchet also
+# scopes to changed app/ + lib/ files, but excluding here keeps a bare `reek`
+# run legible too.)
+exclude_paths:
+  - db
+  - bin
+  - vendor
+  - tmp
+  - node_modules
+  - spec

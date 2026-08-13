@@ -1,21 +1,34 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-# Assures Pundit authorization is wired on every user-facing controller.
+# Assures Pundit authorization is wired on every user-facing controller, and
+# that authorization decisions live in policies rather than inline in actions.
 #
-# Two rules:
+# Three rules:
 #   1. Every controller that directly inherits ApplicationController must install
 #      the runtime net — `after_action :verify_authorized` — so any action that
 #      forgets to call `authorize` / `policy_scope` fails its request spec.
 #   2. Any `skip_after_action :verify_authorized` or Pundit `skip_authorization`
 #      must be allowlisted here, so disabling the net is always an explicit,
 #      reviewed decision (never silent).
+#   3. A policy-governed controller (an ApplicationController descendant) must not
+#      answer an authorization question inline — a role/ownership predicate
+#      (game_master?, admin?, owner?, ...) called anywhere in the controller.
+#      "Is this user a GM/admin/owner?" is a policy's job whether the answer gates
+#      a deny (head :forbidden, raise NotAuthorized) OR merely feeds view data
+#      (`is_gm: membership.game_master?`) — the latter duplicates a predicate the
+#      policy already exposes (GamePolicy#gm?) and drifts from it. Route both
+#      through `policy(record).the_predicate?`. AST-based (Prism) so it fires on
+#      the actual call, not on the method name appearing in a comment or string.
 #
 # Controllers that intentionally sit outside the policy system inherit a
 # non-ApplicationController base (Devise sessions, the deploy webhook, the
-# mailbox ingress) and so are never required to declare the net.
+# mailbox ingress, the bearer-token data API) and so are never required to
+# declare the net — nor subject to rule 3, since they authorize by token/webhook
+# signature, not by user policy.
 
 require "pathname"
+require "prism"
 
 ROOT = File.expand_path("..", __dir__)
 CONTROLLERS = Dir.glob("#{ROOT}/app/controllers/**/*.rb").sort
@@ -27,8 +40,41 @@ ALLOWED_SKIPS = {
   "posts_controller.rb"       => "draft plumbing gated by participant/write checks; a draft is always the user's own",
 }.freeze
 
+# (file basename => reason) — controllers allowed to authorize inline instead of
+# through a policy. Each entry is a reviewed, documented exemption.
+ALLOWED_INLINE_AUTHZ = {}.freeze
+
+# Role/ownership predicate methods that answer an authorization question ("may
+# this user do X / is this user privileged?"). Any call to one of these inside a
+# policy-governed controller belongs in a policy — whether it gates a deny or
+# merely feeds view data (`is_gm:`). Deliberately excludes membership *lifecycle
+# status* predicates (removed?, banned?, active?): those describe a record's
+# state, not the current user's authority, and are legitimately read as view
+# data. Add project-specific role predicates here as they appear.
+ROLE_PREDICATES = %i[
+  game_master? gm? admin? owner? moderator? can_manage?
+].to_set.freeze
+
+# Line numbers of every role-predicate call in the source (a CallNode whose
+# method name is a role predicate). Explicit-receiver calls count too:
+# `membership.game_master?` is exactly the case to catch.
+def role_predicate_lines(root)
+  lines = []
+  collect_role_predicate_lines(root, lines)
+  lines.uniq.sort
+end
+
+def collect_role_predicate_lines(node, into)
+  return if node.nil?
+  if node.is_a?(Prism::CallNode) && ROLE_PREDICATES.include?(node.name)
+    into << node.location.start_line
+  end
+  node.compact_child_nodes.each { |child| collect_role_predicate_lines(child, into) }
+end
+
 missing_net = []
 unlisted_skips = []
+inline_authz = []
 
 CONTROLLERS.each do |file|
   rel = Pathname.new(file).relative_path_from(Pathname.new(ROOT)).to_s
@@ -36,6 +82,11 @@ CONTROLLERS.each do |file|
   next if basename == "application_controller.rb"
 
   source = File.read(file, encoding: "utf-8")
+
+  # A controller is policy-governed iff it descends from ApplicationController.
+  # (Direct inheritance is the common case; the match also covers the handful of
+  # namespaced controllers that inherit it directly.)
+  policy_governed = source.match?(/<\s*ApplicationController\b/)
 
   # Rule 1: direct ApplicationController children must install the net.
   directly_inherits_app = source.match?(/class\s+[\w:]+\s*<\s*ApplicationController\b/)
@@ -48,10 +99,18 @@ CONTROLLERS.each do |file|
   if skips.any? && !ALLOWED_SKIPS.key?(basename)
     unlisted_skips << rel
   end
+
+  # Rule 3: policy-governed controllers must not answer authorization questions
+  # inline — any role-predicate call belongs in a policy.
+  if policy_governed && !ALLOWED_INLINE_AUTHZ.key?(basename)
+    root = Prism.parse(source).value
+    lines = role_predicate_lines(root)
+    inline_authz << [ rel, lines ] unless lines.empty?
+  end
 end
 
-if missing_net.empty? && unlisted_skips.empty?
-  puts "Authorization check: OK (every controller installs verify_authorized; all skips allowlisted)"
+if missing_net.empty? && unlisted_skips.empty? && inline_authz.empty?
+  puts "Authorization check: OK (net installed, skips allowlisted, no inline authorization)"
   exit 0
 end
 
@@ -70,6 +129,23 @@ unless unlisted_skips.empty?
   puts "If the skip is intentional, add the file to ALLOWED_SKIPS in"
   puts "bin/check-authorization with a reason:\n\n"
   unlisted_skips.each { |r| puts "  #{r}" }
+  puts
+end
+
+unless inline_authz.empty?
+  puts "These policy-governed controllers answer an authorization question inline —"
+  puts "a role/ownership predicate (game_master?, admin?, owner?, ...) called in the"
+  puts "controller instead of delegating to a Pundit policy:\n\n"
+  inline_authz.each { |rel, lines| puts "  #{rel} (line#{lines.length > 1 ? 's' : ''} #{lines.join(', ')})" }
+  puts "\nRoute the check through the policy, whether it gates access or feeds view data:"
+  puts "  - Deny gating:   call `authorize @record` / `policy(@record).the_action?`."
+  puts "  - View data:     replace `is_gm: membership.game_master?` with"
+  puts "                   `is_gm: policy(game).gm?` — the predicate already exists on"
+  puts "                   the policy (GamePolicy#gm?), so use it rather than duplicate"
+  puts "                   the role check and let it drift from the policy."
+  puts "This keeps the rule testable in a policy spec and reused across every caller. If"
+  puts "a call genuinely is not an authorization question, add the file to"
+  puts "ALLOWED_INLINE_AUTHZ in bin/check-authorization with a reason."
   puts
 end
 

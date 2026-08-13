@@ -1,0 +1,111 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Requires an integration (request) spec for every concrete controller.
+#
+# Request specs (spec/requests/**) are this project's integration tests: they
+# drive a controller action through the full Rails stack over real HTTP and
+# assert on the response data and the workflow it drives. Every routable
+# controller must have one, so an action's returned data and redirects are
+# exercised end-to-end — not just its collaborators in isolation.
+#
+# What counts as "concrete" (and so must have a spec):
+#   - It defines a controller class (name ends in Controller, or it inherits a
+#     *Controller / ActionController::Base).
+#   - It is NOT an abstract base — i.e. no other controller inherits from it.
+#     ApplicationController and DataApplicationController are bases (subclassed,
+#     no routable actions of their own) and are exempt, as is any future base.
+#   - It is a class, not a mixin module (TurnstileVerification is a concern-style
+#     module included into controllers, tested by its own controller spec).
+#
+# A controller's request spec is matched by the conventional filename under
+# spec/requests, tolerating the two naming styles in use (foo_spec.rb and
+# foo_controller_spec.rb) and the controller's namespace (admin/foo_controller.rb
+# -> spec/requests/admin/foo_spec.rb).
+#
+# This is a full-tree presence check (like check-authorization), not a diff
+# ratchet: the tree is currently complete, so it stays complete. A genuinely
+# spec-less controller (e.g. a pure redirect stub) can be allowlisted with a
+# reason. A separate Fizzy card tracks deepening these specs beyond mere presence.
+
+require "pathname"
+
+ROOT = File.expand_path("..", __dir__)
+CONTROLLERS = Dir.glob("#{ROOT}/app/controllers/**/*.rb").sort
+REQUEST_SPEC_DIR = File.join(ROOT, "spec/requests")
+
+# (relative controller path => reason) — concrete controllers deliberately
+# without a request spec. Each is a reviewed, documented exemption.
+ALLOWED_MISSING = {}.freeze
+
+# Names of controller classes that other controllers inherit from — abstract
+# bases, exempt from needing their own request spec.
+def base_controller_names
+  names = []
+  CONTROLLERS.each do |file|
+    File.read(file, encoding: "utf-8").scan(/class\s+[\w:]+\s*<\s*([A-Z][\w:]*Controller)\b/) do |(parent)|
+      names << parent.split("::").last
+    end
+  end
+  names.uniq
+end
+
+def defines_controller_class?(source)
+  source.match?(/class\s+[\w:]+Controller\b/) ||
+    source.match?(/class\s+[\w:]+\s*<\s*(?:[\w:]*Controller|ActionController::Base)\b/)
+end
+
+def class_name(source)
+  source[/class\s+([\w:]+)/, 1]
+end
+
+# Candidate request-spec paths for a controller, covering both filename styles
+# and the controller's namespace.
+def candidate_spec_paths(relative)
+  rel = relative.sub(%r{\Aapp/controllers/}, "").sub(/\.rb\z/, "")
+  base = rel.sub(/_controller\z/, "")
+  [
+    File.join(REQUEST_SPEC_DIR, "#{base}_spec.rb"),
+    File.join(REQUEST_SPEC_DIR, "#{base}_controller_spec.rb"),
+    File.join(REQUEST_SPEC_DIR, "#{rel}_spec.rb"),
+  ].uniq
+end
+
+bases = base_controller_names
+missing = []
+reported = 0
+
+CONTROLLERS.each do |file|
+  relative = Pathname.new(file).relative_path_from(Pathname.new(ROOT)).to_s
+  source = File.read(file, encoding: "utf-8")
+
+  next unless defines_controller_class?(source)
+
+  name = class_name(source)
+  next if name == "ApplicationController"
+  next if bases.include?(name&.split("::")&.last) # abstract base, subclassed elsewhere
+  next if ALLOWED_MISSING.key?(relative)
+
+  reported += 1
+  missing << relative unless candidate_spec_paths(relative).any? { |path| File.exist?(path) }
+end
+
+if missing.empty?
+  puts "Request-spec coverage: OK (#{reported} concrete controllers, each has an integration/request spec)"
+  exit 0
+end
+
+puts "Request-spec coverage: FAIL\n\n"
+puts "These concrete controllers have no integration (request) spec. Every routable"
+puts "controller needs one so its response data and workflow are exercised through"
+puts "the full Rails stack:\n\n"
+missing.each { |relative| puts "  #{relative}" }
+puts <<~REMEDY
+
+  Add spec/requests/<name>_spec.rb (see the neighbouring specs for the pattern:
+  sign_in(user), issue the real HTTP verb, assert on response status/redirect and
+  the returned data/workflow). If the controller is genuinely an abstract base or
+  otherwise has no routable action, add it to ALLOWED_MISSING in
+  bin/check-request-spec-coverage with a reason.
+REMEDY
+exit 1

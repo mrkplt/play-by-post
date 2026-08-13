@@ -32,7 +32,10 @@ class Ui::MarkdownRenderComponent < ApplicationComponent
     @content_attributes = content_attributes
   end
 
-  sig { returns(String) }
+  # MarkdownRenderer.render returns an html-safe SafeBuffer (it is the
+  # sanitization boundary), so the template renders this directly with no
+  # output-safety call.
+  sig { returns(ActiveSupport::SafeBuffer) }
   def rendered
     MarkdownRenderer.render(@text)
   end

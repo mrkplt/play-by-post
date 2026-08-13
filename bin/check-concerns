@@ -1,0 +1,118 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Keeps Rails "concerns" out of the codebase.
+#
+# This project's convention is explicit: we do not use concerns. Shared
+# behaviour is a plain module that a class `include`s directly — not an
+# `ActiveSupport::Concern` with its `included do ... end` / `class_methods do`
+# indirection, and not a file dropped into an `app/**/concerns/` directory that
+# Rails autoloads by convention. Concerns hide where behaviour and callbacks are
+# wired, which is exactly the coupling this codebase avoids.
+#
+# Two ways a concern sneaks in, both caught here:
+#   1. A file living under any `app/**/concerns/` directory.
+#   2. A module that mixes in ActiveSupport::Concern (`include
+#      ActiveSupport::Concern`, or the `extend ActiveSupport::Concern` form).
+#
+# Incremental by design: only files added or modified relative to origin/master
+# are inspected, so this can land without first purging any pre-existing
+# concern. A separate Fizzy card tracks retiring the diff scope and sweeping the
+# whole tree once the backlog (if any) is clear.
+
+require "prism"
+
+ROOT = File.expand_path("..", __dir__)
+
+def changed_ruby_files
+  tracked = `git -C #{ROOT} diff --name-only --diff-filter=AM origin/master`.lines.map(&:strip)
+  untracked = `git -C #{ROOT} ls-files --others --exclude-standard`.lines.map(&:strip)
+  (tracked + untracked)
+    .grep(%r{\A(?:app|lib)/.*\.rb\z})
+    .uniq
+    .map { |relative| File.join(ROOT, relative) }
+    .select { |path| File.exist?(path) }
+end
+
+def in_concerns_dir?(relative)
+  relative.match?(%r{\Aapp/.*/concerns/})
+end
+
+# True when the source mixes in ActiveSupport::Concern in any of its forms:
+#   include ActiveSupport::Concern   /   extend ActiveSupport::Concern
+def uses_activesupport_concern?(source)
+  mixins = []
+  collect_concern_mixins(Prism.parse(source).value, mixins)
+  mixins.any?
+end
+
+def collect_concern_mixins(node, into)
+  return if node.nil?
+
+  if node.is_a?(Prism::CallNode) &&
+     %i[include extend prepend].include?(node.name) &&
+     node.arguments
+    node.arguments.arguments.each do |arg|
+      name = constant_path_name(arg)
+      # Tolerate a leading :: (top-level scope) — ::ActiveSupport::Concern.
+      into << arg if name&.delete_prefix("::") == "ActiveSupport::Concern"
+    end
+  end
+
+  node.compact_child_nodes.each { |child| collect_concern_mixins(child, into) }
+end
+
+# The dotted name of a constant reference argument (ConstantReadNode or
+# ConstantPathNode), so `ActiveSupport::Concern` matches whether written
+# fully-qualified or bare. Uses the node's source slice rather than walking
+# ConstantPathNode#parent/#name — that AST shape differs across Prism versions
+# (CI's Prism raised NoMethodError on #name), whereas #slice is stable.
+def constant_path_name(node)
+  return unless node.is_a?(Prism::ConstantReadNode) || node.is_a?(Prism::ConstantPathNode)
+
+  node.slice
+end
+
+violations = []
+
+changed_ruby_files.each do |path|
+  relative = path.delete_prefix("#{ROOT}/")
+
+  if in_concerns_dir?(relative)
+    violations << [ relative, "lives in an app/**/concerns/ directory" ]
+    next
+  end
+
+  source = File.read(path, encoding: "utf-8")
+  if uses_activesupport_concern?(source)
+    violations << [ relative, "mixes in ActiveSupport::Concern" ]
+  end
+end
+
+if violations.empty?
+  puts "Concerns check: OK (no concerns introduced in changed files)"
+  exit 0
+end
+
+puts "Concerns check: FAIL\n\n"
+puts "This project does not use concerns. The following changed files introduce one:\n\n"
+violations.each { |relative, why| puts "  #{relative}  (#{why})" }
+puts <<~REMEDY
+
+  To resolve: replace the concern with a plain module that classes `include`
+  directly, and move it out of any `concerns/` directory.
+
+    - Delete `include ActiveSupport::Concern`.
+    - Turn an `included do ... end` block into explicit calls in each including
+      class (e.g. put the `belongs_to` / `validates` / `after_*` override back on
+      the class itself), or into a module method the class invokes.
+    - Turn `class_methods do ... end` into a normal nested module the including
+      class `extend`s, or into plain module methods.
+    - Move the file from app/<x>/concerns/ to the matching app/<x>/ location (or
+      lib/) and give the module a name that does not rely on the concerns path.
+
+  Shared behaviour belongs in a plainly-included module so its wiring stays
+  visible at the call site. See CLAUDE.md ("we include modules, we don't use
+  concerns").
+REMEDY
+exit 1
