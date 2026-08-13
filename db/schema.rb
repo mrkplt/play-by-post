@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_09_100000) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_12_130000) do
   create_table "action_mailbox_inbound_emails", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "message_checksum", null: false
@@ -221,15 +221,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_09_100000) do
     t.index ["user_id"], name: "index_posts_on_user_id"
   end
 
-  create_table "rss_tokens", force: :cascade do |t|
-    t.datetime "created_at", null: false
-    t.string "token", null: false
-    t.datetime "updated_at", null: false
-    t.integer "user_id", null: false
-    t.index ["token"], name: "index_rss_tokens_on_token", unique: true
-    t.index ["user_id"], name: "index_rss_tokens_on_user_id", unique: true
-  end
-
   create_table "scene_participants", force: :cascade do |t|
     t.integer "character_id"
     t.datetime "created_at", null: false
@@ -328,7 +319,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_09_100000) do
   add_foreign_key "post_reads", "users"
   add_foreign_key "posts", "scenes"
   add_foreign_key "posts", "users"
-  add_foreign_key "rss_tokens", "users"
   add_foreign_key "scene_participants", "characters"
   add_foreign_key "scene_participants", "scenes"
   add_foreign_key "scene_participants", "users"

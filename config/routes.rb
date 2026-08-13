@@ -27,8 +27,6 @@ Rails.application.routes.draw do
     resource :profile, only: %i[show edit update], controller: "profiles" do
       post :toggle_hide_ooc, on: :collection
       post :export_all, on: :collection
-      post :generate_rss_token, on: :collection
-      delete :revoke_rss_token, on: :collection
     end
     resources :games, only: %i[index new create show edit update destroy] do
       member do
@@ -63,6 +61,7 @@ Rails.application.routes.draw do
         resources :game_members, only: %i[update]
       end
       resource :export, only: %i[create], controller: "game_exports"
+      resources :scene_summaries, only: %i[index]
       resources :game_files, only: %i[index create destroy]
       resources :pages, only: %i[new create show edit update destroy], param: :slug
       resources :game_links, only: %i[index new create edit update destroy]
@@ -80,11 +79,6 @@ Rails.application.routes.draw do
         resources :character_versions, only: %i[show], path: "versions"
       end
     end
-  end
-
-  # Campaign log index and RSS feed — accessible with RSS token (no session required)
-  resources :games, only: [] do
-    resources :scene_summaries, only: %i[index]
   end
 
   root "games#index"

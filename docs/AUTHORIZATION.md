@@ -45,7 +45,7 @@ membership check. Two implementations of one rule that can drift:
 - `player_management_controller.rb:41` (`viewable_by?`)
 - `character_versions_controller.rb:34-39` (inlined membership check)
 - `game_files_controller.rb:59-61` (inlined)
-- `scene_summaries_controller.rb:106-108` (inlined)
+- `scene_summaries_controller.rb:87-89` (inlined)
 - `scenes_controller.rb:124-126` (inlined)
 - `characters_controller.rb:93-95` (inlined)
 
@@ -55,7 +55,7 @@ and alert strings:
 - `games_controller.rb:193` · `scenes_controller.rb:133` ·
   `characters_controller.rb:109` · `scene_participants_controller.rb:81` ·
   `game_members_controller.rb:37` · `invitations_controller.rb:57` ·
-  `scene_summaries_controller.rb:115` · `application_controller.rb:34`
+  `scene_summaries_controller.rb:97` · `application_controller.rb:34`
 
 **"Active member for write"** — `require_active_member!(game)` in
 `ApplicationController`, wrapped by a local `require_active_member_for_write!` in
@@ -81,7 +81,7 @@ Already reused by controllers *and* views — these become policy bodies:
 - `games_controller.rb:200` `permit(:name, :description, :post_edit_window_minutes)`
 - `scenes_controller.rb:207` `permit(:title, :private, :parent_scene_id)`
 - `posts_controller.rb:123` `permit(:content, :is_ooc)`
-- `scene_summaries_controller.rb:153` `permit(:body)`
+- `scene_summaries_controller.rb:122` `permit(:body)`
 
 ### 4. Record-level scopes (already authorized queries)
 

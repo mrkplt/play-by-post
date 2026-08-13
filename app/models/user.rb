@@ -18,7 +18,6 @@ class User < ApplicationRecord
   has_many :posts, dependent: :destroy
   has_many :characters, dependent: :destroy
   has_many :feedback, dependent: :destroy
-  has_one :rss_token, dependent: :destroy
 
   sig { returns(T.nilable(String)) }
   def display_name

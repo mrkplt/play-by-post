@@ -10,9 +10,6 @@
 
   <% frame.with_footer do %>
     <%= render Shared::PageActionsComponent.new do |actions| %>
-      <% actions.with_primary do %>
-        <%= render Ui::ButtonComponent.new(url: game_scene_summaries_path(@game, format: :rss)) do %>RSS Feed<% end %>
-      <% end %>
       <% if @game_presenter.gm? %>
         <% actions.with_cancel do %>
           <%= render Ui::ButtonComponent.new(variant: :secondary, url: edit_game_path(@game)) do %>Edit Game<% end %>

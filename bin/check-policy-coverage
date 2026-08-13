@@ -25,7 +25,6 @@ NON_AUTHORIZABLE = %w[
   GameExportRequest
   NotificationPreference
   PostRead
-  RssToken
   SceneParticipant
   User
 ].freeze
