@@ -29,6 +29,26 @@ RSpec.describe RssController, type: :request do
       expect(response).to have_http_status(:ok)
     end
 
+    it "accepts a lowercase bearer scheme (RFC 7235 case-insensitive)", :db do
+      get "/rss/feed", headers: { "Authorization" => "bearer #{token.token}" }
+      expect(response).to have_http_status(:ok)
+    end
+
+    it "serves each game's own summaries only — a token for game A never leaks game B", :db do
+      other_game = create(:game)
+      create(:game_member, game: other_game, user: player)
+      other_resolved = create(:scene, :resolved, game: other_game, private: false, title: "Elsewhere")
+      create(:scene_summary, scene: other_resolved, body: "A summary from the other game.")
+
+      this_resolved = create(:scene, :resolved, game: game, private: false)
+      create(:scene_summary, scene: this_resolved, body: "A summary from this game.")
+
+      get "/rss/feed", params: { token: token.token }
+
+      expect(response.body).to include("A summary from this game.")
+      expect(response.body).not_to include("A summary from the other game.")
+    end
+
     it "does not include summaries of private scenes", :db do
       private_scene = create(:scene, :resolved, game: game, private: true)
       summary = create(:scene_summary, scene: private_scene)

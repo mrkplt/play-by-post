@@ -54,7 +54,8 @@ class DataApplicationController < ActionController::Base
 
   sig { returns(T.nilable(String)) }
   def bearer_token
-    from_header = request.authorization.to_s[/\ABearer (.+)\z/, 1]
+    # RFC 7235: the auth scheme ("Bearer") is case-insensitive.
+    from_header = request.authorization.to_s[/\ABearer (.+)\z/i, 1]
     from_header || params[:token].presence
   end
 
