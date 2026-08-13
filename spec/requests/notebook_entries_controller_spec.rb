@@ -39,31 +39,39 @@ RSpec.describe NotebookEntriesController, type: :request do
     it "is denied to an active player" do
       sign_in(player)
       get game_notebook_entries_path(game)
-      expect(response).to redirect_to(game_path(game))
+      expect(response).to redirect_to(root_path)
+    end
+
+    # Denial is NotebookEntryPolicy's, surfaced by Pundit's rescue rather than
+    # a controller guard restating the rule — so the flash is the app-wide one.
+    it "denies through the policy, not a controller guard" do
+      sign_in(player)
+      get game_notebook_entries_path(game)
+      expect(flash[:alert]).to eq("You are not authorized to perform this action.")
     end
 
     it "is denied to a removed member" do
       sign_in(removed_player)
       get game_notebook_entries_path(game)
-      expect(response).to redirect_to(game_path(game))
+      expect(response).to redirect_to(root_path)
     end
 
     it "is denied to a banned member" do
       sign_in(banned_player)
       get game_notebook_entries_path(game)
-      expect(response).to redirect_to(game_path(game))
+      expect(response).to redirect_to(root_path)
     end
 
     it "is denied to a non-member" do
       sign_in(outsider)
       get game_notebook_entries_path(game)
-      expect(response).to redirect_to(game_path(game))
+      expect(response).to redirect_to(root_path)
     end
 
     it "is denied to the GM of a different game" do
       sign_in(other_gm)
       get game_notebook_entries_path(game)
-      expect(response).to redirect_to(game_path(game))
+      expect(response).to redirect_to(root_path)
     end
 
     it "redirects an unauthenticated visitor" do
@@ -82,7 +90,7 @@ RSpec.describe NotebookEntriesController, type: :request do
     it "is denied to an active player" do
       sign_in(player)
       get new_game_notebook_entry_path(game)
-      expect(response).to redirect_to(game_path(game))
+      expect(response).to redirect_to(root_path)
     end
 
     it "renders the universal header nav affordances" do
@@ -160,7 +168,7 @@ RSpec.describe NotebookEntriesController, type: :request do
     it "denies the edit screen to a player" do
       sign_in(player)
       get edit_game_notebook_entry_path(game, entry)
-      expect(response).to redirect_to(game_path(game))
+      expect(response).to redirect_to(root_path)
     end
 
     it "keeps the slug stable across an update" do
@@ -337,7 +345,7 @@ RSpec.describe NotebookEntriesController, type: :request do
       expect {
         post promote_game_notebook_entry_path(game, entry)
       }.not_to change(Page, :count)
-      expect(response).to redirect_to(game_path(game))
+      expect(response).to redirect_to(root_path)
     end
   end
 

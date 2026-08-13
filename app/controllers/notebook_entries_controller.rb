@@ -4,11 +4,16 @@
 # done / discard) that can be "promoted" into a full game Page. Unlike
 # PagesController, every action here is GM-only — there is no read path for
 # other members.
+#
+# Access control is NotebookEntryPolicy's alone: every action authorizes, so
+# there is no `require_gm!` guard restating the same rule here. Actions that
+# are not CRUD name the capability they need (`manage?`) rather than borrowing
+# `update?`, which asks whether the row may be modified — a different question
+# that merely has the same answer while GM and owner are the same person.
 class NotebookEntriesController < ApplicationController
   extend T::Sig
 
   before_action :set_game
-  before_action :require_gm!
   before_action :set_notebook_entry, only: %i[edit update destroy move promote]
   after_action :verify_authorized
 
@@ -64,7 +69,7 @@ class NotebookEntriesController < ApplicationController
 
   sig { void }
   def move
-    authorize @notebook_entry, :update?
+    authorize @notebook_entry, :manage?
 
     @notebook_entry.update!(move_params)
 
@@ -83,7 +88,7 @@ class NotebookEntriesController < ApplicationController
 
   sig { void }
   def promote
-    authorize @notebook_entry, :update?
+    authorize @notebook_entry, :manage?
 
     unless @notebook_entry.promoted?
       page = @game.pages.create!(title: @notebook_entry.title, body: @notebook_entry.body)
@@ -103,13 +108,6 @@ class NotebookEntriesController < ApplicationController
   sig { void }
   def set_notebook_entry
     @notebook_entry = @game.notebook_entries.find_by!(slug: params[:slug])
-  end
-
-  sig { void }
-  def require_gm!
-    unless policy(@game).update?
-      redirect_to game_path(@game), alert: "Only the GM can access the notebook."
-    end
   end
 
   sig { params(game: Game).returns(T::Array[NotebookEntry]) }
