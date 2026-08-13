@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_12_130000) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_12_140000) do
   create_table "action_mailbox_inbound_emails", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "message_checksum", null: false
@@ -56,6 +56,17 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_12_130000) do
     t.integer "output_tokens"
     t.index ["created_at"], name: "index_ai_usages_on_created_at"
     t.index ["feature"], name: "index_ai_usages_on_feature"
+  end
+
+  create_table "api_tokens", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.integer "game_id", null: false
+    t.string "scope", default: "rss", null: false
+    t.string "token", null: false
+    t.datetime "updated_at", null: false
+    t.integer "user_id", null: false
+    t.index ["token"], name: "index_api_tokens_on_token", unique: true
+    t.index ["user_id", "scope", "game_id"], name: "index_api_tokens_on_user_id_and_scope_and_game_id", unique: true
   end
 
   create_table "character_versions", force: :cascade do |t|
@@ -297,6 +308,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_12_130000) do
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "api_tokens", "games"
+  add_foreign_key "api_tokens", "users"
   add_foreign_key "character_versions", "characters"
   add_foreign_key "character_versions", "users", column: "edited_by_id"
   add_foreign_key "characters", "games"

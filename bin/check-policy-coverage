@@ -22,6 +22,7 @@ NOT_A_MODEL = %w[application_record.rb current.rb].freeze
 # entity (User — created via invitations/sessions, never a managed resource).
 NON_AUTHORIZABLE = %w[
   AiUsage
+  ApiToken
   GameExportRequest
   NotificationPreference
   PostRead

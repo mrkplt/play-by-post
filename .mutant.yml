@@ -18,6 +18,7 @@ matcher:
   subjects:
     # Models
     - AiUsage
+    - ApiToken
     - Game
     - SceneSummary
     - GameExportRequest
