@@ -22,14 +22,23 @@ class CharacterPolicy < ApplicationPolicy
     write_member? && editable?
   end
 
+  # Archiving/restoring a character is a roster-management action. archive?
+  # and restore? both delegate to it, so when the rule granularizes (e.g. GM
+  # status splitting from a delegated roster manager) this is the one line
+  # that changes.
   sig { returns(T::Boolean) }
-  def archive?
+  def manage_roster?
     gm?
   end
 
   sig { returns(T::Boolean) }
+  def archive?
+    manage_roster?
+  end
+
+  sig { returns(T::Boolean) }
   def restore?
-    gm?
+    manage_roster?
   end
 
   # The hidden-sheet gate on its own — a hidden sheet is visible only to its
