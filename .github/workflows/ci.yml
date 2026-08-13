@@ -282,6 +282,25 @@ jobs:
       - name: Ratchet ActiveRecord callbacks
         run: bin/ci-run bin/check-callbacks
 
+  reek:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: .ruby-version
+          # reek is not a default gem, so this job needs the bundle installed
+          # (unlike the Prism-based guards, which run on the interpreter's gems).
+          bundler-cache: true
+
+      - name: Ratchet reek code smells
+        run: bin/ci-run bin/check-reek
+
   test:
     runs-on: ubuntu-latest
 

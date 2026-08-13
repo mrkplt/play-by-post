@@ -86,6 +86,7 @@ group :development, :test do
   gem "rspec-rails"
   gem "factory_bot_rails"
   gem "mutant-rspec", require: false
+  gem "reek", require: false
 end
 
 group :development do

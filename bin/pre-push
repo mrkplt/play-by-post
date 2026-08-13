@@ -59,6 +59,9 @@ bin/check-ivar-hygiene || exit 1
 echo "==> Callback ratchet (migrating off ActiveRecord callbacks)"
 bin/check-callbacks || exit 1
 
+echo "==> Reek smell ratchet (changed Ruby files may not add smells)"
+bin/check-reek || exit 1
+
 echo "==> JS security scan (importmap audit)"
 bin/importmap audit || exit 1
 
