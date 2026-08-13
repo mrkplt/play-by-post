@@ -28,7 +28,7 @@ RSpec.describe CoolifyDeployJob, type: :job do
   end
 
   describe "#perform" do
-    it "sends an authorized GET to the Coolify deploy URL host" do
+    it "sends an authorized POST to the Coolify deploy URL host" do
       captured = stub_http_response(Net::HTTPSuccess.new("1.1", "200", "OK"))
 
       described_class.new.perform
@@ -36,6 +36,7 @@ RSpec.describe CoolifyDeployJob, type: :job do
       expect(captured[:hostname]).to eq("coolify.internal")
       expect(captured[:port]).to eq(8000)
       expect(captured[:use_ssl]).to be(false)
+      expect(captured[:request]).to be_a(Net::HTTP::Post)
       expect(captured[:request]["Authorization"]).to eq("Bearer #{token}")
       expect(captured[:request].path).to eq("/api/v1/deploy?uuid=abc123")
     end

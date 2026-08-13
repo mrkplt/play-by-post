@@ -141,7 +141,7 @@ Stored in `config/credentials/production.yml.enc`. Edit with
 | `resend_inbound_domain` | `app/mailers/notification_mailer.rb:55` | Optional — falls back to `APP_HOST` |
 | `glitchtip.dsn` | `config/initializers/sentry.rb:6` | Optional — DSN for the self-hosted GlitchTip instance; falls back to `GLITCHTIP_DSN` env var; error reporting is disabled entirely if both are unset |
 | `deploy_webhook_secret` | `app/controllers/webhooks/deploy_controller.rb` | Optional — shared bearer secret GitHub Actions sends to `POST /webhooks/deploy`; must equal the `DEPLOY_WEBHOOK_SECRET` GitHub Actions secret. If unset, the deploy relay rejects all callers |
-| `coolify.deploy_url` | `app/jobs/coolify_deploy_job.rb` | Optional — Coolify's per-app deploy URL (`http://<internal-host>:<port>/api/v1/deploy?uuid=<app-uuid>`), reachable over the internal network. Required for auto-deploy |
+| `coolify.deploy_url` | `app/jobs/coolify_deploy_job.rb` | Optional — Coolify's per-app deploy URL (`http://<internal-host>:<port>/api/v1/deploy?uuid=<app-uuid>`), reachable over the internal network; the job sends an authorized `POST`. Required for auto-deploy |
 | `coolify.token` | `app/jobs/coolify_deploy_job.rb` | Optional — Coolify API token sent as `Authorization: Bearer`. Required for auto-deploy |
 | `fizzy.api_url` | `app/services/fizzy_sweep_service.rb` | Optional — base URL of the personal Fizzy instance (e.g. `https://fizzy.example.com`). Required for the hourly feedback sweep |
 | `fizzy.access_token` | `app/services/fizzy_sweep_service.rb` | Optional — Fizzy personal access token with write permission, sent as `Authorization: Bearer`. Required for the feedback sweep |
