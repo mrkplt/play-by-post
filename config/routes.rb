@@ -27,6 +27,7 @@ Rails.application.routes.draw do
     resource :profile, only: %i[show edit update], controller: "profiles" do
       post :toggle_hide_ooc, on: :collection
       post :export_all, on: :collection
+      resources :api_tokens, only: %i[create destroy], module: :profiles
     end
     resources :games, only: %i[index new create show edit update destroy] do
       member do
@@ -80,6 +81,10 @@ Rails.application.routes.draw do
       end
     end
   end
+
+  # Machine-auth surface (bearer ApiToken, no session). The token carries the
+  # game, so no :game_id in the path.
+  get "/rss/feed", to: "rss#feed", defaults: { format: :rss }
 
   root "games#index"
 end

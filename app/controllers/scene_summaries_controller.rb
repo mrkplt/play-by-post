@@ -13,7 +13,7 @@ class SceneSummariesController < ApplicationController
 
   sig { void }
   def index
-    @pagy, @summaries = pagy(scene_summaries_for_game, limit: 20)
+    @pagy, @summaries = pagy(SceneSummary.public_for_game(@game), limit: 20)
     @game_presenter = GamePresenter.new(@game, current_user)
   end
 
@@ -105,16 +105,6 @@ class SceneSummariesController < ApplicationController
     return if @scene.resolved?
 
     redirect_to game_scene_path(@game, @scene), alert: "Summaries are only available for resolved scenes."
-  end
-
-  sig { returns(ActiveRecord::Relation) }
-  def scene_summaries_for_game
-    SceneSummary
-      .joins(scene: :game)
-      .where(scenes: { game_id: @game.id, private: false })
-      .where.not(scenes: { resolved_at: nil })
-      .includes(:scene)
-      .order("scenes.resolved_at DESC")
   end
 
   sig { returns(ActionController::Parameters) }

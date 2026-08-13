@@ -336,6 +336,36 @@ The richest surface: record scope (`visible_to`), action predicates
 | `scene_summaries` | inlined access + `require_gm!` | `SceneSummaryPolicy` |
 | `character_versions` | inlined access | `CharacterVersionPolicy` / `CharacterPolicy#show?` |
 | `profiles` | none (implicitly `current_user`-scoped) | `UserProfilePolicy` — owner rule, **no skip** |
+| `profiles/api_tokens` | membership guard (`current_user.games`, non-banned) | `UserProfilePolicy#manage?` (owner) |
+| `rss` (machine-auth) | bearer token → `ApiTokenPolicy#feed?` | `ApiTokenPolicy` (scope + active membership) |
+
+---
+
+## Machine-auth surface (bearer tokens, no session)
+
+A second authorization root sits beside `ApplicationController`:
+**`DataApplicationController`**. It authenticates by a bearer `ApiToken`
+(`?token=` param or `Authorization: Bearer …`), never touches Warden and never
+sets a session cookie, and runs Pundit with `pundit_user = current_data_user`
+(the token's own user). This keeps machine auth and session auth from ever
+sharing state — a token can't ride a logged-in session, and a session can't
+satisfy a token endpoint.
+
+- **Authentication** is the base controller's job: a missing/unknown token is a
+  flat `401` before any action runs.
+- **Authorization** is per-action, exactly like the session surface: every
+  action calls `authorize`. `RssController#feed` calls `authorize token,
+  :feed?`, and `ApiTokenPolicy#feed?` answers a single question — the token is
+  `scope: "rss"` **and** its user is currently an active member of the token's
+  game (delegating the membership half to `GamePolicy#feed?`). The re-check runs
+  every request, so a revoked/removed member's feed dies immediately even while
+  the token row still exists. There is **no `skip_authorization`** on the served
+  or the denied path — a wrong-scope or non-member token is a policy denial
+  (`403`), not a skipped check.
+- Token **management** (mint/revoke) is a *session* controller,
+  `Profiles::ApiTokensController`, kept separate from `ProfilesController` so the
+  API's token administration can grow without bloating it. It guards that the
+  current user is a non-banned member of the target game before minting.
 
 ---
 

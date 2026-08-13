@@ -361,6 +361,20 @@ class User
   end
 
   module GeneratedAssociationMethods
+    sig { returns(T::Array[T.untyped]) }
+    def api_token_ids; end
+
+    sig { params(ids: T::Array[T.untyped]).returns(T::Array[T.untyped]) }
+    def api_token_ids=(ids); end
+
+    # This method is created by ActiveRecord on the `User` class because it declared `has_many :api_tokens`.
+    # 🔗 [Rails guide for `has_many` association](https://guides.rubyonrails.org/association_basics.html#the-has-many-association)
+    sig { returns(::ApiToken::PrivateCollectionProxy) }
+    def api_tokens; end
+
+    sig { params(value: T::Enumerable[::ApiToken]).void }
+    def api_tokens=(value); end
+
     sig { params(args: T.untyped, blk: T.untyped).returns(::UserProfile) }
     def build_user_profile(*args, &blk); end
 

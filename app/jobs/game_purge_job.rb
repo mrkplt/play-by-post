@@ -76,6 +76,7 @@ class GamePurgeJob < ApplicationJob
       Invitation.where(game_id: game.id).in_batches.delete_all
       GameMember.where(game_id: game.id).in_batches.delete_all
       GameExportRequest.where(game_id: game.id).in_batches.delete_all
+      ApiToken.where(game_id: game.id).in_batches.delete_all
       game.delete
     end
   end

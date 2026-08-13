@@ -30,6 +30,7 @@ APP_DIRS = %w[
 BASE_FILENAMES = %w[
   application_component.rb
   application_controller.rb
+  data_application_controller.rb
   application_job.rb
   application_mailer.rb
   application_mailbox.rb
