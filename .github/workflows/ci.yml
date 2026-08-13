@@ -218,6 +218,54 @@ jobs:
       - name: Check stateless services are modules
         run: bin/ci-run bin/check-service-modules
 
+  concerns:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: .ruby-version
+
+      - name: Check no concerns are introduced
+        run: bin/ci-run bin/check-concerns
+
+  file_length:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: .ruby-version
+
+      - name: Ratchet Ruby file length
+        run: bin/ci-run bin/check-file-length
+
+  ivar_hygiene:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: .ruby-version
+
+      - name: Ratchet instance-variable hygiene
+        run: bin/ci-run bin/check-ivar-hygiene
+
   test:
     runs-on: ubuntu-latest
 

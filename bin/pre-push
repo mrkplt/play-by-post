@@ -47,6 +47,15 @@ bin/check-authorization || exit 1
 echo "==> Controller instance-variable ratchet"
 bin/check-controller-ivars || exit 1
 
+echo "==> Concerns guard (no ActiveSupport::Concern / concerns dirs)"
+bin/check-concerns || exit 1
+
+echo "==> File-length ratchet (Ruby files <= 100 code lines)"
+bin/check-file-length || exit 1
+
+echo "==> Ivar-hygiene ratchet (initialize-only writes, read through accessors)"
+bin/check-ivar-hygiene || exit 1
+
 echo "==> JS security scan (importmap audit)"
 bin/importmap audit || exit 1
 

@@ -1,0 +1,221 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Ratchets instance-variable hygiene toward: initializers assign ivars, methods
+# read through accessors, and no accessor is declared that nobody uses.
+#
+# Three violation kinds are counted per file, and this is a PROGRESSIVE ratchet:
+# a changed file may not INCREASE its total violation count vs origin/master.
+# Pre-existing violations are grandfathered (the number can only go down); a new
+# file must land at zero. A separate Fizzy card tracks retiring the ratchet and
+# enforcing zero everywhere.
+#
+#   V1  ivar WRITE outside #initialize.
+#       An initializer sets up state; other methods should not reassign ivars.
+#       `@x ||= ...` (idiomatic lazy memoization) is exempt — it is a one-time
+#       initialization, not mutation of established state.
+#
+#   V2  ivar READ in a method when a matching attr_reader/attr_accessor exists.
+#       If the class declares `attr_reader :x`, methods must call `x`, not `@x`.
+#       Reading `@x` where the reader exists bypasses the seam for no reason.
+#
+#   V3  attr_reader/attr_writer/attr_accessor declared but never USED — not in
+#       the class's own Ruby methods and not in the paired ViewComponent ERB
+#       template (checked by a text scan of the sibling .html.erb). An accessor
+#       nothing calls is dead surface area; delete it (and, if it was the only
+#       reader for an ivar only set in initialize, keep the ivar).
+#
+# Only .rb files under app/ and lib/ that changed vs origin/master are inspected.
+# ERB is not Ruby-parsed here; it is only text-scanned to keep V3 from flagging a
+# reader that a template uses.
+
+require "prism"
+
+ROOT = File.expand_path("..", __dir__)
+
+IVAR_WRITE_NODES = [
+  Prism::InstanceVariableWriteNode,
+  Prism::InstanceVariableOperatorWriteNode,
+  Prism::InstanceVariableAndWriteNode,
+  Prism::InstanceVariableTargetNode, # multiple-assignment target: @a, @b = ...
+].freeze
+# NB: InstanceVariableOrWriteNode (`@x ||= ...`) is deliberately absent — it is
+# exempt memoization, treated as lazy initialization rather than mutation.
+
+def each_def(node, &block)
+  return if node.nil?
+  block.call(node) if node.is_a?(Prism::DefNode)
+  node.compact_child_nodes.each { |child| each_def(child, &block) }
+end
+
+# Prism reports ivar node names with the leading `@` (e.g. :@notice); accessor
+# declarations use the bare symbol (:notice). Normalize to the bare form so the
+# two compare.
+def bare_ivar(name)
+  name.to_s.delete_prefix("@").to_sym
+end
+
+def ivar_writes(node, into)
+  return if node.nil?
+  into << bare_ivar(node.name) if IVAR_WRITE_NODES.any? { |klass| node.is_a?(klass) }
+  node.compact_child_nodes.each { |child| ivar_writes(child, into) }
+end
+
+def ivar_reads(node, into)
+  return if node.nil?
+  into << bare_ivar(node.name) if node.is_a?(Prism::InstanceVariableReadNode)
+  node.compact_child_nodes.each { |child| ivar_reads(child, into) }
+end
+
+# attr_reader/attr_writer/attr_accessor declarations -> { name => [:reader, ...] }
+# recording which access methods each ivar name got.
+def declared_accessors(root)
+  accessors = Hash.new { |hash, key| hash[key] = [] }
+  walk_accessor_calls(root) do |kind, names|
+    names.each { |name| accessors[name] << kind }
+  end
+  accessors
+end
+
+def walk_accessor_calls(node, &block)
+  return if node.nil?
+  if node.is_a?(Prism::CallNode) && node.receiver.nil? &&
+     %i[attr_reader attr_writer attr_accessor].include?(node.name) && node.arguments
+    names = node.arguments.arguments.filter_map do |arg|
+      arg.is_a?(Prism::SymbolNode) ? arg.unescaped.to_sym : nil
+    end
+    block.call(node.name, names)
+  end
+  node.compact_child_nodes.each { |child| walk_accessor_calls(child, &block) }
+end
+
+# Method names invoked with no explicit receiver anywhere in the file — used to
+# tell whether a declared reader/writer is called from the class's own methods.
+def bare_method_calls(node, into)
+  return if node.nil?
+  into << node.name if node.is_a?(Prism::CallNode) && node.receiver.nil?
+  node.compact_child_nodes.each { |child| bare_method_calls(child, into) }
+end
+
+# Names referenced in the paired ViewComponent template (app/.../x_component.rb
+# -> app/.../x_component.html.erb). Plain word scan: enough to see that a reader
+# is used from the template without parsing ERB.
+def template_words(rb_path)
+  erb_path = rb_path.sub(/\.rb\z/, ".html.erb")
+  return [] unless File.exist?(erb_path)
+  File.read(erb_path, encoding: "utf-8").scan(/[a-z_][a-z0-9_]*[?!]?/i)
+end
+
+def accessor_method_names(name, kinds)
+  names = []
+  names << name if kinds.include?(:attr_reader) || kinds.include?(:attr_accessor)
+  names << :"#{name}=" if kinds.include?(:attr_writer) || kinds.include?(:attr_accessor)
+  names
+end
+
+# Returns the violation lines for one Ruby source file.
+def violations_for(source, rb_path)
+  root = Prism.parse(source).value
+  accessors = declared_accessors(root)
+  reader_names = accessors.select { |_, kinds| kinds.include?(:attr_reader) || kinds.include?(:attr_accessor) }.keys
+  calls = [].tap { |into| bare_method_calls(root, into) }
+  words = template_words(rb_path)
+
+  found = []
+  ivars_read_directly = []
+
+  each_def(root) do |defn|
+    method_name = defn.name
+
+    writes = [].tap { |into| ivar_writes(defn, into) }.uniq
+    unless method_name == :initialize
+      writes.each { |name| found << "V1 writes @#{name} in ##{method_name} (assign ivars in #initialize only)" }
+    end
+
+    reads = [].tap { |into| ivar_reads(defn, into) }.uniq
+    ivars_read_directly.concat(reads)
+    reads.each do |name|
+      if reader_names.include?(name)
+        found << "V2 reads @#{name} in ##{method_name} though attr_reader :#{name} exists (use the reader: `#{name}`)"
+      end
+    end
+  end
+
+  accessors.each do |name, kinds|
+    methods = accessor_method_names(name, kinds)
+    used = methods.any? { |m| calls.include?(m) || words.include?(m.to_s.delete_suffix("=")) }
+    # Don't call an accessor "unused" (V3) when the code reads @name directly:
+    # that is the V2 case (the ivar IS wanted through the reader), and the fix is
+    # to route through the accessor, not to delete it. Flagging both is
+    # contradictory advice for the same declaration.
+    next if used || ivars_read_directly.include?(name)
+
+    decl = kinds.uniq.first
+    found << "V3 #{decl} :#{name} is declared but never used (in a method or the template); remove it"
+  end
+
+  found
+end
+
+def changed_ruby_files
+  tracked = `git -C #{ROOT} diff --name-only --diff-filter=AM origin/master`.lines.map(&:strip)
+  untracked = `git -C #{ROOT} ls-files --others --exclude-standard`.lines.map(&:strip)
+  (tracked + untracked)
+    .grep(%r{\A(?:app|lib)/.*\.rb\z})
+    .uniq
+    .map { |relative| File.join(ROOT, relative) }
+    .select { |path| File.exist?(path) }
+end
+
+failures = []
+reported = false
+
+changed_ruby_files.each do |path|
+  relative = path.delete_prefix("#{ROOT}/")
+  new_violations = violations_for(File.read(path, encoding: "utf-8"), path)
+
+  old_source = `git -C #{ROOT} show origin/master:#{relative} 2>/dev/null`.force_encoding("utf-8")
+  old_count =
+    if old_source.strip.empty?
+      0
+    else
+      violations_for(old_source, path).length
+    end
+
+  new_count = new_violations.length
+  delta = new_count - old_count
+  next if new_count.zero? && old_count.zero?
+
+  reported = true
+  status = delta > 0 ? "FAIL" : "OK"
+  puts "  [#{status}] #{relative}: #{old_count} -> #{new_count} ivar-hygiene violation(s) (#{delta >= 0 ? '+' : ''}#{delta})"
+
+  if delta > 0
+    failures << [ relative, new_violations ]
+  end
+end
+
+if !reported
+  puts "Ivar-hygiene check: OK (no changed Ruby files with violations)"
+  exit 0
+elsif failures.empty?
+  puts "\nIvar-hygiene check: OK (no file increased its ivar-hygiene violation count)"
+  exit 0
+else
+  puts "\nIvar-hygiene check: FAIL\n\n"
+  failures.each do |relative, list|
+    puts "  #{relative}:"
+    list.each { |line| puts "    - #{line}" }
+    puts
+  end
+  puts <<~REMEDY
+    A changed file increased its ivar-hygiene violation count. Resolve by:
+      V1  Move the assignment into #initialize (or, if it is lazy setup, use the
+          `@x ||= ...` memoization form, which is exempt).
+      V2  Declare/keep `attr_reader :x` and call `x` in the method instead of `@x`.
+      V3  Delete the unused accessor declaration.
+    Grandfathered violations may remain; you only need to not add new ones. Bring
+    the file's count back to at most its origin/master value.
+  REMEDY
+  exit 1
+end
