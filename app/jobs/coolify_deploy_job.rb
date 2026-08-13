@@ -32,7 +32,7 @@ class CoolifyDeployJob < ApplicationJob
     raise ConfigurationError, "coolify.token is not configured" if token.blank?
 
     uri = URI.parse(url)
-    request = Net::HTTP::Get.new(uri)
+    request = Net::HTTP::Post.new(uri)
     request["Authorization"] = "Bearer #{token}"
 
     response = Net::HTTP.start(uri.hostname, uri.port, use_ssl: uri.scheme == "https") do |http|
