@@ -19,7 +19,6 @@ matcher:
     # Models
     - AiUsage
     - Game
-    - RssToken
     - SceneSummary
     - GameExportRequest
     - GameMember
@@ -47,7 +46,6 @@ matcher:
     - UserPresenter
     # Components
     - Shared::AiSummariesToggleComponent
-    - Shared::RssTokenComponent
     - Shared::ProfileFormComponent
     - Shared::SceneSummaryComponent
     - Shared::SceneSummaryEntryComponent

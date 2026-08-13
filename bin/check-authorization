@@ -25,7 +25,6 @@ CONTROLLERS = Dir.glob("#{ROOT}/app/controllers/**/*.rb").sort
 ALLOWED_SKIPS = {
   "invitations_controller.rb" => "accept is public (token-gated, no current_user)",
   "posts_controller.rb"       => "draft plumbing gated by participant/write checks; a draft is always the user's own",
-  "scene_summaries_controller.rb" => "index is a public / RSS listing with its own access rules",
 }.freeze
 
 missing_net = []

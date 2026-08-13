@@ -4,8 +4,8 @@
 class SceneSummaryPolicy < ApplicationPolicy
   extend T::Sig
 
-  # Only the GM writes, edits, or deletes a scene summary. The index (public /
-  # RSS) has its own access rules and is authorized at the controller.
+  # Only the GM writes, edits, or deletes a scene summary. The index (a
+  # members-only listing) is gated by require_game_access! at the controller.
   # new? => create?, edit? => update? via base.
   sig { returns(T::Boolean) }
   def create?

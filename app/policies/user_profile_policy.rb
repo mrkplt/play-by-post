@@ -17,7 +17,7 @@ class UserProfilePolicy < ApplicationPolicy
     owner?
   end
 
-  # RSS tokens, hide-OOC, and personal exports all act on the owner's own data.
+  # Hide-OOC and personal exports both act on the owner's own data.
   sig { returns(T::Boolean) }
   def manage?
     owner?

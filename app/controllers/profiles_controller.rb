@@ -41,21 +41,6 @@ class ProfilesController < ApplicationController
   end
 
   sig { void }
-  def generate_rss_token
-    authorize @profile, :manage?
-    current_user.rss_token&.destroy
-    current_user.create_rss_token!
-    redirect_to profile_path, notice: "RSS token generated."
-  end
-
-  sig { void }
-  def revoke_rss_token
-    authorize @profile, :manage?
-    current_user.rss_token&.destroy
-    redirect_to profile_path, notice: "RSS token revoked."
-  end
-
-  sig { void }
   def export_all
     authorize @profile, :manage?
     receipt = GameExportRequest.valid_receipt_for(current_user, nil)
