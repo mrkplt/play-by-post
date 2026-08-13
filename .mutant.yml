@@ -131,6 +131,7 @@ matcher:
     - GameExportService
     - MarkdownRenderer
     - NotebookEntryPromotion
+    - NotebookLaneMove
     - SceneSummaryService
     - FizzySweepService
     # Controllers
