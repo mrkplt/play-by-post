@@ -62,6 +62,9 @@ bin/check-callbacks || exit 1
 echo "==> Reek smell ratchet (changed Ruby files may not add smells)"
 bin/check-reek || exit 1
 
+echo "==> Request-spec coverage (every controller has an integration spec)"
+bin/check-request-spec-coverage || exit 1
+
 echo "==> JS security scan (importmap audit)"
 bin/importmap audit || exit 1
 

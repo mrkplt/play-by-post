@@ -301,6 +301,22 @@ jobs:
       - name: Ratchet reek code smells
         run: bin/ci-run bin/check-reek
 
+  request_spec_coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: .ruby-version
+
+      - name: Check every controller has an integration/request spec
+        run: bin/ci-run bin/check-request-spec-coverage
+
   test:
     runs-on: ubuntu-latest
 
