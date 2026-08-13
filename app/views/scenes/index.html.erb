@@ -5,10 +5,10 @@
     <%= render Shared::HeaderComponent.new(
           title: "All Scenes",
           breadcrumbs: Shared::BreadcrumbsComponent.new(game: @game),
-          secondary_nav: Shared::GameNavComponent.new(game: @game, active_tab: :scenes, can_manage: @game_presenter.gm?, mode: :link)) %>
+          secondary_nav: Shared::GameNavComponent.new(game: @game, active_tab: :scenes, can_manage: @game_presenter.can_manage?, mode: :link)) %>
   <% end %>
 
-  <% if @game_presenter.gm? %>
+  <% if @game_presenter.can_manage? %>
     <% frame.with_footer do %>
       <%= render Shared::PageActionsComponent.new do |actions| %>
         <% actions.with_primary do %>

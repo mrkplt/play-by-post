@@ -52,17 +52,19 @@ class GamePolicy < ApplicationPolicy
     gm?
   end
 
-  # The player-management screen is visible to any game member; GM-only sections
-  # within it are gated separately in the view.
+  # The player-management screen is visible to any game member; the sections
+  # within it that administer the roster are gated separately in the view.
+  # Built on view?, not viewable? — a capability composes from the capability
+  # below it, so the private role check has exactly one caller.
   sig { returns(T::Boolean) }
   def manage_players?
-    viewable?
+    view?
   end
 
   # Requesting an export requires being able to see the game.
   sig { returns(T::Boolean) }
   def export?
-    viewable?
+    view?
   end
 
   # Write access to the game: the GM or an active member (mirrors the write

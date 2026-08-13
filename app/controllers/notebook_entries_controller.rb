@@ -14,6 +14,9 @@ class NotebookEntriesController < ApplicationController
   extend T::Sig
 
   before_action :set_game
+  # create and update re-render :new/:edit on validation failure, so they need
+  # the presenter too.
+  before_action :set_game_presenter, only: %i[index new create edit update]
   before_action :set_notebook_entry, only: %i[edit update destroy move promote]
   after_action :verify_authorized
 
@@ -108,6 +111,15 @@ class NotebookEntriesController < ApplicationController
   sig { void }
   def set_notebook_entry
     @notebook_entry = @game.notebook_entries.find_by!(slug: params[:slug])
+  end
+
+  # The notebook's screens render the game nav, which asks whether the viewer
+  # may administer the game. Every action here is already GM-only, so the answer
+  # is always true today — but the view asks the policy for it rather than
+  # hard-coding a literal, so it stays correct when the rule granularizes.
+  sig { void }
+  def set_game_presenter
+    @game_presenter = GamePresenter.new(@game, T.must(current_user))
   end
 
   sig { params(game: Game).returns(T::Array[NotebookEntry]) }
