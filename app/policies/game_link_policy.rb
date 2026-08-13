@@ -12,19 +12,27 @@ class GameLinkPolicy < ApplicationPolicy
     viewable?
   end
 
+  # May add, edit, or remove this game's links. Currently answered by "is the
+  # GM" (gm? is the private implementation); every write predicate below
+  # delegates to it so a rule change is a one-line edit.
+  sig { returns(T::Boolean) }
+  def manage?
+    gm?
+  end
+
   sig { returns(T::Boolean) }
   def create?
-    gm?
+    manage?
   end
 
   sig { returns(T::Boolean) }
   def update?
-    gm?
+    manage?
   end
 
   sig { returns(T::Boolean) }
   def destroy?
-    gm?
+    manage?
   end
 
   private

@@ -122,7 +122,8 @@ RSpec.describe SceneSummariesController, type: :request do
     it "redirects a player" do
       sign_in(player)
       get new_game_scene_scene_summary_path(game, resolved_scene)
-      expect(response).to redirect_to(game_path(game))
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to eq("You are not authorized to perform this action.")
     end
 
     it "redirects GM on an unresolved scene" do
@@ -166,7 +167,8 @@ RSpec.describe SceneSummariesController, type: :request do
       sign_in(player)
       post game_scene_scene_summary_path(game, resolved_scene),
            params: { scene_summary: { body: "Summary text." } }
-      expect(response).to redirect_to(game_path(game))
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to eq("You are not authorized to perform this action.")
     end
 
     it "renders new on invalid params" do
@@ -229,15 +231,6 @@ RSpec.describe SceneSummariesController, type: :request do
     end
   end
 
-  describe "require_gm! guard" do
-    it "redirects a player with alert" do
-      sign_in(player)
-      get new_game_scene_scene_summary_path(game, resolved_scene)
-      expect(response).to redirect_to(game_path(game))
-      expect(flash[:alert]).to be_present
-    end
-  end
-
   describe "require_game_access! guard" do
     it "redirects a non-member to root with alert" do
       outsider = create(:user, :with_profile)
@@ -282,7 +275,8 @@ RSpec.describe SceneSummariesController, type: :request do
       sign_in(player)
       patch game_scene_scene_summary_path(game, resolved_scene),
             params: { scene_summary: { body: "Edited." } }
-      expect(response).to redirect_to(game_path(game))
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to eq("You are not authorized to perform this action.")
     end
 
     it "renders edit with 422 on validation failure" do
@@ -310,7 +304,8 @@ RSpec.describe SceneSummariesController, type: :request do
     it "rejects a player" do
       sign_in(player)
       delete game_scene_scene_summary_path(game, resolved_scene)
-      expect(response).to redirect_to(game_path(game))
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to eq("You are not authorized to perform this action.")
     end
   end
 end

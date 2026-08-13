@@ -6,7 +6,6 @@ class InvitationsController < ApplicationController
   skip_before_action :authenticate_user!, only: %i[accept]
 
   before_action :set_game, except: %i[accept]
-  before_action :require_gm!, except: %i[accept]
   after_action :verify_authorized, except: %i[accept]
 
   sig { void }
@@ -61,12 +60,5 @@ class InvitationsController < ApplicationController
   sig { void }
   def set_game
     @game = Game.find(params[:game_id])
-  end
-
-  sig { void }
-  def require_gm!
-    unless policy(@game).update?
-      redirect_to game_path(@game), alert: "Only the GM can manage invitations."
-    end
   end
 end
