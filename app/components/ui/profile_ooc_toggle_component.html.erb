@@ -1,0 +1,11 @@
+<div data-controller="ooc-filter"
+     data-ooc-filter-hide-ooc-value="<%= hide_ooc? %>"
+     data-ooc-filter-toggle-url-value="<%= toggle_url %>">
+  <button type="button" data-action="click->ooc-filter#toggle" data-ooc-filter-target="button"
+          class="bg-transparent border-0 p-0 cursor-pointer"
+          aria-label="<%= aria_label %>">
+    <span data-ooc-filter-target="switch">
+      <%= render Ui::ToggleSwitchComponent.new(on: hide_ooc?) %>
+    </span>
+  </button>
+</div>
