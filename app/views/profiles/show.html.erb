@@ -17,10 +17,17 @@
     <%= render Ui::SettingsRowComponent.new(label: "Email", sub: current_user.email) do %>
     <% end %>
     <%= render Ui::SettingsRowComponent.new(label: "Hide OOC by default", sub: "Collapse out-of-character posts", last: true) do %>
-      <%= button_to toggle_hide_ooc_profile_path, method: :post, class: "bg-transparent border-0 p-0 cursor-pointer",
-            "aria-label": (@profile.hide_ooc? ? "Show OOC posts by default" : "Hide OOC posts by default") do %>
-        <%= render Ui::ToggleSwitchComponent.new(on: @profile.hide_ooc?) %>
-      <% end %>
+      <div data-controller="ooc-filter"
+           data-ooc-filter-hide-ooc-value="<%= @profile.hide_ooc? %>"
+           data-ooc-filter-toggle-url-value="<%= toggle_hide_ooc_profile_path %>">
+        <button type="button" data-action="click->ooc-filter#toggle" data-ooc-filter-target="button"
+                class="bg-transparent border-0 p-0 cursor-pointer"
+                aria-label="<%= @profile.hide_ooc? ? 'Show OOC posts by default' : 'Hide OOC posts by default' %>">
+          <span data-ooc-filter-target="switch">
+            <%= render Ui::ToggleSwitchComponent.new(on: @profile.hide_ooc?) %>
+          </span>
+        </button>
+      </div>
     <% end %>
   </div>
 

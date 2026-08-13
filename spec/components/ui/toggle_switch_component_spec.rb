@@ -44,12 +44,12 @@ RSpec.describe Ui::ToggleSwitchComponent, type: :component do
 
   it "builds the exact off track class string" do
     expect(described_class.new(on: false).track_classes)
-      .to eq("w-8 h-[18px] rounded-[9px] relative transition-colors duration-150 flex-shrink-0 bg-pill-idle")
+      .to eq("inline-block w-8 h-[18px] rounded-[9px] relative transition-colors duration-150 flex-shrink-0 bg-pill-idle")
   end
 
   it "builds the exact on track class string" do
     expect(described_class.new(on: true).track_classes)
-      .to eq("w-8 h-[18px] rounded-[9px] relative transition-colors duration-150 flex-shrink-0 bg-accent")
+      .to eq("inline-block w-8 h-[18px] rounded-[9px] relative transition-colors duration-150 flex-shrink-0 bg-accent")
   end
 
   it "drops an empty html_class from the track join" do
