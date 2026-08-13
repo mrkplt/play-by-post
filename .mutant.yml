@@ -110,6 +110,7 @@ matcher:
     - Ui::MarkdownRenderComponent::Config
     - Ui::IconButtonComponent
     - Ui::SettingsRowComponent
+    - Ui::ProfileOocToggleComponent
     - Ui::PillTabsComponent
     - Ui::FlashComponent
     - Ui::IconComponent
