@@ -211,8 +211,8 @@ RSpec.describe GamesController, type: :request do
     it "player is redirected with alert" do
       sign_in(player)
       get edit_game_path(game)
-      expect(response).to redirect_to(game_path(game))
-      expect(flash[:alert]).to match(/only the gm/i)
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to eq("You are not authorized to perform this action.")
     end
 
     it "unauthenticated user is redirected" do
@@ -252,7 +252,7 @@ RSpec.describe GamesController, type: :request do
     it "player cannot update the game" do
       sign_in(player)
       patch game_path(game), params: { game: { name: "Hacked" } }
-      expect(response).to redirect_to(game_path(game))
+      expect(response).to redirect_to(root_path)
       expect(game.reload.name).not_to eq("Hacked")
     end
 
@@ -277,7 +277,7 @@ RSpec.describe GamesController, type: :request do
       sign_in(player)
       delete game_path(game)
 
-      expect(response).to redirect_to(game_path(game))
+      expect(response).to redirect_to(root_path)
       expect(Game.unscoped.find(game.id).deleted_at).to be_nil
     end
 
@@ -627,7 +627,7 @@ RSpec.describe GamesController, type: :request do
     it "player cannot toggle character sheet visibility" do
       sign_in(player)
       patch toggle_sheets_hidden_game_path(game)
-      expect(response).to redirect_to(game_path(game))
+      expect(response).to redirect_to(root_path)
       expect(game.reload.sheets_hidden?).to be false
     end
   end
@@ -668,7 +668,7 @@ RSpec.describe GamesController, type: :request do
     it "player cannot toggle AI summaries" do
       sign_in(player)
       patch toggle_ai_summaries_enabled_game_path(game)
-      expect(response).to redirect_to(game_path(game))
+      expect(response).to redirect_to(root_path)
       expect(game.reload.ai_summaries_enabled?).to be false
     end
   end
@@ -694,7 +694,7 @@ RSpec.describe GamesController, type: :request do
     it "player cannot toggle image attachments" do
       sign_in(player)
       patch toggle_images_disabled_game_path(game)
-      expect(response).to redirect_to(game_path(game))
+      expect(response).to redirect_to(root_path)
       expect(game.reload.images_disabled?).to be false
     end
   end

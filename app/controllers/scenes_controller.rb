@@ -116,7 +116,7 @@ class ScenesController < ApplicationController
 
   sig { void }
   def require_game_access!
-    redirect_to root_path, alert: "You do not have access to this game." unless policy(@game).show?
+    redirect_to root_path, alert: "You do not have access to this game." unless policy(@game).view?
   end
 
   # Assembles the New Scene / Quick Scene form component from the current

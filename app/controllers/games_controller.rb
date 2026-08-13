@@ -5,7 +5,6 @@ class GamesController < ApplicationController
 
   before_action :set_game, only: %i[show edit update destroy toggle_sheets_hidden toggle_images_disabled toggle_ai_summaries_enabled]
   before_action :require_game_access!, only: %i[show]
-  before_action :require_gm!, only: %i[edit update destroy toggle_sheets_hidden toggle_images_disabled toggle_ai_summaries_enabled]
   after_action :verify_authorized, except: :index
 
   sig { void }
@@ -72,14 +71,14 @@ class GamesController < ApplicationController
 
   sig { void }
   def toggle_sheets_hidden
-    authorize @game, :update?
+    authorize @game, :manage?
     @game.update!(sheets_hidden: !@game.sheets_hidden?)
     redirect_to game_path(@game), notice: @game.sheets_hidden? ? "Character sheets are now hidden." : "Character sheets are now visible."
   end
 
   sig { void }
   def toggle_images_disabled
-    authorize @game, :update?
+    authorize @game, :manage?
     @game.update!(images_disabled: !@game.images_disabled?)
     redirect_to edit_game_path(@game), notice: @game.images_disabled? ? "Image attachments are now disabled." : "Image attachments are now enabled."
   end
@@ -87,7 +86,7 @@ class GamesController < ApplicationController
   sig { void }
   # mutant:disable
   def toggle_ai_summaries_enabled
-    authorize @game, :update?
+    authorize @game, :manage?
     @game.update!(ai_summaries_enabled: !@game.ai_summaries_enabled?)
     redirect_to game_player_management_path(@game), notice: @game.ai_summaries_enabled? ? "AI scene summaries enabled." : "AI scene summaries disabled."
   end
@@ -201,18 +200,14 @@ class GamesController < ApplicationController
     @game = Game.find(params[:id])
   end
 
+  # Not redundant with `authorize`: this gates before the action runs and gives
+  # "cannot see this game at all" its own message, distinct from a denial of
+  # the specific thing being attempted.
   sig { void }
   def require_game_access!
-    return if policy(@game).show?
+    return if policy(@game).view?
 
     redirect_to root_path, alert: "You do not have access to this game."
-  end
-
-  sig { void }
-  def require_gm!
-    return if policy(@game).update?
-
-    redirect_to game_path(@game), alert: "Only the GM can do this."
   end
 
   sig { returns(ActionController::Parameters) }

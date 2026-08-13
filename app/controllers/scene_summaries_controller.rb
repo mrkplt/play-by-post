@@ -89,7 +89,7 @@ class SceneSummariesController < ApplicationController
 
   sig { returns(T::Boolean) }
   def game_access_granted?
-    policy(@game).show?
+    policy(@game).view?
   end
 
   sig { void }

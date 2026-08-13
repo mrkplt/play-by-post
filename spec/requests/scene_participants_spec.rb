@@ -187,6 +187,23 @@ RSpec.describe SceneParticipantsController, type: :request do
       expect(flash[:alert]).to match(/resolved/i)
     end
 
+    # The private-scene gate asks ScenePolicy#visible?, which is satisfied by
+    # being a participant as well as by being the GM. A participant re-posting
+    # join is therefore an idempotent no-op rather than a "cannot join" error —
+    # they are already in the scene they are being told they may not enter.
+    it "a participant re-joining a private scene is a no-op, not an error" do
+      private_scene = create(:scene, game: game, private: true)
+      private_scene.scene_participants.create!(user: player)
+      sign_in(player)
+
+      expect {
+        post join_game_scene_participants_path(game, private_scene)
+      }.not_to change(SceneParticipant, :count)
+
+      expect(flash[:alert]).to be_nil
+      expect(flash[:notice]).to match(/joined/i)
+    end
+
     it "unauthenticated user is redirected" do
       post join_game_scene_participants_path(game, scene)
       expect(response).to have_http_status(:redirect)

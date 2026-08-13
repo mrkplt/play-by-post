@@ -52,6 +52,11 @@ class CharacterPolicy < ApplicationPolicy
   # Field-level authorization: only the GM assigns a sheet's owner (user_id).
   # A player's sheet is always their own. `hidden` is intentionally writable by
   # any owner — players may hide their own sheet (REQUIREMENTS).
+  #
+  # This is the deliberate exception to "gm? has exactly one caller": reassigning
+  # a sheet's owner and managing the roster are two different game functions that
+  # happen to share a rule today. Routing this through manage_roster? would tie
+  # them together, so granularizing one would silently move the other.
   sig { returns(T::Boolean) }
   def assign_owner?
     gm?
