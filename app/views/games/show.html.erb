@@ -33,9 +33,11 @@
 
       <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do %>In Active Scenes<% end %>
       <div class="bg-card border border-card-border rounded-card overflow-hidden">
+        <%# The crown marks the person this row is about, not the viewer: this
+            row IS the GM, so it is always crowned. %>
         <%= render Shared::RosterRowComponent.new(
               name: @gm_name, subtitle: "Running this game",
-              avatar_tone: :dark, crown: @game_presenter.can_manage?, last: @roster_preview.empty?) %>
+              avatar_tone: :dark, crown: true, last: @roster_preview.empty?) %>
         <% @roster_preview.each_with_index do |row, i| %>
           <%= render Shared::RosterRowComponent.new(
                 name: row[:name], subtitle: row[:scene],

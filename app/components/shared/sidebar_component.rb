@@ -13,11 +13,14 @@ class Shared::SidebarComponent < ApplicationComponent
     !@current_user.equal?(nil)
   end
 
+  # Whether the viewer may administer this game — the sidebar's crown. Asks
+  # GamePolicy rather than the membership row directly, so this crown cannot
+  # diverge from every other capability check when the rule granularizes.
   sig { params(game: Game).returns(T::Boolean) }
-  def game_master_in?(game)
+  def can_manage?(game)
     user = @current_user
     return false if user.equal?(nil)
 
-    game.member_for(T.cast(user.__getobj__, User))&.game_master? || false
+    GamePolicy.new(T.cast(user.__getobj__, User), game).manage?
   end
 end

@@ -12,7 +12,7 @@ class PlayerManagementController < ApplicationController
     authorize @game, :manage_players?
     @game_presenter = GamePresenter.new(@game, current_user)
 
-    if policy(@game).update?
+    if policy(@game).manage?
       @members = @game.game_members.where.not(status: "banned").where(role: "player").includes(:user)
       @member_display_names = @members.each_with_object({}) { |m, h| h[m.user_id] = UserPresenter.new(m.user).display_name_or_email }
       @member_characters = character_names_by_user

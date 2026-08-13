@@ -45,7 +45,7 @@ class GamesController < ApplicationController
         primary_character: primary_character,
         additional_character_count: additional_character_count,
         character_label: character_label_for(primary_character, additional_character_count),
-        can_manage: policy(game).update?,
+        can_manage: policy(game).manage?,
         former: membership.removed?,
         new_activity: games_with_new_activity.include?(game.id)
       }
@@ -123,7 +123,7 @@ class GamesController < ApplicationController
       }
     end
     @inactive_count = @game.characters.archived.visible_to(current_user, @game).count
-    @banned_members = policy(@game).update? ? @game.game_members.where(status: "banned").includes(:user).to_a : []
+    @banned_members = policy(@game).manage? ? @game.game_members.where(status: "banned").includes(:user).to_a : []
     @banned_names = @banned_members.each_with_object({}) do |m, h|
       h[m.user_id] = UserPresenter.new(m.user).display_name_or_email
     end

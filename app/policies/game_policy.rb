@@ -35,8 +35,9 @@ class GamePolicy < ApplicationPolicy
   end
 
   # May view this game at all (GM, active, or removed member). The capability
-  # name for what require_game_access!/policy(@game).show? call sites are
-  # actually asking.
+  # name for what `policy(@game).show?` call sites are actually asking; the
+  # controllers' require_game_access! guards ask it for their own distinct
+  # message and are not replaced by it.
   sig { returns(T::Boolean) }
   def view?
     viewable?

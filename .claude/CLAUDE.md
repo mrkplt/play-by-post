@@ -437,12 +437,13 @@ Hard-won specifics for actually clearing the gates. Read this before touching up
 
 **View-layer instance of the same rule:** a component parameter or presenter method exposed to templates must also be named for the capability, not the role. `Shared::GameNavComponent` and seven other components/presenters took an `is_gm:` parameter — a role name on a public API — driving a GM-only Notebook tab, delete buttons, and edit/crown affordances. Renamed to `can_manage:` throughout (8 components, 2 presenters, 20 views, 14 specs) to match `GamePolicy#manage?`, the capability that answers it.
 
-**Precedent — the worked examples, follow these rather than reinventing:**
+**Precedent — copy these two, they implement the rule end to end:**
 - `GamePolicy#manage?` / `#view?` — the general "may administer"/"may see this game" capabilities; `update?`/`destroy?`/`show?` delegate to them, `gm?`/`viewable?` are private.
-- `PostPolicy#participate?` / `#mark_read?` — `write_member?` private.
-- `ScenePolicy#manage_participants?` / `#resolve?` / `#join?`.
-- `CharacterPolicy#assign_owner?` — field-level authorization named for the capability.
-- `NotebookEntryPolicy#manage?` — an action that is not CRUD naming its own capability.
+- `NotebookEntryPolicy#manage?` — one capability for a whole section; all five CRUD predicates delegate to it, `gm?` is private and has exactly one caller.
+
+**Partially converted — good capability *names*, but their CRUD bodies still inline the private role check, so the rule lives in several lines instead of one.** Treat these as work outstanding, not as models: `ScenePolicy` (`create?`, `resolve?`, `manage_participants?` each bare `gm?`), `PagePolicy` (no capability at all — `create?`/`update?`/`destroy?` all bare `gm?`), `CharacterPolicy` (`archive?`/`restore?` bare `gm?` beside the correct `assign_owner?`), `PostPolicy` (`participate?` is public but inlines the role check rather than delegating to a private one), `GameLinkPolicy`, `GameFilePolicy`, `SceneSummaryPolicy`, `InvitationPolicy`, `GameMemberPolicy`.
+
+**The test for "is this policy converted":** the private role predicate (`gm?`) should have exactly one caller — the capability. If `gm?` appears in three CRUD bodies, granularizing the rule means editing three lines, which is the thing this convention exists to prevent.
 
 ### Navigation architecture (target shell)
 
