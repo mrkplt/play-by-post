@@ -12,13 +12,17 @@ RSpec.describe GamesController, type: :request do
 
   describe "GET /" do
     it "lists only the current user's non-banned games in name order, crowning GM games" do
-      alpha_game = create(:game, name: "Alpha Quest")
       zeta_game = create(:game, name: "Zeta Quest")
+      alpha_game = create(:game, name: "Alpha Quest")
       banned_game = create(:game, name: "Hidden Game")
       other_users_game = create(:game, name: "Other User Game")
 
-      create(:game_member, game: alpha_game, user: gm)
+      # The memberships drive the query, so THEY are what must be inserted in
+      # reverse name order. Creating alpha's membership first made insertion
+      # order agree with name order, and the assertion below then held even
+      # with `order("games.name")` deleted.
       create(:game_member, :game_master, game: zeta_game, user: gm)
+      create(:game_member, game: alpha_game, user: gm)
       create(:game_member, :banned, game: banned_game, user: gm)
       create(:game_member, :game_master, game: other_users_game, user: player)
 
@@ -30,7 +34,13 @@ RSpec.describe GamesController, type: :request do
       expect(response.body).to include("Alpha Quest", "Zeta Quest")
       expect(response.body).not_to include("Hidden Game")
       expect(response.body).not_to include("Other User Game")
-      expect(response.body.index("Alpha Quest")).to be < response.body.index("Zeta Quest")
+      # Assert on the dashboard cards (.attn-item), not response.body.index:
+      # the nav drawer lists every game too, so a raw string search finds the
+      # drawer's copy and reports an order the dashboard does not have.
+      card_names = doc.css("a.attn-item").map { |a| a.at_css("span:not([aria-hidden])").text.strip }
+      expect(card_names).to eq(card_names.sort)
+      expect(card_names.first).to eq("Alpha Quest")
+      expect(card_names.last).to eq("Zeta Quest")
 
       # GM game card carries a crown; the plain player card does not.
       zeta_card = doc.at_xpath("//a[@href='#{game_path(zeta_game)}']")
@@ -316,6 +326,22 @@ RSpec.describe GamesController, type: :request do
   end
 
   describe "GET /games/:id" do
+    # The dashboard leads with whatever moved most recently, so a GM opening a
+    # game sees the live scene first. Nothing asserted the sort, so `show`
+    # could drop its sort_by entirely and fall back to insertion order.
+    # The stale scene is created LAST so insertion order is the reverse of
+    # activity order — otherwise dropping the sort would leave this passing.
+    it "lists active scenes most recently active first" do
+      busy = create(:scene, game: game, title: "Busy Scene", created_at: 5.days.ago)
+      create(:post, scene: busy, user: gm, created_at: 1.hour.ago)
+      stale = create(:scene, game: game, title: "Stale Scene", created_at: 4.days.ago)
+
+      sign_in(gm)
+      get game_path(game)
+
+      expect(response.body.index(busy.title)).to be < response.body.index(stale.title)
+    end
+
     it "renders the universal header nav affordances (hamburger, gear, Scenes active, GM crown)" do
       sign_in(gm)
       get game_path(game)
