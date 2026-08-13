@@ -33,7 +33,10 @@ RSpec.describe Shared::FeedbackModalComponent, type: :component do
     it "caps the editor height inside a wide modal and keeps the card under the viewport" do
       card = page.find("[data-testid='feedback-modal'] .max-w-3xl", visible: :all)
       expect(card["class"]).to include("max-h-[86vh]")
-      expect(page).to have_css("textarea.markdown-editor.h-64", visible: :all)
+      # The cap is a step on the editor's shared vh scale, so the textarea
+      # stays proportional to the modal rather than a fixed 16rem.
+      textarea = page.find("textarea.markdown-editor", visible: :all)
+      expect(textarea["style"]).to eq("max-height: #{Ui::MarkdownEditorComponent::Config::HEIGHTS.fetch(:md)}")
       expect(page).to have_css("textarea.markdown-editor:not([class*='resize-y'])", visible: :all)
     end
 

@@ -1,0 +1,19 @@
+<% if any_rows? %>
+  <div class="bg-card border border-card-border rounded-card overflow-hidden">
+    <% rows.each_with_index do |row, i| %>
+      <div class="<%= row_classes(i) %>">
+        <%= link_to row[:href], class: "flex-1 min-w-0 no-underline" do %>
+          <span class="block text-sm font-bold text-ink truncate"><%= row[:title] %></span>
+        <% end %>
+
+        <% if row[:controls] %>
+          <div class="flex items-center gap-3 flex-shrink-0">
+            <%= render row[:controls] %>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+<% else %>
+  <p class="text-muted-2 text-sm"><%= empty_text %></p>
+<% end %>

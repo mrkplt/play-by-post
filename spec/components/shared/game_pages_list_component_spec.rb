@@ -13,13 +13,14 @@ RSpec.describe Shared::GamePagesListComponent, type: :component do
     described_class.new(**{ game: game, pages: pages, is_gm: false }.merge(overrides))
   end
 
-  describe "#row_classes" do
-    it "gives the first row no divider" do
-      expect(build_component.row_classes(0)).to eq(described_class::ROW_BASE)
+  describe "#row_controls" do
+    it "gives the GM a row's actions" do
+      expect(build_component(is_gm: true).row_controls(pages.first))
+        .to be_a(Shared::PageRowActionsComponent)
     end
 
-    it "gives later rows a top divider" do
-      expect(build_component.row_classes(1)).to include("border-t")
+    it "gives a non-GM no row controls" do
+      expect(build_component(is_gm: false).row_controls(pages.first)).to be_nil
     end
   end
 

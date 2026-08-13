@@ -3,10 +3,9 @@
     <%= f.label :resolution, "Outcome (optional, markdown supported)", class: "block text-sm font-semibold mb-1" %>
     <%= render Ui::MarkdownEditorComponent.new(
           form: f, field: :resolution,
-          config: Ui::MarkdownEditorComponent::Config.new(scroll: :preview, preview_height: 256, rows: 3),
-          placeholder: "What happened? What was gained or lost?",
-          edit_class: "px-3 py-2 border border-input-border border-t-0 rounded-b-control text-base bg-card text-ink placeholder:text-muted-2",
-          preview_class: "border border-card-border rounded-card px-3 py-3 mt-2") %>
+          config: Ui::MarkdownEditorComponent::Config.with_preview,
+          rows: 3,
+          placeholder: "What happened? What was gained or lost?") %>
     <%= f.submit "Confirm — End Scene", class: "mt-2 bg-card text-danger border border-red-200 rounded-control px-4 py-2 text-sm cursor-pointer" %>
   <% end %>
 </div>

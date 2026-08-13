@@ -17,14 +17,6 @@ RSpec.describe Shared::NotebookBoardComponent, type: :component do
     end
   end
 
-  describe "#column_label" do
-    Shared::NotebookBoardComponent::COLUMN_LABELS.each do |status, label|
-      it "labels #{status.inspect} as #{label.inspect}" do
-        expect(build_component.column_label(status)).to eq(label)
-      end
-    end
-  end
-
   describe "#column_id" do
     it "is stable and status-scoped, matching the move turbo_stream target" do
       expect(build_component.column_id("expand")).to eq("notebook_column_expand")
@@ -57,6 +49,56 @@ RSpec.describe Shared::NotebookBoardComponent, type: :component do
     it "shows a placeholder when there is nothing discarded" do
       render_inline(build_component)
       expect(page).to have_text("Nothing discarded.")
+    end
+
+    it "shows a placeholder in a visible lane that has no entries" do
+      render_inline(build_component)
+      expect(page.find("#notebook_column_new")).to have_text(Shared::NotebookLaneComponent::EMPTY_TEXT)
+    end
+  end
+
+  describe "row composition" do
+    it "links an entry's title to its edit screen, not a show screen" do
+      entry = entry_in("new", title: "A wandering merchant")
+      render_inline(build_component(entries_by_status: { "new" => [ entry ] }))
+
+      expect(page).to have_link(
+        "A wandering merchant",
+        href: Rails.application.routes.url_helpers.edit_game_notebook_entry_path(game, entry)
+      )
+    end
+
+    it "carries the lane picker as a row's only control" do
+      entry = entry_in("new", title: "A wandering merchant")
+      render_inline(build_component(entries_by_status: { "new" => [ entry ] }))
+
+      expect(page).to have_css("select[name='notebook_entry[status]']")
+      expect(page).to have_no_link("Edit")
+      expect(page).to have_no_button("Promote")
+      expect(page).to have_no_button("Delete")
+    end
+
+    it "does not render entry bodies — the board is titles only" do
+      entry = build_stubbed(:notebook_entry, game: game, status: "new",
+                            title: "Titled", slug: "bodyslug12345678",
+                            body: "A body that must not appear on the board.")
+      render_inline(build_component(entries_by_status: { "new" => [ entry ] }))
+
+      expect(page).to have_text("Titled")
+      expect(page).to have_no_text("A body that must not appear on the board.")
+    end
+
+    it "builds one row per entry in the lane" do
+      entries = [
+        build_stubbed(:notebook_entry, game: game, status: "new", title: "First", slug: "firstslug1234567"),
+        build_stubbed(:notebook_entry, game: game, status: "new", title: "Second", slug: "secondslug123456")
+      ]
+      render_inline(build_component(entries_by_status: { "new" => entries }))
+
+      within_lane = page.find("#notebook_column_new")
+      expect(within_lane).to have_link("First")
+      expect(within_lane).to have_link("Second")
+      expect(within_lane).to have_css("select[name='notebook_entry[status]']", count: 2)
     end
   end
 end

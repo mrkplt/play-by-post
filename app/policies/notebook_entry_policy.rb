@@ -12,6 +12,10 @@ class NotebookEntryPolicy < ApplicationPolicy
     gm?
   end
 
+  # Stated for the resource, not for a route: no screen reads a single entry
+  # today, but "a notebook entry is never readable by a non-GM" is the rule
+  # this policy exists to declare, and it must not depend on which actions
+  # happen to be routed.
   sig { returns(T::Boolean) }
   def show?
     gm?
@@ -29,6 +33,16 @@ class NotebookEntryPolicy < ApplicationPolicy
 
   sig { returns(T::Boolean) }
   def destroy?
+    gm?
+  end
+
+  # Working the notebook itself: moving an entry between lanes, promoting it to
+  # a Page. Named for the game function rather than borrowing `update?` — that
+  # asks whether the record may be edited, which is a different question with
+  # the same answer only while the GM is also the game's owner. When that
+  # splits, this line changes and no caller does.
+  sig { returns(T::Boolean) }
+  def manage?
     gm?
   end
 

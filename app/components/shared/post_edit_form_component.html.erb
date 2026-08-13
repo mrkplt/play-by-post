@@ -3,8 +3,7 @@
     <%= render Ui::SectionLabelComponent.new do %>Edit Post<% end %>
     <%= render Ui::MarkdownEditorComponent.new(
           form: f, field: :content,
-          config: Ui::MarkdownEditorComponent::Config.new(scroll: :preview, preview_height: 256, rows: 6),
-          edit_class: "border border-input-border border-t-0 rounded-b-control px-3 py-2.5 text-base text-ink bg-card",
-          preview_class: "post-content border border-card-border rounded-card px-3 py-3 mt-4") %>
+          config: Ui::MarkdownEditorComponent::Config.with_preview(content_class: "post-content"),
+          rows: 6) %>
   </div>
 <% end %>

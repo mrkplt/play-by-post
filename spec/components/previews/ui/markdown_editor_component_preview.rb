@@ -4,34 +4,47 @@ class Ui::MarkdownEditorComponentPreview < ViewComponent::Preview
     render(Ui::MarkdownEditorComponent.new(form: form_builder, field: :content))
   end
 
-  def scroll_edit_and_preview
+  def capped_textarea_and_preview
     render(Ui::MarkdownEditorComponent.new(
       form: form_builder, field: :content,
-      config: Ui::MarkdownEditorComponent::Config.new(scroll: :both, edit_height: 256, preview_height: 256)))
+      config: Ui::MarkdownEditorComponent::Config.new(edit_height: :md)))
   end
 
-  def scroll_edit_only
+  def capped_textarea_only
     render(Ui::MarkdownEditorComponent.new(
       form: form_builder, field: :content,
-      config: Ui::MarkdownEditorComponent::Config.new(scroll: :edit, edit_height: 256)))
+      config: Ui::MarkdownEditorComponent::Config.new(
+        edit_height: :md,
+        regions: [
+          Ui::MarkdownEditorComponent::ToolbarRegion.new,
+          Ui::MarkdownEditorComponent::PreviewRegion.new
+        ])))
   end
 
-  def scroll_preview_only
+  def capped_preview_only
     render(Ui::MarkdownEditorComponent.new(
       form: form_builder, field: :content,
-      config: Ui::MarkdownEditorComponent::Config.new(scroll: :preview, preview_height: 256)))
+      config: Ui::MarkdownEditorComponent::Config.new(edit_height: nil)))
   end
 
   def without_toolbar
     render(Ui::MarkdownEditorComponent.new(
       form: form_builder, field: :content,
-      config: Ui::MarkdownEditorComponent::Config.new(toolbar: false)))
+      config: Ui::MarkdownEditorComponent::Config.new(
+        regions: [ Ui::MarkdownEditorComponent::PreviewRegion.new(height: :md) ])))
   end
 
   def without_preview
     render(Ui::MarkdownEditorComponent.new(
       form: form_builder, field: :content,
-      config: Ui::MarkdownEditorComponent::Config.new(preview: false)))
+      config: Ui::MarkdownEditorComponent::Config.new(
+        regions: [ Ui::MarkdownEditorComponent::ToolbarRegion.new ])))
+  end
+
+  def textarea_only
+    render(Ui::MarkdownEditorComponent.new(
+      form: form_builder, field: :content,
+      config: Ui::MarkdownEditorComponent::Config.new(regions: [])))
   end
 
   private
