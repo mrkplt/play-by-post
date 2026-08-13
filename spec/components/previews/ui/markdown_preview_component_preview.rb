@@ -8,9 +8,9 @@ class Ui::MarkdownPreviewComponentPreview < ViewComponent::Preview
     render(Ui::MarkdownPreviewComponent.new(height: :md))
   end
 
-  def with_extra_classes
+  def with_content_hook
     render(Ui::MarkdownPreviewComponent.new(
       height: :md,
-      extra_class: "post-content border border-card-border rounded-card px-3 py-3"))
+      content_class: "post-content border border-card-border rounded-card px-3 py-3"))
   end
 end

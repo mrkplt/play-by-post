@@ -14,14 +14,25 @@ class Ui::MarkdownEditorComponent < ApplicationComponent
   # Layout configuration lives in Ui::MarkdownEditorComponent::Config
   # (app/components/ui/markdown_editor_component/config.rb).
 
+  # The editor owns its own appearance. Every markdown surface in the app is
+  # the same control, so its border, radius, padding and text tokens live here
+  # rather than being respelled at each call site — which is how four of them
+  # had drifted onto the wrong tokens entirely. Callers vary size (rows and the
+  # HEIGHTS scale) and may add a content hook; they do not restyle the box.
+  EDIT_BASE = T.let(
+    "border border-input-border border-t-0 rounded-b-control " \
+    "px-3 py-2.5 text-base text-ink bg-card placeholder:text-muted-2",
+    String
+  )
+
   DEFAULT_TEXTAREA_DATA = T.let({
     markdown_preview_target: "input",
     markdown_toolbar_target: "input",
     action: "input->markdown-preview#update"
   }.freeze, T::Hash[Symbol, T.untyped])
 
-  sig { params(form: ActionView::Helpers::FormBuilder, field: Symbol, config: Config, rows: Integer, value: T.nilable(String), placeholder: T.nilable(String), required: T::Boolean, data: T::Hash[Symbol, T.untyped], edit_class: String, wrapper_class: String).void }
-  def initialize(form:, field:, config: Config.new, rows: 5, value: nil, placeholder: nil, required: false, data: {}, edit_class: "", wrapper_class: "")
+  sig { params(form: ActionView::Helpers::FormBuilder, field: Symbol, config: Config, rows: Integer, value: T.nilable(String), placeholder: T.nilable(String), required: T::Boolean, data: T::Hash[Symbol, T.untyped], wrapper_class: String).void }
+  def initialize(form:, field:, config: Config.new, rows: 5, value: nil, placeholder: nil, required: false, data: {}, wrapper_class: "")
     @form = form
     @field = field
     @config = config
@@ -30,7 +41,6 @@ class Ui::MarkdownEditorComponent < ApplicationComponent
     @placeholder = placeholder
     @required = required
     @data = data
-    @edit_class = edit_class
     @wrapper_class = wrapper_class
   end
 
@@ -51,9 +61,8 @@ class Ui::MarkdownEditorComponent < ApplicationComponent
 
   sig { returns(String) }
   def edit_classes
-    classes = [ "markdown-editor", "w-full" ]
+    classes = [ "markdown-editor", "w-full", EDIT_BASE ]
     classes << "overflow-y-auto" if @config.edit_scroll?
-    classes << @edit_class unless @edit_class.empty?
     classes.join(" ")
   end
 

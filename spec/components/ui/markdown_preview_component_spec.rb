@@ -10,14 +10,14 @@ RSpec.describe Ui::MarkdownPreviewComponent, type: :component do
   it "is uncapped and does not scroll without a height" do
     render_inline(described_class.new)
     preview = page.find("[data-markdown-preview-target='preview']")
-    expect(preview["class"]).to eq("markdown-base min-h-12 bg-canvas")
+    expect(preview["class"]).to eq(described_class::BASE)
     expect(preview["style"]).to be_blank
   end
 
   it "caps and scrolls at the configured step" do
     render_inline(described_class.new(height: :md))
     preview = page.find("[data-markdown-preview-target='preview']")
-    expect(preview["class"]).to eq("markdown-base min-h-12 bg-canvas overflow-y-auto")
+    expect(preview["class"]).to eq("#{described_class::BASE} overflow-y-auto")
     expect(preview["style"]).to eq("max-height: 30vh")
   end
 
@@ -33,14 +33,14 @@ RSpec.describe Ui::MarkdownPreviewComponent, type: :component do
   end
 
   it "appends caller classes after the base classes" do
-    render_inline(described_class.new(height: :md, extra_class: "post-content border"))
+    render_inline(described_class.new(height: :md, content_class: "post-content border"))
     expect(page.find("[data-markdown-preview-target='preview']")["class"])
-      .to eq("markdown-base min-h-12 bg-canvas overflow-y-auto post-content border")
+      .to eq("#{described_class::BASE} overflow-y-auto post-content border")
   end
 
   it "appends caller classes when uncapped" do
-    render_inline(described_class.new(extra_class: "post-content"))
+    render_inline(described_class.new(content_class: "post-content"))
     expect(page.find("[data-markdown-preview-target='preview']")["class"])
-      .to eq("markdown-base min-h-12 bg-canvas post-content")
+      .to eq("#{described_class::BASE} post-content")
   end
 end

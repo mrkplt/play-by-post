@@ -64,14 +64,14 @@ RSpec.describe Ui::MarkdownEditorComponent, type: :component do
       render_editor
       textarea = page.find("textarea[name='feedback[body]']")
       expect(textarea["style"]).to eq("max-height: 40vh")
-      expect(textarea["class"]).to eq("markdown-editor w-full overflow-y-auto")
+      expect(textarea["class"]).to eq("markdown-editor w-full #{described_class::EDIT_BASE} overflow-y-auto")
     end
 
     it "leaves the textarea uncapped when no height is given" do
       render_editor(config: config(edit_height: nil))
       textarea = page.find("textarea[name='feedback[body]']")
       expect(textarea["style"]).to be_nil
-      expect(textarea["class"]).to eq("markdown-editor w-full")
+      expect(textarea["class"]).to eq("markdown-editor w-full #{described_class::EDIT_BASE}")
     end
 
     it "renders every step of the height scale" do
@@ -122,23 +122,30 @@ RSpec.describe Ui::MarkdownEditorComponent, type: :component do
     end
   end
 
-  describe "class passthroughs" do
-    it "appends extra classes to the textarea and wrapper" do
-      render_editor(edit_class: "px-3 bg-card", wrapper_class: "mb-3")
-      expect(page.find("textarea[name='feedback[body]']")["class"]).to eq("markdown-editor w-full overflow-y-auto px-3 bg-card")
+  describe "styling" do
+    it "styles the textarea itself, so no caller respells the tokens" do
+      render_editor
+      expect(page.find("textarea[name='feedback[body]']")["class"])
+        .to eq("markdown-editor w-full #{described_class::EDIT_BASE} overflow-y-auto")
+    end
+
+    it "styles the textarea identically whatever the caller configures" do
+      render_editor
+      styled = page.find("textarea[name='feedback[body]']")["class"]
+      render_editor(config: described_class::Config.with_preview(content_class: "post-content"), rows: 20)
+      expect(page.find("textarea[name='feedback[body]']")["class"].include?(described_class::EDIT_BASE)).to be(true)
+      expect(styled).to include(described_class::EDIT_BASE)
+    end
+
+    it "accepts a wrapper class, which positions the editor rather than styling it" do
+      render_editor(wrapper_class: "mb-3")
       expect(page).to have_css("div.mb-3[data-controller~='markdown-preview']")
     end
 
-    it "appends extra classes to the preview through its region" do
-      render_editor(config: described_class::Config.with_preview(preview_class: "post-content border"))
-      expect(page.find("[data-markdown-preview-target='preview']")["class"]).to eq("markdown-base min-h-12 bg-canvas overflow-y-auto post-content border")
-    end
-  end
-
-  describe "class assembly" do
-    it "joins the edit classes into a single string" do
-      component = described_class.new(form: build_form_builder, field: :body)
-      expect(component.edit_classes).to eq("markdown-editor w-full overflow-y-auto")
+    it "passes a content hook through to the preview without restyling it" do
+      render_editor(config: described_class::Config.with_preview(content_class: "post-content"))
+      expect(page.find("[data-markdown-preview-target='preview']")["class"])
+        .to eq("#{Ui::MarkdownPreviewComponent::BASE} overflow-y-auto post-content")
     end
   end
 
@@ -151,7 +158,7 @@ RSpec.describe Ui::MarkdownEditorComponent, type: :component do
     end
 
     it "builds the common toolbar-plus-preview surface with .with_preview" do
-      subject_config = described_class.with_preview(preview_class: "post-content")
+      subject_config = described_class.with_preview(content_class: "post-content")
       expect(subject_config.edit_scroll?).to be(false)
       expect(subject_config.components_placed(:above).map(&:class)).to eq([ Shared::MarkdownToolbarComponent ])
       expect(subject_config.components_placed(:below).map(&:class)).to eq([ Ui::MarkdownPreviewComponent ])

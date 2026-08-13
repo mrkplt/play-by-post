@@ -42,22 +42,22 @@ class Ui::MarkdownEditorComponent::Config
     @regions = regions
   end
 
-  # The overwhelmingly common surface: a toolbar, and a preview that differs
-  # from the default only in its classes. Spelling the region list out at each
-  # of those call sites buries the one thing that actually varies.
+  # The overwhelmingly common surface: a toolbar above and a live preview
+  # below. `content_class` is the preview's domain styling hook and is the only
+  # thing most callers need to state.
   sig do
     params(
-      preview_class: String,
+      content_class: String,
       edit_height: T.nilable(Symbol),
       preview_height: Symbol
     ).returns(Ui::MarkdownEditorComponent::Config)
   end
-  def self.with_preview(preview_class:, edit_height: nil, preview_height: :md)
+  def self.with_preview(content_class: "", edit_height: nil, preview_height: :md)
     new(
       edit_height: edit_height,
       regions: [
         Ui::MarkdownEditorComponent::ToolbarRegion.new,
-        Ui::MarkdownEditorComponent::PreviewRegion.new(height: preview_height, extra_class: preview_class)
+        Ui::MarkdownEditorComponent::PreviewRegion.new(height: preview_height, content_class: content_class)
       ]
     )
   end
