@@ -54,34 +54,32 @@ RSpec.describe Shared::SidebarComponent, type: :component do
     end
   end
 
-  describe "#game_master_in?" do
+  describe "#can_manage?" do
     let(:game) { build_stubbed(:game) }
 
     context "when signed out" do
       let(:current_user) { nil }
 
       it "returns false" do
-        expect(component.game_master_in?(game)).to eq(false)
+        expect(component.can_manage?(game)).to eq(false)
       end
     end
 
-    context "when the user is a GM in the game" do
+    context "when the viewer may administer the game" do
       let(:current_user) { build_stubbed(:user) }
-      let(:member) { build_stubbed(:game_member, role: "game_master") }
 
       it "returns true" do
-        allow(game).to receive(:member_for).with(current_user).and_return(member)
-        expect(component.game_master_in?(game)).to eq(true)
+        allow(game).to receive(:game_master?).with(current_user).and_return(true)
+        expect(component.can_manage?(game)).to eq(true)
       end
     end
 
-    context "when the user is a player in the game" do
+    context "when the viewer may not administer the game" do
       let(:current_user) { build_stubbed(:user) }
-      let(:member) { build_stubbed(:game_member, role: :player) }
 
       it "returns false" do
-        allow(game).to receive(:member_for).with(current_user).and_return(member)
-        expect(component.game_master_in?(game)).to eq(false)
+        allow(game).to receive(:game_master?).with(current_user).and_return(false)
+        expect(component.can_manage?(game)).to eq(false)
       end
     end
 
@@ -89,8 +87,8 @@ RSpec.describe Shared::SidebarComponent, type: :component do
       let(:current_user) { build_stubbed(:user) }
 
       it "returns false" do
-        allow(game).to receive(:member_for).with(current_user).and_return(nil)
-        expect(component.game_master_in?(game)).to eq(false)
+        allow(game).to receive(:game_master?).with(current_user).and_return(false)
+        expect(component.can_manage?(game)).to eq(false)
       end
     end
   end

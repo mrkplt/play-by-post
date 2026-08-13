@@ -4,7 +4,7 @@ RSpec.describe Shared::GameCardComponent, type: :component do
   let(:game) { build_stubbed(:game, name: "The Sunken Archive") }
 
   def rendered(**opts)
-    defaults = { game: game, is_gm: false, former: false, character_label: nil, active_scene_count: 2 }
+    defaults = { game: game, can_manage: false, former: false, character_label: nil, active_scene_count: 2 }
     render_inline(described_class.new(**defaults.merge(opts)))
     page
   end
@@ -31,18 +31,18 @@ RSpec.describe Shared::GameCardComponent, type: :component do
 
   context "GM viewer" do
     it "reports crown" do
-      expect(described_class.new(game: game, is_gm: true, former: false, character_label: nil, active_scene_count: 0).show_crown?).to be true
+      expect(described_class.new(game: game, can_manage: true, former: false, character_label: nil, active_scene_count: 0).show_crown?).to be true
     end
   end
 
   context "player viewer" do
     it "does not report crown" do
-      expect(described_class.new(game: game, is_gm: false, former: false, character_label: nil, active_scene_count: 0).show_crown?).to be false
+      expect(described_class.new(game: game, can_manage: false, former: false, character_label: nil, active_scene_count: 0).show_crown?).to be false
     end
   end
 
   context "former (removed) game" do
-    subject(:former) { described_class.new(game: game, is_gm: false, former: true, character_label: nil, active_scene_count: 5) }
+    subject(:former) { described_class.new(game: game, can_manage: false, former: true, character_label: nil, active_scene_count: 5) }
 
     it "reads as dormant, not a scene count" do
       expect(former.meta_text).to eq("Not currently active")
@@ -62,7 +62,7 @@ RSpec.describe Shared::GameCardComponent, type: :component do
   end
 
   context "active game" do
-    subject(:active) { described_class.new(game: game, is_gm: false, former: false, character_label: nil, active_scene_count: 2) }
+    subject(:active) { described_class.new(game: game, can_manage: false, former: false, character_label: nil, active_scene_count: 2) }
 
     it "shows a scene count" do
       expect(active.meta_text).to eq("2 active scenes")
@@ -86,32 +86,32 @@ RSpec.describe Shared::GameCardComponent, type: :component do
   end
 
   it "reports new_activity?" do
-    expect(described_class.new(game: game, is_gm: false, former: false, character_label: nil, active_scene_count: 0, new_activity: true).new_activity?).to be true
-    expect(described_class.new(game: game, is_gm: false, former: false, character_label: nil, active_scene_count: 0).new_activity?).to be false
+    expect(described_class.new(game: game, can_manage: false, former: false, character_label: nil, active_scene_count: 0, new_activity: true).new_activity?).to be true
+    expect(described_class.new(game: game, can_manage: false, former: false, character_label: nil, active_scene_count: 0).new_activity?).to be false
   end
 
   it "builds link_data with the new_activity flag only when active" do
-    hot = described_class.new(game: game, is_gm: false, former: false, character_label: nil, active_scene_count: 0, new_activity: true)
-    cold = described_class.new(game: game, is_gm: false, former: false, character_label: nil, active_scene_count: 0)
+    hot = described_class.new(game: game, can_manage: false, former: false, character_label: nil, active_scene_count: 0, new_activity: true)
+    cold = described_class.new(game: game, can_manage: false, former: false, character_label: nil, active_scene_count: 0)
     expect(hot.link_data).to eq(new_activity: true)
     expect(cold.link_data).to eq({})
   end
 
   it "builds exact active name/character classes" do
-    c = described_class.new(game: game, is_gm: false, former: false, character_label: "x", active_scene_count: 0)
+    c = described_class.new(game: game, can_manage: false, former: false, character_label: "x", active_scene_count: 0)
     expect(c.name_classes).to eq("font-bold text-[15px] text-ink")
     expect(c.character_classes).to eq("text-[13px] text-row-ink")
   end
 
   it "builds exact former name/character classes" do
-    c = described_class.new(game: game, is_gm: false, former: true, character_label: "x", active_scene_count: 0)
+    c = described_class.new(game: game, can_manage: false, former: true, character_label: "x", active_scene_count: 0)
     expect(c.name_classes).to eq("font-bold text-[15px] text-tint-blue-strong")
     expect(c.character_classes).to eq("text-[13px] text-tint-blue-soft")
   end
 
   it "adds is-hot to card_classes only when new_activity" do
-    hot = described_class.new(game: game, is_gm: false, former: false, character_label: nil, active_scene_count: 0, new_activity: true)
-    cold = described_class.new(game: game, is_gm: false, former: false, character_label: nil, active_scene_count: 0)
+    hot = described_class.new(game: game, can_manage: false, former: false, character_label: nil, active_scene_count: 0, new_activity: true)
+    cold = described_class.new(game: game, can_manage: false, former: false, character_label: nil, active_scene_count: 0)
     expect(hot.card_classes).to include("is-hot")
     expect(cold.card_classes).not_to include("is-hot")
   end

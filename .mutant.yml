@@ -130,6 +130,8 @@ matcher:
     - EmailContentExtractor
     - GameExportService
     - MarkdownRenderer
+    - NotebookEntryPromotion
+    - NotebookLaneMove
     - SceneSummaryService
     - FizzySweepService
     # Controllers

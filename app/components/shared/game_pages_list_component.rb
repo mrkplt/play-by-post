@@ -13,11 +13,11 @@ class Shared::GamePagesListComponent < ApplicationComponent
 
   EMPTY_TEXT = T.let("No pages yet.", String)
 
-  sig { params(game: Game, pages: T::Array[Page], is_gm: T::Boolean).void }
-  def initialize(game:, pages:, is_gm:)
+  sig { params(game: Game, pages: T::Array[Page], can_manage: T::Boolean).void }
+  def initialize(game:, pages:, can_manage:)
     @game = game
     @pages = pages
-    @is_gm = is_gm
+    @can_manage = can_manage
   end
 
   sig { returns(Game) }
@@ -27,8 +27,8 @@ class Shared::GamePagesListComponent < ApplicationComponent
   attr_reader :pages
 
   sig { returns(T::Boolean) }
-  def gm?
-    @is_gm
+  def can_manage?
+    @can_manage
   end
 
   sig { returns(String) }
@@ -53,7 +53,7 @@ class Shared::GamePagesListComponent < ApplicationComponent
   # Only the GM can act on a page, so a player's rows carry no controls at all.
   sig { params(page: Page).returns(T.nilable(ViewComponent::Base)) }
   def row_controls(page)
-    return nil unless gm?
+    return nil unless can_manage?
 
     Shared::PageRowActionsComponent.new(game: game, page: page)
   end

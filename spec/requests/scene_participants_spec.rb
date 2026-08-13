@@ -23,8 +23,8 @@ RSpec.describe SceneParticipantsController, type: :request do
     it "player is redirected with alert" do
       sign_in(player)
       get edit_game_scene_participants_path(game, scene)
-      expect(response).to redirect_to(game_scene_path(game, scene))
-      expect(flash[:alert]).to match(/only the gm/i)
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to match(/not authorized/i)
     end
 
     it "shows player email prefix when user has no display name" do
@@ -148,8 +148,8 @@ RSpec.describe SceneParticipantsController, type: :request do
     it "player cannot update participants" do
       sign_in(player)
       patch game_scene_participants_path(game, scene), params: { character_ids: [] }
-      expect(response).to redirect_to(game_scene_path(game, scene))
-      expect(flash[:alert]).to match(/only the gm/i)
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to match(/not authorized/i)
     end
   end
 
@@ -187,9 +187,43 @@ RSpec.describe SceneParticipantsController, type: :request do
       expect(flash[:alert]).to match(/resolved/i)
     end
 
+    # The private-scene gate asks ScenePolicy#visible?, which is satisfied by
+    # being a participant as well as by being the GM. A participant re-posting
+    # join is therefore an idempotent no-op rather than a "cannot join" error —
+    # they are already in the scene they are being told they may not enter.
+    it "a participant re-joining a private scene is a no-op, not an error" do
+      private_scene = create(:scene, game: game, private: true)
+      private_scene.scene_participants.create!(user: player)
+      sign_in(player)
+
+      expect {
+        post join_game_scene_participants_path(game, private_scene)
+      }.not_to change(SceneParticipant, :count)
+
+      expect(flash[:alert]).to be_nil
+      expect(flash[:notice]).to match(/joined/i)
+    end
+
     it "unauthenticated user is redirected" do
       post join_game_scene_participants_path(game, scene)
       expect(response).to have_http_status(:redirect)
+    end
+
+    # Joining needs write access, not merely game access: a removed member can
+    # still see the game but must not be able to join a scene. Nothing covered
+    # this, so both the write guard and the explicit :join? query could be
+    # deleted without a spec noticing.
+    it "a removed member cannot join a scene" do
+      removed = create(:user, :with_profile)
+      create(:game_member, :removed, game: game, user: removed)
+      sign_in(removed)
+
+      expect {
+        post join_game_scene_participants_path(game, scene)
+      }.not_to change(SceneParticipant, :count)
+
+      expect(response).to redirect_to(game_path(game))
+      expect(flash[:alert]).to match(/write access/i)
     end
   end
 end

@@ -11,10 +11,11 @@ RSpec.describe GamePolicy do
     allow(game).to receive(:viewable_by?).with(user).and_return(viewable)
   end
 
-  describe "#show? / #manage_players? / #export? (any viewer)" do
+  describe "#show? / #view? / #manage_players? / #export? (any viewer)" do
     it "are true when the game is viewable" do
       stub_game(viewable: true)
       expect(policy.show?).to be(true)
+      expect(policy.view?).to be(true)
       expect(policy.manage_players?).to be(true)
       expect(policy.export?).to be(true)
     end
@@ -22,6 +23,7 @@ RSpec.describe GamePolicy do
     it "are false when the game is not viewable" do
       stub_game(viewable: false)
       expect(policy.show?).to be(false)
+      expect(policy.view?).to be(false)
       expect(policy.manage_players?).to be(false)
       expect(policy.export?).to be(false)
     end
@@ -34,17 +36,19 @@ RSpec.describe GamePolicy do
     end
   end
 
-  describe "#update? / #edit? (GM only)" do
+  describe "#update? / #edit? / #manage? (GM only)" do
     it "is true for the GM" do
       stub_game(gm: true)
       expect(policy.update?).to be(true)
       expect(policy.edit?).to be(true)
+      expect(policy.manage?).to be(true)
     end
 
     it "is false for a non-GM" do
       stub_game(gm: false)
       expect(policy.update?).to be(false)
       expect(policy.edit?).to be(false)
+      expect(policy.manage?).to be(false)
     end
   end
 

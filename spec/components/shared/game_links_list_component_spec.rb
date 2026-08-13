@@ -10,7 +10,7 @@ RSpec.describe Shared::GameLinksListComponent, type: :component do
   end
 
   def build_component(**overrides)
-    described_class.new(**{ game: game, game_links: links, is_gm: false }.merge(overrides))
+    described_class.new(**{ game: game, game_links: links, can_manage: false }.merge(overrides))
   end
 
   describe "#row_classes" do
@@ -39,23 +39,23 @@ RSpec.describe Shared::GameLinksListComponent, type: :component do
     end
 
     it "shows the New Link action only to the GM" do
-      render_inline(build_component(is_gm: true))
+      render_inline(build_component(can_manage: true))
       expect(page).to have_link("New Link")
     end
 
     it "hides the New Link action from a non-GM" do
-      render_inline(build_component(is_gm: false))
+      render_inline(build_component(can_manage: false))
       expect(page).to have_no_link("New Link")
     end
 
     it "shows Edit and Delete actions only to the GM" do
-      render_inline(build_component(is_gm: true))
+      render_inline(build_component(can_manage: true))
       expect(page).to have_link("Edit")
       expect(page).to have_button("Delete")
     end
 
     it "hides Edit and Delete actions from a non-GM" do
-      render_inline(build_component(is_gm: false))
+      render_inline(build_component(can_manage: false))
       expect(page).to have_no_link("Edit")
       expect(page).to have_no_button("Delete")
     end

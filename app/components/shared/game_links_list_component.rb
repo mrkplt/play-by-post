@@ -9,11 +9,11 @@
 class Shared::GameLinksListComponent < ApplicationComponent
   extend T::Sig
 
-  sig { params(game: Game, game_links: T::Array[GameLink], is_gm: T::Boolean).void }
-  def initialize(game:, game_links:, is_gm:)
+  sig { params(game: Game, game_links: T::Array[GameLink], can_manage: T::Boolean).void }
+  def initialize(game:, game_links:, can_manage:)
     @game = T.let(game, Game)
     @game_links = T.let(game_links, T::Array[GameLink])
-    @is_gm = T.let(is_gm, T::Boolean)
+    @can_manage = T.let(can_manage, T::Boolean)
   end
 
   sig { returns(Game) }
@@ -23,8 +23,8 @@ class Shared::GameLinksListComponent < ApplicationComponent
   attr_reader :game_links
 
   sig { returns(T::Boolean) }
-  def gm?
-    @is_gm
+  def can_manage?
+    @can_manage
   end
 
   sig { returns(T::Boolean) }

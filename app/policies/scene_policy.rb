@@ -10,21 +10,31 @@ class ScenePolicy < ApplicationPolicy
     access_game? && visible?
   end
 
+  # Administering a scene: creating it, resolving it, managing its participant
+  # roster. All three are GM-only today, and every capability below delegates
+  # to this one so the private role check has exactly one caller — when the
+  # rule granularizes (e.g. a delegated player gets one of these), this is the
+  # only line that changes.
+  sig { returns(T::Boolean) }
+  def manage?
+    gm?
+  end
+
   # Only the GM creates scenes. new? => create? via base.
   sig { returns(T::Boolean) }
   def create?
-    gm?
+    manage?
   end
 
   sig { returns(T::Boolean) }
   def resolve?
-    gm?
+    manage?
   end
 
   # Editing a scene's participant roster is a GM action.
   sig { returns(T::Boolean) }
   def manage_participants?
-    gm?
+    manage?
   end
 
   # Joining a scene requires write access (GM or active member). The private and

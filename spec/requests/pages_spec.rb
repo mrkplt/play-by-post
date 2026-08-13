@@ -37,10 +37,15 @@ RSpec.describe PagesController, type: :request do
       expect(response).to redirect_to(root_path)
     end
 
+    # The message matters, not just the redirect: without it this passes even
+    # if require_game_access! is deleted entirely, since Pundit's own denial
+    # also lands on root_path. "Cannot see this game at all" is a distinct
+    # outcome from "not allowed to do this particular thing".
     it "is denied to a non-member" do
       sign_in(outsider)
       get game_page_path(game, page)
       expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to eq("You do not have access to this game.")
     end
 
     it "redirects an unauthenticated visitor" do
@@ -73,7 +78,7 @@ RSpec.describe PagesController, type: :request do
     it "is denied to an active player" do
       sign_in(player)
       get new_game_page_path(game)
-      expect(response).to redirect_to(game_path(game, anchor: "pages"))
+      expect(response).to redirect_to(root_path)
     end
 
     it "renders the universal header nav affordances" do
@@ -102,6 +107,12 @@ RSpec.describe PagesController, type: :request do
       page = Page.last
       expect(page.slug).to match(/\A[a-zA-Z0-9]{16}\z/)
       expect(response).to redirect_to(game_page_path(game, page))
+
+      # Assert the permitted attributes actually landed: the specs sent a body
+      # but never checked it persisted, so dropping :body from page_params'
+      # permit list changed nothing that a spec could see.
+      expect(page.title).to eq("New Page")
+      expect(page.body).to eq("Body")
     end
 
     it "re-renders on validation failure" do

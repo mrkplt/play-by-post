@@ -37,10 +37,14 @@ RSpec.describe GameLinksController, type: :request do
       expect(response).to redirect_to(root_path)
     end
 
+    # Asserting the message, not just the redirect: Pundit's own denial also
+    # lands on root_path, so without this the spec passes even with
+    # require_game_access! deleted entirely.
     it "is denied to a non-member" do
       sign_in(outsider)
       get game_game_links_path(game)
       expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to eq("You do not have access to this game.")
     end
 
     it "redirects an unauthenticated visitor" do
@@ -67,7 +71,8 @@ RSpec.describe GameLinksController, type: :request do
     it "is denied to an active player" do
       sign_in(player)
       get new_game_game_link_path(game)
-      expect(response).to redirect_to(game_game_links_path(game))
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to eq("You are not authorized to perform this action.")
     end
 
     it "renders the universal header nav affordances" do

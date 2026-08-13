@@ -11,16 +11,16 @@ class Shared::GameCardComponent < ApplicationComponent
   sig do
     params(
       game: Game,
-      is_gm: T::Boolean,
+      can_manage: T::Boolean,
       former: T::Boolean,
       character_label: T.nilable(String),
       active_scene_count: Integer,
       new_activity: T::Boolean
     ).void
   end
-  def initialize(game:, is_gm:, former:, character_label:, active_scene_count:, new_activity: false)
+  def initialize(game:, can_manage:, former:, character_label:, active_scene_count:, new_activity: false)
     @game = game
-    @is_gm = is_gm
+    @can_manage = can_manage
     @former = former
     @character_label = character_label
     @active_scene_count = active_scene_count
@@ -32,7 +32,7 @@ class Shared::GameCardComponent < ApplicationComponent
 
   sig { returns(T::Boolean) }
   def show_crown?
-    @is_gm
+    @can_manage
   end
 
   sig { returns(T::Boolean) }

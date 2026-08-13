@@ -7,7 +7,6 @@ class SceneSummariesController < ApplicationController
   before_action :require_game_access!, only: %i[index new create edit update destroy]
   before_action :set_scene, only: %i[new create edit update destroy]
   before_action :require_resolved_scene!, only: %i[new create]
-  before_action :require_gm!, only: %i[new create edit update destroy]
   before_action :set_summary, only: %i[edit update destroy]
   after_action :verify_authorized, except: :index
 
@@ -90,14 +89,7 @@ class SceneSummariesController < ApplicationController
 
   sig { returns(T::Boolean) }
   def game_access_granted?
-    policy(@game).show?
-  end
-
-  sig { void }
-  def require_gm!
-    return if policy(@game).update?
-
-    redirect_to @game, alert: "Only the GM can manage summaries."
+    policy(@game).view?
   end
 
   sig { void }

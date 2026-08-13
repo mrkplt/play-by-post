@@ -7,9 +7,19 @@
 class NotebookEntryPolicy < ApplicationPolicy
   extend T::Sig
 
+  # Working the notebook: reading the board, writing an entry, moving one
+  # between lanes, promoting it to a Page. The notebook is a single GM
+  # scratchpad, so one capability covers every direction — and every CRUD
+  # predicate below delegates to it, so when the rule granularizes this is the
+  # only line that changes.
+  sig { returns(T::Boolean) }
+  def manage?
+    gm?
+  end
+
   sig { returns(T::Boolean) }
   def index?
-    gm?
+    manage?
   end
 
   # Stated for the resource, not for a route: no screen reads a single entry
@@ -18,32 +28,22 @@ class NotebookEntryPolicy < ApplicationPolicy
   # happen to be routed.
   sig { returns(T::Boolean) }
   def show?
-    gm?
+    manage?
   end
 
   sig { returns(T::Boolean) }
   def create?
-    gm?
+    manage?
   end
 
   sig { returns(T::Boolean) }
   def update?
-    gm?
+    manage?
   end
 
   sig { returns(T::Boolean) }
   def destroy?
-    gm?
-  end
-
-  # Working the notebook itself: moving an entry between lanes, promoting it to
-  # a Page. Named for the game function rather than borrowing `update?` — that
-  # asks whether the record may be edited, which is a different question with
-  # the same answer only while the GM is also the game's owner. When that
-  # splits, this line changes and no caller does.
-  sig { returns(T::Boolean) }
-  def manage?
-    gm?
+    manage?
   end
 
   private

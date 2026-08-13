@@ -352,7 +352,8 @@ RSpec.describe "Games", type: :feature do
       sign_in_as(player)
       visit edit_game_path(game)
 
-      expect(page).to have_current_path(game_path(game))
+      expect(page).to have_current_path(root_path)
+      expect(page).to have_text("You are not authorized to perform this action.")
     end
   end
 end

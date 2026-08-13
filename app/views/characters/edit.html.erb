@@ -5,7 +5,7 @@
     <%= render Shared::HeaderComponent.new(
           title: "Edit — #{@character.name}",
           breadcrumbs: Shared::BreadcrumbsComponent.new(game: @game),
-          secondary_nav: Shared::GameNavComponent.new(game: @game, active_tab: :roster, is_gm: policy(@game).update?, mode: :link)) %>
+          secondary_nav: Shared::GameNavComponent.new(game: @game, active_tab: :roster, can_manage: policy(@game).manage?, mode: :link)) %>
   <% end %>
 
   <% frame.with_footer do %>

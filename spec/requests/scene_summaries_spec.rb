@@ -70,11 +70,15 @@ RSpec.describe SceneSummariesController, type: :request do
       expect(response).to redirect_to(root_path)
     end
 
+    # Asserting the message, not just the redirect: Pundit's own denial also
+    # lands on root_path, so without this the spec passes even with
+    # require_game_access! deleted entirely.
     it "redirects a signed-in non-member to root" do
       outsider = create(:user, :with_profile)
       sign_in(outsider)
       get game_scene_summaries_path(game)
       expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to eq("You do not have access to this game.")
     end
 
     it "returns summaries ordered by resolved_at descending" do
@@ -122,7 +126,8 @@ RSpec.describe SceneSummariesController, type: :request do
     it "redirects a player" do
       sign_in(player)
       get new_game_scene_scene_summary_path(game, resolved_scene)
-      expect(response).to redirect_to(game_path(game))
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to eq("You are not authorized to perform this action.")
     end
 
     it "redirects GM on an unresolved scene" do
@@ -166,7 +171,8 @@ RSpec.describe SceneSummariesController, type: :request do
       sign_in(player)
       post game_scene_scene_summary_path(game, resolved_scene),
            params: { scene_summary: { body: "Summary text." } }
-      expect(response).to redirect_to(game_path(game))
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to eq("You are not authorized to perform this action.")
     end
 
     it "renders new on invalid params" do
@@ -229,15 +235,6 @@ RSpec.describe SceneSummariesController, type: :request do
     end
   end
 
-  describe "require_gm! guard" do
-    it "redirects a player with alert" do
-      sign_in(player)
-      get new_game_scene_scene_summary_path(game, resolved_scene)
-      expect(response).to redirect_to(game_path(game))
-      expect(flash[:alert]).to be_present
-    end
-  end
-
   describe "require_game_access! guard" do
     it "redirects a non-member to root with alert" do
       outsider = create(:user, :with_profile)
@@ -282,7 +279,8 @@ RSpec.describe SceneSummariesController, type: :request do
       sign_in(player)
       patch game_scene_scene_summary_path(game, resolved_scene),
             params: { scene_summary: { body: "Edited." } }
-      expect(response).to redirect_to(game_path(game))
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to eq("You are not authorized to perform this action.")
     end
 
     it "renders edit with 422 on validation failure" do
@@ -310,7 +308,8 @@ RSpec.describe SceneSummariesController, type: :request do
     it "rejects a player" do
       sign_in(player)
       delete game_scene_scene_summary_path(game, resolved_scene)
-      expect(response).to redirect_to(game_path(game))
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to eq("You are not authorized to perform this action.")
     end
   end
 end

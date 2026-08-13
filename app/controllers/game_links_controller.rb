@@ -6,7 +6,6 @@ class GameLinksController < ApplicationController
   before_action :set_game
   before_action :require_game_access!
   before_action :set_game_link, only: %i[edit update destroy]
-  before_action :require_gm!, only: %i[new create edit update destroy]
   after_action :verify_authorized
 
   sig { void }
@@ -72,14 +71,7 @@ class GameLinksController < ApplicationController
 
   sig { void }
   def require_game_access!
-    redirect_to root_path, alert: "You do not have access to this game." unless policy(@game).show?
-  end
-
-  sig { void }
-  def require_gm!
-    unless policy(@game).update?
-      redirect_to game_game_links_path(@game), alert: "Only the GM can manage links."
-    end
+    redirect_to root_path, alert: "You do not have access to this game." unless policy(@game).view?
   end
 
   sig { returns(ActionController::Parameters) }

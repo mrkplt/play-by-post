@@ -3,11 +3,11 @@
 class Shared::GalleryComponent < ApplicationComponent
   extend T::Sig
 
-  sig { params(game_files: T::Array[GameFile], game: Game, is_gm: T::Boolean).void }
-  def initialize(game_files:, game:, is_gm: false)
+  sig { params(game_files: T::Array[GameFile], game: Game, can_manage: T::Boolean).void }
+  def initialize(game_files:, game:, can_manage: false)
     @game_files = T.let(game_files.map { |gf| GameFilePresenter.new(gf) }, T::Array[GameFilePresenter])
     @game       = T.let(game, Game)
-    @is_gm      = T.let(is_gm, T::Boolean)
+    @can_manage = T.let(can_manage, T::Boolean)
   end
 
   sig { params(gf: GameFilePresenter).returns(T.untyped) }
@@ -17,7 +17,7 @@ class Shared::GalleryComponent < ApplicationComponent
 
   sig { params(gf: GameFilePresenter).returns(T.untyped) }
   def delete_url_for(gf)
-    return nil unless @is_gm
+    return nil unless @can_manage
     T.unsafe(helpers).game_game_file_path(@game, gf)
   end
 

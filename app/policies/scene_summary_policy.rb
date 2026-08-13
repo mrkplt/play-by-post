@@ -7,19 +7,28 @@ class SceneSummaryPolicy < ApplicationPolicy
   # Only the GM writes, edits, or deletes a scene summary. The index (a
   # members-only listing) is gated by require_game_access! at the controller.
   # new? => create?, edit? => update? via base.
+
+  # May write, edit, or delete this scene's summary. Currently answered by
+  # "is the GM" (gm? is the private implementation); every write predicate
+  # below delegates to it so a rule change is a one-line edit.
+  sig { returns(T::Boolean) }
+  def manage?
+    gm?
+  end
+
   sig { returns(T::Boolean) }
   def create?
-    gm?
+    manage?
   end
 
   sig { returns(T::Boolean) }
   def update?
-    gm?
+    manage?
   end
 
   sig { returns(T::Boolean) }
   def destroy?
-    gm?
+    manage?
   end
 
   private

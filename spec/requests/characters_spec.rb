@@ -19,6 +19,21 @@ RSpec.describe CharactersController, type: :request do
       expect(response).to have_http_status(:ok)
     end
 
+    # Creating a sheet needs write access, not merely game access: a removed
+    # member can still view the game but must not write to it. Nothing covered
+    # this, so require_active_member_for_write! could be emptied entirely
+    # without a spec noticing.
+    it "a removed member cannot open the new character form" do
+      removed = create(:user, :with_profile)
+      create(:game_member, :removed, game: game, user: removed)
+      sign_in(removed)
+
+      get new_game_character_path(game)
+
+      expect(response).to redirect_to(game_path(game))
+      expect(flash[:alert]).to eq("You no longer have write access to this game.")
+    end
+
     it "player can access the new character form" do
       sign_in(player)
       get new_game_character_path(game)
@@ -222,8 +237,8 @@ RSpec.describe CharactersController, type: :request do
       sign_in(player)
       patch archive_game_character_path(game, character)
       expect(character.reload).not_to be_archived
-      expect(response).to redirect_to(game_character_path(game, character))
-      expect(flash[:alert]).to match(/only the gm/i)
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to match(/not authorized/i)
     end
   end
 
@@ -241,8 +256,8 @@ RSpec.describe CharactersController, type: :request do
       sign_in(player)
       patch restore_game_character_path(game, character)
       expect(character.reload.archived_at).not_to be_nil
-      expect(response).to redirect_to(game_character_path(game, character))
-      expect(flash[:alert]).to match(/only the gm/i)
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to match(/not authorized/i)
     end
   end
 

@@ -5,7 +5,6 @@ class GameFilesController < ApplicationController
 
   before_action :set_game
   before_action :require_game_access!
-  before_action :require_gm!, only: %i[create destroy]
   after_action :verify_authorized, except: :index
 
   sig { void }
@@ -43,11 +42,14 @@ class GameFilesController < ApplicationController
     end
   end
 
+  # Authorization runs before the lookup, and deliberately: deciding it against
+  # an unsaved instance keeps the answer independent of whether the id exists,
+  # so an unauthorized caller cannot tell a missing file from a forbidden one.
   sig { void }
   def destroy
-    game_file = @game.game_files.find(params[:id])
-    authorize game_file
-    game_file.destroy
+    files = @game.game_files
+    authorize files.new
+    files.find(params[:id]).destroy
     redirect_to game_game_files_path(@game), notice: "File deleted."
   end
 
@@ -60,13 +62,6 @@ class GameFilesController < ApplicationController
 
   sig { void }
   def require_game_access!
-    redirect_to root_path, alert: "You do not have access to this game." unless policy(@game).show?
-  end
-
-  sig { void }
-  def require_gm!
-    unless policy(@game).update?
-      redirect_to game_path(@game), alert: "Only the GM can manage files."
-    end
+    redirect_to root_path, alert: "You do not have access to this game." unless policy(@game).view?
   end
 end

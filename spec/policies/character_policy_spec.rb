@@ -126,6 +126,18 @@ RSpec.describe CharacterPolicy do
     end
   end
 
+  describe "#manage_roster? (GM only)" do
+    it "is true for the GM" do
+      stub_game(gm: true)
+      expect(policy.manage_roster?).to be(true)
+    end
+
+    it "is false for a non-GM" do
+      stub_game(gm: false)
+      expect(policy.manage_roster?).to be(false)
+    end
+  end
+
   describe "#archive? / #restore? / #assign_owner? (GM only)" do
     it "is true for the GM" do
       stub_game(gm: true)
@@ -139,6 +151,16 @@ RSpec.describe CharacterPolicy do
       expect(policy.archive?).to be(false)
       expect(policy.restore?).to be(false)
       expect(policy.assign_owner?).to be(false)
+    end
+
+    it "archive? and restore? delegate to manage_roster?" do
+      allow(policy).to receive(:manage_roster?).and_return(true)
+      expect(policy.archive?).to be(true)
+      expect(policy.restore?).to be(true)
+
+      allow(policy).to receive(:manage_roster?).and_return(false)
+      expect(policy.archive?).to be(false)
+      expect(policy.restore?).to be(false)
     end
   end
 

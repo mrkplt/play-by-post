@@ -124,8 +124,8 @@ RSpec.describe ScenesController, type: :request do
     it "player is redirected with alert" do
       sign_in(player)
       get new_game_scene_path(game)
-      expect(response).to redirect_to(game_path(game))
-      expect(flash[:alert]).to match(/only the gm/i)
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to match(/not authorized/i)
     end
 
     it "shows resolved scene with (Resolved) suffix in parent options" do
@@ -326,7 +326,7 @@ RSpec.describe ScenesController, type: :request do
       expect(response.body).to include(nameless.email)
     end
 
-    context "GM-specific content (@is_gm)" do
+    context "GM-specific content (can_manage)" do
       it "shows Edit Participants link to GM" do
         sign_in(gm)
         get game_scene_path(game, scene)
@@ -393,7 +393,7 @@ RSpec.describe ScenesController, type: :request do
       end
     end
 
-    context "post composer visibility (@is_participant, @is_gm)" do
+    context "post composer visibility (@is_participant, can_manage)" do
       it "shows post composer to GM" do
         sign_in(gm)
         get game_scene_path(game, scene)
@@ -715,7 +715,7 @@ RSpec.describe ScenesController, type: :request do
       expect {
         post game_scenes_path(game), params: { scene: { title: "Sneaky" } }
       }.not_to change(Scene, :count)
-      expect(response).to redirect_to(game_path(game))
+      expect(response).to redirect_to(root_path)
     end
 
     context "email notifications" do
@@ -778,8 +778,8 @@ RSpec.describe ScenesController, type: :request do
       sign_in(player)
       patch resolve_game_scene_path(game, scene), params: { resolution: "Nope." }
       expect(scene.reload).not_to be_resolved
-      expect(response).to redirect_to(game_scene_path(game, scene))
-      expect(flash[:alert]).to match(/only the gm/i)
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to match(/not authorized/i)
     end
 
     it "redirects with alert when scene is already resolved" do

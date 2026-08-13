@@ -22,14 +22,23 @@ class CharacterPolicy < ApplicationPolicy
     write_member? && editable?
   end
 
+  # Archiving/restoring a character is a roster-management action. archive?
+  # and restore? both delegate to it, so when the rule granularizes (e.g. GM
+  # status splitting from a delegated roster manager) this is the one line
+  # that changes.
   sig { returns(T::Boolean) }
-  def archive?
+  def manage_roster?
     gm?
   end
 
   sig { returns(T::Boolean) }
+  def archive?
+    manage_roster?
+  end
+
+  sig { returns(T::Boolean) }
   def restore?
-    gm?
+    manage_roster?
   end
 
   # The hidden-sheet gate on its own — a hidden sheet is visible only to its
@@ -43,6 +52,11 @@ class CharacterPolicy < ApplicationPolicy
   # Field-level authorization: only the GM assigns a sheet's owner (user_id).
   # A player's sheet is always their own. `hidden` is intentionally writable by
   # any owner — players may hide their own sheet (REQUIREMENTS).
+  #
+  # This is the deliberate exception to "gm? has exactly one caller": reassigning
+  # a sheet's owner and managing the roster are two different game functions that
+  # happen to share a rule today. Routing this through manage_roster? would tie
+  # them together, so granularizing one would silently move the other.
   sig { returns(T::Boolean) }
   def assign_owner?
     gm?

@@ -12,19 +12,28 @@ class PagePolicy < ApplicationPolicy
     viewable?
   end
 
+  # May manage this game's pages: create, edit, and delete. Currently
+  # answered by "is the GM" (gm? is the private implementation), but the
+  # capability is the stable name — every CRUD predicate below delegates to
+  # it, so when the rule granularizes this is the only line that changes.
+  sig { returns(T::Boolean) }
+  def manage?
+    gm?
+  end
+
   sig { returns(T::Boolean) }
   def create?
-    gm?
+    manage?
   end
 
   sig { returns(T::Boolean) }
   def update?
-    gm?
+    manage?
   end
 
   sig { returns(T::Boolean) }
   def destroy?
-    gm?
+    manage?
   end
 
   private

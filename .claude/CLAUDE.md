@@ -419,6 +419,30 @@ Hard-won specifics for actually clearing the gates. Read this before touching up
 
 **Components own their content — they are not thin HTML wrappers.** A "status badge row" or a "labeled control row" component holds its labels/controls/conditions and *is* the pattern; wrapping an already-shared primitive (e.g. nesting two `Ui::BadgeComponent` renders inside conditionals) only to add a container is not extraction. But a component takes **derived, presentation-ready data, never a raw model**: `Shared::StatusBadgeRowComponent` takes a pre-computed `[{label:, variant:}]` array (a presenter picks the symbolic `variant:` from `Ui::BadgeComponent`'s palette) — it does not receive a `Scene`/`Character` and compute `.private?`/`.resolved?` itself. That would violate the presenter/component split and force a `T.any(...)` sig across model shapes.
 
+### Policies & authorization
+
+**Every policy question is one of three distinct things, and they must not collapse into each other:**
+- **System function** — Pundit/ActiveRecord vocabulary (`update?`, `destroy?`, `show?`) meaning "this row may be modified/deleted/viewed." Exists because `authorize`/`policy_scope` infer the method name from `action_name`.
+- **Role** — a domain fact about a person (`gm?`, `owner?`, `write_member?`): who they are, not what they're allowed to do.
+- **Game function (capability)** — what is actually being decided: "may this user manage this game's pages," "may this user resolve this scene." This is the stable concept; who satisfies it is not.
+
+**Domain understanding this encodes:** a GM is currently the same person as the game owner, but that will not always be true — a game owner may not be a GM, a game may have many GMs or none, and GM-only functions may later granularize to permission levels or specific players. Writing the capability *as* the role (`policy(@game).update?` meaning "is this user the GM") bakes `owner == GM == can-do-everything` into every call site, so the rule can never change in one place.
+
+**The rule:**
+- **Capability predicates are the public surface.** Controllers, views, components, and presenters ask only capability questions, named for the game function (`manage?`, `resolve?`, `manage_participants?`, `participate?`, `assign_owner?`) — never a role question and never a bare CRUD predicate borrowed for a different purpose.
+- **Role predicates stay `private`** inside the policy. They are the *implementation* of a capability — the one line that changes when a rule granularizes.
+- **`update?`/`destroy?`/`show?` remain**, because Pundit infers them from `action_name`, but their bodies must delegate to a capability predicate, not duplicate the role check.
+- **`policy(x).update?` (or `.show?`) must never be used as a stand-in for "is GM" (or "can view").** If a call site is asking a capability question, it calls a capability predicate — `GamePolicy#manage?` / `#view?`, not `#update?` / `#show?` reused out of convenience.
+- **Do not add a public role-named method anywhere** (e.g. a public `GamePolicy#game_master?`) — that's the same mistake one level down: a role back on the public surface.
+
+This extends to the view layer: a component parameter or presenter method is a public API too, so it is named for the capability (`can_manage:`, `GamePresenter#can_manage?`), never the role. A predicate answering an authorization question must ask the policy — `Shared::SidebarComponent` once read `member_for(user).game_master?` directly, which looks converted once its call site is renamed but silently diverges from every other check the day the rule granularizes.
+
+**The completion test: `gm?` must have exactly one caller — the capability.** If it appears in three CRUD bodies, granularizing means editing three lines, which is the thing this convention exists to prevent. Every policy satisfies this except `CharacterPolicy`, where `assign_owner?` and `manage_roster?` are deliberately distinct game functions that happen to share a rule today.
+
+**Copy `GamePolicy#manage?`/`#view?` or `NotebookEntryPolicy#manage?`** — both implement the rule end to end: CRUD predicates delegate, role predicates are private.
+
+**When converting a call site, convert the controller and its views together.** A view gated on `can_manage?` whose controller still loads the data under `update?` is identical today and raises `NoMethodError` on nil the day they diverge — a split-brain that is harder to spot than the original conflation.
+
 ### Navigation architecture (target shell)
 
 The app has **two-tier navigation**, and the fix for "varying presentation" is that *one* header renders on every screen (varying markup per screen is the bug, not the goal):

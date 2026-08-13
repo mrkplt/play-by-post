@@ -28,6 +28,19 @@ RSpec.describe NotebookEntriesController, type: :request do
       expect(response.body).to include("Idea")
     end
 
+    # A lane lists oldest-first, so a GM reads a lane in the order they wrote
+    # it. Nothing asserted the ordering, so entries_for could drop its `order`
+    # entirely and every spec still passed.
+    it "lists a lane oldest first" do
+      newer = create(:notebook_entry, game: game, title: "Written Second", created_at: 1.hour.ago)
+      older = create(:notebook_entry, game: game, title: "Written First", created_at: 3.hours.ago)
+
+      sign_in(gm)
+      get game_notebook_entries_path(game)
+
+      expect(response.body.index(older.title)).to be < response.body.index(newer.title)
+    end
+
     it "renders the universal header nav affordances" do
       sign_in(gm)
       get game_notebook_entries_path(game)
@@ -120,6 +133,13 @@ RSpec.describe NotebookEntriesController, type: :request do
       expect(entry.slug).to match(/\A[a-zA-Z0-9]{16}\z/)
       expect(entry.status).to eq("new")
       expect(response).to redirect_to(game_notebook_entries_path(game))
+
+      # Assert the permitted attributes actually landed: the spec sent a body
+      # but never checked it persisted, so dropping :body from the permit list
+      # changed nothing a spec could see.
+      expect(entry.title).to eq("New Idea")
+      expect(entry.body).to eq("Body")
+      expect(flash[:notice]).to eq("Entry created.")
     end
 
     it "re-renders on validation failure" do
@@ -157,6 +177,7 @@ RSpec.describe NotebookEntriesController, type: :request do
       patch game_notebook_entry_path(game, entry), params: { notebook_entry: { title: "Updated" } }
       expect(response).to redirect_to(edit_game_notebook_entry_path(game, entry))
       expect(entry.reload.title).to eq("Updated")
+      expect(flash[:notice]).to eq("Entry updated.")
     end
 
     it "addresses the entry by slug, not id" do
@@ -312,6 +333,7 @@ RSpec.describe NotebookEntriesController, type: :request do
       expect(entry.reload.status).to eq("done")
       expect(entry.promoted_page_id).to eq(page.id)
       expect(response).to redirect_to(game_page_path(game, page))
+      expect(flash[:notice]).to eq("Promoted to a page.")
     end
 
     it "redirects to the promoted page even when Turbo requests turbo_stream" do
@@ -358,6 +380,7 @@ RSpec.describe NotebookEntriesController, type: :request do
         delete game_notebook_entry_path(game, entry)
       }.to change(NotebookEntry, :count).by(-1)
       expect(response).to redirect_to(game_notebook_entries_path(game))
+      expect(flash[:notice]).to eq("Entry deleted.")
     end
 
     it "denies a player" do

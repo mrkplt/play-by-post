@@ -5,12 +5,12 @@
     <%= render Shared::HeaderComponent.new(
           title: "Campaign Log",
           breadcrumbs: Shared::BreadcrumbsComponent.new(game: @game),
-          secondary_nav: Shared::GameNavComponent.new(game: @game, active_tab: :scenes, is_gm: @game_presenter.gm?, mode: :link)) %>
+          secondary_nav: Shared::GameNavComponent.new(game: @game, active_tab: :scenes, can_manage: @game_presenter.can_manage?, mode: :link)) %>
   <% end %>
 
   <% frame.with_footer do %>
     <%= render Shared::PageActionsComponent.new do |actions| %>
-      <% if @game_presenter.gm? %>
+      <% if @game_presenter.can_manage? %>
         <% actions.with_cancel do %>
           <%= render Ui::ButtonComponent.new(variant: :secondary, url: edit_game_path(@game)) do %>Edit Game<% end %>
         <% end %>

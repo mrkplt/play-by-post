@@ -10,10 +10,10 @@
 
   <% if signed_in? && @current_user.games.any? %>
     <% @current_user.games_by_recent_activity(limit: 8).each do |game| %>
-      <% is_gm = game_master_in?(game) %>
+      <% can_manage = can_manage?(game) %>
       <%= link_to game_path(game), class: "sidebar-link flex items-center justify-between" do %>
         <span><%= game.name %></span>
-        <% if is_gm %>
+        <% if can_manage %>
           <%= helpers.icon "crown-03", class: "w-4 h-4 text-accent" %>
         <% end %>
       <% end %>

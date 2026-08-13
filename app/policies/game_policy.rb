@@ -4,10 +4,13 @@
 class GamePolicy < ApplicationPolicy
   extend T::Sig
 
-  # Anyone who can see the game (GM, active, or removed member).
+  # Anyone who can see the game (GM, active, or removed member). show? and
+  # view? ask the same question; show? exists because Pundit's `authorize`
+  # infers it from action_name, view? is the name callers outside that
+  # inference should reach for.
   sig { returns(T::Boolean) }
   def show?
-    viewable?
+    view?
   end
 
   # Any authenticated user may create a game (they become its GM).
@@ -17,29 +20,52 @@ class GamePolicy < ApplicationPolicy
     true
   end
 
-  # Editing the game and its preference toggles is GM-only. edit? => update?.
+  # Editing the game and its preference toggles is a manage-game action.
+  # edit? => update?.
   sig { returns(T::Boolean) }
   def update?
-    gm?
+    manage?
   end
 
-  # Deleting the game (soft-delete, then scheduled purge) is GM-only.
+  # Deleting the game (soft-delete, then scheduled purge) is a manage-game
+  # action.
   sig { returns(T::Boolean) }
   def destroy?
+    manage?
+  end
+
+  # May view this game at all (GM, active, or removed member). The capability
+  # name for what `policy(@game).show?` call sites are actually asking; the
+  # controllers' require_game_access! guards ask it for their own distinct
+  # message and are not replaced by it.
+  sig { returns(T::Boolean) }
+  def view?
+    viewable?
+  end
+
+  # May administer this game: edit its settings, delete it, manage its pages/
+  # links/roster/notebook. Currently answered by "is the GM" (gm? is the
+  # private implementation), but the capability is the stable name — when GM
+  # status splits from game ownership or grants permission levels, this is the
+  # one line that changes.
+  sig { returns(T::Boolean) }
+  def manage?
     gm?
   end
 
-  # The player-management screen is visible to any game member; GM-only sections
-  # within it are gated separately in the view.
+  # The player-management screen is visible to any game member; the sections
+  # within it that administer the roster are gated separately in the view.
+  # Built on view?, not viewable? — a capability composes from the capability
+  # below it, so the private role check has exactly one caller.
   sig { returns(T::Boolean) }
   def manage_players?
-    viewable?
+    view?
   end
 
   # Requesting an export requires being able to see the game.
   sig { returns(T::Boolean) }
   def export?
-    viewable?
+    view?
   end
 
   # Write access to the game: the GM or an active member (mirrors the write

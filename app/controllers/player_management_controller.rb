@@ -12,7 +12,7 @@ class PlayerManagementController < ApplicationController
     authorize @game, :manage_players?
     @game_presenter = GamePresenter.new(@game, current_user)
 
-    if policy(@game).update?
+    if policy(@game).manage?
       @members = @game.game_members.where.not(status: "banned").where(role: "player").includes(:user)
       @member_display_names = @members.each_with_object({}) { |m, h| h[m.user_id] = UserPresenter.new(m.user).display_name_or_email }
       @member_characters = character_names_by_user
@@ -37,6 +37,9 @@ class PlayerManagementController < ApplicationController
     @game = Game.find(params[:game_id])
   end
 
+  # Not redundant with `authorize`: this gates before the action runs and gives
+  # "cannot see this game at all" its own message, distinct from a denial of
+  # the specific thing being attempted.
   sig { void }
   def require_access!
     redirect_to root_path, alert: "You do not have access to this game." unless policy(@game).manage_players?

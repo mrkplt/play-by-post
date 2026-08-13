@@ -17,6 +17,8 @@ class NotebookEntriesController < ApplicationController
   before_action :set_notebook_entry, only: %i[edit update destroy move promote]
   after_action :verify_authorized
 
+  helper_method :game_presenter
+
   sig { void }
   def index
     authorize @game.notebook_entries.new, :index?
@@ -71,7 +73,8 @@ class NotebookEntriesController < ApplicationController
   def move
     authorize @notebook_entry, :manage?
 
-    @notebook_entry.update!(move_params)
+    lane_move = NotebookLaneMove.new(params)
+    @notebook_entry.update!(lane_move.attributes)
 
     # On the board the response swaps the affected lanes in place. Off the
     # board there are no lanes to swap, so say what happened and come back.
@@ -79,7 +82,7 @@ class NotebookEntriesController < ApplicationController
     # This branches on an explicit form field, not on the request format:
     # Turbo advertises `text/vnd.turbo-stream.html` for *every* unsafe request,
     # so a `respond_to` format.html branch would be unreachable here.
-    if standalone_move?
+    if lane_move.standalone?
       redirect_to edit_game_notebook_entry_path(@game, @notebook_entry), notice: "Entry moved."
     else
       render :move, formats: :turbo_stream
@@ -90,12 +93,8 @@ class NotebookEntriesController < ApplicationController
   def promote
     authorize @notebook_entry, :manage?
 
-    unless @notebook_entry.promoted?
-      page = @game.pages.create!(title: @notebook_entry.title, body: @notebook_entry.body)
-      @notebook_entry.update!(status: "done", promoted_page: page)
-    end
-
-    redirect_to game_page_path(@game, T.must(@notebook_entry.promoted_page)), notice: "Promoted to a page."
+    page = NotebookEntryPromotion.new(@notebook_entry).call
+    redirect_to game_page_path(@game, page), notice: "Promoted to a page."
   end
 
   private
@@ -110,6 +109,20 @@ class NotebookEntriesController < ApplicationController
     @notebook_entry = @game.notebook_entries.find_by!(slug: params[:slug])
   end
 
+  # The notebook's screens render the game nav, which asks whether the viewer
+  # may administer the game. Every action here is already GM-only, so the answer
+  # is always true today — but the view asks the policy for it rather than
+  # hard-coding a literal, so it stays correct when the rule granularizes.
+  #
+  # Memoized rather than set by a before_action: the actions that render it are
+  # not the ones named after it (create and update re-render :new and :edit on
+  # validation failure), and a lazily-built presenter cannot be missed off that
+  # list.
+  sig { returns(GamePresenter) }
+  def game_presenter
+    @game_presenter ||= T.let(GamePresenter.new(@game, T.must(current_user)), T.nilable(GamePresenter))
+  end
+
   sig { params(game: Game).returns(T::Array[NotebookEntry]) }
   def entries_for(game)
     game.notebook_entries.order(:created_at).to_a
@@ -118,22 +131,5 @@ class NotebookEntriesController < ApplicationController
   sig { returns(ActionController::Parameters) }
   def notebook_entry_params
     params.require(:notebook_entry).permit(:title, :body)
-  end
-
-  # The lane picker states where it was rendered; only the board can consume a
-  # lane-swapping Turbo Stream.
-  sig { returns(T::Boolean) }
-  def standalone_move?
-    params[:response_mode].to_s == "standalone"
-  end
-
-  sig { returns(ActionController::Parameters) }
-  def move_params
-    permitted = params.require(:notebook_entry).permit(:status)
-    unless NotebookEntry::STATUSES.include?(permitted[:status])
-      raise ActionController::BadRequest, "invalid status"
-    end
-
-    permitted
   end
 end

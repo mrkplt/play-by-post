@@ -37,7 +37,7 @@ RSpec.describe Shared::GalleryComponent, type: :component do
     expect(rendered_component).to have_css("[data-testid='lightbox']", visible: :hidden)
   end
 
-  context "when is_gm is false" do
+  context "when can_manage is false" do
     it "does not render the delete button" do
       expect(rendered_component).not_to have_css("[data-lightbox-delete-btn]")
     end
@@ -49,8 +49,8 @@ RSpec.describe Shared::GalleryComponent, type: :component do
     end
   end
 
-  context "when is_gm is true" do
-    subject(:component) { described_class.new(game_files: [ game_file ], game: game, is_gm: true) }
+  context "when can_manage is true" do
+    subject(:component) { described_class.new(game_files: [ game_file ], game: game, can_manage: true) }
 
     it "renders the delete button" do
       expect(rendered_component).to have_css("[data-lightbox-delete-btn]", visible: :hidden)

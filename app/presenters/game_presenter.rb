@@ -1,9 +1,9 @@
 # typed: strict
 
-# View model for a game and its viewer. Replaces the derived @is_gm boolean the
-# controllers used to thread into views: the GM check is a method here, backed by
-# the policy so a GM-only affordance can never diverge from what the controller
-# authorizes.
+# View model for a game and its viewer. Replaces the derived boolean the
+# controllers used to thread into views: the capability check is a method here,
+# backed by the policy so an affordance can never diverge from what the
+# controller authorizes.
 class GamePresenter < BasePresenter
   extend T::Sig
 
@@ -13,10 +13,12 @@ class GamePresenter < BasePresenter
     @current_user = T.let(current_user, User)
   end
 
-  # The viewer runs this game.
+  # The viewer may administer this game. A capability, not a role: it asks the
+  # policy's `manage?` rather than `update?` (which means "this row may be
+  # modified") so the view layer never hard-codes who currently qualifies.
   sig { returns(T::Boolean) }
-  def gm?
-    GamePolicy.new(@current_user, @model).update?
+  def can_manage?
+    GamePolicy.new(@current_user, @model).manage?
   end
 
   # Outstanding (unaccepted) invitations for this game, newest first — the data
