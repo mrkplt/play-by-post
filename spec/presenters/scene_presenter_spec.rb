@@ -74,8 +74,14 @@ RSpec.describe ScenePresenter do
       )
     end
 
-    it "is :join for an eligible non-participant, non-GM, active member on an open public scene" do
-      expect(page_action_for(scene, membership: active_membership)).to eq(:join)
+    it "is a Join Scene POST action for an eligible non-participant, non-GM, active member on an open public scene" do
+      action = page_action_for(scene, membership: active_membership)
+
+      expect(action).to have_attributes(
+        label: "Join Scene",
+        route: :join_game_scene_participants_path,
+        http_method: :post
+      )
     end
 
     it "is nil when already a participant" do
@@ -99,14 +105,20 @@ RSpec.describe ScenePresenter do
       expect(page_action_for(scene, membership: nil)).to be_nil
     end
 
-    it "is nil for a resolved scene (not :join — resolved scenes fall through to :write_summary)" do
+    it "is nil for a resolved scene (not Join — resolved scenes fall through to the summary branch)" do
       resolved_scene = build(:scene, :resolved)
       expect(page_action_for(resolved_scene, membership: active_membership)).to be_nil
     end
 
-    it "is :write_summary for the GM on a resolved scene with no summary yet" do
+    it "is a Write Summary GET action for the GM on a resolved scene with no summary yet" do
       resolved_scene = build(:scene, :resolved)
-      expect(page_action_for(resolved_scene, membership: active_membership, can_manage: true)).to eq(:write_summary)
+      action = page_action_for(resolved_scene, membership: active_membership, can_manage: true)
+
+      expect(action).to have_attributes(
+        label: "Write Summary",
+        route: :new_game_scene_scene_summary_path,
+        http_method: nil
+      )
     end
 
     it "is nil for a resolved scene that already has a summary" do
