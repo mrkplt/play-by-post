@@ -19,6 +19,18 @@ RSpec.describe GameMembersController, type: :request do
       expect(player_member.reload.status).to eq("removed")
     end
 
+    # This is the form the real UI submits: player_management/show builds its
+    # Remove/Ban/Reinstate buttons with `status:` as a flat query param, not a
+    # nested game_member hash. The nested form above is the only one the specs
+    # exercised, so the fallback that reads params[:status] — the live path —
+    # was untested.
+    it "GM can update a player status via the flat status param the UI sends" do
+      sign_in(gm)
+      patch game_player_management_game_member_path(game, player_member, status: "banned")
+      expect(response).to redirect_to(game_player_management_path(game))
+      expect(player_member.reload.status).to eq("banned")
+    end
+
     it "GM cannot change GM status" do
       gm_member = game.game_members.find_by(user: gm)
       sign_in(gm)

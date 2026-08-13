@@ -17,6 +17,17 @@ RSpec.describe GameFilesController, type: :request do
       expect(response).to have_http_status(:ok)
     end
 
+    # Asserting the message, not just the redirect: Pundit's own denial also
+    # lands on root_path, so without this the spec passes even with
+    # require_game_access! deleted entirely.
+    it "is denied to a non-member" do
+      outsider = create(:user, :with_profile)
+      sign_in(outsider)
+      get game_game_files_path(game)
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to eq("You do not have access to this game.")
+    end
+
     it "player can access the file index" do
       sign_in(player)
       get game_game_files_path(game)

@@ -37,10 +37,15 @@ RSpec.describe PagesController, type: :request do
       expect(response).to redirect_to(root_path)
     end
 
+    # The message matters, not just the redirect: without it this passes even
+    # if require_game_access! is deleted entirely, since Pundit's own denial
+    # also lands on root_path. "Cannot see this game at all" is a distinct
+    # outcome from "not allowed to do this particular thing".
     it "is denied to a non-member" do
       sign_in(outsider)
       get game_page_path(game, page)
       expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to eq("You do not have access to this game.")
     end
 
     it "redirects an unauthenticated visitor" do

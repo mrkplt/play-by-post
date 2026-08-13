@@ -70,11 +70,15 @@ RSpec.describe SceneSummariesController, type: :request do
       expect(response).to redirect_to(root_path)
     end
 
+    # Asserting the message, not just the redirect: Pundit's own denial also
+    # lands on root_path, so without this the spec passes even with
+    # require_game_access! deleted entirely.
     it "redirects a signed-in non-member to root" do
       outsider = create(:user, :with_profile)
       sign_in(outsider)
       get game_scene_summaries_path(game)
       expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to eq("You do not have access to this game.")
     end
 
     it "returns summaries ordered by resolved_at descending" do

@@ -208,5 +208,22 @@ RSpec.describe SceneParticipantsController, type: :request do
       post join_game_scene_participants_path(game, scene)
       expect(response).to have_http_status(:redirect)
     end
+
+    # Joining needs write access, not merely game access: a removed member can
+    # still see the game but must not be able to join a scene. Nothing covered
+    # this, so both the write guard and the explicit :join? query could be
+    # deleted without a spec noticing.
+    it "a removed member cannot join a scene" do
+      removed = create(:user, :with_profile)
+      create(:game_member, :removed, game: game, user: removed)
+      sign_in(removed)
+
+      expect {
+        post join_game_scene_participants_path(game, scene)
+      }.not_to change(SceneParticipant, :count)
+
+      expect(response).to redirect_to(game_path(game))
+      expect(flash[:alert]).to match(/write access/i)
+    end
   end
 end
