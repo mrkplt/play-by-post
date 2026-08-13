@@ -103,16 +103,16 @@ class ScenePresenter < BasePresenter
   # template branches on a symbol instead of chained booleans.
   sig do
     params(
-      is_gm: T::Boolean,
+      can_manage: T::Boolean,
       is_participant: T::Boolean,
       membership: T.nilable(GameMember)
     ).returns(T.nilable(Symbol))
   end
-  def page_action(is_gm:, is_participant:, membership:)
+  def page_action(can_manage:, is_participant:, membership:)
     membership_active = membership.present? && membership.active?
-    if !is_participant && !is_gm && !@model.private? && !@model.resolved? && membership_active
+    if !is_participant && !can_manage && !@model.private? && !@model.resolved? && membership_active
       :join
-    elsif is_gm && @model.resolved? && @model.scene_summary.blank?
+    elsif can_manage && @model.resolved? && @model.scene_summary.blank?
       :write_summary
     end
   end

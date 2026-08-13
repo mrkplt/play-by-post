@@ -1,8 +1,8 @@
 # typed: strict
 
-# View model for a game and its viewer. Replaces the derived @is_gm boolean the
-# controllers used to thread into views: the GM check is a method here, backed by
-# the policy so a GM-only affordance can never diverge from what the controller
+# View model for a game and its viewer. Replaces the derived @can_manage boolean
+# the controllers used to thread into views: the GM check is a method here, backed
+# by the policy so a GM-only affordance can never diverge from what the controller
 # authorizes.
 class GamePresenter < BasePresenter
   extend T::Sig

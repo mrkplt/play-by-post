@@ -5,8 +5,8 @@
     <%= render Shared::HeaderComponent.new(
           title: "Links",
           breadcrumbs: Shared::BreadcrumbsComponent.new(game: @game),
-          secondary_nav: Shared::GameNavComponent.new(game: @game, active_tab: :links, is_gm: @game_presenter.gm?, mode: :link)) %>
+          secondary_nav: Shared::GameNavComponent.new(game: @game, active_tab: :links, can_manage: @game_presenter.gm?, mode: :link)) %>
   <% end %>
 
-  <%= render Shared::GameLinksListComponent.new(game: @game, game_links: @game_links, is_gm: @game_presenter.gm?) %>
+  <%= render Shared::GameLinksListComponent.new(game: @game, game_links: @game_links, can_manage: @game_presenter.gm?) %>
 <% end %>

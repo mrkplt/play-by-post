@@ -326,7 +326,7 @@ RSpec.describe ScenesController, type: :request do
       expect(response.body).to include(nameless.email)
     end
 
-    context "GM-specific content (@is_gm)" do
+    context "GM-specific content (can_manage)" do
       it "shows Edit Participants link to GM" do
         sign_in(gm)
         get game_scene_path(game, scene)
@@ -393,7 +393,7 @@ RSpec.describe ScenesController, type: :request do
       end
     end
 
-    context "post composer visibility (@is_participant, @is_gm)" do
+    context "post composer visibility (@is_participant, can_manage)" do
       it "shows post composer to GM" do
         sign_in(gm)
         get game_scene_path(game, scene)

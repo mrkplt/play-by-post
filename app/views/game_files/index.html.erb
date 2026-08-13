@@ -5,7 +5,7 @@
     <%= render Shared::HeaderComponent.new(
           title: "Files",
           breadcrumbs: Shared::BreadcrumbsComponent.new(game: @game),
-          secondary_nav: Shared::GameNavComponent.new(game: @game, active_tab: :files, is_gm: @game_presenter.gm?, mode: :link)) %>
+          secondary_nav: Shared::GameNavComponent.new(game: @game, active_tab: :files, can_manage: @game_presenter.gm?, mode: :link)) %>
   <% end %>
 
   <% if @game_presenter.gm? %>
@@ -16,6 +16,6 @@
     <p class="text-muted-2 text-sm">No files uploaded yet.</p>
   <% else %>
     <%= render Ui::SectionLabelComponent.new do %>Newest first<% end %>
-    <%= render Shared::GalleryComponent.new(game_files: @game_files.to_a, game: @game, is_gm: @game_presenter.gm?) %>
+    <%= render Shared::GalleryComponent.new(game_files: @game_files.to_a, game: @game, can_manage: @game_presenter.gm?) %>
   <% end %>
 <% end %>

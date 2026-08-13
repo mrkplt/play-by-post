@@ -5,18 +5,18 @@ RSpec.describe Shared::PageDetailComponent, type: :component do
   let(:page_record) { build_stubbed(:page, game: game, title: "Lore", slug: "abc123def456ghij", body: "# Heading\n\nBody text.") }
 
   def build_component(**overrides)
-    described_class.new(**{ game: game, page: page_record, is_gm: false }.merge(overrides))
+    described_class.new(**{ game: game, page: page_record, can_manage: false }.merge(overrides))
   end
 
   describe "GM affordances" do
     it "shows Edit and Delete to the GM" do
-      render_inline(build_component(is_gm: true))
+      render_inline(build_component(can_manage: true))
       expect(page).to have_link("Edit")
       expect(page).to have_button("Delete")
     end
 
     it "hides Edit and Delete from a non-GM" do
-      render_inline(build_component(is_gm: false))
+      render_inline(build_component(can_manage: false))
       expect(page).to have_no_link("Edit")
       expect(page).to have_no_button("Delete")
     end

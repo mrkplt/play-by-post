@@ -17,7 +17,7 @@
     <% @dashboard_items.each do |item| %>
       <%= render Shared::GameCardComponent.new(
             game: item[:game],
-            is_gm: item[:is_gm],
+            can_manage: item[:can_manage],
             former: item[:former],
             character_label: item[:character_label],
             active_scene_count: item[:active_scene_count],

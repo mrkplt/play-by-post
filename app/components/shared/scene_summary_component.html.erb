@@ -3,7 +3,7 @@
     <h3 class="m-0 text-base font-semibold text-amber-900">Scene Summary</h3>
     <div class="flex gap-2 items-center">
       <%= render(Ui::BadgeComponent.new(variant: status_badge_variant.to_sym)) { @summary.status_label } %>
-      <% if is_gm? %>
+      <% if can_manage? %>
         <%= link_to "Edit", edit_game_scene_scene_summary_path(@game, @scene),
             class: "text-xs text-amber-700 hover:text-amber-900 no-underline" %>
         <%= button_to "Delete", game_scene_scene_summary_path(@game, @scene),

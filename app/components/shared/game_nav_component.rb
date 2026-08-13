@@ -11,11 +11,11 @@
 class Shared::GameNavComponent < ApplicationComponent
   extend T::Sig
 
-  sig { params(game: Game, active_tab: Symbol, is_gm: T::Boolean, mode: Symbol).void }
-  def initialize(game:, active_tab:, is_gm: false, mode: :switch)
+  sig { params(game: Game, active_tab: Symbol, can_manage: T::Boolean, mode: Symbol).void }
+  def initialize(game:, active_tab:, can_manage: false, mode: :switch)
     @game = game
     @active_tab = active_tab
-    @is_gm = is_gm
+    @can_manage = can_manage
     @mode = mode
   end
 
@@ -34,7 +34,7 @@ class Shared::GameNavComponent < ApplicationComponent
       Ui::PillTabsComponent::Tab.new(label: "Pages", href: pages_href, panel: :pages),
       Ui::PillTabsComponent::Tab.new(label: "Links", href: links_href, panel: :links)
     ]
-    base << Ui::PillTabsComponent::Tab.new(label: "Notebook", href: notebook_href, panel: :notebook) if @is_gm
+    base << Ui::PillTabsComponent::Tab.new(label: "Notebook", href: notebook_href, panel: :notebook) if @can_manage
     base
   end
 

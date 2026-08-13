@@ -5,7 +5,7 @@
     <%= render Shared::HeaderComponent.new(
           title: "All Scenes",
           breadcrumbs: Shared::BreadcrumbsComponent.new(game: @game),
-          secondary_nav: Shared::GameNavComponent.new(game: @game, active_tab: :scenes, is_gm: @game_presenter.gm?, mode: :link)) %>
+          secondary_nav: Shared::GameNavComponent.new(game: @game, active_tab: :scenes, can_manage: @game_presenter.gm?, mode: :link)) %>
   <% end %>
 
   <% if @game_presenter.gm? %>

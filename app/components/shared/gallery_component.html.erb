@@ -29,7 +29,7 @@
         <span class="font-semibold text-sm min-w-0 whitespace-nowrap overflow-hidden text-ellipsis" data-lightbox-title></span>
         <div class="flex items-center gap-2 shrink-0">
           <a href="#" data-lightbox-download class="text-[0.8rem] py-[0.3rem] px-3 bg-slate-500 text-white rounded cursor-pointer hover:bg-slate-600 inline-block no-underline" data-turbo="false">Download</a>
-          <% if @is_gm %>
+          <% if @can_manage %>
             <button data-lightbox-delete-btn class="text-[0.8rem] py-[0.3rem] px-3 bg-white text-red-600 border border-red-200 rounded cursor-pointer hover:bg-red-50" data-action="click->lightbox#confirmDelete" hidden>Delete</button>
           <% end %>
           <button class="bg-transparent border-none text-xl cursor-pointer text-slate-500 p-1 leading-none hover:text-ink" data-action="click->lightbox#close" aria-label="Close">&times;</button>

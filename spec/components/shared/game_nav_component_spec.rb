@@ -9,13 +9,13 @@ RSpec.describe Shared::GameNavComponent, type: :component do
   end
 
   it "exposes five tabs to a non-GM" do
-    component = described_class.new(game: game, active_tab: :scenes, is_gm: false)
+    component = described_class.new(game: game, active_tab: :scenes, can_manage: false)
     render_inline(component)
     expect(component.tabs.map(&:label)).to eq(%w[Scenes Roster Files Pages Links])
   end
 
   it "adds a Notebook tab for the GM" do
-    component = described_class.new(game: game, active_tab: :scenes, is_gm: true)
+    component = described_class.new(game: game, active_tab: :scenes, can_manage: true)
     render_inline(component)
     expect(component.tabs.map(&:label)).to eq(%w[Scenes Roster Files Pages Links Notebook])
   end
@@ -54,7 +54,7 @@ RSpec.describe Shared::GameNavComponent, type: :component do
     end
 
     it "links Notebook to the notebook index for the GM" do
-      expect(rendered(mode: :link, is_gm: true)).to have_css("a[href*='/notebook_entries']", text: "Notebook")
+      expect(rendered(mode: :link, can_manage: true)).to have_css("a[href*='/notebook_entries']", text: "Notebook")
     end
 
     it "links Roster and Pages back to the game page anchors (no dedicated page)" do

@@ -7,7 +7,7 @@
             title: @game.name,
             crown: @game_presenter.gm?,
             gear: game_player_management_path(@game),
-            secondary_nav: Shared::GameNavComponent.new(game: @game, active_tab: :scenes, is_gm: @game_presenter.gm?, mode: :switch)) %>
+            secondary_nav: Shared::GameNavComponent.new(game: @game, active_tab: :scenes, can_manage: @game_presenter.gm?, mode: :switch)) %>
     <% end %>
 
     <%# ===== Scenes panel ===== %>
@@ -120,18 +120,18 @@
         <p class="text-muted-2 text-sm">No files uploaded yet.</p>
       <% else %>
         <%= render Ui::SectionLabelComponent.new do %>Newest first<% end %>
-        <%= render Shared::GalleryComponent.new(game_files: @game_files.to_a, game: @game, is_gm: @game_presenter.gm?) %>
+        <%= render Shared::GalleryComponent.new(game_files: @game_files.to_a, game: @game, can_manage: @game_presenter.gm?) %>
       <% end %>
     </section>
 
     <%# ===== Pages panel ===== %>
     <section data-game-tabs-target="panel" data-panel="pages" hidden>
-      <%= render Shared::GamePagesListComponent.new(game: @game, pages: @game_presenter.pages, is_gm: @game_presenter.gm?) %>
+      <%= render Shared::GamePagesListComponent.new(game: @game, pages: @game_presenter.pages, can_manage: @game_presenter.gm?) %>
     </section>
 
     <%# ===== Links panel ===== %>
     <section data-game-tabs-target="panel" data-panel="links" hidden>
-      <%= render Shared::GameLinksListComponent.new(game: @game, game_links: @game_presenter.links, is_gm: @game_presenter.gm?) %>
+      <%= render Shared::GameLinksListComponent.new(game: @game, game_links: @game_presenter.links, can_manage: @game_presenter.gm?) %>
     </section>
 
     <%# ===== Notebook panel (GM only) ===== %>

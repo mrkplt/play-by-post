@@ -3,7 +3,7 @@
     <span class="font-bold">Warning:</span> Links point off this site. Following them leaves Flail Whale, and this site has no control over what you find there.
   </div>
 
-  <% if gm? %>
+  <% if can_manage? %>
     <%= link_to "New Link", new_game_game_link_path(game),
           class: "block w-full text-center bg-accent text-accent-ink rounded-control py-2.5 font-bold text-[13px] no-underline" %>
   <% end %>
@@ -18,7 +18,7 @@
             <span class="block text-xs text-muted-2 truncate"><%= link.url %></span>
           <% end %>
 
-          <% if gm? %>
+          <% if can_manage? %>
             <div class="flex items-center gap-3 flex-shrink-0">
               <%= link_to "Edit", edit_game_game_link_path(game, link), class: "text-xs font-semibold text-accent no-underline" %>
               <%= button_to "Delete", game_game_link_path(game, link), method: :delete,

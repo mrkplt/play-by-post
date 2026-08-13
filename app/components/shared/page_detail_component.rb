@@ -7,11 +7,11 @@
 class Shared::PageDetailComponent < ApplicationComponent
   extend T::Sig
 
-  sig { params(game: Game, page: Page, is_gm: T::Boolean).void }
-  def initialize(game:, page:, is_gm:)
+  sig { params(game: Game, page: Page, can_manage: T::Boolean).void }
+  def initialize(game:, page:, can_manage:)
     @game = T.let(game, Game)
     @page = T.let(page, Page)
-    @is_gm = T.let(is_gm, T::Boolean)
+    @can_manage = T.let(can_manage, T::Boolean)
   end
 
   sig { returns(Game) }
@@ -26,8 +26,8 @@ class Shared::PageDetailComponent < ApplicationComponent
   end
 
   sig { returns(T::Boolean) }
-  def gm?
-    @is_gm
+  def can_manage?
+    @can_manage
   end
 
   sig { returns(T::Boolean) }

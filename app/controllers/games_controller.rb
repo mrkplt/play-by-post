@@ -45,7 +45,7 @@ class GamesController < ApplicationController
         primary_character: primary_character,
         additional_character_count: additional_character_count,
         character_label: character_label_for(primary_character, additional_character_count),
-        is_gm: policy(game).update?,
+        can_manage: policy(game).update?,
         former: membership.removed?,
         new_activity: games_with_new_activity.include?(game.id)
       }

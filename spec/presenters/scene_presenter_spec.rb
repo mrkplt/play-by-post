@@ -70,7 +70,7 @@ RSpec.describe ScenePresenter do
 
     def page_action_for(scene, membership:, **overrides)
       described_class.new(scene).page_action(
-        **{ is_gm: false, is_participant: false, membership: membership }.merge(overrides)
+        **{ can_manage: false, is_participant: false, membership: membership }.merge(overrides)
       )
     end
 
@@ -83,7 +83,7 @@ RSpec.describe ScenePresenter do
     end
 
     it "is nil for the GM" do
-      expect(page_action_for(scene, membership: active_membership, is_gm: true)).to be_nil
+      expect(page_action_for(scene, membership: active_membership, can_manage: true)).to be_nil
     end
 
     it "is nil for a private scene" do
@@ -106,18 +106,18 @@ RSpec.describe ScenePresenter do
 
     it "is :write_summary for the GM on a resolved scene with no summary yet" do
       resolved_scene = build(:scene, :resolved)
-      expect(page_action_for(resolved_scene, membership: active_membership, is_gm: true)).to eq(:write_summary)
+      expect(page_action_for(resolved_scene, membership: active_membership, can_manage: true)).to eq(:write_summary)
     end
 
     it "is nil for a resolved scene that already has a summary" do
       resolved_scene = build(:scene, :resolved)
       create(:scene_summary, scene: resolved_scene)
-      expect(page_action_for(resolved_scene, membership: active_membership, is_gm: true)).to be_nil
+      expect(page_action_for(resolved_scene, membership: active_membership, can_manage: true)).to be_nil
     end
 
     it "is nil for a non-GM on a resolved scene" do
       resolved_scene = build(:scene, :resolved)
-      expect(page_action_for(resolved_scene, membership: active_membership, is_gm: false, is_participant: true)).to be_nil
+      expect(page_action_for(resolved_scene, membership: active_membership, can_manage: false, is_participant: true)).to be_nil
     end
   end
 
