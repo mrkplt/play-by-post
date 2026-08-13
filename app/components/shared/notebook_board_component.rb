@@ -5,6 +5,11 @@
 # by default behind a native <details> disclosure so it never intrudes when
 # empty. Each column carries a stable id (notebook_column_<status>) so the
 # move action's Turbo Stream response can target it directly.
+#
+# A lane is a list of titles, not cards: entries are GM scratchpad, so the
+# board shows what an entry is called and lets the GM move it between lanes.
+# Every other action — edit, delete, promote — lives on the entry's own edit
+# screen, which is where the title links.
 class Shared::NotebookBoardComponent < ApplicationComponent
   extend T::Sig
 
@@ -19,8 +24,8 @@ class Shared::NotebookBoardComponent < ApplicationComponent
 
   sig { params(game: Game, entries_by_status: T::Hash[String, T::Array[NotebookEntry]]).void }
   def initialize(game:, entries_by_status:)
-    @game = T.let(game, Game)
-    @entries_by_status = T.let(entries_by_status, T::Hash[String, T::Array[NotebookEntry]])
+    @game = game
+    @entries_by_status = entries_by_status
   end
 
   sig { returns(Game) }
@@ -43,7 +48,24 @@ class Shared::NotebookBoardComponent < ApplicationComponent
 
   sig { params(status: String).returns(String) }
   def column_id(status)
+    self.class.column_id(status)
+  end
+
+  # The move action's Turbo Stream response replaces whole lanes by this id,
+  # so it needs to name them without building a board.
+  sig { params(status: String).returns(String) }
+  def self.column_id(status)
     "notebook_column_#{status}"
+  end
+
+  sig { params(status: String).returns(Shared::NotebookLaneComponent) }
+  def lane_for(status)
+    Shared::NotebookLaneComponent.new(game: game, status: status, entries: entries_for(status))
+  end
+
+  sig { returns(Shared::NotebookLaneComponent) }
+  def discard_lane
+    lane_for("discard")
   end
 
   sig { returns(T::Array[NotebookEntry]) }

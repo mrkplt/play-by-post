@@ -91,7 +91,10 @@ matcher:
     - Shared::PageDetailComponent
     - Shared::GamePagesListComponent
     - Shared::ListEntryComponent
+    - Shared::NotebookLaneComponent
     - Shared::NotebookLaneSelectComponent
+    - Shared::NotebookLaneUpdatesComponent
+    - Shared::PageRowActionsComponent
     - Shared::GameLinksListComponent
     - Shared::LinkFormComponent
     - Shared::NotebookFormComponent

@@ -1,0 +1,5 @@
+<% lanes.each do |lane| %>
+  <%= helpers.turbo_stream.replace lane.dom_id do %>
+    <%= render lane %>
+  <% end %>
+<% end %>

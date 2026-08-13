@@ -221,7 +221,7 @@ RSpec.describe NotebookEntriesController, type: :request do
   describe "PATCH move" do
     let!(:entry) { create(:notebook_entry, game: game, status: "new") }
 
-    it "updates the status and responds with a turbo_stream moving the card" do
+    it "updates the status and replaces both the source and destination lanes" do
       sign_in(gm)
       patch move_game_notebook_entry_path(game, entry),
         params: { notebook_entry: { status: "expand" } },
@@ -230,7 +230,30 @@ RSpec.describe NotebookEntriesController, type: :request do
       expect(response.media_type).to eq(Mime[:turbo_stream].to_s)
       expect(entry.reload.status).to eq("expand")
       expect(response.body).to include("notebook_column_expand")
-      expect(response.body).to include("turbo-stream action=\"remove\"")
+      expect(response.body).to include("notebook_column_new")
+      expect(response.body.scan('action="replace"').size).to eq(2)
+    end
+
+    it "leaves the entry in exactly one lane" do
+      sign_in(gm)
+      patch move_game_notebook_entry_path(game, entry),
+        params: { notebook_entry: { status: "expand" } },
+        as: :turbo_stream
+
+      # The source lane is re-rendered empty and the destination carries it —
+      # rows are shared markup with no per-entry id, so a stale row in the old
+      # lane would leave the entry visible twice.
+      expect(response.body.scan(entry.title).size).to eq(1)
+    end
+
+    it "replaces a single lane when the status does not actually change" do
+      sign_in(gm)
+      patch move_game_notebook_entry_path(game, entry),
+        params: { notebook_entry: { status: "new" } },
+        as: :turbo_stream
+
+      expect(entry.reload.status).to eq("new")
+      expect(response.body.scan('action="replace"').size).to eq(1)
     end
 
     it "rejects an invalid status" do

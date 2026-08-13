@@ -81,6 +81,7 @@ class NotebookEntriesController < ApplicationController
   sig { void }
   def move
     authorize @notebook_entry, :update?
+
     @notebook_entry.update!(move_params)
 
     respond_to do |format|

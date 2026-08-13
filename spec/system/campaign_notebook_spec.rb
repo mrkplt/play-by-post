@@ -11,7 +11,7 @@ RSpec.describe "Campaign Notebook", type: :feature do
   end
 
   describe "GM workflow", :js do
-    it "creates, edits inline, moves lanes, and promotes an entry without full page navigation" do
+    it "creates an entry and moves it between lanes without leaving the board" do
       sign_in_as(gm)
       visit game_path(game)
 
@@ -24,17 +24,6 @@ RSpec.describe "Campaign Notebook", type: :feature do
 
       expect(page).to have_text("A wandering merchant")
 
-      # Inline edit from the entry's own show screen — no navigation
-      current = page.current_path
-      click_on "Edit"
-      expect(page).to have_field("notebook_entry[title]", with: "A wandering merchant")
-
-      fill_in "notebook_entry[title]", with: "A wandering merchant (updated)"
-      click_on "Save"
-
-      expect(page).to have_text("A wandering merchant (updated)")
-      expect(page.current_path).to eq(current)
-
       visit game_notebook_entries_path(game)
       board_path = page.current_path
 
@@ -43,21 +32,31 @@ RSpec.describe "Campaign Notebook", type: :feature do
         select "Expand", from: "notebook_entry[status]"
       end
 
-      expect(page).to have_css("#notebook_column_expand", text: "A wandering merchant (updated)")
-      expect(page).to have_no_css("#notebook_column_new", text: "A wandering merchant (updated)")
+      expect(page).to have_css("#notebook_column_expand", text: "A wandering merchant")
+      expect(page).to have_no_css("#notebook_column_new", text: "A wandering merchant")
       expect(page.current_path).to eq(board_path)
+    end
 
-      # Promote to a page — navigates to the newly created page
-      within "#notebook_column_expand" do
-        click_on "Promote"
-      end
+    it "opens an entry's edit screen by clicking its title on the board" do
+      entry = create(:notebook_entry, game: game, title: "A wandering merchant")
+      sign_in_as(gm)
+      visit game_notebook_entries_path(game)
 
-      expect(page).to have_current_path(%r{/games/\d+/pages/})
-      expect(page).to have_text("A wandering merchant (updated)")
+      click_on "A wandering merchant"
 
-      promoted_page = Page.find_by(title: "A wandering merchant (updated)")
-      expect(promoted_page).to be_present
-      expect(promoted_page.body).to eq("Shows up in the next market scene.")
+      expect(page).to have_current_path(edit_game_notebook_entry_path(game, entry))
+      expect(page).to have_field("notebook_entry[title]", with: "A wandering merchant")
+    end
+
+    it "shows only the lane picker on a board row" do
+      create(:notebook_entry, game: game, title: "A wandering merchant")
+      sign_in_as(gm)
+      visit game_notebook_entries_path(game)
+
+      expect(page).to have_css("select[name='notebook_entry[status]']")
+      expect(page).to have_no_link("Edit")
+      expect(page).to have_no_button("Promote")
+      expect(page).to have_no_button("Delete")
     end
 
     it "hides the Discard column by default and reveals it via the toggle" do
