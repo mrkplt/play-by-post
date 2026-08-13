@@ -1,6 +1,17 @@
 # Omakase Ruby styling for Rails
 inherit_gem: { rubocop-rails-omakase: rubocop.yml }
 
+# rubocop-erb lints the Ruby fragments inside .html.erb templates (string style,
+# predicate methods, output safety, whitespace) — Ruby style the plain rubocop
+# run never saw, since .erb is not in its default target set. This is distinct
+# from and complementary to the ERB-logic gate in bin/quality-metrics, which
+# enforces the architectural rule that view templates carry no logic at all
+# (ternaries/||/control-flow in output tags); rubocop-erb styles the Ruby that
+# legitimately remains. The plugin pulls every app/**/*.erb into scope
+# automatically.
+plugins:
+  - rubocop-erb
+
 # Overwrite or add rules to create your own house style
 #
 # # Use `[a, [b, c]]` not `[ a, [ b, c ] ]`

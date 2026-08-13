@@ -12,12 +12,14 @@
 #      must be allowlisted here, so disabling the net is always an explicit,
 #      reviewed decision (never silent).
 #   3. A policy-governed controller (an ApplicationController descendant) must not
-#      make an authorization decision inline — a role/ownership predicate
-#      (game_master?, admin?, owner?, ...) used to gate access with a deny
-#      response (head :forbidden/:unauthorized, raise Pundit::NotAuthorizedError,
-#      or a guarded redirect). That decision belongs in a Pundit policy so it is
-#      testable and reused. This is AST-based (Prism) so it fires only on a real
-#      guard, not on a role flag passed as view data (e.g. `is_gm: gm?`).
+#      answer an authorization question inline — a role/ownership predicate
+#      (game_master?, admin?, owner?, ...) called anywhere in the controller.
+#      "Is this user a GM/admin/owner?" is a policy's job whether the answer gates
+#      a deny (head :forbidden, raise NotAuthorized) OR merely feeds view data
+#      (`is_gm: membership.game_master?`) — the latter duplicates a predicate the
+#      policy already exposes (GamePolicy#gm?) and drifts from it. Route both
+#      through `policy(record).the_predicate?`. AST-based (Prism) so it fires on
+#      the actual call, not on the method name appearing in a comment or string.
 #
 # Controllers that intentionally sit outside the policy system inherit a
 # non-ApplicationController base (Devise sessions, the deploy webhook, the
@@ -42,60 +44,32 @@ ALLOWED_SKIPS = {
 # through a policy. Each entry is a reviewed, documented exemption.
 ALLOWED_INLINE_AUTHZ = {}.freeze
 
-# Role/ownership predicate methods that express an authorization decision. A call
-# to one of these, used as a guard that denies access, is what belongs in a
-# policy. (Add project-specific role predicates here as they appear.)
+# Role/ownership predicate methods that answer an authorization question ("may
+# this user do X / is this user privileged?"). Any call to one of these inside a
+# policy-governed controller belongs in a policy — whether it gates a deny or
+# merely feeds view data (`is_gm:`). Deliberately excludes membership *lifecycle
+# status* predicates (removed?, banned?, active?): those describe a record's
+# state, not the current user's authority, and are legitimately read as view
+# data. Add project-specific role predicates here as they appear.
 ROLE_PREDICATES = %i[
-  game_master? gm? admin? owner? moderator? banned? removed? can_manage?
+  game_master? gm? admin? owner? moderator? can_manage?
 ].to_set.freeze
 
-# Deny responses: the "then reject the request" half of an inline authz guard.
-def deny_call?(node)
-  return false unless node.is_a?(Prism::CallNode) && node.receiver.nil?
+# Line numbers of every role-predicate call in the source (a CallNode whose
+# method name is a role predicate). Explicit-receiver calls count too:
+# `membership.game_master?` is exactly the case to catch.
+def role_predicate_lines(root)
+  lines = []
+  collect_role_predicate_lines(root, lines)
+  lines.uniq.sort
+end
 
-  case node.name
-  when :head
-    arg = node.arguments&.arguments&.first
-    arg.is_a?(Prism::SymbolNode) && %w[forbidden unauthorized].include?(arg.unescaped)
-  when :raise
-    subtree_any?(node.arguments) do |arg|
-      (arg.is_a?(Prism::ConstantReadNode) || arg.is_a?(Prism::ConstantPathNode)) &&
-        arg.name.to_s.include?("NotAuthorized")
-    end
-  else
-    false
+def collect_role_predicate_lines(node, into)
+  return if node.nil?
+  if node.is_a?(Prism::CallNode) && ROLE_PREDICATES.include?(node.name)
+    into << node.location.start_line
   end
-end
-
-def role_predicate_call?(node)
-  node.is_a?(Prism::CallNode) && ROLE_PREDICATES.include?(node.name)
-end
-
-def subtree_any?(node, &block)
-  return false if node.nil?
-  return true if block.call(node)
-  node.compact_child_nodes.any? { |child| subtree_any?(child, &block) }
-end
-
-# True when a role predicate gates a deny — the inline-authorization smell. Two
-# shapes: a guard whose predicate contains a role call and whose body denies
-# (`return head :forbidden unless gm?`, `raise ... unless owner?`), or an if/unless
-# with a role predicate condition and a deny in the branch.
-def inline_authz?(root)
-  subtree_any?(root) do |node|
-    case node
-    when Prism::IfNode, Prism::UnlessNode
-      predicate = node.predicate
-      body = node.respond_to?(:statements) ? node.statements : nil
-      consequent = node.respond_to?(:consequent) ? node.consequent : nil
-      role_in_predicate = subtree_any?(predicate) { |n| role_predicate_call?(n) }
-      deny_in_branch = subtree_any?(body) { |n| deny_call?(n) } ||
-                       subtree_any?(consequent) { |n| deny_call?(n) }
-      role_in_predicate && deny_in_branch
-    else
-      false
-    end
-  end
+  node.compact_child_nodes.each { |child| collect_role_predicate_lines(child, into) }
 end
 
 missing_net = []
@@ -126,10 +100,12 @@ CONTROLLERS.each do |file|
     unlisted_skips << rel
   end
 
-  # Rule 3: policy-governed controllers must not authorize inline.
+  # Rule 3: policy-governed controllers must not answer authorization questions
+  # inline — any role-predicate call belongs in a policy.
   if policy_governed && !ALLOWED_INLINE_AUTHZ.key?(basename)
     root = Prism.parse(source).value
-    inline_authz << rel if inline_authz?(root)
+    lines = role_predicate_lines(root)
+    inline_authz << [ rel, lines ] unless lines.empty?
   end
 end
 
@@ -157,14 +133,18 @@ unless unlisted_skips.empty?
 end
 
 unless inline_authz.empty?
-  puts "These policy-governed controllers make an authorization decision inline —"
-  puts "a role/ownership predicate (game_master?, admin?, owner?, ...) gating a deny"
-  puts "response — instead of delegating to a Pundit policy:\n\n"
-  inline_authz.each { |r| puts "  #{r}" }
-  puts "\nMove the decision into the matching app/policies/*_policy.rb method and call"
-  puts "`authorize @record` (or `policy(@record).the_action?`) from the action. That"
-  puts "makes the rule testable in a policy spec and reusable across actions. If the"
-  puts "inline check is genuinely not a user-authorization decision, add the file to"
+  puts "These policy-governed controllers answer an authorization question inline —"
+  puts "a role/ownership predicate (game_master?, admin?, owner?, ...) called in the"
+  puts "controller instead of delegating to a Pundit policy:\n\n"
+  inline_authz.each { |rel, lines| puts "  #{rel} (line#{lines.length > 1 ? 's' : ''} #{lines.join(', ')})" }
+  puts "\nRoute the check through the policy, whether it gates access or feeds view data:"
+  puts "  - Deny gating:   call `authorize @record` / `policy(@record).the_action?`."
+  puts "  - View data:     replace `is_gm: membership.game_master?` with"
+  puts "                   `is_gm: policy(game).gm?` — the predicate already exists on"
+  puts "                   the policy (GamePolicy#gm?), so use it rather than duplicate"
+  puts "                   the role check and let it drift from the policy."
+  puts "This keeps the rule testable in a policy spec and reused across every caller. If"
+  puts "a call genuinely is not an authorization question, add the file to"
   puts "ALLOWED_INLINE_AUTHZ in bin/check-authorization with a reason."
   puts
 end

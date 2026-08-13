@@ -82,6 +82,7 @@ group :development, :test do
   gem "brakeman", require: false
   gem "rubocop", "~> 1.88", require: false
   gem "rubocop-rails-omakase", require: false
+  gem "rubocop-erb", require: false
   gem "rspec-rails"
   gem "factory_bot_rails"
   gem "mutant-rspec", require: false

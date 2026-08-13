@@ -192,6 +192,12 @@ GEM
       raabro (~> 1.4)
     globalid (1.4.0)
       activesupport (>= 6.1)
+    herb (0.10.3-aarch64-linux-gnu)
+    herb (0.10.3-aarch64-linux-musl)
+    herb (0.10.3-arm64-darwin)
+    herb (0.10.3-x86_64-darwin)
+    herb (0.10.3-x86_64-linux-gnu)
+    herb (0.10.3-x86_64-linux-musl)
     htmlbeautifier (1.4.3)
     htmlentities (4.3.4)
     httparty (0.24.2)
@@ -450,6 +456,10 @@ GEM
     rubocop-ast (1.50.0)
       parser (>= 3.3.7.2)
       prism (~> 1.7)
+    rubocop-erb (0.7.1)
+      herb (~> 0.7)
+      lint_roller (~> 1.1)
+      rubocop (~> 1.72, >= 1.72.1)
     rubocop-performance (1.26.1)
       lint_roller (~> 1.1)
       rubocop (>= 1.75.0, < 2.0)
@@ -633,6 +643,7 @@ DEPENDENCIES
   resend (~> 1.6)
   rspec-rails
   rubocop (~> 1.88)
+  rubocop-erb
   rubocop-rails-omakase
   ruby-openai (~> 8.1)
   rubyzip (~> 3.2)
