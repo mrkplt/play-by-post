@@ -243,6 +243,15 @@ RSpec.describe GamesController, type: :request do
       expect(game.reload.description).to eq("New desc")
     end
 
+    # The third permitted attribute had no coverage, so dropping it from
+    # game_params' permit list changed nothing a spec could see.
+    it "GM can update the post edit window" do
+      sign_in(gm)
+      patch game_path(game), params: { game: { post_edit_window_minutes: 30 } }
+      expect(response).to redirect_to(game_player_management_path(game))
+      expect(game.reload.post_edit_window_minutes).to eq(30)
+    end
+
     it "renders edit on invalid params" do
       sign_in(gm)
       patch game_path(game), params: { game: { name: "" } }

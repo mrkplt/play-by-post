@@ -107,6 +107,12 @@ RSpec.describe PagesController, type: :request do
       page = Page.last
       expect(page.slug).to match(/\A[a-zA-Z0-9]{16}\z/)
       expect(response).to redirect_to(game_page_path(game, page))
+
+      # Assert the permitted attributes actually landed: the specs sent a body
+      # but never checked it persisted, so dropping :body from page_params'
+      # permit list changed nothing that a spec could see.
+      expect(page.title).to eq("New Page")
+      expect(page.body).to eq("Body")
     end
 
     it "re-renders on validation failure" do
