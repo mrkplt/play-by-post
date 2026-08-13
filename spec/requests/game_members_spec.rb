@@ -34,11 +34,20 @@ RSpec.describe GameMembersController, type: :request do
       expect(flash[:alert]).to match(/invalid status/i)
     end
 
-    it "non-GM is redirected" do
+    it "non-GM targeting an ordinary player's membership gets the authorization outcome, and the member's status is unchanged" do
       sign_in(player)
       patch game_player_management_game_member_path(game, player_member), params: { game_member: { status: "removed" } }
-      expect(response).to redirect_to(game_path(game))
-      expect(flash[:alert]).to match(/only the gm/i)
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to eq("You are not authorized to perform this action.")
+      expect(player_member.reload.status).to eq("active")
+    end
+
+    it "non-GM targeting the GM's own membership gets the authorization outcome, not the GM-status message" do
+      gm_member = game.game_members.find_by(user: gm)
+      sign_in(player)
+      patch game_player_management_game_member_path(game, gm_member), params: { game_member: { status: "removed" } }
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to eq("You are not authorized to perform this action.")
     end
 
     it "unauthenticated user is redirected" do
