@@ -6,7 +6,6 @@ class PagesController < ApplicationController
   before_action :set_game
   before_action :require_game_access!
   before_action :set_page, only: %i[show edit update destroy]
-  before_action :require_gm!, only: %i[new create edit update destroy]
   after_action :verify_authorized
 
   sig { void }
@@ -70,13 +69,6 @@ class PagesController < ApplicationController
   sig { void }
   def require_game_access!
     redirect_to root_path, alert: "You do not have access to this game." unless policy(@game).show?
-  end
-
-  sig { void }
-  def require_gm!
-    unless policy(@game).update?
-      redirect_to game_path(@game, anchor: "pages"), alert: "Only the GM can manage pages."
-    end
   end
 
   sig { returns(ActionController::Parameters) }
