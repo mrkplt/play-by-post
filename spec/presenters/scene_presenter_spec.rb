@@ -65,71 +65,19 @@ RSpec.describe ScenePresenter do
   end
 
   describe "#page_action" do
-    let(:active_membership) { build_stubbed(:game_member) }
-    let(:removed_membership) { build_stubbed(:game_member, :removed) }
+    it "delegates to ScenePageAction, wrapping the viewer facts and its own scene" do
+      membership = build_stubbed(:game_member)
+      allow(ScenePageAction).to receive(:for).and_return(ScenePageAction::JOIN)
 
-    def page_action_for(scene, membership:, **overrides)
-      described_class.new(scene).page_action(
-        **{ can_manage: false, is_participant: false, membership: membership }.merge(overrides)
-      )
-    end
+      result = presenter.page_action(can_manage: false, is_participant: false, membership: membership)
 
-    it "is a Join Scene POST action for an eligible non-participant, non-GM, active member on an open public scene" do
-      action = page_action_for(scene, membership: active_membership)
-
-      expect(action).to have_attributes(
-        label: "Join Scene",
-        route: :join_game_scene_participants_path,
-        http_method: :post
-      )
-    end
-
-    it "is nil when already a participant" do
-      expect(page_action_for(scene, membership: active_membership, is_participant: true)).to be_nil
-    end
-
-    it "is nil for the GM" do
-      expect(page_action_for(scene, membership: active_membership, can_manage: true)).to be_nil
-    end
-
-    it "is nil for a private scene" do
-      private_scene = build(:scene, :private)
-      expect(page_action_for(private_scene, membership: active_membership)).to be_nil
-    end
-
-    it "is nil when membership is not active" do
-      expect(page_action_for(scene, membership: removed_membership)).to be_nil
-    end
-
-    it "is nil when there is no membership at all" do
-      expect(page_action_for(scene, membership: nil)).to be_nil
-    end
-
-    it "is nil for a resolved scene (not Join — resolved scenes fall through to the summary branch)" do
-      resolved_scene = build(:scene, :resolved)
-      expect(page_action_for(resolved_scene, membership: active_membership)).to be_nil
-    end
-
-    it "is a Write Summary GET action for the GM on a resolved scene with no summary yet" do
-      resolved_scene = build(:scene, :resolved)
-      action = page_action_for(resolved_scene, membership: active_membership, can_manage: true)
-
-      expect(action).to have_attributes(
-        label: "Write Summary",
-        route: :new_game_scene_scene_summary_path,
-        http_method: nil
-      )
-    end
-
-    it "is nil for a resolved scene that already has a summary" do
-      resolved_scene = build(:scene, :resolved)
-      create(:scene_summary, scene: resolved_scene)
-      expect(page_action_for(resolved_scene, membership: active_membership, can_manage: true)).to be_nil
-    end
-
-    it "is nil for a non-GM on a resolved scene" do
-      resolved_scene = build(:scene, :resolved)
-      expect(page_action_for(resolved_scene, membership: active_membership, can_manage: false, is_participant: true)).to be_nil
+      expect(result).to eq(ScenePageAction::JOIN)
+      expect(ScenePageAction).to have_received(:for) do |scene:, viewer:|
+        expect(scene).to eq(self.scene)
+        expect(viewer).to have_attributes(
+          can_manage: false, is_participant: false, membership: membership
+        )
+      end
     end
   end
 

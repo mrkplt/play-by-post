@@ -96,42 +96,21 @@ class ScenePresenter < BasePresenter
     @model.resolved? ? draft : nil
   end
 
-  # The scene screen's single footer page-action, if any: "Join Scene" for an
-  # eligible non-participant on an open public scene, "Write Summary" for the
-  # GM on a resolved scene with no summary yet, or nil (no footer action).
-  #
-  # Returns the button's label, route and HTTP method rather than a symbol the
-  # template has to branch on: the two actions differ only in those three
-  # values, so handing them back as data collapses the view's case/when into a
-  # single conditional render. Adding a third footer action is a branch here,
-  # not new markup there.
-  #
-  # `route` is the helper name, not a built URL — building one needs persisted
-  # ids, which would drag this presenter (and every spec touching it) onto the
-  # database for what is otherwise pure computation. The template resolves it
-  # against the scene it already has.
-  # `http_method`, not `method` — T::Struct refuses a prop that shadows
-  # Kernel#method.
-  class PageAction < T::Struct
-    const :label, String
-    const :route, Symbol
-    const :http_method, T.nilable(Symbol)
-  end
-
+  # The scene screen's footer page-action; see ScenePageAction, which owns the
+  # rule and the data shape.
   sig do
     params(
       can_manage: T::Boolean,
       is_participant: T::Boolean,
       membership: T.nilable(GameMember)
-    ).returns(T.nilable(PageAction))
+    ).returns(T.nilable(ScenePageAction))
   end
   def page_action(can_manage:, is_participant:, membership:)
-    membership_active = membership.present? && membership.active?
-
-    if !is_participant && !can_manage && !@model.private? && !@model.resolved? && membership_active
-      PageAction.new(label: "Join Scene", route: :join_game_scene_participants_path, http_method: :post)
-    elsif can_manage && @model.resolved? && @model.scene_summary.blank?
-      PageAction.new(label: "Write Summary", route: :new_game_scene_scene_summary_path, http_method: nil)
-    end
+    ScenePageAction.for(
+      scene: @model,
+      viewer: ScenePageAction::Viewer.new(
+        can_manage: can_manage, is_participant: is_participant, membership: membership
+      )
+    )
   end
 end
