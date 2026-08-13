@@ -53,22 +53,24 @@ def collect_concern_mixins(node, into)
      %i[include extend prepend].include?(node.name) &&
      node.arguments
     node.arguments.arguments.each do |arg|
-      into << arg if constant_path_name(arg) == "ActiveSupport::Concern"
+      name = constant_path_name(arg)
+      # Tolerate a leading :: (top-level scope) — ::ActiveSupport::Concern.
+      into << arg if name&.delete_prefix("::") == "ActiveSupport::Concern"
     end
   end
 
   node.compact_child_nodes.each { |child| collect_concern_mixins(child, into) }
 end
 
-# Renders a (possibly nested) constant reference node back to its dotted name,
-# so `ActiveSupport::Concern` matches whether written fully-qualified or not.
+# The dotted name of a constant reference argument (ConstantReadNode or
+# ConstantPathNode), so `ActiveSupport::Concern` matches whether written
+# fully-qualified or bare. Uses the node's source slice rather than walking
+# ConstantPathNode#parent/#name — that AST shape differs across Prism versions
+# (CI's Prism raised NoMethodError on #name), whereas #slice is stable.
 def constant_path_name(node)
-  case node
-  when Prism::ConstantReadNode
-    node.name.to_s
-  when Prism::ConstantPathNode
-    [ constant_path_name(node.parent), node.name ].compact.join("::")
-  end
+  return unless node.is_a?(Prism::ConstantReadNode) || node.is_a?(Prism::ConstantPathNode)
+
+  node.slice
 end
 
 violations = []
