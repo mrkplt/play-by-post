@@ -29,9 +29,11 @@ class Shared::NotebookFormComponent < ApplicationComponent
     new_record? ? "Create Entry" : "Save"
   end
 
+  # There is no read screen for an entry, so leaving the form always returns
+  # to the board.
   sig { returns(String) }
   def back_href
-    new_record? ? helpers.game_notebook_entries_path(@game) : helpers.game_notebook_entry_path(@game, @notebook_entry)
+    helpers.game_notebook_entries_path(@game)
   end
 
   sig { returns(String) }

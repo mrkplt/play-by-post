@@ -16,11 +16,16 @@
 
     <div class="flex flex-col gap-1.5">
       <%= f.label :body, "Body (markdown supported)", class: "text-[11px] font-bold text-muted uppercase tracking-[0.05em]" %>
+      <%# Notebook entries are GM scratchpad, not published content, so the
+          editor is a large writing surface with no live preview — presentation
+          waits until the entry is promoted to a Page. Dropping the preview is
+          omitting its region; there is no preview flag. %>
       <%= render Ui::MarkdownEditorComponent.new(
             form: f, field: :body,
-            config: Ui::MarkdownEditorComponent::Config.with_preview(
-              preview_class: "border border-card-border rounded-card px-3 py-3 mt-4"),
-            rows: 14,
+            config: Ui::MarkdownEditorComponent::Config.new(
+              edit_height: :xl,
+              regions: [ Ui::MarkdownEditorComponent::ToolbarRegion.new ]),
+            rows: 24,
             placeholder: "Write the entry in markdown…",
             edit_class: "border border-input-border border-t-0 rounded-b-control px-3 py-2.5 text-base text-ink bg-card placeholder:text-muted-2") %>
     </div>

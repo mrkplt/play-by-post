@@ -1,3 +1,0 @@
-<%= turbo_stream.append "notebook_column_#{@notebook_entry.status}" do %>
-  <%= render Shared::NotebookCardComponent.new(game: @game, notebook_entry: @notebook_entry) %>
-<% end %>

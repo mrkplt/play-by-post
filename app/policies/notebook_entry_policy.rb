@@ -13,11 +13,6 @@ class NotebookEntryPolicy < ApplicationPolicy
   end
 
   sig { returns(T::Boolean) }
-  def show?
-    gm?
-  end
-
-  sig { returns(T::Boolean) }
   def create?
     gm?
   end

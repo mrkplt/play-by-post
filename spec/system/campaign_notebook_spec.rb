@@ -59,6 +59,63 @@ RSpec.describe "Campaign Notebook", type: :feature do
       expect(page).to have_no_button("Delete")
     end
 
+    it "edits an entry from its edit screen" do
+      entry = create(:notebook_entry, game: game, title: "A wandering merchant")
+      sign_in_as(gm)
+      visit edit_game_notebook_entry_path(game, entry)
+
+      fill_in "notebook_entry[title]", with: "A wandering merchant (updated)"
+      click_on "Save"
+
+      expect(page).to have_text("Entry updated.")
+      expect(entry.reload.title).to eq("A wandering merchant (updated)")
+    end
+
+    it "writes into a large editor with no live preview" do
+      entry = create(:notebook_entry, game: game, title: "A wandering merchant")
+      sign_in_as(gm)
+      visit edit_game_notebook_entry_path(game, entry)
+
+      expect(page).to have_css("textarea[name='notebook_entry[body]']")
+      expect(page).to have_css("[role='toolbar'][aria-label='Markdown formatting']")
+      expect(page).to have_no_css("[data-markdown-preview-target='preview']")
+    end
+
+    it "moves an entry between lanes from its edit screen" do
+      entry = create(:notebook_entry, game: game, title: "A wandering merchant", status: "new")
+      sign_in_as(gm)
+      visit edit_game_notebook_entry_path(game, entry)
+
+      select "Expand", from: "notebook_entry[status]"
+
+      # The move round-trips and Turbo re-renders this screen, so the select
+      # coming back on "Expand" is what proves the write landed.
+      expect(page).to have_select("notebook_entry[status]", selected: "Expand")
+      expect(entry.reload.status).to eq("expand")
+    end
+
+    it "promotes an entry from its edit screen" do
+      entry = create(:notebook_entry, game: game, title: "Standalone Idea", body: "Body content.")
+      sign_in_as(gm)
+      visit edit_game_notebook_entry_path(game, entry)
+
+      click_on "Promote"
+
+      expect(page).to have_current_path(%r{/games/\d+/pages/})
+      expect(Page.find_by(title: "Standalone Idea")).to be_present
+    end
+
+    it "deletes an entry from its edit screen" do
+      entry = create(:notebook_entry, game: game, title: "Doomed Idea")
+      sign_in_as(gm)
+      visit edit_game_notebook_entry_path(game, entry)
+
+      accept_confirm { click_on "Delete" }
+
+      expect(page).to have_current_path(game_notebook_entries_path(game))
+      expect(NotebookEntry.find_by(id: entry.id)).to be_nil
+    end
+
     it "hides the Discard column by default and reveals it via the toggle" do
       create(:notebook_entry, game: game, title: "Scrapped Idea", status: "discard")
       sign_in_as(gm)
@@ -71,15 +128,16 @@ RSpec.describe "Campaign Notebook", type: :feature do
       expect(page).to have_text("Scrapped Idea")
     end
 
-    it "promotes from the entry's own show screen" do
+    it "links to the page an entry became, instead of offering Promote twice" do
       entry = create(:notebook_entry, game: game, title: "Standalone Idea", body: "Body content.")
       sign_in_as(gm)
-      visit game_notebook_entry_path(game, entry)
-
+      visit edit_game_notebook_entry_path(game, entry)
       click_on "Promote"
 
-      expect(page).to have_text("Promoted to a page.")
-      expect(Page.find_by(title: "Standalone Idea")).to be_present
+      visit edit_game_notebook_entry_path(game, entry)
+
+      expect(page).to have_no_button("Promote")
+      expect(page).to have_link("Promoted to: Standalone Idea")
     end
   end
 

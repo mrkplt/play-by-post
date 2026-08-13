@@ -138,29 +138,6 @@ RSpec.describe NotebookEntriesController, type: :request do
     end
   end
 
-  describe "GET show" do
-    let!(:entry) { create(:notebook_entry, game: game, title: "Lore") }
-
-    it "is visible to the GM" do
-      sign_in(gm)
-      get game_notebook_entry_path(game, entry)
-      expect(response).to have_http_status(:ok)
-      expect(response.body).to include("Lore")
-    end
-
-    it "is denied to a player" do
-      sign_in(player)
-      get game_notebook_entry_path(game, entry)
-      expect(response).to redirect_to(game_path(game))
-    end
-
-    it "addresses the entry by slug, not id" do
-      sign_in(gm)
-      get game_notebook_entry_path(game, entry)
-      expect(request.path).to include(entry.slug)
-    end
-  end
-
   describe "GET edit / PATCH update" do
     let!(:entry) { create(:notebook_entry, game: game, title: "Original") }
 
@@ -170,8 +147,20 @@ RSpec.describe NotebookEntriesController, type: :request do
       expect(response).to have_http_status(:ok)
 
       patch game_notebook_entry_path(game, entry), params: { notebook_entry: { title: "Updated" } }
-      expect(response).to redirect_to(game_notebook_entry_path(game, entry))
+      expect(response).to redirect_to(edit_game_notebook_entry_path(game, entry))
       expect(entry.reload.title).to eq("Updated")
+    end
+
+    it "addresses the entry by slug, not id" do
+      sign_in(gm)
+      get edit_game_notebook_entry_path(game, entry)
+      expect(request.path).to include(entry.slug)
+    end
+
+    it "denies the edit screen to a player" do
+      sign_in(player)
+      get edit_game_notebook_entry_path(game, entry)
+      expect(response).to redirect_to(game_path(game))
     end
 
     it "keeps the slug stable across an update" do
@@ -181,28 +170,21 @@ RSpec.describe NotebookEntriesController, type: :request do
       expect(entry.reload.slug).to eq(original_slug)
     end
 
-    it "responds with a turbo_stream replacing the card in read mode for an inline (board) edit" do
-      sign_in(gm)
-      patch game_notebook_entry_path(game, entry),
-        params: { notebook_entry: { title: "Streamed Update" }, inline: "1" },
-        as: :turbo_stream
-      expect(response.media_type).to eq(Mime[:turbo_stream].to_s)
-      expect(response.body).to include("Streamed Update")
-    end
-
-    it "redirects to show for a non-inline edit even when Turbo requests turbo_stream" do
+    it "returns to the edit screen after a Turbo-driven update" do
       sign_in(gm)
       patch game_notebook_entry_path(game, entry),
         params: { notebook_entry: { title: "Streamed Update" } },
         as: :turbo_stream
-      expect(response).to redirect_to(game_notebook_entry_path(game, entry))
+      expect(response).to redirect_to(edit_game_notebook_entry_path(game, entry))
     end
 
-    it "edit responds with a turbo_stream replacing the card in edit mode" do
+    it "carries the entry's actions on the edit screen" do
       sign_in(gm)
-      get edit_game_notebook_entry_path(game, entry), as: :turbo_stream
-      expect(response.media_type).to eq(Mime[:turbo_stream].to_s)
-      expect(response.body).to include("textarea")
+      get edit_game_notebook_entry_path(game, entry)
+
+      expect(response.body).to include("Promote")
+      expect(response.body).to include("Delete")
+      expect(response.body).to include("notebook_entry[status]")
     end
 
     it "does not permit setting status via update" do

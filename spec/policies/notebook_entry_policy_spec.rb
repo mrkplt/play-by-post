@@ -11,11 +11,10 @@ RSpec.describe NotebookEntryPolicy do
     allow(entry).to receive(:game).and_return(game)
   end
 
-  describe "#index? / #show? / #create? / #update? / #destroy? (GM only)" do
+  describe "#index? / #create? / #update? / #destroy? (GM only)" do
     it "are true for the GM" do
       allow(game).to receive(:game_master?).with(user).and_return(true)
       expect(policy.index?).to be(true)
-      expect(policy.show?).to be(true)
       expect(policy.create?).to be(true)
       expect(policy.update?).to be(true)
       expect(policy.destroy?).to be(true)
@@ -24,7 +23,6 @@ RSpec.describe NotebookEntryPolicy do
     it "are false for a non-GM" do
       allow(game).to receive(:game_master?).with(user).and_return(false)
       expect(policy.index?).to be(false)
-      expect(policy.show?).to be(false)
       expect(policy.create?).to be(false)
       expect(policy.update?).to be(false)
       expect(policy.destroy?).to be(false)

@@ -1,6 +1,9 @@
-<%= form_with url: move_game_notebook_entry_path(game, notebook_entry), method: :patch, scope: :notebook_entry, data: { turbo_stream: true }, class: "flex items-center gap-2" do |f| %>
+<%= form_with url: move_game_notebook_entry_path(game, notebook_entry), method: :patch, scope: :notebook_entry, data: form_data, class: "flex items-center gap-2" do |f| %>
   <%= f.label :status, "Lane", class: "sr-only" %>
   <%= f.select :status, status_options, { selected: selected_status },
         onchange: "this.form.requestSubmit()",
         class: Shared::NotebookLaneSelectComponent::SELECT_CLASS %>
+  <%# requestSubmit() is a no-op on a form with no submit button. Keep one in
+      the accessibility tree but out of sight — the select is the control. %>
+  <%= f.submit "Move", class: "sr-only" %>
 <% end %>

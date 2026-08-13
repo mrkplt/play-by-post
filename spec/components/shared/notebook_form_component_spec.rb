@@ -34,10 +34,10 @@ RSpec.describe Shared::NotebookFormComponent, type: :component do
       expect(component.back_href).to eq(path(:game_notebook_entries_path, game))
     end
 
-    it "points an edit's back_href at the entry itself" do
+    it "points an edit's back_href at the board — there is no read screen" do
       component = build_component(notebook_entry: existing_entry)
       render_inline(component)
-      expect(component.back_href).to eq(path(:game_notebook_entry_path, game, existing_entry))
+      expect(component.back_href).to eq(path(:game_notebook_entries_path, game))
     end
   end
 

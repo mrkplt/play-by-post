@@ -22,11 +22,21 @@ class Shared::NotebookLaneSelectComponent < ApplicationComponent
     String
   )
 
-  sig { params(game: Game, notebook_entry: NotebookEntry).void }
-  def initialize(game:, notebook_entry:)
+  # Where this picker is rendered decides how the move is answered. On the
+  # :board the response swaps the affected lanes in place; :standalone (the
+  # entry's edit screen) has no lanes to swap, so it submits normally and the
+  # controller redirects back.
+  RESPONSE_MODES = T.let(%i[board standalone].freeze, T::Array[Symbol])
+
+  sig { params(game: Game, notebook_entry: NotebookEntry, mode: Symbol).void }
+  def initialize(game:, notebook_entry:, mode: :board)
     @game = game
     @notebook_entry = notebook_entry
+    @mode = mode
   end
+
+  sig { returns(Symbol) }
+  attr_reader :mode
 
   sig { returns(Game) }
   attr_reader :game
@@ -42,5 +52,15 @@ class Shared::NotebookLaneSelectComponent < ApplicationComponent
   sig { returns(T::Array[[ String, String ]]) }
   def status_options
     NotebookEntry::STATUSES.map { |status| [ T.must(STATUS_LABELS[status]), status ] }
+  end
+
+  FORM_DATA = T.let({
+    board: { turbo_stream: true }.freeze,
+    standalone: {}.freeze
+  }.freeze, T::Hash[Symbol, T::Hash[Symbol, T.untyped]])
+
+  sig { returns(T::Hash[Symbol, T.untyped]) }
+  def form_data
+    FORM_DATA.fetch(mode)
   end
 end

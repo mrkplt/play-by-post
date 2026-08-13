@@ -36,10 +36,28 @@ RSpec.describe Shared::NotebookLaneSelectComponent, type: :component do
       expect(page).to have_field("_method", type: :hidden, with: "patch")
     end
 
-    it "submits itself on change so no separate button is needed" do
+    it "submits itself on change" do
       render_inline(build_component)
       expect(page.find("select[name='notebook_entry[status]']")["onchange"]).to eq("this.form.requestSubmit()")
-      expect(page).to have_no_button
+    end
+
+    it "keeps a submit button, without which requestSubmit() does nothing" do
+      render_inline(build_component)
+      expect(page).to have_css("input[type='submit'].sr-only", visible: :all, count: 1)
+    end
+
+    it "drives the move over Turbo on the board" do
+      render_inline(build_component)
+      expect(page).to have_css("form[data-turbo-stream]")
+    end
+
+    it "submits normally off the board, where there are no lanes to swap" do
+      render_inline(build_component(mode: :standalone))
+      expect(page).to have_no_css("form[data-turbo-stream]")
+    end
+
+    it "rejects a response mode it does not know" do
+      expect { render_inline(build_component(mode: :nonsense)) }.to raise_error(KeyError)
     end
 
     it "drives the move over a Turbo Stream so the board does not navigate" do

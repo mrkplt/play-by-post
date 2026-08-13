@@ -9,7 +9,7 @@ class NotebookEntriesController < ApplicationController
 
   before_action :set_game
   before_action :require_gm!
-  before_action :set_notebook_entry, only: %i[show edit update destroy move promote]
+  before_action :set_notebook_entry, only: %i[edit update destroy move promote]
   after_action :verify_authorized
 
   sig { void }
@@ -40,18 +40,8 @@ class NotebookEntriesController < ApplicationController
   end
 
   sig { void }
-  def show
-    authorize @notebook_entry
-  end
-
-  sig { void }
   def edit
     authorize @notebook_entry
-
-    respond_to do |format|
-      format.turbo_stream
-      format.html
-    end
   end
 
   sig { void }
@@ -59,13 +49,7 @@ class NotebookEntriesController < ApplicationController
     authorize @notebook_entry
 
     if @notebook_entry.update(notebook_entry_params)
-      if inline_request?
-        render :update
-      else
-        redirect_to game_notebook_entry_path(@game, @notebook_entry), notice: "Entry updated."
-      end
-    elsif inline_request?
-      render :update_failed
+      redirect_to edit_game_notebook_entry_path(@game, @notebook_entry), notice: "Entry updated."
     else
       render :edit, status: :unprocessable_content
     end
@@ -85,7 +69,13 @@ class NotebookEntriesController < ApplicationController
     @notebook_entry.update!(move_params)
 
     respond_to do |format|
+      # On the board the response swaps the affected lanes in place. Off the
+      # board — the edit screen — there are no lanes to swap, so say what
+      # happened and come back.
       format.turbo_stream
+      format.html do
+        redirect_to edit_game_notebook_entry_path(@game, @notebook_entry), notice: "Entry moved."
+      end
     end
   end
 
@@ -123,11 +113,6 @@ class NotebookEntriesController < ApplicationController
   sig { params(game: Game).returns(T::Array[NotebookEntry]) }
   def entries_for(game)
     game.notebook_entries.order(:created_at).to_a
-  end
-
-  sig { returns(T::Boolean) }
-  def inline_request?
-    params[:inline].present?
   end
 
   sig { returns(ActionController::Parameters) }
