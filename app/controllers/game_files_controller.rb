@@ -42,11 +42,14 @@ class GameFilesController < ApplicationController
     end
   end
 
+  # Authorization runs before the lookup, and deliberately: deciding it against
+  # an unsaved instance keeps the answer independent of whether the id exists,
+  # so an unauthorized caller cannot tell a missing file from a forbidden one.
   sig { void }
   def destroy
-    authorize @game.game_files.new
-    game_file = @game.game_files.find(params[:id])
-    game_file.destroy
+    files = @game.game_files
+    authorize files.new
+    files.find(params[:id]).destroy
     redirect_to game_game_files_path(@game), notice: "File deleted."
   end
 
