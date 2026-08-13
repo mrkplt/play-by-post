@@ -14,11 +14,10 @@ class NotebookEntriesController < ApplicationController
   extend T::Sig
 
   before_action :set_game
-  # create and update re-render :new/:edit on validation failure, so they need
-  # the presenter too.
-  before_action :set_game_presenter, only: %i[index new create edit update]
   before_action :set_notebook_entry, only: %i[edit update destroy move promote]
   after_action :verify_authorized
+
+  helper_method :game_presenter
 
   sig { void }
   def index
@@ -114,9 +113,14 @@ class NotebookEntriesController < ApplicationController
   # may administer the game. Every action here is already GM-only, so the answer
   # is always true today — but the view asks the policy for it rather than
   # hard-coding a literal, so it stays correct when the rule granularizes.
-  sig { void }
-  def set_game_presenter
-    @game_presenter = GamePresenter.new(@game, T.must(current_user))
+  #
+  # Memoized rather than set by a before_action: the actions that render it are
+  # not the ones named after it (create and update re-render :new and :edit on
+  # validation failure), and a lazily-built presenter cannot be missed off that
+  # list.
+  sig { returns(GamePresenter) }
+  def game_presenter
+    @game_presenter ||= T.let(GamePresenter.new(@game, T.must(current_user)), T.nilable(GamePresenter))
   end
 
   sig { params(game: Game).returns(T::Array[NotebookEntry]) }
