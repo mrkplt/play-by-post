@@ -5,7 +5,6 @@ class GameFilesController < ApplicationController
 
   before_action :set_game
   before_action :require_game_access!
-  before_action :require_gm!, only: %i[create destroy]
   after_action :verify_authorized, except: :index
 
   sig { void }
@@ -45,8 +44,8 @@ class GameFilesController < ApplicationController
 
   sig { void }
   def destroy
+    authorize @game.game_files.new
     game_file = @game.game_files.find(params[:id])
-    authorize game_file
     game_file.destroy
     redirect_to game_game_files_path(@game), notice: "File deleted."
   end
@@ -61,12 +60,5 @@ class GameFilesController < ApplicationController
   sig { void }
   def require_game_access!
     redirect_to root_path, alert: "You do not have access to this game." unless policy(@game).show?
-  end
-
-  sig { void }
-  def require_gm!
-    unless policy(@game).update?
-      redirect_to game_path(@game), alert: "Only the GM can manage files."
-    end
   end
 end
