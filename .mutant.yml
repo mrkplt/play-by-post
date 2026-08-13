@@ -90,6 +90,8 @@ matcher:
     - Shared::PageFormComponent
     - Shared::PageDetailComponent
     - Shared::GamePagesListComponent
+    - Shared::ListEntryComponent
+    - Shared::NotebookLaneSelectComponent
     - Shared::GameLinksListComponent
     - Shared::LinkFormComponent
     - Shared::NotebookFormComponent
