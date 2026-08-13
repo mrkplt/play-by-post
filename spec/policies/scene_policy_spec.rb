@@ -78,7 +78,19 @@ RSpec.describe ScenePolicy do
     end
   end
 
-  describe "#create? / #new? / #resolve? / #manage_participants? (GM only)" do
+  describe "#manage? (GM only — the capability create?/resolve?/manage_participants? delegate to)" do
+    it "is true for the GM" do
+      allow(game).to receive(:game_master?).with(user).and_return(true)
+      expect(policy.manage?).to be(true)
+    end
+
+    it "is false for a non-GM" do
+      allow(game).to receive(:game_master?).with(user).and_return(false)
+      expect(policy.manage?).to be(false)
+    end
+  end
+
+  describe "#create? / #new? / #resolve? / #manage_participants? (delegate to #manage?)" do
     it "are true for the GM" do
       allow(game).to receive(:game_master?).with(user).and_return(true)
       expect(policy.create?).to be(true)
