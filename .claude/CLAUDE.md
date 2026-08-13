@@ -435,15 +435,13 @@ Hard-won specifics for actually clearing the gates. Read this before touching up
 - **`policy(x).update?` (or `.show?`) must never be used as a stand-in for "is GM" (or "can view").** If a call site is asking a capability question, it calls a capability predicate — `GamePolicy#manage?` / `#view?`, not `#update?` / `#show?` reused out of convenience.
 - **Do not add a public role-named method anywhere** (e.g. a public `GamePolicy#game_master?`) — that's the same mistake one level down: a role back on the public surface.
 
-**View-layer instance of the same rule:** a component parameter or presenter method exposed to templates must also be named for the capability, not the role. `Shared::GameNavComponent` and seven other components/presenters took an `is_gm:` parameter — a role name on a public API — driving a GM-only Notebook tab, delete buttons, and edit/crown affordances. Renamed to `can_manage:` throughout (8 components, 2 presenters, 20 views, 14 specs) to match `GamePolicy#manage?`, the capability that answers it.
+This extends to the view layer: a component parameter or presenter method is a public API too, so it is named for the capability (`can_manage:`, `GamePresenter#can_manage?`), never the role. A predicate answering an authorization question must ask the policy — `Shared::SidebarComponent` once read `member_for(user).game_master?` directly, which looks converted once its call site is renamed but silently diverges from every other check the day the rule granularizes.
 
-**Precedent — copy these two, they implement the rule end to end:**
-- `GamePolicy#manage?` / `#view?` — the general "may administer"/"may see this game" capabilities; `update?`/`destroy?`/`show?` delegate to them, `gm?`/`viewable?` are private.
-- `NotebookEntryPolicy#manage?` — one capability for a whole section; all five CRUD predicates delegate to it, `gm?` is private and has exactly one caller.
+**The completion test: `gm?` must have exactly one caller — the capability.** If it appears in three CRUD bodies, granularizing means editing three lines, which is the thing this convention exists to prevent. Every policy satisfies this except `CharacterPolicy`, where `assign_owner?` and `manage_roster?` are deliberately distinct game functions that happen to share a rule today.
 
-**Partially converted — good capability *names*, but their CRUD bodies still inline the private role check, so the rule lives in several lines instead of one.** Treat these as work outstanding, not as models: `ScenePolicy` (`create?`, `resolve?`, `manage_participants?` each bare `gm?`), `PagePolicy` (no capability at all — `create?`/`update?`/`destroy?` all bare `gm?`), `CharacterPolicy` (`archive?`/`restore?` bare `gm?` beside the correct `assign_owner?`), `PostPolicy` (`participate?` is public but inlines the role check rather than delegating to a private one), `GameLinkPolicy`, `GameFilePolicy`, `SceneSummaryPolicy`, `InvitationPolicy`, `GameMemberPolicy`.
+**Copy `GamePolicy#manage?`/`#view?` or `NotebookEntryPolicy#manage?`** — both implement the rule end to end: CRUD predicates delegate, role predicates are private.
 
-**The test for "is this policy converted":** the private role predicate (`gm?`) should have exactly one caller — the capability. If `gm?` appears in three CRUD bodies, granularizing the rule means editing three lines, which is the thing this convention exists to prevent.
+**When converting a call site, convert the controller and its views together.** A view gated on `can_manage?` whose controller still loads the data under `update?` is identical today and raises `NoMethodError` on nil the day they diverge — a split-brain that is harder to spot than the original conflation.
 
 ### Navigation architecture (target shell)
 
