@@ -68,14 +68,16 @@ class NotebookEntriesController < ApplicationController
 
     @notebook_entry.update!(move_params)
 
-    respond_to do |format|
-      # On the board the response swaps the affected lanes in place. Off the
-      # board — the edit screen — there are no lanes to swap, so say what
-      # happened and come back.
-      format.turbo_stream
-      format.html do
-        redirect_to edit_game_notebook_entry_path(@game, @notebook_entry), notice: "Entry moved."
-      end
+    # On the board the response swaps the affected lanes in place. Off the
+    # board there are no lanes to swap, so say what happened and come back.
+    #
+    # This branches on an explicit form field, not on the request format:
+    # Turbo advertises `text/vnd.turbo-stream.html` for *every* unsafe request,
+    # so a `respond_to` format.html branch would be unreachable here.
+    if standalone_move?
+      redirect_to edit_game_notebook_entry_path(@game, @notebook_entry), notice: "Entry moved."
+    else
+      render :move, formats: :turbo_stream
     end
   end
 
@@ -118,6 +120,13 @@ class NotebookEntriesController < ApplicationController
   sig { returns(ActionController::Parameters) }
   def notebook_entry_params
     params.require(:notebook_entry).permit(:title, :body)
+  end
+
+  # The lane picker states where it was rendered; only the board can consume a
+  # lane-swapping Turbo Stream.
+  sig { returns(T::Boolean) }
+  def standalone_move?
+    params[:response_mode].to_s == "standalone"
   end
 
   sig { returns(ActionController::Parameters) }

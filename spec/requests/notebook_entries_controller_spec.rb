@@ -224,8 +224,34 @@ RSpec.describe NotebookEntriesController, type: :request do
 
       # The source lane is re-rendered empty and the destination carries it —
       # rows are shared markup with no per-entry id, so a stale row in the old
-      # lane would leave the entry visible twice.
-      expect(response.body.scan(entry.title).size).to eq(1)
+      # lane would leave the entry visible twice. Count row links rather than
+      # raw title text, which also appears in each picker's sr-only label.
+      row_href = edit_game_notebook_entry_path(game, entry)
+      expect(response.body.scan(%r{href="#{Regexp.escape(row_href)}"}).size).to eq(1)
+    end
+
+    it "redirects back to the entry when the picker was not on the board" do
+      sign_in(gm)
+      patch move_game_notebook_entry_path(game, entry),
+        params: { notebook_entry: { status: "expand" }, response_mode: "standalone" },
+        as: :turbo_stream
+
+      # Turbo advertises a turbo_stream Accept header for every unsafe request,
+      # so the response must be chosen by the parameter, not the format — a
+      # lane-swapping stream targets ids that do not exist off the board.
+      expect(response).to redirect_to(edit_game_notebook_entry_path(game, entry))
+      expect(flash[:notice]).to eq("Entry moved.")
+      expect(entry.reload.status).to eq("expand")
+    end
+
+    it "still swaps lanes when the picker was on the board" do
+      sign_in(gm)
+      patch move_game_notebook_entry_path(game, entry),
+        params: { notebook_entry: { status: "expand" }, response_mode: "board" },
+        as: :turbo_stream
+
+      expect(response.media_type).to eq(Mime[:turbo_stream].to_s)
+      expect(response.body).to include("notebook_column_expand")
     end
 
     it "replaces a single lane when the status does not actually change" do

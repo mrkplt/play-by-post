@@ -51,13 +51,35 @@ RSpec.describe Shared::NotebookLaneSelectComponent, type: :component do
       expect(page).to have_css("form[data-turbo-stream]")
     end
 
-    it "submits normally off the board, where there are no lanes to swap" do
+    it "states where it was rendered so the controller can pick a response" do
       render_inline(build_component(mode: :standalone))
-      expect(page).to have_no_css("form[data-turbo-stream]")
+      expect(page).to have_field("response_mode", type: :hidden, with: "standalone")
     end
 
-    it "rejects a response mode it does not know" do
-      expect { render_inline(build_component(mode: :nonsense)) }.to raise_error(KeyError)
+    it "states the board mode the same way" do
+      render_inline(build_component)
+      expect(page).to have_field("response_mode", type: :hidden, with: "board")
+    end
+
+    it "gives each entry's select its own id, so rows do not share a label" do
+      other = build_stubbed(:notebook_entry, game: game, title: "Other", slug: "otherslug1234567")
+      render_inline(build_component)
+      first_id = page.find("select")["id"]
+      render_inline(build_component(notebook_entry: other))
+
+      expect(first_id).to eq("notebook_entry_status_#{entry.slug}")
+      expect(page.find("select")["id"]).to eq("notebook_entry_status_#{other.slug}")
+      expect(page.find("select")["id"]).not_to eq(first_id)
+    end
+
+    it "points the label at its own select" do
+      render_inline(build_component)
+      expect(page.find("label")["for"]).to eq(page.find("select")["id"])
+    end
+
+    it "names the entry in the label, so rows are distinguishable" do
+      render_inline(build_component)
+      expect(page.find("label", visible: :all).text).to eq("Lane for Idea")
     end
 
     it "drives the move over a Turbo Stream so the board does not navigate" do

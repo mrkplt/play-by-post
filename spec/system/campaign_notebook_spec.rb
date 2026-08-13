@@ -88,9 +88,10 @@ RSpec.describe "Campaign Notebook", type: :feature do
 
       select "Expand", from: "notebook_entry[status]"
 
-      # The move round-trips and Turbo re-renders this screen, so the select
-      # coming back on "Expand" is what proves the write landed.
-      expect(page).to have_select("notebook_entry[status]", selected: "Expand")
+      # Assert the confirmation, not the select's value — the select already
+      # reads "Expand" from the click itself, so it passes even when the
+      # response is discarded and the GM sees nothing happen.
+      expect(page).to have_text("Entry moved.")
       expect(entry.reload.status).to eq("expand")
     end
 

@@ -53,6 +53,15 @@ RSpec.describe Shared::NotebookLaneComponent, type: :component do
       expect(page).to have_css("select[name='notebook_entry[status]']", count: 2)
     end
 
+    it "gives every row's picker a distinct id, so labels do not collide" do
+      entries = [ entry(title: "First", slug: "firstslug1234567"), entry(title: "Second", slug: "secondslug123456") ]
+      render_inline(build_component(entries: entries))
+
+      ids = page.all("select").map { |select| select["id"] }
+      expect(ids.uniq.size).to eq(2)
+      expect(page.all("label", visible: :all).map { |l| l["for"] }).to eq(ids)
+    end
+
     it "shows the empty placeholder when the lane has no entries" do
       render_inline(build_component)
       expect(page).to have_text(described_class::EMPTY_TEXT)

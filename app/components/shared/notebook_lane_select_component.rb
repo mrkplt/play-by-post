@@ -24,8 +24,15 @@ class Shared::NotebookLaneSelectComponent < ApplicationComponent
 
   # Where this picker is rendered decides how the move is answered. On the
   # :board the response swaps the affected lanes in place; :standalone (the
-  # entry's edit screen) has no lanes to swap, so it submits normally and the
-  # controller redirects back.
+  # entry's edit screen) has no lanes to swap, so the controller redirects back
+  # to the entry instead.
+  #
+  # The mode travels as an explicit form field, NOT as the absence of
+  # `data-turbo-stream`. Turbo accepts a stream response for *any* unsafe
+  # request regardless of that attribute (`requestAcceptsTurboStreamResponse`
+  # is `!request.isSafe || hasAttribute(...)`), so a PATCH always advertises
+  # `text/vnd.turbo-stream.html` and `respond_to`'s format.html branch would
+  # never run. Discriminating on a parameter is the only reliable signal.
   RESPONSE_MODES = T.let(%i[board standalone].freeze, T::Array[Symbol])
 
   sig { params(game: Game, notebook_entry: NotebookEntry, mode: Symbol).void }
@@ -54,13 +61,23 @@ class Shared::NotebookLaneSelectComponent < ApplicationComponent
     NotebookEntry::STATUSES.map { |status| [ T.must(STATUS_LABELS[status]), status ] }
   end
 
-  FORM_DATA = T.let({
-    board: { turbo_stream: true }.freeze,
-    standalone: {}.freeze
-  }.freeze, T::Hash[Symbol, T::Hash[Symbol, T.untyped]])
-
   sig { returns(T::Hash[Symbol, T.untyped]) }
   def form_data
-    FORM_DATA.fetch(mode)
+    { turbo_stream: true }
+  end
+
+  # Every row on a board renders this component, so the control needs an id of
+  # its own — a shared `notebook_entry_status` would make each row's label
+  # point at the first row's select.
+  sig { returns(String) }
+  def select_id
+    "notebook_entry_status_#{notebook_entry.slug}"
+  end
+
+  # "Lane" alone is identical on every row; a screen reader needs to know
+  # which entry it is about to move.
+  sig { returns(String) }
+  def accessible_label
+    "Lane for #{notebook_entry.title}"
   end
 end

@@ -1,6 +1,8 @@
 <%= form_with url: move_game_notebook_entry_path(game, notebook_entry), method: :patch, scope: :notebook_entry, data: form_data, class: "flex items-center gap-2" do |f| %>
-  <%= f.label :status, "Lane", class: "sr-only" %>
+  <%= hidden_field_tag :response_mode, mode %>
+  <%= f.label :status, accessible_label, for: select_id, class: "sr-only" %>
   <%= f.select :status, status_options, { selected: selected_status },
+        id: select_id,
         onchange: "this.form.requestSubmit()",
         class: Shared::NotebookLaneSelectComponent::SELECT_CLASS %>
   <%# requestSubmit() is a no-op on a form with no submit button. Keep one in
