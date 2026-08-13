@@ -1,0 +1,117 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Ratchets ActiveRecord callbacks toward zero.
+#
+# This project is migrating away from AR lifecycle callbacks. Callbacks hide
+# behaviour behind persistence and fire implicitly, which is exactly the
+# indirection the codebase avoids (the same reason it forbids concerns). The
+# sanctioned alternatives, in order of preference:
+#
+#   1. If the work must happen in-band with the write, override the CRUD method
+#      explicitly (e.g. override #save/#save! and wrap super in a transaction) so
+#      the extra work is visible at the call site — this is already the pattern
+#      used elsewhere for version_attributes.
+#   2. If the work can happen out-of-band, enqueue an async job from the caller.
+#   3. If several parties must react, introduce an explicit synchronous pub/sub
+#      dispatch rather than stacking callbacks.
+#
+# Progressive by design: only models changed vs origin/master are inspected, and
+# a changed model may not INCREASE its callback count. Pre-existing callbacks are
+# grandfathered (the count can only go down); a new model must land at zero. A
+# separate Fizzy card tracks retiring the ratchet and enforcing zero everywhere.
+
+require "prism"
+
+ROOT = File.expand_path("..", __dir__)
+
+# Every ActiveRecord callback-registration macro. before/after/around across the
+# validation, save, create, update, destroy, commit and rollback lifecycles,
+# plus the after_find / after_initialize / after_touch hooks and the *_commit
+# conveniences. Deliberately excludes before_action/after_action (controller
+# filters, not model callbacks).
+CALLBACK_MACROS = %i[
+  after_initialize after_find after_touch
+  before_validation after_validation
+  before_save around_save after_save
+  before_create around_create after_create
+  before_update around_update after_update
+  before_destroy around_destroy after_destroy
+  after_commit after_rollback
+  after_create_commit after_update_commit after_destroy_commit after_save_commit
+].to_set.freeze
+
+# Counts AR callback registrations in the source: any bare-receiver call to a
+# callback macro, whether it takes a symbol/proc argument or a block. Prism keeps
+# us off comments and strings that merely mention the name.
+def callback_registrations(source)
+  return [] if source.nil? || source.strip.empty?
+
+  found = []
+  collect_callbacks(Prism.parse(source).value, found)
+  found
+end
+
+def collect_callbacks(node, into)
+  return if node.nil?
+  if node.is_a?(Prism::CallNode) && node.receiver.nil? && CALLBACK_MACROS.include?(node.name)
+    into << [ node.name, node.location.start_line ]
+  end
+  node.compact_child_nodes.each { |child| collect_callbacks(child, into) }
+end
+
+def changed_model_files
+  tracked = `git -C #{ROOT} diff --name-only --diff-filter=AM origin/master`.lines.map(&:strip)
+  untracked = `git -C #{ROOT} ls-files --others --exclude-standard`.lines.map(&:strip)
+  (tracked + untracked)
+    .grep(%r{\Aapp/models/.*\.rb\z})
+    .uniq
+    .map { |relative| File.join(ROOT, relative) }
+    .select { |path| File.exist?(path) }
+end
+
+failures = []
+reported = false
+
+changed_model_files.each do |path|
+  relative = path.delete_prefix("#{ROOT}/")
+  new_callbacks = callback_registrations(File.read(path, encoding: "utf-8"))
+
+  old_source = `git -C #{ROOT} show origin/master:#{relative} 2>/dev/null`.force_encoding("utf-8")
+  old_count = callback_registrations(old_source).length
+  new_count = new_callbacks.length
+  next if new_count.zero? && old_count.zero?
+
+  delta = new_count - old_count
+  reported = true
+  status = delta > 0 ? "FAIL" : "OK"
+  puts "  [#{status}] #{relative}: #{old_count} -> #{new_count} callback(s) (#{delta >= 0 ? '+' : ''}#{delta})"
+
+  if delta > 0
+    detail = new_callbacks.map { |name, line| "#{name} (line #{line})" }.join(", ")
+    failures << [ relative, detail ]
+  end
+end
+
+if !reported
+  puts "Callback check: OK (no changed models with callbacks)"
+  exit 0
+elsif failures.empty?
+  puts "\nCallback check: OK (no model increased its callback count)"
+  exit 0
+else
+  puts "\nCallback check: FAIL\n\n"
+  failures.each { |relative, detail| puts "  #{relative}: #{detail}" }
+  puts <<~REMEDY
+
+    A changed model added an ActiveRecord callback. This project is migrating off
+    callbacks — do not add new ones. Replace the callback with one of:
+      1. An explicit CRUD override (override #save/#save!, wrap super in a
+         transaction, do the work in-band) — visible at the call site.
+      2. An async job enqueued by the caller, for out-of-band work.
+      3. An explicit synchronous pub/sub dispatch, if several parties must react.
+    Grandfathered callbacks may remain; bring this model's count back to at most
+    its origin/master value. See CLAUDE.md and card #24.
+  REMEDY
+  exit 1
+end

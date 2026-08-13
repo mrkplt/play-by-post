@@ -56,6 +56,9 @@ bin/check-file-length || exit 1
 echo "==> Ivar-hygiene ratchet (initialize-only writes, read through accessors)"
 bin/check-ivar-hygiene || exit 1
 
+echo "==> Callback ratchet (migrating off ActiveRecord callbacks)"
+bin/check-callbacks || exit 1
+
 echo "==> JS security scan (importmap audit)"
 bin/importmap audit || exit 1
 

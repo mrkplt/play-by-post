@@ -266,6 +266,22 @@ jobs:
       - name: Ratchet instance-variable hygiene
         run: bin/ci-run bin/check-ivar-hygiene
 
+  callbacks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: .ruby-version
+
+      - name: Ratchet ActiveRecord callbacks
+        run: bin/ci-run bin/check-callbacks
+
   test:
     runs-on: ubuntu-latest
 
