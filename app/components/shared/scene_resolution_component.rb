@@ -6,8 +6,8 @@
 class Shared::SceneResolutionComponent < ApplicationComponent
   extend T::Sig
 
-  sig { params(scene: Scene).void }
-  def initialize(scene:)
-    @scene = T.let(scene, Scene)
+  sig { params(resolution: String).void }
+  def initialize(resolution:)
+    @resolution = T.let(resolution, String)
   end
 end

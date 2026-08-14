@@ -3,13 +3,13 @@
 class Shared::NavShellComponent < ApplicationComponent
   extend T::Sig
 
-  sig { params(current_user: User, active_game_id: T.nilable(Integer)).void }
+  sig { params(current_user: UserPresenter, active_game_id: T.nilable(Integer)).void }
   def initialize(current_user:, active_game_id: nil)
     @current_user = current_user
     @active_game_id = active_game_id
   end
 
-  sig { returns(User) }
+  sig { returns(UserPresenter) }
   attr_reader :current_user
 
   sig { returns(T.nilable(Integer)) }

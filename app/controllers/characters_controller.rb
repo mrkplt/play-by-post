@@ -17,7 +17,6 @@ class CharactersController < ApplicationController
     authorize character
     @game_presenter = T.let(game_presenter, T.nilable(GamePresenter))
     @character_presenter = T.let(character_presenter(character), T.nilable(CharacterPresenter))
-    @users = T.let(players_for_select, T.nilable(T::Array[UserPresenter]))
   end
 
   sig { void }
@@ -28,7 +27,6 @@ class CharactersController < ApplicationController
 
     if policy(character).assign_owner?
       if params[:character][:user_id].blank?
-        @users = T.let(players_for_select, T.nilable(T::Array[UserPresenter]))
         character.errors.add(:base, "Please select a player")
         @character_presenter = T.let(character_presenter(character), T.nilable(CharacterPresenter))
         return render :new, status: :unprocessable_content
@@ -44,7 +42,6 @@ class CharactersController < ApplicationController
     if character.save
       redirect_to game_character_path(game, character), notice: "Character created."
     else
-      @users = T.let(players_for_select, T.nilable(T::Array[UserPresenter]))
       @character_presenter = T.let(character_presenter(character), T.nilable(CharacterPresenter))
       render :new, status: :unprocessable_content
     end
@@ -53,11 +50,9 @@ class CharactersController < ApplicationController
   sig { void }
   def show
     authorize character
-    versions = character.character_versions.order(created_at: :desc).includes(:edited_by).to_a
     @versions = T.let(
-      versions.map do |version|
-        CharacterVersionPresenter.new(version, editor_name: UserPresenter.new(version.edited_by).display_name_or_email)
-      end,
+      character.character_versions.order(created_at: :desc).includes(:edited_by)
+        .map { |version| CharacterVersionPresenter.new(version) },
       T.nilable(T::Array[CharacterVersionPresenter])
     )
     @character_owner = T.let(UserPresenter.new(character.user), T.nilable(UserPresenter))
@@ -120,9 +115,9 @@ class CharactersController < ApplicationController
     T.must(@character)
   end
 
-  sig { returns(T::Array[UserPresenter]) }
+  sig { returns(T::Array[User]) }
   def players_for_select
-    game.active_members.where(role: "player").includes(:user).map { |member| UserPresenter.new(member.user) }
+    game.active_members.where(role: "player").includes(:user).map(&:user)
   end
 
   sig { void }
@@ -148,7 +143,12 @@ class CharactersController < ApplicationController
 
   sig { params(character: Character).returns(CharacterPresenter) }
   def character_presenter(character)
-    CharacterPresenter.new(character, game_policy: policy(game), character_policy: policy(character))
+    CharacterPresenter.new(
+      character,
+      game_policy: policy(game),
+      character_policy: policy(character),
+      players: players_for_select
+    )
   end
 
   sig { returns(GamePresenter) }

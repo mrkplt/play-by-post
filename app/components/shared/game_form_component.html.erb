@@ -16,7 +16,7 @@
   <div class="flex flex-col gap-1.5">
     <%= f.label :description, "Description (optional, markdown supported)", class: "text-[11px] font-bold text-muted uppercase tracking-[0.05em]" %>
     <%= render Ui::MarkdownEditorComponent.new(
-          form: f, field: :description,
+          binding: { form: f, field: :description },
           config: Ui::MarkdownEditorComponent::Config.with_preview(edit_height: :lg),
           rows: 4,
           placeholder: "Describe this game in markdown…") %>

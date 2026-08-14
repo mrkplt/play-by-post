@@ -10,12 +10,12 @@ class Shared::ProfileFormComponent < ApplicationComponent
 
   FORM_ID = "profile_edit_form"
 
-  sig { params(profile: UserProfile).void }
+  sig { params(profile: UserProfilePresenter).void }
   def initialize(profile:)
-    @profile = T.let(profile, UserProfile)
+    @profile = T.let(profile, UserProfilePresenter)
   end
 
-  sig { returns(UserProfile) }
+  sig { returns(UserProfilePresenter) }
   attr_reader :profile
 
   sig { returns(String) }
@@ -30,11 +30,11 @@ class Shared::ProfileFormComponent < ApplicationComponent
 
   sig { returns(T::Boolean) }
   def errors?
-    @profile.errors[:display_name].any?
+    @profile.display_name_errors?
   end
 
   sig { returns(T.nilable(String)) }
   def error_message
-    @profile.errors[:display_name].first
+    @profile.display_name_error_message
   end
 end

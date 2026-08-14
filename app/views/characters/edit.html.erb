@@ -4,8 +4,8 @@
   <% frame.with_header do %>
     <%= render Shared::HeaderComponent.new(
           title: "Edit — #{@character_presenter.name}",
-          breadcrumbs: Shared::BreadcrumbsComponent.new(game: @game),
-          secondary_nav: Shared::GameNavComponent.new(game: @game, active_tab: :roster, can_manage: @character_presenter.can_manage_game?, mode: :link)) %>
+          breadcrumbs: Shared::BreadcrumbsComponent.new(game_presenter: @game_presenter),
+          secondary_nav: Shared::GameNavComponent.new(game_presenter: @game_presenter, active_tab: :roster, mode: :link)) %>
   <% end %>
 
   <% frame.with_footer do %>
@@ -19,7 +19,5 @@
     <% end %>
   <% end %>
 
-  <%= render Shared::CharacterFormComponent.new(
-        game: @game_presenter, character: @character_presenter, users: [],
-        can_assign_owner: @character_presenter.can_assign_owner?) %>
+  <%= render Shared::CharacterFormComponent.new(character: @character_presenter) %>
 <% end %>

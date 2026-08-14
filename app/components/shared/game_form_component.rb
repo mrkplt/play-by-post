@@ -10,7 +10,7 @@ class Shared::GameFormComponent < ApplicationComponent
 
   sig do
     params(
-      game: Game,
+      game: GamePresenter,
       submit_label: String,
       cancel_href: String,
       note: T.nilable(String),
@@ -18,14 +18,14 @@ class Shared::GameFormComponent < ApplicationComponent
     ).void
   end
   def initialize(game:, submit_label:, cancel_href:, note: nil, confirm: nil)
-    @game = T.let(game, Game)
+    @game = T.let(game, GamePresenter)
     @submit_label = T.let(submit_label, String)
     @cancel_href = T.let(cancel_href, String)
     @note = T.let(note, T.nilable(String))
     @confirm = T.let(confirm, T.nilable(String))
   end
 
-  sig { returns(Game) }
+  sig { returns(GamePresenter) }
   attr_reader :game
 
   sig { returns(String) }
@@ -44,12 +44,12 @@ class Shared::GameFormComponent < ApplicationComponent
 
   sig { returns(T::Boolean) }
   def errors?
-    @game.errors.any?
+    @game.errors?
   end
 
   sig { returns(T::Array[String]) }
   def error_messages
-    @game.errors.full_messages
+    @game.error_messages
   end
 
   # The submit button's data hash — carries a Turbo/UJS confirmation prompt only

@@ -9,9 +9,9 @@ class GameFilesController < ApplicationController
 
   sig { void }
   def index
-    @game_files = @game.game_files.includes(file_attachment: :blob).order(created_at: :desc)
     @game_presenter = GamePresenter.new(@game, policy: policy(@game))
-    @game_file = @game.game_files.new
+    @game_files = build_game_file_presenters
+    @game_file_presenter = GameFilePresenter.new(@game.game_files.new)
   end
 
   sig { void }
@@ -36,8 +36,9 @@ class GameFilesController < ApplicationController
     if @game_file.save
       redirect_to game_game_files_path(@game), notice: "File uploaded."
     else
-      @game_files = @game.game_files.includes(file_attachment: :blob).order(created_at: :desc)
       @game_presenter = GamePresenter.new(@game, policy: policy(@game))
+      @game_files = build_game_file_presenters
+      @game_file_presenter = GameFilePresenter.new(@game_file)
       render :index, status: :unprocessable_content
     end
   end
@@ -54,6 +55,13 @@ class GameFilesController < ApplicationController
   end
 
   private
+
+  sig { returns(T::Array[GameFilePresenter]) }
+  def build_game_file_presenters
+    @game.game_files.includes(file_attachment: :blob).order(created_at: :desc).map do |gf|
+      GameFilePresenter.new(gf, game: @game, helpers: helpers, can_manage: policy(@game).manage?)
+    end
+  end
 
   sig { void }
   def set_game

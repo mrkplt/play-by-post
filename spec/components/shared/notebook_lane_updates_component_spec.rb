@@ -2,16 +2,17 @@ require "rails_helper"
 
 RSpec.describe Shared::NotebookLaneUpdatesComponent, type: :component do
   let(:game) { build_stubbed(:game) }
+  let(:game_presenter) { GamePresenter.new(game, policy: instance_double(GamePolicy)) }
 
   def moved_entry(from:, to:)
     entry = build_stubbed(:notebook_entry, game: game, status: from, slug: "movedslug1234567")
     entry.status = to
     allow(entry).to receive(:status_previously_was).and_return(from)
-    entry
+    NotebookEntryPresenter.new(entry)
   end
 
   def build_component(notebook_entry:)
-    described_class.new(game: game, notebook_entry: notebook_entry)
+    described_class.new(game: game_presenter, notebook_entry: notebook_entry)
   end
 
   describe "#affected_statuses" do
@@ -29,7 +30,8 @@ RSpec.describe Shared::NotebookLaneUpdatesComponent, type: :component do
       entry = build_stubbed(:notebook_entry, game: game, status: "new", slug: "freshslug1234567")
       allow(entry).to receive(:status_previously_was).and_return(nil)
 
-      expect(build_component(notebook_entry: entry).affected_statuses).to eq(%w[new])
+      component = build_component(notebook_entry: NotebookEntryPresenter.new(entry))
+      expect(component.affected_statuses).to eq(%w[new])
     end
   end
 

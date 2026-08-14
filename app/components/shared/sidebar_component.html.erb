@@ -8,12 +8,11 @@
 <nav class="flex-1">
   <%= link_to "My Games", root_path, class: "sidebar-section-label" %>
 
-  <% if signed_in? && @current_user.games.any? %>
-    <% @current_user.games_by_recent_activity(limit: 8).each do |game| %>
-      <% can_manage = can_manage?(game) %>
+  <% if signed_in? && @games.any? %>
+    <% @games.each do |game| %>
       <%= link_to game_path(game), class: "sidebar-link flex items-center justify-between" do %>
         <span><%= game.name %></span>
-        <% if can_manage %>
+        <% if game.can_manage? %>
           <%= helpers.icon "crown-03", class: "w-4 h-4 text-accent" %>
         <% end %>
       <% end %>

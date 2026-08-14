@@ -21,6 +21,9 @@ class PostsController < ApplicationController
   sig { void }
   def edit
     authorize @post
+    @game_presenter = GamePresenter.new(@game, policy: policy(@game))
+    @scene_presenter = ScenePresenter.new(@scene, game: @game, urls: self)
+    @post_presenter = PostPresenter.new(@post)
   end
 
   sig { void }
@@ -61,15 +64,27 @@ class PostsController < ApplicationController
     authorize @post, :create?
     attach_image(@post)
 
+    @game_presenter = GamePresenter.new(@game, policy: policy(@game))
+    @scene_presenter = ScenePresenter.new(@scene, game: @game, urls: self)
+
     if @post.save
-      @post_presenter = PostPresenter.new(@post, scene_participants: @scene.scene_participants.includes(:character, :user).to_a)
+      @post_presenter = PostPresenter.new(
+        @post, scene_participants: @scene.scene_participants.includes(:character, :user).to_a,
+               game: @game, scene: @scene, urls: self, policy: policy(@post)
+      )
       respond_to do |format|
         format.turbo_stream
         format.html { redirect_to game_scene_path(@game, @scene) }
       end
     else
       respond_to do |format|
-        format.turbo_stream { render turbo_stream: turbo_stream.replace("post_composer", Shared::PostComposerComponent.new(post: @post, game: @game, scene: @scene)) }
+        format.turbo_stream do
+          post_presenter = PostPresenter.new(@post)
+          render turbo_stream: turbo_stream.replace(
+            "post_composer",
+            Shared::PostComposerComponent.new(post: post_presenter, game: @game_presenter, scene: @scene_presenter)
+          )
+        end
         format.html { redirect_to game_scene_path(@game, @scene), alert: "Could not create post." }
       end
     end

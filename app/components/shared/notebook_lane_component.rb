@@ -56,9 +56,9 @@ class Shared::NotebookLaneComponent < ApplicationComponent
 
   sig do
     params(
-      game: Game,
+      game: GamePresenter,
       status: String,
-      entries: T::Array[NotebookEntry],
+      entries: T::Array[NotebookEntryPresenter],
       disclosure: Symbol
     ).void
   end
@@ -69,10 +69,10 @@ class Shared::NotebookLaneComponent < ApplicationComponent
     @disclosure = disclosure
   end
 
-  sig { returns(Game) }
+  sig { returns(GamePresenter) }
   attr_reader :game
 
-  sig { returns(T::Array[NotebookEntry]) }
+  sig { returns(T::Array[NotebookEntryPresenter]) }
   attr_reader :entries
 
   sig { returns(String) }
@@ -117,10 +117,10 @@ class Shared::NotebookLaneComponent < ApplicationComponent
 
   # A row is a title linking to the entry's edit screen, with the lane picker
   # as its only control — every other action lives on that edit screen.
-  sig { params(entry: NotebookEntry).returns(Shared::ListEntryComponent::Row) }
+  sig { params(entry: NotebookEntryPresenter).returns(Shared::ListEntryComponent::Row) }
   def row_for(entry)
     {
-      title: entry.title.to_s,
+      title: entry.title,
       href: helpers.edit_game_notebook_entry_path(game, entry),
       controls: Shared::NotebookLaneSelectComponent.new(game: game, notebook_entry: entry)
     }

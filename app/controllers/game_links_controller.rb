@@ -10,9 +10,13 @@ class GameLinksController < ApplicationController
 
   sig { void }
   def index
-    game_link = game.game_links.new
-    authorize game_link
+    new_link = game.game_links.new
+    authorize new_link
     @game_presenter = T.let(game_presenter, T.nilable(GamePresenter))
+    @game_links = T.let(
+      game.game_links.order(created_at: :desc).to_a.map { |gl| game_link_presenter(gl) },
+      T.nilable(T::Array[GameLinkPresenter])
+    )
   end
 
   sig { void }
@@ -98,7 +102,7 @@ class GameLinksController < ApplicationController
 
   sig { params(link: GameLink).returns(GameLinkPresenter) }
   def game_link_presenter(link)
-    GameLinkPresenter.new(link, policy: policy(link), game_policy: policy(game))
+    GameLinkPresenter.new(link, game: game, urls: self)
   end
 
   sig { returns(GamePresenter) }

@@ -1,19 +1,19 @@
 <p class="text-[11px] text-muted-2 m-0 mb-2">The GM is always included automatically.</p>
 
 <div class="<%= wrapper_classes %>">
-  <% players_with_characters.each do |player, characters| %>
+  <% players_with_characters.each do |player| %>
     <div class="<%= row_classes %>">
       <div class="text-[13px] font-semibold text-ink"><%= player.display_name_or_email %></div>
-      <% if characters.empty? %>
-        <div class="text-[11px] text-muted-2 pl-4 mt-1">No active characters</div>
-      <% else %>
-        <% characters.each do |character| %>
+      <% if player.characters? %>
+        <% player.characters.each do |character| %>
           <label class="flex items-center gap-2 pl-4 mt-1 text-[13px] text-body-ink cursor-pointer">
-            <%= check_box_tag "character_ids[]", character.id, character_checked?(character), id: nil,
+            <%= check_box_tag "character_ids[]", character.checkbox_value, character_checked?(character), id: nil,
                   class: "accent-accent" %>
             <%= character.name %>
           </label>
         <% end %>
+      <% else %>
+        <div class="text-[11px] text-muted-2 pl-4 mt-1">No active characters</div>
       <% end %>
     </div>
   <% end %>

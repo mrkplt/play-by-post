@@ -4,19 +4,18 @@ RSpec.describe Shared::CharacterVersionHistoryComponent, type: :component do
   let(:game) { build_stubbed(:game) }
   let(:character) { build_stubbed(:character, game: game) }
   let(:version) { build_stubbed(:character_version, character: character, created_at: Time.utc(2026, 1, 2, 15, 4)) }
-  let(:game_presenter) { GamePresenter.new(game, policy: instance_double(GamePolicy)) }
-  let(:character_presenter) do
-    CharacterPresenter.new(character, game_policy: instance_double(GamePolicy), character_policy: instance_double(CharacterPolicy))
+  let(:editor) { build_stubbed(:user) }
+  let(:character_presenter) { CharacterPresenter.new(character) }
+
+  def version_presenter(editor_display_name: "Gandalf the Grey")
+    user_presenter = instance_double(UserPresenter, display_name_or_email: editor_display_name)
+    allow(UserPresenter).to receive(:new).and_return(user_presenter)
+    CharacterVersionPresenter.new(version)
   end
-  let(:version_presenter) { CharacterVersionPresenter.new(version, editor_name: "Gandalf the Grey") }
 
   def build_component(**overrides)
     described_class.new(
-      **{
-        game: game_presenter,
-        character: character_presenter,
-        versions: [ version_presenter ]
-      }.merge(overrides)
+      **{ character: character_presenter, versions: [ version_presenter ] }.merge(overrides)
     )
   end
 

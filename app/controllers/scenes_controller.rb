@@ -27,6 +27,7 @@ class ScenesController < ApplicationController
     @scene = @game.scenes.new
     authorize @scene
     @scene_form = build_scene_form
+    @game_presenter = GamePresenter.new(@game, policy: policy(@game))
   end
 
   sig { void }
@@ -42,6 +43,7 @@ class ScenesController < ApplicationController
       redirect_to game_scene_path(@game, @scene), notice: "Scene created."
     else
       @scene_form = build_scene_form
+      @game_presenter = GamePresenter.new(@game, policy: policy(@game))
       render :new, status: :unprocessable_content
     end
   end
@@ -58,6 +60,7 @@ class ScenesController < ApplicationController
     @is_muted = NotificationPreference.muted?(@scene, current_user)
     @hide_ooc = current_user.user_profile&.hide_ooc? || false
     @child_scenes = @scene.child_scenes.visible_to(current_user, @game).order(:created_at)
+      .map { |s| ScenePresenter.new(s) }
 
     @scene.scene_participants.find_by(user: current_user)&.update(last_visited_at: Time.current)
 
@@ -67,7 +70,17 @@ class ScenesController < ApplicationController
       @scene, game: @game, urls: self, post_policy: PostPolicy.new(current_user, @scene.posts.new)
     )
     participants = @scene.scene_participants.includes(:character, :user).to_a
-    @post_presenters = @posts.map { |post| PostPresenter.new(post, scene_participants: participants) }
+    @post_presenters = @posts.map do |post|
+      PostPresenter.new(post, scene_participants: participants, game: @game, scene: @scene,
+                              urls: self, policy: policy(post))
+    end
+    @post_presenter = PostPresenter.new(@post)
+    @draft_presenter = @draft ? PostPresenter.new(@draft) : nil
+
+    summary = @scene.scene_summary
+    @scene_summary_presenter = summary && SceneSummaryPresenter.new(
+      summary, game: @game, urls: self, policy: SceneSummaryPolicy.new(current_user, summary)
+    )
   end
 
   sig { void }
@@ -122,8 +135,8 @@ class ScenesController < ApplicationController
   sig { returns(Shared::SceneFormComponent) }
   def build_scene_form
     Shared::SceneFormComponent.new(
-      game: @game,
-      scene: @scene,
+      game: GamePresenter.new(@game, policy: policy(@game)),
+      scene: ScenePresenter.new(@scene),
       players_with_characters: active_players_with_characters,
       parent_options: parent_scene_select_options,
       quick: params[:quick].present?,
@@ -157,8 +170,9 @@ class ScenesController < ApplicationController
     end
   end
 
-  # Returns an array of [user, characters] pairs for all active players,
-  # including players with no characters (empty array).
+  # Returns one ScenePlayerPresenter per active player, each carrying its own
+  # active characters (empty array when the player has none).
+  sig { returns(T::Array[ScenePlayerPresenter]) }
   def active_players_with_characters
     players = @game.users.joins(:game_members)
       .where(game_members: { game: @game, role: "player", status: "active" })
@@ -171,7 +185,7 @@ class ScenesController < ApplicationController
       .order(:name)
       .group_by(&:user_id)
 
-    players.map { |user| [ UserPresenter.new(user), characters_by_user.fetch(user.id, []) ] }
+    players.map { |user| ScenePlayerPresenter.new(user, characters: characters_by_user.fetch(user.id, [])) }
   end
 
   sig { void }
@@ -214,14 +228,15 @@ class ScenesController < ApplicationController
     (active + recent_resolved)
   end
 
+  sig { params(scene: Scene, scene_index: T::Hash[Integer, Scene], all_scenes: T::Array[Scene]).returns(Shared::TreeNodeComponent::Node) }
   def build_tree(scene, scene_index, all_scenes)
     children = all_scenes
       .select { |s| s.parent_scene_id == scene.id }
       .sort_by(&:created_at)
-    {
-      scene: scene,
+    Shared::TreeNodeComponent::Node.new(
+      scene_presenter: ScenePresenter.new(scene),
       children: children.map { |c| build_tree(c, scene_index, all_scenes) }
-    }
+    )
   end
 
   sig { returns(ActionController::Parameters) }

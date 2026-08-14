@@ -12,12 +12,12 @@ class CharacterVersionsController < ApplicationController
   sig { void }
   def show
     authorize version
-    @editor = T.let(UserPresenter.new(version.edited_by), T.nilable(UserPresenter))
+    @version_presenter = T.let(CharacterVersionPresenter.new(version), T.nilable(CharacterVersionPresenter))
     @character_presenter = T.let(
       CharacterPresenter.new(character, game_policy: policy(game)),
       T.nilable(CharacterPresenter)
     )
-    @version_presenter = T.let(CharacterVersionPresenter.new(version), T.nilable(CharacterVersionPresenter))
+    @game_presenter = T.let(GamePresenter.new(game, policy: policy(game)), T.nilable(GamePresenter))
   end
 
   private

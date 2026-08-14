@@ -1,15 +1,15 @@
 <div data-controller="lightbox" data-action="keydown@document->lightbox#closeOnEscape">
   <div class="grid grid-cols-[repeat(auto-fill,minmax(100px,120px))] gap-2" data-testid="gallery-grid">
-    <% @game_files.each do |gf| %>
+    <% game_files.each do |gf| %>
       <div class="bg-white border border-slate-200 rounded-lg overflow-hidden cursor-pointer relative hover:shadow-md transition-shadow"
            data-testid="gallery-card"
            data-action="click->lightbox#open"
-           data-lightbox-html="<%= escape_once(lightbox_html_for(gf).to_s) %>"
+           data-lightbox-html="<%= escape_once(gf.lightbox_html) %>"
            data-lightbox-filename="<%= gf.filename %>"
-           data-lightbox-download="<%= download_url_for(gf) %>"
-           <% if (du = delete_url_for(gf)) %>data-lightbox-delete="<%= du %>"<% end %>>
+           data-lightbox-download="<%= gf.download_url %>"
+           <% if gf.delete_url %>data-lightbox-delete="<%= gf.delete_url %>"<% end %>>
         <div class="w-full aspect-square flex items-center justify-center bg-slate-50 overflow-hidden">
-          <% if (th = thumb_html_for(gf)) %>
+          <% if (th = gf.thumb_html) %>
             <%= th %>
           <% else %>
             <div class="text-2xl font-bold text-slate-500 uppercase tracking-wide bg-slate-100 w-full h-full flex items-center justify-center" data-testid="gallery-card-placeholder"><%= gf.file_extension %></div>
@@ -29,7 +29,7 @@
         <span class="font-semibold text-sm min-w-0 whitespace-nowrap overflow-hidden text-ellipsis" data-lightbox-title></span>
         <div class="flex items-center gap-2 shrink-0">
           <a href="#" data-lightbox-download class="text-[0.8rem] py-[0.3rem] px-3 bg-accent text-accent-ink rounded-control font-bold cursor-pointer inline-block no-underline transition-colors" data-turbo="false">Download</a>
-          <% if @can_manage %>
+          <% if can_manage? %>
             <button data-lightbox-delete-btn class="text-[0.8rem] py-[0.3rem] px-3 bg-white text-red-600 border border-red-200 rounded cursor-pointer hover:bg-red-50" data-action="click->lightbox#confirmDelete" hidden>Delete</button>
           <% end %>
           <button class="bg-transparent border-none text-xl cursor-pointer text-slate-500 p-1 leading-none hover:text-ink" data-action="click->lightbox#close" aria-label="Close">&times;</button>

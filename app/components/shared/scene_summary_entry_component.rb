@@ -3,22 +3,23 @@
 class Shared::SceneSummaryEntryComponent < ApplicationComponent
   extend T::Sig
 
-  sig { params(summary: SceneSummaryPresenter, game: Game).void }
-  def initialize(summary:, game:)
+  sig { params(summary: SceneSummaryPresenter).void }
+  def initialize(summary:)
     @summary = summary
-    @game = game
   end
 
   sig { returns(String) }
   def scene_title
-    @summary.scene.title
+    @summary.scene_title
   end
 
   sig { returns(T.nilable(String)) }
   def formatted_resolved_at
-    resolved = @summary.scene.resolved_at
-    return nil unless resolved
+    @summary.formatted_scene_resolved_at
+  end
 
-    resolved.strftime("%b %-d, %Y")
+  sig { returns(String) }
+  def scene_path
+    @summary.scene_path
   end
 end

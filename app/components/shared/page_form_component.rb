@@ -3,20 +3,21 @@
 # The New Page / Edit Page form, built on the mobile-first component system.
 # Both entry points share a title field and a markdown body editor (formatting
 # toolbar + live preview). The component derives its rendering mode (new vs
-# edit), labels, and back-href from the page it is handed, so the view renders
-# it with just the game and the page — no form-construction logic in the
+# edit), labels, and back-href from the presenter it is handed, so the view
+# renders it with just the presenter — no form-construction logic in the
 # template. The slug is generated server-side and never shown or edited here.
 class Shared::PageFormComponent < ApplicationComponent
   extend T::Sig
 
-  sig { params(game: GamePresenter, page: PagePresenter).void }
-  def initialize(game:, page:)
-    @game = T.let(game, GamePresenter)
+  sig { params(page: PagePresenter).void }
+  def initialize(page:)
     @page = T.let(page, PagePresenter)
   end
 
-  sig { returns(GamePresenter) }
-  attr_reader :game
+  sig { returns(Game) }
+  def game
+    @page.game
+  end
 
   sig { returns(PagePresenter) }
   attr_reader :page
@@ -33,7 +34,7 @@ class Shared::PageFormComponent < ApplicationComponent
 
   sig { returns(String) }
   def back_href
-    new_record? ? helpers.game_path(@game, anchor: "pages") : helpers.game_page_path(@game, @page)
+    new_record? ? helpers.game_path(game, anchor: "pages") : helpers.game_page_path(game, @page)
   end
 
   sig { returns(String) }

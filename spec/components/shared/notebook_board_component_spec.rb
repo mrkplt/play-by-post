@@ -2,13 +2,21 @@ require "rails_helper"
 
 RSpec.describe Shared::NotebookBoardComponent, type: :component do
   let(:game) { build_stubbed(:game) }
+  let(:game_presenter) { GamePresenter.new(game, policy: instance_double(GamePolicy)) }
 
   def entry_in(status, title:)
-    build_stubbed(:notebook_entry, game: game, status: status, title: title, slug: "#{status}slug1234567890")
+    entry = build_stubbed(:notebook_entry, game: game, status: status, title: title, slug: "#{status}slug1234567890")
+    NotebookEntryPresenter.new(entry)
+  end
+
+  def board_with(entries_by_status)
+    board = NotebookBoardPresenter.new(game)
+    allow(board).to receive(:entries_for) { |status| entries_by_status.fetch(status, []) }
+    board
   end
 
   def build_component(entries_by_status: {})
-    described_class.new(game: game, entries_by_status: entries_by_status)
+    described_class.new(game: game_presenter, board: board_with(entries_by_status))
   end
 
   describe "#visible_statuses" do
@@ -79,9 +87,8 @@ RSpec.describe Shared::NotebookBoardComponent, type: :component do
     end
 
     it "does not render entry bodies — the board is titles only" do
-      entry = build_stubbed(:notebook_entry, game: game, status: "new",
-                            title: "Titled", slug: "bodyslug12345678",
-                            body: "A body that must not appear on the board.")
+      entry = entry_in("new", title: "Titled")
+      allow(entry).to receive(:body).and_return("A body that must not appear on the board.")
       render_inline(build_component(entries_by_status: { "new" => [ entry ] }))
 
       expect(page).to have_text("Titled")
@@ -90,8 +97,8 @@ RSpec.describe Shared::NotebookBoardComponent, type: :component do
 
     it "builds one row per entry in the lane" do
       entries = [
-        build_stubbed(:notebook_entry, game: game, status: "new", title: "First", slug: "firstslug1234567"),
-        build_stubbed(:notebook_entry, game: game, status: "new", title: "Second", slug: "secondslug123456")
+        entry_in("new", title: "First"),
+        entry_in("new", title: "Second")
       ]
       render_inline(build_component(entries_by_status: { "new" => entries }))
 

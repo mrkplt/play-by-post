@@ -37,4 +37,24 @@ class UserPresenter < BasePresenter
       .includes(:game)
       .sort_by { |m| m.game&.name.to_s }
   end
+
+  # The profile's RSS Feeds section, one row per non-banned game membership
+  # paired with this user's rss-scoped token for that game (if any). `urls:`
+  # (the constructing controller) is threaded onto each row so it can build
+  # its own feed/revoke/create routes without the component reaching for one.
+  sig { params(urls: T.untyped).returns(T::Array[GameFeedRowPresenter]) }
+  def feed_rows(urls:)
+    memberships = @model.game_members
+      .where.not(status: "banned")
+      .includes(:game)
+      .order("games.name")
+    tokens_by_game_id = @model.api_tokens.where(scope: "rss").index_by(&:game_id)
+
+    memberships.filter_map do |membership|
+      game = membership.game
+      next unless game
+
+      GameFeedRowPresenter.new(game, token: tokens_by_game_id[game.id], urls: urls)
+    end
+  end
 end
