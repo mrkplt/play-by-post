@@ -120,7 +120,7 @@ class NotebookEntriesController < ApplicationController
   # list.
   sig { returns(GamePresenter) }
   def game_presenter
-    @game_presenter ||= T.let(GamePresenter.new(@game, T.must(current_user)), T.nilable(GamePresenter))
+    @game_presenter ||= T.let(GamePresenter.new(@game, policy: policy(@game)), T.nilable(GamePresenter))
   end
 
   sig { params(game: Game).returns(T::Array[NotebookEntry]) }

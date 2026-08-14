@@ -75,10 +75,12 @@ class ScenePresenter < BasePresenter
 
   # Whether this viewer may post into the scene right now: the post policy allows
   # it and the scene is still open. Keeps the composer's visibility sourced from
-  # the same policy PostsController authorizes with, without a controller ivar.
-  sig { params(user: User).returns(T::Boolean) }
-  def can_post?(user)
-    PostPolicy.new(user, @model.posts.new).create? && !@model.resolved?
+  # the same policy PostsController authorizes with. The policy is supplied at
+  # construction (options[:post_policy]) instead of built here, so the
+  # presenter never constructs authorization itself.
+  sig { returns(T::Boolean) }
+  def can_post?
+    @options.fetch(:post_policy).create? && !@model.resolved?
   end
 
   # The mute/unmute control's label, derived from the viewer's current

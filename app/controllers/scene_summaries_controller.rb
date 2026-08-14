@@ -13,7 +13,7 @@ class SceneSummariesController < ApplicationController
   sig { void }
   def index
     @pagy, @summaries = pagy(SceneSummary.public_for_game(@game), limit: 20)
-    @game_presenter = GamePresenter.new(@game, current_user)
+    @game_presenter = GamePresenter.new(@game, policy: policy(@game))
   end
 
   sig { void }

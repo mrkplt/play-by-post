@@ -102,7 +102,7 @@ class GamesController < ApplicationController
       .sort_by { |s| -s.last_activity_at.to_i }
     @active_scenes = raw_scenes.map { |s| ScenePresenter.new(s) }
 
-    @game_presenter = GamePresenter.new(@game, current_user)
+    @game_presenter = GamePresenter.new(@game, policy: policy(@game))
     @gm_name = gm_display_name
     @roster_preview = roster_preview_rows(raw_scenes)
     @hot_scene_ids = hot_scene_ids(raw_scenes)

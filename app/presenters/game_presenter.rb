@@ -7,18 +7,20 @@
 class GamePresenter < BasePresenter
   extend T::Sig
 
-  sig { params(model: Game, current_user: User).void }
-  def initialize(model, current_user)
-    super(model)
-    @current_user = T.let(current_user, User)
+  sig { params(model: Game, options: T.untyped).void }
+  def initialize(model, **options)
+    super
   end
 
   # The viewer may administer this game. A capability, not a role: it asks the
   # policy's `manage?` rather than `update?` (which means "this row may be
   # modified") so the view layer never hard-codes who currently qualifies.
+  # The policy is supplied at construction (options[:policy]) rather than
+  # built here, so a capability rename is chased through one call site
+  # instead of every presenter that asks the question.
   sig { returns(T::Boolean) }
   def can_manage?
-    GamePolicy.new(@current_user, @model).manage?
+    @options.fetch(:policy).manage?
   end
 
   # Outstanding (unaccepted) invitations for this game, newest first — the data

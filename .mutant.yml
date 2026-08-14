@@ -39,6 +39,7 @@ matcher:
     - GameLink
     - NotebookEntry
     # Presenters
+    - CharacterPresenter
     - GameFilePresenter
     - GamePresenter
     - PostPresenter

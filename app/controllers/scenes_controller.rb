@@ -19,7 +19,7 @@ class ScenesController < ApplicationController
     roots = all_scenes.select { |s| s.parent_scene_id.nil? || scene_index[s.parent_scene_id].nil? }
 
     @trees = roots.map { |root| build_tree(root, scene_index, all_scenes) }
-    @game_presenter = GamePresenter.new(@game, current_user)
+    @game_presenter = GamePresenter.new(@game, policy: policy(@game))
   end
 
   sig { void }
@@ -52,7 +52,7 @@ class ScenesController < ApplicationController
     @posts = @scene.posts.published.includes(:user).order(:created_at)
     @draft = @scene.posts.drafts.find_by(user: current_user)
     @post = Post.new
-    @game_presenter = GamePresenter.new(@game, current_user)
+    @game_presenter = GamePresenter.new(@game, policy: policy(@game))
     @is_participant = @scene.participant?(current_user)
     @current_membership = @game.member_for(current_user)
     @is_muted = NotificationPreference.muted?(@scene, current_user)
@@ -63,7 +63,9 @@ class ScenesController < ApplicationController
 
     @read_post_ids = SceneReadState.for(scene: @scene, posts: @posts, user: current_user)
 
-    @scene_presenter = ScenePresenter.new(@scene, game: @game, urls: self)
+    @scene_presenter = ScenePresenter.new(
+      @scene, game: @game, urls: self, post_policy: PostPolicy.new(current_user, @scene.posts.new)
+    )
     participants = @scene.scene_participants.includes(:character, :user).to_a
     @post_presenters = @posts.map { |post| PostPresenter.new(post, scene_participants: participants) }
   end

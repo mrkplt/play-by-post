@@ -3,17 +3,18 @@ require "rails_helper"
 RSpec.describe GamePresenter do
   let(:game) { build_stubbed(:game) }
   let(:user) { build_stubbed(:user) }
+  let(:policy) { instance_double(GamePolicy, manage?: true) }
 
-  subject(:presenter) { described_class.new(game, user) }
+  subject(:presenter) { described_class.new(game, policy: policy) }
 
   describe "#can_manage?" do
-    it "is true when the viewer may administer the game" do
-      allow(game).to receive(:game_master?).with(user).and_return(true)
+    it "is true when the injected policy allows management" do
+      allow(policy).to receive(:manage?).and_return(true)
       expect(presenter.can_manage?).to be(true)
     end
 
-    it "is false when the viewer may not administer the game" do
-      allow(game).to receive(:game_master?).with(user).and_return(false)
+    it "is false when the injected policy disallows management" do
+      allow(policy).to receive(:manage?).and_return(false)
       expect(presenter.can_manage?).to be(false)
     end
   end

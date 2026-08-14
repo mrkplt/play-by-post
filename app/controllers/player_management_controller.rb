@@ -10,7 +10,7 @@ class PlayerManagementController < ApplicationController
   sig { void }
   def show
     authorize @game, :manage_players?
-    @game_presenter = GamePresenter.new(@game, current_user)
+    @game_presenter = GamePresenter.new(@game, policy: policy(@game))
 
     if policy(@game).manage?
       @members = @game.game_members.where.not(status: "banned").where(role: "player").includes(:user)

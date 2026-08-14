@@ -93,7 +93,7 @@
     <%= render Shared::DraftRecoveryComponent.new(game: @game, scene: @scene, draft: @scene_presenter.recoverable_draft(@draft)) %>
 
     <%# Composer %>
-    <% if @scene_presenter.can_post?(current_user) %>
+    <% if @scene_presenter.can_post? %>
       <div id="post_composer" class="bg-card border border-card-border rounded-post p-4">
         <%= render Shared::PostComposerComponent.new(post: @post, game: @game, scene: @scene, draft: @draft) %>
       </div>

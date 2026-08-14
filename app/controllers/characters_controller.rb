@@ -51,11 +51,13 @@ class CharactersController < ApplicationController
     @versions = @character.character_versions.order(created_at: :desc).includes(:edited_by)
     @character_owner = UserPresenter.new(@character.user)
     @version_editor_names = @versions.each_with_object({}) { |v, h| h[v.id] = UserPresenter.new(v.edited_by).display_name_or_email }
+    @character_presenter = character_presenter
   end
 
   sig { void }
   def edit
     authorize @character
+    @character_presenter = character_presenter
   end
 
   sig { void }
@@ -78,6 +80,7 @@ class CharactersController < ApplicationController
     if @character.update(permitted_attributes(@character))
       redirect_to game_character_path(@game, @character), notice: "Character updated."
     else
+      @character_presenter = character_presenter
       render :edit, status: :unprocessable_content
     end
   end
@@ -118,5 +121,10 @@ class CharactersController < ApplicationController
   sig { void }
   def require_active_member_for_write!
     require_active_member!(@game)
+  end
+
+  sig { returns(CharacterPresenter) }
+  def character_presenter
+    CharacterPresenter.new(@character, game_policy: policy(@game), character_policy: policy(@character))
   end
 end

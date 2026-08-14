@@ -13,7 +13,7 @@ class GameLinksController < ApplicationController
     @game_link = @game.game_links.new
     authorize @game_link
     @game_links = @game.game_links.order(created_at: :desc).to_a
-    @game_presenter = GamePresenter.new(@game, current_user)
+    @game_presenter = GamePresenter.new(@game, policy: policy(@game))
   end
 
   sig { void }
