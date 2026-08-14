@@ -10,8 +10,8 @@ class Shared::SceneFormComponent < ApplicationComponent
 
   sig do
     params(
-      game: Game,
-      scene: Scene,
+      game: GamePresenter,
+      scene: ScenePresenter,
       players_with_characters: T::Array[ScenePlayerPresenter],
       parent_options: T::Array[[ String, Integer ]],
       quick: T::Boolean,
@@ -25,8 +25,8 @@ class Shared::SceneFormComponent < ApplicationComponent
     game:, scene:, players_with_characters:, parent_options:, quick:,
     selected_character_ids:, selected_parent_scene_id:, back_href:
   )
-    @game = T.let(game, Game)
-    @scene = T.let(scene, Scene)
+    @game = T.let(game, GamePresenter)
+    @scene = T.let(scene, ScenePresenter)
     @players_with_characters = T.let(players_with_characters, T::Array[ScenePlayerPresenter])
     @parent_options = T.let(parent_options, T::Array[[ String, Integer ]])
     @quick = T.let(quick, T::Boolean)
@@ -35,10 +35,10 @@ class Shared::SceneFormComponent < ApplicationComponent
     @back_href = T.let(back_href, String)
   end
 
-  sig { returns(Game) }
+  sig { returns(GamePresenter) }
   attr_reader :game
 
-  sig { returns(Scene) }
+  sig { returns(ScenePresenter) }
   attr_reader :scene
 
   sig { returns(T::Array[ScenePlayerPresenter]) }
@@ -83,12 +83,12 @@ class Shared::SceneFormComponent < ApplicationComponent
 
   sig { returns(T::Boolean) }
   def errors?
-    @scene.errors.any?
+    @scene.errors?
   end
 
   sig { returns(T::Array[String]) }
   def error_messages
-    @scene.errors.full_messages
+    @scene.error_messages
   end
 
   # The parent scene carried into a quick scene, so it can round-trip through a

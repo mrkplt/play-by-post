@@ -128,6 +128,28 @@ RSpec.describe ScenePresenter do
     end
   end
 
+  describe "#errors?" do
+    it "is false on a clean scene" do
+      expect(presenter.errors?).to be(false)
+    end
+
+    it "is true once the scene carries a validation error" do
+      scene.errors.add(:base, "Something went wrong")
+      expect(presenter.errors?).to be(true)
+    end
+  end
+
+  describe "#error_messages" do
+    it "is empty on a clean scene" do
+      expect(presenter.error_messages).to be_empty
+    end
+
+    it "surfaces the scene's full error messages" do
+      scene.errors.add(:base, "Something went wrong")
+      expect(presenter.error_messages).to include("Something went wrong")
+    end
+  end
+
   describe "#parent_option_label" do
     context "when active" do
       it { expect(presenter.parent_option_label).to eq(scene.title) }
