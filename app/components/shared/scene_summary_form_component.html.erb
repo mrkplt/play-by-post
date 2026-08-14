@@ -16,7 +16,7 @@
   <div class="flex flex-col gap-1.5">
     <%= f.label :body, "Summary", class: "text-[11px] font-bold text-muted uppercase tracking-[0.05em]" %>
     <%= render Ui::MarkdownEditorComponent.new(
-          form: f, field: :body,
+          binding: { form: f, field: :body },
           config: Ui::MarkdownEditorComponent::Config.with_preview,
           rows: 10,
           placeholder: "Write a narrative summary of this scene...") %>

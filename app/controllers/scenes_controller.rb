@@ -58,6 +58,7 @@ class ScenesController < ApplicationController
     @is_muted = NotificationPreference.muted?(@scene, current_user)
     @hide_ooc = current_user.user_profile&.hide_ooc? || false
     @child_scenes = @scene.child_scenes.visible_to(current_user, @game).order(:created_at)
+      .map { |s| ScenePresenter.new(s) }
 
     @scene.scene_participants.find_by(user: current_user)&.update(last_visited_at: Time.current)
 
@@ -157,8 +158,9 @@ class ScenesController < ApplicationController
     end
   end
 
-  # Returns an array of [user, characters] pairs for all active players,
-  # including players with no characters (empty array).
+  # Returns one ScenePlayerPresenter per active player, each carrying its own
+  # active characters (empty array when the player has none).
+  sig { returns(T::Array[ScenePlayerPresenter]) }
   def active_players_with_characters
     players = @game.users.joins(:game_members)
       .where(game_members: { game: @game, role: "player", status: "active" })
@@ -171,7 +173,7 @@ class ScenesController < ApplicationController
       .order(:name)
       .group_by(&:user_id)
 
-    players.map { |user| [ UserPresenter.new(user), characters_by_user.fetch(user.id, []) ] }
+    players.map { |user| ScenePlayerPresenter.new(user, characters: characters_by_user.fetch(user.id, [])) }
   end
 
   sig { void }

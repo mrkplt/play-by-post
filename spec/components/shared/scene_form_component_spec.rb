@@ -80,7 +80,7 @@ RSpec.describe Shared::SceneFormComponent, type: :component do
     subject(:render_full) do
       render_inline(build_component(
         quick: false,
-        players_with_characters: [ [ UserPresenter.new(user), [ character ] ] ],
+        players_with_characters: [ ScenePlayerPresenter.new(user, characters: [ character ]) ],
         parent_options: [ [ "The Tavern", 7 ] ],
         selected_character_ids: [ character.id.to_s ]
       ))
@@ -104,7 +104,7 @@ RSpec.describe Shared::SceneFormComponent, type: :component do
 
     it "shows a hint for players with no active characters" do
       render_inline(build_component(
-        players_with_characters: [ [ UserPresenter.new(user), [] ] ]
+        players_with_characters: [ ScenePlayerPresenter.new(user, characters: []) ]
       ))
       expect(page).to have_text("No active characters")
     end

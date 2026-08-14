@@ -44,4 +44,16 @@ RSpec.describe CharacterPresenter do
       expect(presenter.can_assign_owner?).to be(false)
     end
   end
+
+  describe "#name" do
+    it "delegates to the model" do
+      expect(presenter.name).to eq(character.name)
+    end
+  end
+
+  describe "#checkbox_value" do
+    it "returns the character's id as a string" do
+      expect(presenter.checkbox_value).to eq(character.id.to_s)
+    end
+  end
 end

@@ -8,13 +8,11 @@
 class Shared::SceneFormComponent < ApplicationComponent
   extend T::Sig
 
-  PlayerRow = T.type_alias { [ UserPresenter, T::Array[Character] ] }
-
   sig do
     params(
       game: Game,
       scene: Scene,
-      players_with_characters: T::Array[PlayerRow],
+      players_with_characters: T::Array[ScenePlayerPresenter],
       parent_options: T::Array[[ String, Integer ]],
       quick: T::Boolean,
       selected_character_ids: T::Array[String],
@@ -29,7 +27,7 @@ class Shared::SceneFormComponent < ApplicationComponent
   )
     @game = T.let(game, Game)
     @scene = T.let(scene, Scene)
-    @players_with_characters = T.let(players_with_characters, T::Array[PlayerRow])
+    @players_with_characters = T.let(players_with_characters, T::Array[ScenePlayerPresenter])
     @parent_options = T.let(parent_options, T::Array[[ String, Integer ]])
     @quick = T.let(quick, T::Boolean)
     @selected_character_ids = T.let(selected_character_ids, T::Array[String])
@@ -43,7 +41,7 @@ class Shared::SceneFormComponent < ApplicationComponent
   sig { returns(Scene) }
   attr_reader :scene
 
-  sig { returns(T::Array[PlayerRow]) }
+  sig { returns(T::Array[ScenePlayerPresenter]) }
   attr_reader :players_with_characters
 
   sig { returns(T::Array[[ String, Integer ]]) }

@@ -8,6 +8,21 @@
 class CharacterPresenter < BasePresenter
   extend T::Sig
 
+  sig { params(model: Character, options: T.untyped).void }
+  def initialize(model, **options)
+    super
+  end
+
+  sig { returns(String) }
+  def name
+    @model.name
+  end
+
+  sig { returns(String) }
+  def checkbox_value
+    @model.id.to_s
+  end
+
   # The viewer may administer the game this character belongs to — the flag
   # behind the game-nav's GM-only affordances on every character screen.
   sig { returns(T::Boolean) }

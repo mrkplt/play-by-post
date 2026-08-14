@@ -15,7 +15,7 @@
   <%= render Ui::SectionLabelComponent.new(html_class: "mb-2") do %>Post a Reply<% end %>
 
   <%= render Ui::MarkdownEditorComponent.new(
-        form: f, field: :content,
+        binding: { form: f, field: :content },
         config: Ui::MarkdownEditorComponent::Config.with_preview(content_class: "post-content"),
         value: @draft&.content.to_s,
         placeholder: "Write your post... (markdown)",

@@ -173,4 +173,33 @@ RSpec.describe GameFilePresenter do
       expect(presenter.file).to eq(game_file.file)
     end
   end
+
+  describe "#download_url" do
+    it "returns '#' when no file is attached" do
+      allow(game_file).to receive(:file).and_return(double(attached?: false))
+      helpers = double("helpers")
+      expect(described_class.new(game_file, helpers: helpers).download_url).to eq("#")
+    end
+
+    it "returns the blob path when a file is attached" do
+      allow(game_file).to receive(:file).and_return(double(attached?: true))
+      helpers = double("helpers", rails_blob_path: "/blob/path")
+      expect(described_class.new(game_file, helpers: helpers).download_url).to eq("/blob/path")
+    end
+  end
+
+  describe "#delete_url" do
+    let(:game) { build_stubbed(:game) }
+
+    it "is nil when the viewer cannot manage the game" do
+      helpers = double("helpers")
+      expect(described_class.new(game_file, game: game, helpers: helpers, can_manage: false).delete_url).to be_nil
+    end
+
+    it "returns the game file's delete route when the viewer can manage" do
+      helpers = double("helpers", game_game_file_path: "/games/1/game_files/2")
+      expect(described_class.new(game_file, game: game, helpers: helpers, can_manage: true).delete_url)
+        .to eq("/games/1/game_files/2")
+    end
+  end
 end

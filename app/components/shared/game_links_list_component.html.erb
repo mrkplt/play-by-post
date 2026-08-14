@@ -20,8 +20,8 @@
 
           <% if can_manage? %>
             <div class="flex items-center gap-3 flex-shrink-0">
-              <%= link_to "Edit", edit_game_game_link_path(game, link), class: "text-xs font-semibold text-accent no-underline" %>
-              <%= button_to "Delete", game_game_link_path(game, link), method: :delete,
+              <%= link_to "Edit", link.edit_path, class: "text-xs font-semibold text-accent no-underline" %>
+              <%= button_to "Delete", link.delete_path, method: :delete,
                     form: { data: {
                       controller: "form-confirm",
                       action: "submit->form-confirm#confirm",

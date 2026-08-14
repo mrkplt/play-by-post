@@ -3,7 +3,7 @@
 <%= render Shared::MobileFrameComponent.new do |frame| %>
   <% frame.with_header do %>
     <%= render Shared::HeaderComponent.new(
-          title: "Edit — #{@game_link.description}",
+          title: "Edit — #{@game_link_presenter.description}",
           breadcrumbs: Shared::BreadcrumbsComponent.new(game: @game),
           secondary_nav: Shared::GameNavComponent.new(game: @game, active_tab: :links, can_manage: policy(@game).manage?, mode: :link)) %>
   <% end %>
@@ -11,7 +11,7 @@
   <% frame.with_footer do %>
     <%= render Shared::PageActionsComponent.new do |actions| %>
       <% actions.with_primary do %>
-        <%= render Ui::ButtonComponent.new(html_options: { type: "submit", form: "edit_game_link_#{@game_link.id}_form" }) do %>Save<% end %>
+        <%= render Ui::ButtonComponent.new(html_options: { type: "submit", form: "edit_game_link_#{@game_link_presenter.id}_form" }) do %>Save<% end %>
       <% end %>
       <% actions.with_cancel do %>
         <%= render Ui::ButtonComponent.new(variant: :secondary, url: game_game_links_path(@game)) do %>Cancel<% end %>
@@ -19,5 +19,5 @@
     <% end %>
   <% end %>
 
-  <%= render Shared::LinkFormComponent.new(game: @game, game_link: @game_link) %>
+  <%= render Shared::LinkFormComponent.new(game: @game_presenter, game_link: @game_link_presenter) %>
 <% end %>

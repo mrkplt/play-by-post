@@ -18,7 +18,7 @@
       <% else %>
         <div>
           <% @active_scenes.each do |scene| %>
-            <%= render Shared::SceneCardComponent.new(scene: scene, game: @game, hot: @hot_scene_ids.include?(scene.id)) %>
+            <%= render Shared::SceneCardComponent.new(scene: scene, game: @game_presenter, hot: @hot_scene_ids.include?(scene.id)) %>
           <% end %>
         </div>
       <% end %>
@@ -108,7 +108,7 @@
         <% end %>
 
         <% if @game_presenter.can_manage? %>
-          <%= render Shared::InvitePanelComponent.new(game: @game, pending_invitations: @game_presenter.pending_invitations) %>
+          <%= render Shared::InvitePanelComponent.new(game: @game_presenter, pending_invitations: @game_presenter.pending_invitations) %>
         <% end %>
       </div>
     </section>
@@ -116,24 +116,24 @@
     <%# ===== Files panel ===== %>
     <section data-game-tabs-target="panel" data-panel="files" class="flex flex-col gap-3" hidden>
       <% if @game_presenter.can_manage? %>
-        <%= render Shared::FileUploadFormComponent.new(game: @game, game_file: @game_file) %>
+        <%= render Shared::FileUploadFormComponent.new(game: @game_presenter, game_file: @game_file_presenter) %>
       <% end %>
       <% if @game_files.empty? %>
         <p class="text-muted-2 text-sm">No files uploaded yet.</p>
       <% else %>
         <%= render Ui::SectionLabelComponent.new do %>Newest first<% end %>
-        <%= render Shared::GalleryComponent.new(game_files: @game_files.to_a, game: @game, can_manage: @game_presenter.can_manage?) %>
+        <%= render Shared::GalleryComponent.new(game_files: @game_files, can_manage: @game_presenter.can_manage?) %>
       <% end %>
     </section>
 
     <%# ===== Pages panel ===== %>
     <section data-game-tabs-target="panel" data-panel="pages" hidden>
-      <%= render Shared::GamePagesListComponent.new(game: @game, pages: @game_presenter.pages, can_manage: @game_presenter.can_manage?) %>
+      <%= render Shared::GamePagesListComponent.new(game: @game_presenter, pages: @game_presenter.pages, can_manage: @game_presenter.can_manage?) %>
     </section>
 
     <%# ===== Links panel ===== %>
     <section data-game-tabs-target="panel" data-panel="links" hidden>
-      <%= render Shared::GameLinksListComponent.new(game: @game, game_links: @game_presenter.links, can_manage: @game_presenter.can_manage?) %>
+      <%= render Shared::GameLinksListComponent.new(game: @game_presenter, game_links: @game_presenter.links, can_manage: @game_presenter.can_manage?) %>
     </section>
 
     <%# ===== Notebook panel (GM only) ===== %>

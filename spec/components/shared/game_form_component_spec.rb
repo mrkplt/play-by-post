@@ -1,11 +1,12 @@
 require "rails_helper"
 
 RSpec.describe Shared::GameFormComponent, type: :component do
-  let(:game) { build_stubbed(:game, name: "Ashfall Reaches", description: "A grim saga") }
+  let(:game_model) { build_stubbed(:game, name: "Ashfall Reaches", description: "A grim saga") }
+  let(:game) { GamePresenter.new(game_model, policy: instance_double(GamePolicy)) }
 
   def build_component(**overrides)
     described_class.new(
-      **{ game: game, submit_label: "Save Changes", cancel_href: "/games/#{game.id}" }.merge(overrides)
+      **{ game: game, submit_label: "Save Changes", cancel_href: "/games/#{game_model.id}" }.merge(overrides)
     )
   end
 
@@ -41,7 +42,7 @@ RSpec.describe Shared::GameFormComponent, type: :component do
     end
 
     it "surfaces validation messages when the game has errors" do
-      game.errors.add(:name, "can't be blank")
+      game_model.errors.add(:name, "can't be blank")
       component = build_component
       expect(component.errors?).to be(true)
       expect(component.error_messages).to include("Name can't be blank")
@@ -78,7 +79,7 @@ RSpec.describe Shared::GameFormComponent, type: :component do
     end
 
     it "shows validation messages in the error box" do
-      game.errors.add(:name, "can't be blank")
+      game_model.errors.add(:name, "can't be blank")
       render_inline(build_component)
       expect(page).to have_text("Name can't be blank")
     end

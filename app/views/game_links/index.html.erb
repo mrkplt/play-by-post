@@ -8,5 +8,5 @@
           secondary_nav: Shared::GameNavComponent.new(game: @game, active_tab: :links, can_manage: @game_presenter.can_manage?, mode: :link)) %>
   <% end %>
 
-  <%= render Shared::GameLinksListComponent.new(game: @game, game_links: @game_links, can_manage: @game_presenter.can_manage?) %>
+  <%= render Shared::GameLinksListComponent.new(game: @game_presenter, game_links: @game_links, can_manage: @game_presenter.can_manage?) %>
 <% end %>
