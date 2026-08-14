@@ -12,6 +12,14 @@ class GamePresenter < BasePresenter
     super
   end
 
+  # The wrapped Game, for the one place that legitimately needs the raw model:
+  # Shared::GameFormComponent binds `form_with model:` to it. Everything else
+  # goes through a named presenter method instead.
+  sig { returns(Game) }
+  def model
+    @model
+  end
+
   # The viewer may administer this game. A capability, not a role: it asks the
   # policy's `manage?` rather than `update?` (which means "this row may be
   # modified") so the view layer never hard-codes who currently qualifies.

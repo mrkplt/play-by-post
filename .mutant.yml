@@ -39,16 +39,22 @@ matcher:
     - GameLink
     - NotebookEntry
     # Presenters
+    - BannedMemberPresenter
     - CharacterPresenter
+    - GameDashboardItemPresenter
+    - GameDashboardPresenter
     - GameFilePresenter
     - GamePresenter
+    - GameShowPresenter
     - PostPresenter
+    - RosterCharacterPresenter
     - SceneSummaryPresenter
     - ScenePresenter
     - ScenePageAction
     - ScenePageAction::Viewer
     - ScenePageAction::Resolved
     - ScenePageAction::RouteArgs
+    - SceneTreePresenter
     - UserPresenter
     # Components
     - Ui::SecretFieldComponent

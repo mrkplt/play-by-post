@@ -3,6 +3,30 @@
 class ScenePresenter < BasePresenter
   extend T::Sig
 
+  sig { params(model: Scene, options: T.untyped).void }
+  def initialize(model, **options)
+    super
+  end
+
+  # The wrapped Scene, for the rare place that legitimately needs the raw
+  # model: ScenePageAction's sig requires one, and SceneShowPresenter wraps a
+  # ScenePresenter rather than a Scene. Everything else goes through a named
+  # presenter method instead.
+  sig { returns(Scene) }
+  def model
+    @model
+  end
+
+  # Whether this scene has activity since the viewer last logged in — the
+  # dashboard/game-view card's attention glow. `hot_scene_ids` is supplied at
+  # construction (options[:hot_scene_ids], defaulting to none) rather than
+  # computed here, since "last login" is a viewer fact the presenter is not
+  # constructed with by every caller.
+  sig { returns(T::Boolean) }
+  def hot?
+    @options.fetch(:hot_scene_ids, Set.new).include?(@model.id)
+  end
+
   sig { returns(String) }
   def parent_option_label
     @model.resolved? ? "#{@model.title} (Resolved)" : @model.title
@@ -96,26 +120,5 @@ class ScenePresenter < BasePresenter
   sig { params(draft: T.nilable(Post)).returns(T.nilable(Post)) }
   def recoverable_draft(draft)
     @model.resolved? ? draft : nil
-  end
-
-  # The scene screen's footer page-action, resolved to a render-ready
-  # label/href/method triple; ScenePageAction owns the rule and the shape.
-  # The game and url_helpers come from construction, so the view reads a
-  # finished href rather than handing the presenter a route helper.
-  sig do
-    params(can_manage: T::Boolean, is_participant: T::Boolean,
-           membership: T.nilable(GameMember))
-      .returns(T.nilable(ScenePageAction::Resolved))
-  end
-  def page_action(can_manage:, is_participant:, membership:)
-    ScenePageAction.resolved_for(
-      scene: @model,
-      viewer: ScenePageAction::Viewer.new(
-        can_manage: can_manage, is_participant: is_participant, membership: membership
-      ),
-      route_args: ScenePageAction::RouteArgs.new(
-        urls: @options[:urls], game: @options[:game]
-      )
-    )
   end
 end

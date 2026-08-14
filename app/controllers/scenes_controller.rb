@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 
 class ScenesController < ApplicationController
   extend T::Sig
@@ -8,9 +8,11 @@ class ScenesController < ApplicationController
   before_action :set_scene, only: %i[show resolve toggle_notification_preference]
   after_action :verify_authorized, except: :index
 
+  helper_method :scene_form
+
   sig { void }
   def index
-    all_scenes = ScenePolicy::Scope.new(current_user, @game).resolve
+    all_scenes = ScenePolicy::Scope.new(current_user, game).resolve
       .includes(:parent_scene, :child_scenes, scene_participants: [ :character, :user ])
       .order(created_at: :asc)
       .to_a
@@ -18,30 +20,29 @@ class ScenesController < ApplicationController
     scene_index = all_scenes.index_by(&:id)
     roots = all_scenes.select { |s| s.parent_scene_id.nil? || scene_index[s.parent_scene_id].nil? }
 
-    @trees = roots.map { |root| build_tree(root, scene_index, all_scenes) }
-    @game_presenter = GamePresenter.new(@game, policy: policy(@game))
+    @scene_tree_presenter = T.let(
+      SceneTreePresenter.new(roots.map { |root| build_tree(root, scene_index, all_scenes) }),
+      T.nilable(SceneTreePresenter)
+    )
+    @game_presenter = T.let(GamePresenter.new(game, policy: policy(@game)), T.nilable(GamePresenter))
   end
 
   sig { void }
   def new
-    @scene = @game.scenes.new
-    authorize @scene
-    @scene_form = build_scene_form
+    authorize new_scene
   end
 
   sig { void }
   def create
-    @scene = @game.scenes.new
-    authorize @scene
-    @scene.assign_attributes(permitted_attributes(@scene))
-    attach_image(@scene)
+    authorize new_scene
+    new_scene.assign_attributes(permitted_attributes(new_scene))
+    attach_image(new_scene)
 
-    if @scene.save
-      add_participants
-      notify_new_scene
-      redirect_to game_scene_path(@game, @scene), notice: "Scene created."
+    if new_scene.save
+      add_participants(new_scene)
+      notify_new_scene(new_scene)
+      redirect_to game_scene_path(game, new_scene), notice: "Scene created."
     else
-      @scene_form = build_scene_form
       render :new, status: :unprocessable_content
     end
   end
@@ -49,61 +50,64 @@ class ScenesController < ApplicationController
   sig { void }
   def show
     authorize @scene
-    @posts = @scene.posts.published.includes(:user).order(:created_at)
-    @draft = @scene.posts.drafts.find_by(user: current_user)
-    @post = Post.new
-    @game_presenter = GamePresenter.new(@game, policy: policy(@game))
-    @is_participant = @scene.participant?(current_user)
-    @current_membership = @game.member_for(current_user)
-    @is_muted = NotificationPreference.muted?(@scene, current_user)
-    @hide_ooc = current_user.user_profile&.hide_ooc? || false
-    @child_scenes = @scene.child_scenes.visible_to(current_user, @game).order(:created_at)
-
-    @scene.scene_participants.find_by(user: current_user)&.update(last_visited_at: Time.current)
-
-    @read_post_ids = SceneReadState.for(scene: @scene, posts: @posts, user: current_user)
-
-    @scene_presenter = ScenePresenter.new(
-      @scene, game: @game, urls: self, post_policy: PostPolicy.new(current_user, @scene.posts.new)
-    )
-    participants = @scene.scene_participants.includes(:character, :user).to_a
-    @post_presenters = @posts.map { |post| PostPresenter.new(post, scene_participants: participants) }
+    @game_presenter = T.let(GamePresenter.new(game, policy: policy(@game)), T.nilable(GamePresenter))
+    @scene_show_presenter = T.let(build_scene_show_presenter, T.nilable(SceneShowPresenter))
+    T.must(@scene_show_presenter).mark_visited!
   end
 
   sig { void }
   def toggle_notification_preference
     authorize @scene, :show?
-    NotificationPreference.toggle!(@scene, current_user)
-    redirect_to game_scene_path(@game, @scene),
-      notice: NotificationPreference.muted?(@scene, current_user) ? "Notifications muted for this scene." : "Notifications enabled for this scene."
+    NotificationPreference.toggle!(scene, current_user)
+    redirect_to game_scene_path(game, scene),
+      notice: NotificationPreference.muted?(scene, current_user) ? "Notifications muted for this scene." : "Notifications enabled for this scene."
   end
 
   sig { void }
   def resolve
     authorize @scene
 
-    if @scene.resolved?
-      redirect_to game_scene_path(@game, @scene), alert: "Scene is already resolved."
+    if scene.resolved?
+      redirect_to game_scene_path(game, scene), alert: "Scene is already resolved."
       return
     end
 
-    @scene.update!(resolved_at: Time.current, resolution: params[:resolution])
+    scene.update!(resolved_at: Time.current, resolution: params[:resolution])
     notify_scene_resolved
-    SceneSummaryJob.perform_later(@scene.id) if @game.ai_summaries_enabled?
-    redirect_to game_scene_path(@game, @scene), notice: "Scene resolved."
+    SceneSummaryJob.perform_later(scene.id) if game.ai_summaries_enabled?
+    redirect_to game_scene_path(game, scene), notice: "Scene resolved."
   end
 
   private
 
   sig { void }
   def set_game
-    @game = Game.find(params[:game_id])
+    @game = T.let(Game.find(params[:game_id]), T.nilable(Game))
   end
 
   sig { void }
   def set_scene
-    @scene = @game.scenes.find(params[:id])
+    @scene = T.let(game.scenes.find(params[:id]), T.nilable(Scene))
     check_scene_visibility!
+  end
+
+  # @game/@scene are always populated by their before_actions for every
+  # action that reads them (declared T.nilable only because Sorbet strict
+  # requires ivars assigned outside `initialize` to admit nil).
+  sig { returns(Game) }
+  def game
+    T.must(@game)
+  end
+
+  sig { returns(Scene) }
+  def scene
+    T.must(@scene)
+  end
+
+  sig { returns(SceneShowPresenter) }
+  def build_scene_show_presenter
+    scene_presenter = ScenePresenter.new(scene, post_policy: PostPolicy.new(current_user, scene.posts.new))
+    SceneShowPresenter.new(scene_presenter, game: game, urls: self, current_user: current_user)
   end
 
   sig { void }
@@ -116,14 +120,22 @@ class ScenesController < ApplicationController
     redirect_to root_path, alert: "You do not have access to this game." unless policy(@game).view?
   end
 
+  # The scene #new/#create build and validate against — memoized so the
+  # error-path re-render in #create sees the same (now-invalid) record the
+  # save was attempted on, not a fresh one.
+  sig { returns(Scene) }
+  def new_scene
+    @new_scene ||= T.let(game.scenes.new, T.nilable(Scene))
+  end
+
   # Assembles the New Scene / Quick Scene form component from the current
-  # request. Shared by #new and #create's error re-render so both paths present
-  # an identical form.
+  # request. Exposed to the view via helper_method so #new and #create's
+  # error re-render both present it without it being a controller ivar.
   sig { returns(Shared::SceneFormComponent) }
-  def build_scene_form
+  def scene_form
     Shared::SceneFormComponent.new(
-      game: @game,
-      scene: @scene,
+      game: game,
+      scene: new_scene,
       players_with_characters: active_players_with_characters,
       parent_options: parent_scene_select_options,
       quick: params[:quick].present?,
@@ -145,28 +157,29 @@ class ScenesController < ApplicationController
   sig { returns(T::Array[String]) }
   def selected_character_ids
     from_params = Array(params[:character_ids]).map(&:to_s)
-    from_params | @scene.scene_participants.filter_map { |sp| sp.character_id&.to_s }
+    from_params | new_scene.scene_participants.filter_map { |sp| sp.character_id&.to_s }
   end
 
   sig { returns(String) }
   def scene_form_back_href
     if params[:parent_scene_id].present?
-      game_scene_path(@game, params[:parent_scene_id])
+      game_scene_path(game, params[:parent_scene_id])
     else
-      game_path(@game)
+      game_path(game)
     end
   end
 
   # Returns an array of [user, characters] pairs for all active players,
   # including players with no characters (empty array).
+  sig { returns(T::Array[[ UserPresenter, T::Array[Character] ]]) }
   def active_players_with_characters
-    players = @game.users.joins(:game_members)
-      .where(game_members: { game: @game, role: "player", status: "active" })
+    players = game.users.joins(:game_members)
+      .where(game_members: { game: game, role: "player", status: "active" })
       .order("user_profiles.display_name")
       .joins("LEFT JOIN user_profiles ON user_profiles.user_id = users.id")
 
-    characters_by_user = @game.characters.active
-      .joins("INNER JOIN game_members ON game_members.user_id = characters.user_id AND game_members.game_id = #{@game.id}")
+    characters_by_user = game.characters.active
+      .joins("INNER JOIN game_members ON game_members.user_id = characters.user_id AND game_members.game_id = #{game.id}")
       .where(game_members: { role: "player", status: "active" })
       .order(:name)
       .group_by(&:user_id)
@@ -174,34 +187,34 @@ class ScenesController < ApplicationController
     players.map { |user| [ UserPresenter.new(user), characters_by_user.fetch(user.id, []) ] }
   end
 
-  sig { void }
-  def notify_new_scene
-    @scene.users.where.not(id: current_user.id).find_each do |recipient|
-      next if NotificationPreference.muted?(@scene, recipient)
-      NotificationMailer.new_scene(@scene, recipient).deliver_later
+  sig { params(new_scene: Scene).void }
+  def notify_new_scene(new_scene)
+    new_scene.users.where.not(id: current_user.id).find_each do |recipient|
+      next if NotificationPreference.muted?(new_scene, recipient)
+      NotificationMailer.new_scene(new_scene, recipient).deliver_later
     end
   end
 
   sig { void }
   def notify_scene_resolved
-    @scene.users.each do |recipient|
-      next if NotificationPreference.muted?(@scene, recipient)
-      NotificationMailer.scene_resolved(@scene, recipient).deliver_later
+    scene.users.each do |recipient|
+      next if NotificationPreference.muted?(scene, recipient)
+      NotificationMailer.scene_resolved(scene, recipient).deliver_later
     end
   end
 
-  sig { void }
-  def add_participants
-    gm = T.must(@game.game_master)
+  sig { params(new_scene: Scene).void }
+  def add_participants(new_scene)
+    gm = T.must(game.game_master)
 
     # Always add the GM as a user-only (no character) participant
-    @scene.scene_participants.find_or_create_by!(user_id: gm.id)
+    new_scene.scene_participants.find_or_create_by!(user_id: gm.id)
 
     # Add each selected character, deriving user from character.user
     Array(params[:character_ids]).map(&:to_i).each do |cid|
-      character = @game.characters.find_by(id: cid)
+      character = game.characters.find_by(id: cid)
       next unless character
-      @scene.scene_participants.find_or_create_by!(user_id: character.user_id) do |sp|
+      new_scene.scene_participants.find_or_create_by!(user_id: character.user_id) do |sp|
         sp.character = character
       end
     end
@@ -209,17 +222,22 @@ class ScenesController < ApplicationController
 
   sig { returns(T::Array[Scene]) }
   def parent_scene_options
-    active = @game.scenes.active.order(created_at: :desc).to_a
-    recent_resolved = @game.scenes.resolved.order(resolved_at: :desc).limit(3).to_a
+    active = game.scenes.active.order(created_at: :desc).to_a
+    recent_resolved = game.scenes.resolved.order(resolved_at: :desc).limit(3).to_a
     (active + recent_resolved)
   end
 
-  def build_tree(scene, scene_index, all_scenes)
+  sig do
+    params(
+      node_scene: Scene, scene_index: T::Hash[Integer, Scene], all_scenes: T::Array[Scene]
+    ).returns(T::Hash[Symbol, T.untyped])
+  end
+  def build_tree(node_scene, scene_index, all_scenes)
     children = all_scenes
-      .select { |s| s.parent_scene_id == scene.id }
+      .select { |s| s.parent_scene_id == node_scene.id }
       .sort_by(&:created_at)
     {
-      scene: scene,
+      scene: node_scene,
       children: children.map { |c| build_tree(c, scene_index, all_scenes) }
     }
   end

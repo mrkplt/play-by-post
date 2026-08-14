@@ -57,48 +57,9 @@ RSpec.describe ScenePresenter do
     end
   end
 
-  describe "#page_action" do
-    let(:game) { build_stubbed(:game) }
-    let(:membership) { build_stubbed(:game_member) }
-    let(:urls) { double(join_game_scene_participants_path: "/games/1/scenes/2/participants/join") }
-
-    subject(:presenter) { described_class.new(scene, game: game, urls: urls) }
-
-    def page_action(**overrides)
-      presenter.page_action(
-        **{ can_manage: false, is_participant: false, membership: membership }.merge(overrides)
-      )
-    end
-
-    it "wraps the viewer facts and its own scene when asking for the action" do
-      allow(ScenePageAction).to receive(:for).and_return(ScenePageAction::JOIN)
-
-      page_action
-
-      expect(ScenePageAction).to have_received(:for) do |scene:, viewer:|
-        expect(scene).to eq(self.scene)
-        expect(viewer).to have_attributes(
-          can_manage: false, is_participant: false, membership: membership
-        )
-      end
-    end
-
-    it "resolves the action's route against the caller's url helpers" do
-      allow(ScenePageAction).to receive(:for).and_return(ScenePageAction::JOIN)
-
-      expect(page_action).to have_attributes(
-        label: "Join Scene",
-        href: "/games/1/scenes/2/participants/join",
-        http_method: :post
-      )
-      expect(urls).to have_received(:join_game_scene_participants_path).with(game, scene)
-    end
-
-    it "is nil when there is no action, without touching the url helpers" do
-      allow(ScenePageAction).to receive(:for).and_return(nil)
-
-      expect(page_action).to be_nil
-      expect(urls).not_to have_received(:join_game_scene_participants_path)
+  describe "#model" do
+    it "returns the wrapped scene" do
+      expect(presenter.model).to eq(scene)
     end
   end
 

@@ -2,7 +2,6 @@ require "rails_helper"
 
 RSpec.describe GamePresenter do
   let(:game) { build_stubbed(:game) }
-  let(:user) { build_stubbed(:user) }
   let(:policy) { instance_double(GamePolicy, manage?: true) }
 
   subject(:presenter) { described_class.new(game, policy: policy) }
@@ -66,5 +65,11 @@ RSpec.describe GamePresenter do
 
   it "delegates model methods to the game" do
     expect(presenter.name).to eq(game.name)
+  end
+
+  describe "#model" do
+    it "returns the wrapped game" do
+      expect(presenter.model).to eq(game)
+    end
   end
 end

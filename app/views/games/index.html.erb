@@ -8,20 +8,20 @@
           class: "block w-full text-center bg-accent text-accent-ink rounded-control py-2.5 font-bold text-[13px] no-underline" %>
   <% end %>
 
-  <% if @dashboard_items.empty? %>
+  <% if @dashboard_presenter.empty? %>
     <div class="bg-card border border-card-border rounded-card p-5 text-center text-muted">
       <p class="text-base mb-2">You're not in any games yet.</p>
       <p class="mb-4 text-sm">Create a new game to get started, or ask a Game Master to invite you.</p>
     </div>
   <% else %>
-    <% @dashboard_items.each do |item| %>
+    <% @dashboard_presenter.items.each do |item| %>
       <%= render Shared::GameCardComponent.new(
-            game: item[:game],
-            can_manage: item[:can_manage],
-            former: item[:former],
-            character_label: item[:character_label],
-            active_scene_count: item[:active_scene_count],
-            new_activity: item[:new_activity]
+            game: item.game,
+            can_manage: item.can_manage?,
+            former: item.former?,
+            character_label: item.character_label,
+            active_scene_count: item.active_scene_count,
+            new_activity: item.new_activity?
           ) %>
     <% end %>
   <% end %>
