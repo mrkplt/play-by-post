@@ -45,6 +45,9 @@ matcher:
     - SceneSummaryPresenter
     - ScenePresenter
     - ScenePageAction
+    - ScenePageAction::Viewer
+    - ScenePageAction::Resolved
+    - ScenePageAction::RouteArgs
     - UserPresenter
     # Components
     - Ui::SecretFieldComponent

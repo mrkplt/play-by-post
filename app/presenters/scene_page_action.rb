@@ -42,6 +42,14 @@ class ScenePageAction < T::Struct
     ScenePageAction
   )
 
+  # The same action with its route resolved to a real URL — what the template
+  # actually renders, so the view calls no route helper of its own.
+  class Resolved < T::Struct
+    const :label, String
+    const :href, String
+    const :http_method, T.nilable(Symbol)
+  end
+
   # `viewer` bundles the three facts about the person looking at the scene, so
   # the rule reads against one subject (the scene) and one actor rather than a
   # flat parameter list.
@@ -68,5 +76,32 @@ class ScenePageAction < T::Struct
     elsif manages && resolved && scene.scene_summary.blank?
       WRITE_SUMMARY
     end
+  end
+
+  # As `for`, with the route resolved to a URL. `route_args` is the caller's
+  # url_helpers plus the arguments its route helpers take, bundled because
+  # both exist only to turn a route name into an href.
+  class RouteArgs < T::Struct
+    extend T::Sig
+
+    const :urls, T.untyped
+    const :game, Game
+
+    sig { params(route: Symbol, scene: Scene).returns(String) }
+    def href_for(route, scene)
+      urls.public_send(route, game, scene)
+    end
+  end
+
+  sig { params(scene: Scene, viewer: Viewer, route_args: RouteArgs).returns(T.nilable(Resolved)) }
+  def self.resolved_for(scene:, viewer:, route_args:)
+    action = self.for(scene: scene, viewer: viewer)
+    return nil unless action
+
+    Resolved.new(
+      label: action.label,
+      href: route_args.href_for(action.route, scene),
+      http_method: action.http_method
+    )
   end
 end

@@ -5,6 +5,58 @@ RSpec.describe ScenePageAction do
   let(:active_membership) { build_stubbed(:game_member) }
   let(:removed_membership) { build_stubbed(:game_member, :removed) }
 
+  describe ScenePageAction::Viewer do
+    def viewer_for(membership)
+      described_class.new(can_manage: false, is_participant: false, membership: membership)
+    end
+
+    describe "#active_member?" do
+      it "is true for an active membership" do
+        expect(viewer_for(active_membership).active_member?).to be(true)
+      end
+
+      it "is false for a membership that is not active" do
+        expect(viewer_for(removed_membership).active_member?).to be(false)
+      end
+
+      # Explicitly `false`, not nil: the method is typed T::Boolean, so the
+      # absent-membership case must return an actual boolean rather than the
+      # nil that safe navigation alone would yield.
+      it "is false, not nil, when there is no membership" do
+        expect(viewer_for(nil).active_member?).to be(false)
+      end
+    end
+  end
+
+  describe ".resolved_for" do
+    let(:game) { build_stubbed(:game) }
+    let(:urls) { double(join_game_scene_participants_path: "/join-here") }
+
+    def resolved_for(scene, **overrides)
+      viewer = described_class::Viewer.new(
+        **{ can_manage: false, is_participant: false, membership: active_membership }.merge(overrides)
+      )
+      described_class.resolved_for(
+        scene: scene, viewer: viewer,
+        route_args: described_class::RouteArgs.new(urls: urls, game: game)
+      )
+    end
+
+    it "resolves the action's route against the supplied url helpers" do
+      expect(resolved_for(scene)).to have_attributes(
+        label: "Join Scene",
+        href: "/join-here",
+        http_method: :post
+      )
+      expect(urls).to have_received(:join_game_scene_participants_path).with(game, scene)
+    end
+
+    it "is nil when there is no action, without touching the url helpers" do
+      expect(resolved_for(scene, is_participant: true)).to be_nil
+      expect(urls).not_to have_received(:join_game_scene_participants_path)
+    end
+  end
+
   describe ".for" do
     def action_for(scene, membership:, **overrides)
       viewer = described_class::Viewer.new(
