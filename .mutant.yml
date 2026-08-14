@@ -63,6 +63,7 @@ matcher:
     - ScenePlayerPresenter
     - ScenePostsPresenter
     - SceneShowPresenter
+    - SceneNavigationPresenter
     - SceneSummaryPresenter
     - SceneSummaryCollectionPresenter
     - ScenePresenter
@@ -201,6 +202,9 @@ matcher:
     - ImageAttachable
     - PostScoped
     - ProfileScoped
+    - SceneScoped
+    - SceneParticipantScoped
+    - SceneSummaryScoped
     # Jobs
     - PostDigestJob
     - ExportJob

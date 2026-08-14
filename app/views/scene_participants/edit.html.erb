@@ -1,9 +1,9 @@
-<% content_for :active_game_id, @game.id %>
+<% content_for :active_game_id, @game_presenter.id %>
 
 <%= render Shared::MobileFrameComponent.new do |frame| %>
   <% frame.with_header do %>
     <%= render Shared::HeaderComponent.new(
-          title: "Edit Participants — #{@scene.title}",
+          title: "Edit Participants — #{@scene_presenter.title}",
           breadcrumbs: Shared::BreadcrumbsComponent.new(game_presenter: @game_presenter),
           secondary_nav: Shared::GameNavComponent.new(game_presenter: @game_presenter, active_tab: :scenes, mode: :link)) %>
   <% end %>
@@ -14,12 +14,12 @@
         <%= render Ui::ButtonComponent.new(html_options: { type: "submit", form: "scene_participants_edit_form" }) do %>Update Participants<% end %>
       <% end %>
       <% actions.with_cancel do %>
-        <%= render Ui::ButtonComponent.new(variant: :secondary, url: game_scene_path(@game, @scene)) do %>Cancel<% end %>
+        <%= render Ui::ButtonComponent.new(variant: :secondary, url: @scene_navigation_presenter.show_path) do %>Cancel<% end %>
       <% end %>
     <% end %>
   <% end %>
 
-  <%= form_with url: game_scene_participants_path(@game, @scene), method: :patch, html: { id: "scene_participants_edit_form" } do %>
+  <%= form_with url: @scene_navigation_presenter.participants_path, method: :patch, html: { id: "scene_participants_edit_form" } do %>
     <%= render Shared::ParticipantCheckboxListComponent.new(
           players_with_characters: @players_with_characters,
           selected_character_ids: @current_character_ids.selected_character_ids,

@@ -1,4 +1,4 @@
-<% content_for :active_game_id, @game.id %>
+<% content_for :active_game_id, game_presenter.id %>
 
 <%= render Shared::MobileFrameComponent.new do |frame| %>
   <% frame.with_header do %>

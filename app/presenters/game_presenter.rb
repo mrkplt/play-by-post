@@ -78,6 +78,20 @@ class GamePresenter < BasePresenter
     @model.images_disabled? # mutant:disable
   end
 
+  # The All Scenes screen's "New Scene" link — resolved from url_helpers
+  # supplied at construction (options[:urls]) so the view builds no route of
+  # its own.
+  sig { returns(String) }
+  def new_scene_path
+    @options.fetch(:urls).new_game_scene_path(@model)
+  end
+
+  # The Campaign Log's "Edit Game" link, for a GM who can manage this game.
+  sig { returns(String) }
+  def edit_path
+    @options.fetch(:urls).edit_game_path(@model)
+  end
+
   # The Export row's passive subtitle: when this viewer has a valid export
   # receipt for this game, how long ago it succeeded — otherwise no subtitle
   # at all. The viewer is supplied at construction (options[:current_user]).

@@ -345,12 +345,19 @@ end
 # nearly every controller. A template can reach a model through such an ivar
 # exactly as easily as through one written in the action, so R1 has to see
 # both or it reports clean while `@scene.parent_scene.title` sits in an ERB.
+#
+# A MODULE COUNTS AS A CONTROLLER BODY. The `*Scoped` mixins under
+# app/controllers/ hold the `set_game`/`set_scene` lookups for the controllers
+# that include them, so scanning only ClassNode left their ivars unchecked —
+# `@game` and `@scene` are assigned there and read straight from templates
+# (posts/edit.html.erb does exactly this). Extracting a setter into a mixin is
+# a fine way to share it, but it must not be a way to stop the rule seeing it.
 def controller_ivars(root)
-  klass = nil
-  each_node(root) { |n| klass ||= n if n.is_a?(Prism::ClassNode) }
-  return [] unless klass
+  body = nil
+  each_node(root) { |n| body ||= n if n.is_a?(Prism::ClassNode) || n.is_a?(Prism::ModuleNode) }
+  return [] unless body
 
-  statements = klass.body.is_a?(Prism::StatementsNode) ? klass.body.body : []
+  statements = body.body.is_a?(Prism::StatementsNode) ? body.body.body : []
   visibility = :public
   found = []
 

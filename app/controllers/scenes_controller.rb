@@ -3,6 +3,7 @@
 class ScenesController < ApplicationController
   extend T::Sig
   include ImageAttachable
+  include SceneScoped
 
   before_action :set_game
   before_action :require_game_access!
@@ -25,7 +26,7 @@ class ScenesController < ApplicationController
       SceneTreePresenter.new(roots.map { |root| build_tree(root, scene_index, all_scenes) }),
       T.nilable(SceneTreePresenter)
     )
-    @game_presenter = T.let(GamePresenter.new(game, policy: policy(@game)), T.nilable(GamePresenter))
+    @game_presenter = T.let(GamePresenter.new(game, policy: policy(game), urls: self), T.nilable(GamePresenter))
   end
 
   sig { void }
@@ -37,7 +38,7 @@ class ScenesController < ApplicationController
   def create
     authorize new_scene
     new_scene.assign_attributes(permitted_attributes(new_scene))
-    attach_uploaded_image(new_scene, @game, param_key: :scene)
+    attach_uploaded_image(new_scene, game, param_key: :scene)
 
     if new_scene.save
       add_participants(new_scene)
@@ -50,9 +51,13 @@ class ScenesController < ApplicationController
 
   sig { void }
   def show
-    authorize @scene
-    @game_presenter = T.let(GamePresenter.new(game, policy: policy(@game)), T.nilable(GamePresenter))
+    authorize scene
+    @game_presenter = T.let(GamePresenter.new(game, policy: policy(game), urls: self), T.nilable(GamePresenter))
     @scene_presenter = T.let(ScenePresenter.new(scene, game: game, urls: self), T.nilable(ScenePresenter))
+    @scene_navigation_presenter = T.let(
+      SceneNavigationPresenter.new(T.must(@scene_presenter), game: game, urls: self),
+      T.nilable(SceneNavigationPresenter)
+    )
     @scene_show = T.let(build_scene_show_presenter, T.nilable(SceneShowPresenter))
     @scene_posts = T.let(build_scene_posts_presenter, T.nilable(ScenePostsPresenter))
     @scene_summary_presenter = T.let(build_scene_summary_presenter, T.nilable(SceneSummaryPresenter))
@@ -61,7 +66,7 @@ class ScenesController < ApplicationController
 
   sig { void }
   def toggle_notification_preference
-    authorize @scene, :show?
+    authorize scene, :show?
     NotificationPreference.toggle!(scene, current_user)
     redirect_to game_scene_path(game, scene),
       notice: NotificationPreference.muted?(scene, current_user) ? "Notifications muted for this scene." : "Notifications enabled for this scene."
@@ -69,7 +74,7 @@ class ScenesController < ApplicationController
 
   sig { void }
   def resolve
-    authorize @scene
+    authorize scene
 
     if scene.resolved?
       redirect_to game_scene_path(game, scene), alert: "Scene is already resolved."
@@ -84,28 +89,13 @@ class ScenesController < ApplicationController
 
   private
 
-  sig { void }
-  def set_game
-    @game = T.let(Game.find(params[:game_id]), T.nilable(Game))
-  end
-
+  # Overrides SceneScoped#set_scene to add the visibility redirect this
+  # controller's #show/#resolve/#toggle_notification_preference need — the
+  # lookup itself stays in the shared module.
   sig { void }
   def set_scene
-    @scene = T.let(game.scenes.find(params[:id]), T.nilable(Scene))
+    super
     check_scene_visibility!
-  end
-
-  # @game/@scene are always populated by their before_actions for every
-  # action that reads them (declared T.nilable only because Sorbet strict
-  # requires ivars assigned outside `initialize` to admit nil).
-  sig { returns(Game) }
-  def game
-    T.must(@game)
-  end
-
-  sig { returns(Scene) }
-  def scene
-    T.must(@scene)
   end
 
   # Memoized rather than set by a before_action: #new/#create render the New
@@ -113,7 +103,7 @@ class ScenesController < ApplicationController
   # method, so there is no single action to hang the assignment on.
   sig { returns(GamePresenter) }
   def game_presenter
-    @game_presenter ||= T.let(GamePresenter.new(game, policy: policy(@game)), T.nilable(GamePresenter))
+    @game_presenter ||= T.let(GamePresenter.new(game, policy: policy(game), urls: self), T.nilable(GamePresenter))
   end
 
   sig { returns(SceneShowPresenter) }
@@ -158,20 +148,12 @@ class ScenesController < ApplicationController
 
   sig { void }
   def check_scene_visibility!
-    redirect_to game_path(@game), alert: "You do not have access to this scene." unless policy(@scene).visible?
+    redirect_to game_path(game), alert: "You do not have access to this scene." unless policy(scene).visible?
   end
 
   sig { void }
   def require_game_access!
-    redirect_to root_path, alert: "You do not have access to this game." unless policy(@game).view?
-  end
-
-  # The scene #new/#create build and validate against — memoized so the
-  # error-path re-render in #create sees the same (now-invalid) record the
-  # save was attempted on, not a fresh one.
-  sig { returns(Scene) }
-  def new_scene
-    @new_scene ||= T.let(game.scenes.new, T.nilable(Scene))
+    redirect_to root_path, alert: "You do not have access to this game." unless policy(game).view?
   end
 
   # Assembles the New Scene / Quick Scene form component from the current
