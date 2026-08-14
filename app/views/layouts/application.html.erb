@@ -14,9 +14,15 @@
         <%= render Shared::NavShellComponent.new(current_user: UserPresenter.new(current_user), active_game_id: content_for(:active_game_id).presence&.to_i) %>
       <% end %>
 
+      <%# Rendered as a sibling of the nav drawer, not inside the main column:
+          the toast layer is fixed-position and must never occupy flow, or it
+          pushes the screen's header down (the bug that made flash messages
+          read as "nothing happened"). Sibling placement is also what the
+          desktop `.nav-drawer ~ .toast-layer` rail offset selects on. %>
+      <%= render Ui::ToastComponent.new(toasts: FlashPresenter.new(flash).toasts) %>
+
       <!-- Main -->
       <div>
-        <%= render Ui::FlashComponent.new(notice: notice, alert: alert) %>
         <%= yield %>
       </div>
     </div>

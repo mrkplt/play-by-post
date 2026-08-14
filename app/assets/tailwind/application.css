@@ -4,6 +4,7 @@
 @import "../../components/shared/post_item_component.css";
 @import "../../components/ui/markdown_editor_component.css";
 @import "../../components/ui/secret_field_component.css";
+@import "../../components/ui/toast_component.css";
 
 @theme {
   /* Ink & canvas */
@@ -63,6 +64,24 @@
   --radius-card: 10px;              /* cards */
   --radius-post: 12px;              /* post cards */
   --radius-pill: 20px;              /* pills / badges */
+
+  /* Toast surfaces — light chips overlaid on content, so they carry a border
+     and shadow to separate from whatever they float above. */
+  --color-toast-success-bg: #e7f4ec;
+  --color-toast-success-text: #1f5133;
+  --color-toast-success-border: #bcdcc9;
+  --color-toast-error-bg: #fbeaea;
+  --color-toast-error-text: #7a2626;
+  --color-toast-error-border: #e6c3c3;
+
+  /* Toast timing — a success toast holds solid for --toast-hold then fades
+     over --toast-fade before it is removed. The Stimulus controller reads
+     these same numbers; keep the two in step. */
+  --toast-hold: 2s;
+  --toast-fade: 3s;
+
+  /* Layer above the nav drawer (50) and its backdrop (45), below modals (1000). */
+  --toast-z: 60;
 }
 
 @layer base {
