@@ -1,10 +1,10 @@
-<% content_for :active_game_id, @game.id %>
+<% content_for :active_game_id, @game_presenter.id %>
 
 <%= render Shared::MobileFrameComponent.new do |frame| %>
   <% frame.with_header do %>
     <%= render Shared::HeaderComponent.new(
           title: "Edit Summary",
-          breadcrumbs: Shared::BreadcrumbsComponent.new(game: @game)) %>
+          breadcrumbs: Shared::BreadcrumbsComponent.new(game_presenter: @game_presenter)) %>
   <% end %>
 
   <% frame.with_footer do %>
@@ -13,10 +13,10 @@
         <%= render Ui::ButtonComponent.new(html_options: { type: "submit", form: "scene_summary_edit_form" }) do %>Update Summary<% end %>
       <% end %>
       <% actions.with_cancel do %>
-        <%= render Ui::ButtonComponent.new(variant: :secondary, url: game_scene_path(@game, @scene)) do %>Cancel<% end %>
+        <%= render Ui::ButtonComponent.new(variant: :secondary, url: @summary_presenter.scene_path) do %>Cancel<% end %>
       <% end %>
     <% end %>
   <% end %>
 
-  <%= render Shared::SceneSummaryFormComponent.new(game: @game, scene: @scene, summary: @summary) %>
+  <%= render Shared::SceneSummaryFormComponent.new(summary: @summary_presenter) %>
 <% end %>

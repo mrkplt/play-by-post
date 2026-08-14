@@ -15,15 +15,15 @@ class Shared::NotebookLaneSelectComponentPreview < ViewComponent::Preview
   private
 
   def sample_game
-    Game.new(id: 1, name: "Sample Game")
+    GamePresenter.new(Game.new(id: 1, name: "Sample Game"), policy: nil)
   end
 
   def sample_entry(status)
-    NotebookEntry.new(
+    NotebookEntryPresenter.new(NotebookEntry.new(
       id: 1,
       title: "A wandering merchant",
       slug: "samplenotebook01",
       status: status
-    )
+    ))
   end
 end

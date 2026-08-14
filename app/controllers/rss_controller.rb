@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 
 # The campaign-log RSS feed, delivered on the machine-auth surface. The token
 # (an ApiToken with scope "rss") is the sole credential and carries the game;
@@ -16,8 +16,18 @@ class RssController < DataApplicationController
     authorize token, :feed?
 
     game = T.must(token.game)
-    @game = game
-    @summaries = SceneSummary.public_for_game(game).limit(20)
+    assign_feed_presenters(game)
     render :feed, formats: :rss, layout: false
+  end
+
+  private
+
+  sig { params(game: Game).void }
+  def assign_feed_presenters(game)
+    @game_presenter = T.let(GamePresenter.new(game, policy: policy(game)), T.nilable(GamePresenter))
+    @summaries = T.let(
+      SceneSummary.public_for_game(game).limit(20).map { |summary| SceneSummaryPresenter.new(summary, game: game, urls: self) },
+      T.nilable(T::Array[SceneSummaryPresenter])
+    )
   end
 end

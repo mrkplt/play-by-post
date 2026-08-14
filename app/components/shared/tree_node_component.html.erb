@@ -4,7 +4,7 @@
       <span class="text-slate-400 font-mono shrink-0">└─</span>
     <% end %>
     <span class="whitespace-nowrap">
-      <%= link_to @scene.title, game_scene_path(@game, @scene), class: @scene.tree_link_css_class %>
+      <%= link_to @scene.title, game_scene_path(@game_presenter, @scene.scene_presenter), class: @scene.tree_link_css_class %>
     </span>
     <%= render Shared::StatusBadgeRowComponent.new(badges: @scene.tree_status_badges) %>
     <span class="text-xs text-slate-400 ml-auto whitespace-nowrap">
@@ -13,6 +13,6 @@
   </div>
 
   <% @children.each do |child_node| %>
-    <%= render(Shared::TreeNodeComponent.new(node: child_node, game: @game, depth: @depth + 1)) %>
+    <%= render(Shared::TreeNodeComponent.new(node: child_node, game_presenter: @game_presenter, depth: @depth + 1)) %>
   <% end %>
 </div>

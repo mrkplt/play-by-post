@@ -57,9 +57,10 @@ RSpec.describe PostPresenter do
       expect(presenter.is_ooc?).to be true
     end
 
-    it "delegates editable_by? to the model" do
-      allow(post).to receive(:editable_by?).with(user).and_return(true)
-      expect(presenter.editable_by?(user)).to be true
+    it "asks the injected policy whether the viewer may edit" do
+      policy = instance_double(PostPolicy, update?: true)
+      presenter = described_class.new(post, policy: policy)
+      expect(presenter.editable_by_viewer?).to be true
     end
 
     it "returns the post's user" do

@@ -1,13 +1,13 @@
-A new scene has started in <%= @game.name %>.
+A new scene has started in <%= @game_presenter.name %>.
 
-<%= @scene.title %>
-<% if @scene.description.present? %>
+<%= @scene_notification.title %>
+<% if (description = @scene_notification.description) %>
 
-<%= @scene.description %>
+<%= description %>
 <% end %>
 
-View scene: <%= @scene_url %>
+View scene: <%= @scene_notification.scene_url %>
 
 ---
 Reply to this email to post in the scene.
-Mute this scene: <%= @mute_url %>
+Mute this scene: <%= @scene_notification.mute_url %>

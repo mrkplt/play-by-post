@@ -39,20 +39,55 @@ matcher:
     - GameLink
     - NotebookEntry
     # Presenters
+    - BannedMemberPresenter
+    - CharacterPresenter
+    - CharacterVersionPresenter
+    - GameDashboardItemPresenter
+    - GameDashboardPresenter
+    - DrawerMembershipPresenter
+    - ExportDeliveryPresenter
+    - SceneNotificationPresenter
     - GameFilePresenter
+    - GameMemberPresenter
+    - GameFeedRowPresenter
+    - GameLinkPresenter
     - GamePresenter
+    - GameRosterOptionsPresenter
+    - GameRosterPresenter
+    - GameRoutesPresenter
+    - GameScenesPanelPresenter
+    - GameShowPresenter
+    - InvitationPresenter
+    - NotebookBoardPresenter
+    - NotebookEntryPresenter
+    - PagePresenter
     - PostPresenter
+    - RosterCharacterPresenter
+    - SceneCardPresenter
+    - ScenePlayerPresenter
+    - ScenePostsPresenter
+    - SceneShowPresenter
+    - SceneNavigationPresenter
     - SceneSummaryPresenter
+    - SceneSummaryCollectionPresenter
     - ScenePresenter
+    - SceneParticipantRosterPresenter
+    - SceneRosterRowsPresenter
+    - SceneTreeRowPresenter
+    - SignInPresenter
     - ScenePageAction
     - ScenePageAction::Viewer
     - ScenePageAction::Resolved
     - ScenePageAction::RouteArgs
+    - SceneTreePresenter
     - UserPresenter
+    - UserProfilePresenter
     # Components
     - Ui::SecretFieldComponent
     - Shared::RssFeedsSectionComponent
     - Shared::AiSummariesToggleComponent
+    - Shared::ImagesToggleComponent
+    - Shared::SheetsToggleComponent
     - Shared::ProfileFormComponent
     - Shared::SceneSummaryComponent
     - Shared::SceneSummaryEntryComponent
@@ -130,12 +165,18 @@ matcher:
     # Services
     - AttachmentUploader
     - TurnstileVerifier
+    - CharacterCreation
+    - CharacterPresenterBuilder
     - ExportDelivery
     - EmailContentExtractor
     - GameExportService
     - MarkdownRenderer
     - NotebookEntryPromotion
     - NotebookLaneMove
+    - PostPresenterBuilder
+    - PostPresenterBuilder::PageContext
+    - SceneFormBuilder
+    - SceneParticipantSync
     - SceneReadState
     - SceneSummaryService
     - FizzySweepService
@@ -163,6 +204,14 @@ matcher:
     - FeedbackController
     - Users::SessionsController
     - TurnstileVerification
+    - CharacterScoped
+    - ImageAttachable
+    - PostScoped
+    - RequestMemo
+    - ProfileScoped
+    - SceneScoped
+    - SceneParticipantScoped
+    - SceneSummaryScoped
     # Jobs
     - PostDigestJob
     - ExportJob

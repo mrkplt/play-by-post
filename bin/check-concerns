@@ -17,8 +17,8 @@
 #
 # Incremental by design: only files added or modified relative to origin/master
 # are inspected, so this can land without first purging any pre-existing
-# concern. A separate Fizzy card tracks retiring the diff scope and sweeping the
-# whole tree once the backlog (if any) is clear.
+# concern. The diff scope is meant to be retired and the whole tree swept once
+# the backlog (if any) is clear.
 
 require "prism"
 

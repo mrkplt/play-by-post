@@ -3,8 +3,8 @@ class Shared::SceneFormComponentPreview < ViewComponent::Preview
   def full_new_scene
     game = Game.first || Game.new(name: "Sample Game")
     render(Shared::SceneFormComponent.new(
-      game: game,
-      scene: game.scenes.new,
+      game: GamePresenter.new(game, policy: nil),
+      scene: ScenePresenter.new(game.scenes.new),
       players_with_characters: [],
       parent_options: [ [ "The Tavern", 1 ], [ "The Road (Resolved)", 2 ] ],
       quick: false,
@@ -17,8 +17,8 @@ class Shared::SceneFormComponentPreview < ViewComponent::Preview
   def quick_scene
     game = Game.first || Game.new(name: "Sample Game")
     render(Shared::SceneFormComponent.new(
-      game: game,
-      scene: game.scenes.new,
+      game: GamePresenter.new(game, policy: nil),
+      scene: ScenePresenter.new(game.scenes.new),
       players_with_characters: [],
       parent_options: [],
       quick: true,

@@ -108,4 +108,60 @@ RSpec.describe UserPresenter do
       end
     end
   end
+
+  describe "#export_all_games_notice", :db do
+    it "renders a 'Last export: X ago' notice when a valid all-games receipt exists" do
+      user = create(:user)
+      receipt = create(:game_export_request, :all_games, user: user, succeeded_at: 3.hours.ago)
+      receipt.archive.attach(io: StringIO.new("zip"), filename: "all.zip", content_type: "application/zip")
+
+      expect(described_class.new(user).export_all_games_notice).to match(/\ALast export: .+ ago\z/)
+    end
+
+    it "returns generic delivery-window copy when no receipt is present" do
+      user = create(:user)
+      expect(described_class.new(user).export_all_games_notice)
+        .to eq("You'll receive an email with a download link within a few minutes; the link expires after 7 days.")
+    end
+  end
+
+  describe "#feed_rows", db: true do
+    let(:user) { create(:user) }
+    let(:urls) { double("urls") }
+
+    it "returns one row per non-banned membership, paired with any rss token" do
+      with_token = create(:game, name: "With Token")
+      without_token = create(:game, name: "Without Token")
+      create(:game_member, game: with_token, user: user)
+      create(:game_member, game: without_token, user: user)
+      token = create(:api_token, user: user, game: with_token, scope: "rss")
+
+      rows = described_class.new(user).feed_rows(urls: urls)
+
+      row_with_token = rows.find { |r| r.game_id == with_token.id }
+      row_without_token = rows.find { |r| r.game_id == without_token.id }
+      expect(row_with_token.token?).to be(true)
+      expect(row_without_token.token?).to be(false)
+      expect(rows.size).to eq(2)
+    end
+
+    it "excludes banned memberships" do
+      banned = create(:game, name: "Forbidden Keep")
+      create(:game_member, :banned, game: banned, user: user)
+
+      rows = described_class.new(user).feed_rows(urls: urls)
+
+      expect(rows.map(&:game_id)).not_to include(banned.id)
+    end
+
+    it "ignores an api-scoped token when matching the rss token" do
+      game = create(:game)
+      create(:game_member, game: game, user: user)
+      create(:api_token, user: user, game: game, scope: "api")
+
+      rows = described_class.new(user).feed_rows(urls: urls)
+
+      expect(rows.first.token?).to be(false)
+    end
+  end
 end

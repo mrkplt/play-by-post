@@ -7,47 +7,44 @@
 # toggle and an archive/restore action.
 #
 # The component derives its rendering mode (new vs edit), labels, and back-href
-# from the character it is handed, so the view renders it with just the model
-# and an authorization flag — no form-construction logic in the template.
+# from the presenter it is handed, so the view renders it with just the
+# presenter — no form-construction logic in the template. The assign-owner
+# capability lives on CharacterPresenter; the player-selector options are a
+# fact about the game's roster rather than any one character, so they are
+# built by CharacterPresenterBuilder and passed in directly — this component
+# never receives a raw model or a raw array of users either way.
 class Shared::CharacterFormComponent < ApplicationComponent
   extend T::Sig
 
-  sig do
-    params(
-      game: Game,
-      character: Character,
-      can_assign_owner: T::Boolean,
-      users: T::Array[User]
-    ).void
-  end
-  def initialize(game:, character:, can_assign_owner:, users: [])
-    @game = T.let(game, Game)
-    @character = T.let(character, Character)
-    @can_assign_owner = T.let(can_assign_owner, T::Boolean)
-    @users = T.let(users, T::Array[User])
+  sig { params(character: CharacterPresenter, owner_options: T::Array[[ String, Integer ]]).void }
+  def initialize(character:, owner_options: [])
+    @character = T.let(character, CharacterPresenter)
+    @owner_options = T.let(owner_options, T::Array[[ String, Integer ]])
   end
 
   sig { returns(Game) }
-  attr_reader :game
+  def game
+    character.game
+  end
 
-  sig { returns(Character) }
+  sig { returns(CharacterPresenter) }
   attr_reader :character
 
   sig { returns(T::Boolean) }
   def new_record?
-    @character.new_record?
+    character.new_record?
   end
 
   sig { returns(T::Boolean) }
   def archived?
-    @character.archived?
+    character.archived?
   end
 
   # The GM's player selector only makes sense when creating a new character on
   # someone's behalf; once created, ownership is fixed.
   sig { returns(T::Boolean) }
   def owner_select?
-    new_record? && @can_assign_owner
+    new_record? && character.can_assign_owner?
   end
 
   sig { returns(T::Boolean) }
@@ -58,13 +55,11 @@ class Shared::CharacterFormComponent < ApplicationComponent
   # Archive/restore is a GM affordance on an existing character.
   sig { returns(T::Boolean) }
   def archive_section?
-    !new_record? && @can_assign_owner
+    !new_record? && character.can_assign_owner?
   end
 
   sig { returns(T::Array[[ String, Integer ]]) }
-  def owner_options
-    @users.map { |user| [ user.display_name || user.email, user.id ] }
-  end
+  attr_reader :owner_options
 
   sig { returns(String) }
   def content_label
@@ -78,21 +73,21 @@ class Shared::CharacterFormComponent < ApplicationComponent
 
   sig { returns(String) }
   def back_href
-    new_record? ? helpers.game_path(@game) : helpers.game_character_path(@game, @character)
+    new_record? ? helpers.game_path(game) : helpers.game_character_path(game, character)
   end
 
   sig { returns(String) }
   def form_id
-    new_record? ? "new_character_form" : "edit_character_#{@character.id}_form"
+    new_record? ? "new_character_form" : "edit_character_#{character.id}_form"
   end
 
   sig { returns(T::Boolean) }
   def errors?
-    @character.errors.any?
+    character.errors?
   end
 
   sig { returns(T::Array[String]) }
   def error_messages
-    @character.errors.full_messages
+    character.error_messages
   end
 end

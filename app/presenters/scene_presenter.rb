@@ -3,14 +3,57 @@
 class ScenePresenter < BasePresenter
   extend T::Sig
 
+  sig { params(model: Scene, options: T.untyped).void }
+  def initialize(model, **options)
+    super
+  end
+
+  # The wrapped Scene, for presenters that wrap a ScenePresenter (rather than
+  # a Scene) and need the raw model — e.g. SceneCardPresenter, ScenePostsPresenter.
+  sig { returns(Scene) }
+  def model
+    @model
+  end
+
+  # Whether this scene has activity since the viewer last logged in — the
+  # game-view card's attention glow. `hot_scene_ids` (options[:hot_scene_ids])
+  # is supplied at construction rather than computed here.
+  sig { returns(T::Boolean) }
+  def hot?
+    @options.fetch(:hot_scene_ids, Set.new).include?(@model.id)
+  end
+
+  sig { returns(String) }
+  def title
+    @model.title
+  end
+
   sig { returns(String) }
   def parent_option_label
     @model.resolved? ? "#{@model.title} (Resolved)" : @model.title
   end
 
+  # Whether the scene currently carries validation errors — the New Scene /
+  # Quick Scene form's re-render after a failed #create reads this instead of
+  # a component reaching into @model.errors directly.
+  sig { returns(T::Boolean) }
+  def errors?
+    @model.errors.any?
+  end
+
+  sig { returns(T::Array[String]) }
+  def error_messages
+    @model.errors.full_messages
+  end
+
   sig { returns(String) }
   def status_label
     @model.resolved? ? "Resolved" : "Active"
+  end
+
+  sig { returns(T::Boolean) }
+  def resolved?
+    @model.resolved? # mutant:disable
   end
 
   # Pre-computed label/variant pairs for Shared::StatusBadgeRowComponent, for
@@ -21,20 +64,6 @@ class ScenePresenter < BasePresenter
     badges = T.let([], T::Array[Shared::StatusBadgeRowComponent::Badge])
     badges << { label: "Private", variant: :yellow } if @model.private?
     badges << { label: "Resolved", variant: :gray } if @model.resolved?
-    badges
-  end
-
-  # Pre-computed label/variant pairs for Shared::StatusBadgeRowComponent, for
-  # the scene tree row: always a status badge (Active/Resolved), plus Private
-  # when set. The presenter picks the symbolic Ui::BadgeComponent variant so
-  # the component never inspects the model directly.
-  sig { returns(T::Array[Shared::StatusBadgeRowComponent::Badge]) }
-  def tree_status_badges
-    badges = T.let(
-      [ { label: status_label, variant: @model.resolved? ? :gray : :green } ],
-      T::Array[Shared::StatusBadgeRowComponent::Badge]
-    )
-    badges << { label: "Private", variant: :yellow } if @model.private?
     badges
   end
 
@@ -58,62 +87,33 @@ class ScenePresenter < BasePresenter
     @model.created_at.strftime("%b %-d, %Y %l:%M%P")
   end
 
+  # The GM-facing resolution text shown once a scene is resolved, or nil when
+  # there is none — named for what it shows rather than delegated to raw
+  # `resolution`, so the presenter (not the component) owns reading it off
+  # the model. `nil` (not blank-string) doubles as the template's presence
+  # gate, via `<% if (resolution = @scene_presenter.resolution) %>`.
+  sig { returns(T.nilable(String)) }
+  def resolution
+    @model.resolution.presence
+  end
+
+  # The "End Scene" form's submit target, resolved from the game and
+  # url_helpers supplied at construction (options[:game] / options[:urls]) so
+  # the component never builds a route itself.
   sig { returns(String) }
-  def tree_row_css_class
-    @model.resolved? ? "text-slate-500" : "font-semibold"
+  def resolve_path
+    @options.fetch(:urls).resolve_game_scene_path(@options.fetch(:game), @model)
+  end
+
+  # The composer's autosave/discard-draft endpoints, resolved here so the
+  # composer never holds the game/scene models to build a URL of its own.
+  sig { returns(String) }
+  def save_draft_url
+    @options.fetch(:urls).save_draft_game_scene_posts_path(@options.fetch(:game), @model) # mutant:disable
   end
 
   sig { returns(String) }
-  def tree_link_css_class
-    @model.resolved? ? "text-slate-500" : ""
-  end
-
-  sig { returns(ActiveStorage::VariantWithRecord) }
-  def banner_image
-    @model.image.variant(resize_to_limit: [ 1200, nil ], format: :jpeg, quality: 85)
-  end
-
-  # Whether this viewer may post into the scene right now: the post policy allows
-  # it and the scene is still open. Keeps the composer's visibility sourced from
-  # the same policy PostsController authorizes with, without a controller ivar.
-  sig { params(user: User).returns(T::Boolean) }
-  def can_post?(user)
-    PostPolicy.new(user, @model.posts.new).create? && !@model.resolved?
-  end
-
-  # The mute/unmute control's label, derived from the viewer's current
-  # notification-preference state.
-  sig { params(muted: T::Boolean).returns(String) }
-  def mute_toggle_label(muted)
-    muted ? "Unmute notifications" : "Mute notifications"
-  end
-
-  # The draft worth surfacing as a recovery notice: the composer disappears
-  # once a scene resolves, so a leftover draft is only worth recovering in
-  # that state. `draft` is whatever the controller found (or nil).
-  sig { params(draft: T.nilable(Post)).returns(T.nilable(Post)) }
-  def recoverable_draft(draft)
-    @model.resolved? ? draft : nil
-  end
-
-  # The scene screen's footer page-action, resolved to a render-ready
-  # label/href/method triple; ScenePageAction owns the rule and the shape.
-  # The game and url_helpers come from construction, so the view reads a
-  # finished href rather than handing the presenter a route helper.
-  sig do
-    params(can_manage: T::Boolean, is_participant: T::Boolean,
-           membership: T.nilable(GameMember))
-      .returns(T.nilable(ScenePageAction::Resolved))
-  end
-  def page_action(can_manage:, is_participant:, membership:)
-    ScenePageAction.resolved_for(
-      scene: @model,
-      viewer: ScenePageAction::Viewer.new(
-        can_manage: can_manage, is_participant: is_participant, membership: membership
-      ),
-      route_args: ScenePageAction::RouteArgs.new(
-        urls: @options[:urls], game: @options[:game]
-      )
-    )
+  def discard_draft_url
+    @options.fetch(:urls).discard_draft_game_scene_posts_path(@options.fetch(:game), @model) # mutant:disable
   end
 end

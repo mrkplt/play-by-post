@@ -1,29 +1,29 @@
-<% content_for :active_game_id, @game.id %>
+<% content_for :active_game_id, @game_presenter.id %>
 
 <%= render Shared::MobileFrameComponent.new do |frame| %>
   <% frame.with_header do %>
     <%= render Shared::HeaderComponent.new(
           title: "All Scenes",
-          breadcrumbs: Shared::BreadcrumbsComponent.new(game: @game),
-          secondary_nav: Shared::GameNavComponent.new(game: @game, active_tab: :scenes, can_manage: @game_presenter.can_manage?, mode: :link)) %>
+          breadcrumbs: Shared::BreadcrumbsComponent.new(game_presenter: @game_presenter),
+          secondary_nav: Shared::GameNavComponent.new(game_presenter: @game_presenter, active_tab: :scenes, mode: :link)) %>
   <% end %>
 
   <% if @game_presenter.can_manage? %>
     <% frame.with_footer do %>
       <%= render Shared::PageActionsComponent.new do |actions| %>
         <% actions.with_primary do %>
-          <%= render Ui::ButtonComponent.new(url: new_game_scene_path(@game)) do %>New Scene<% end %>
+          <%= render Ui::ButtonComponent.new(url: @game_routes.new_scene_path) do %>New Scene<% end %>
         <% end %>
       <% end %>
     <% end %>
   <% end %>
 
-  <% if @trees.empty? %>
+  <% if @scene_tree_presenter.empty? %>
     <p class="text-muted-2 text-sm">No scenes yet.</p>
   <% else %>
     <div class="text-sm">
-      <% @trees.each do |tree| %>
-        <%= render Shared::TreeNodeComponent.new(node: tree, game: @game) %>
+      <% @scene_tree_presenter.trees.each do |tree| %>
+        <%= render Shared::TreeNodeComponent.new(node: tree, game_presenter: @game_presenter) %>
       <% end %>
     </div>
   <% end %>

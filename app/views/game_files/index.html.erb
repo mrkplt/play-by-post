@@ -1,21 +1,21 @@
-<% content_for :active_game_id, @game.id %>
+<% content_for :active_game_id, @game_presenter.id %>
 
 <%= render Shared::MobileFrameComponent.new do |frame| %>
   <% frame.with_header do %>
     <%= render Shared::HeaderComponent.new(
           title: "Files",
-          breadcrumbs: Shared::BreadcrumbsComponent.new(game: @game),
-          secondary_nav: Shared::GameNavComponent.new(game: @game, active_tab: :files, can_manage: @game_presenter.can_manage?, mode: :link)) %>
+          breadcrumbs: Shared::BreadcrumbsComponent.new(game_presenter: @game_presenter),
+          secondary_nav: Shared::GameNavComponent.new(game_presenter: @game_presenter, active_tab: :files, mode: :link)) %>
   <% end %>
 
   <% if @game_presenter.can_manage? %>
-    <%= render Shared::FileUploadFormComponent.new(game: @game, game_file: @game_file) %>
+    <%= render Shared::FileUploadFormComponent.new(game: @game_presenter, game_file: @game_file_presenter) %>
   <% end %>
 
   <% if @game_files.empty? %>
     <p class="text-muted-2 text-sm">No files uploaded yet.</p>
   <% else %>
     <%= render Ui::SectionLabelComponent.new do %>Newest first<% end %>
-    <%= render Shared::GalleryComponent.new(game_files: @game_files.to_a, game: @game, can_manage: @game_presenter.can_manage?) %>
+    <%= render Shared::GalleryComponent.new(game_files: @game_files, can_manage: @game_presenter.can_manage?) %>
   <% end %>
 <% end %>

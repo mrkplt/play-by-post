@@ -1,18 +1,18 @@
-New activity in <%= @game.name %> — <%= @scene.title %>.
+New activity in <%= @game_presenter.name %> — <%= @scene_notification.title %>.
 
-<% @posts.each do |post| %>
+<% @scene_notification.post_presenters.each do |post| %>
 ---
-<%= post.user.display_name || post.user.email %> · <%= post.created_at.strftime("%b %-d, %Y") %><% if post.is_ooc? %> [OOC]<% end %>
+<%= post.author_display_name %> · <%= post.formatted_created_at %><% if post.is_ooc? %> [OOC]<% end %>
 
 <%= post.content %>
 <% end %>
-<% if @extra_count > 0 %>
+<% if @scene_notification.extra_count > 0 %>
 
-...and <%= @extra_count %> more <%= "post".pluralize(@extra_count) %>.
+...and <%= @scene_notification.extra_count %> more <%= "post".pluralize(@scene_notification.extra_count) %>.
 <% end %>
 
-View scene: <%= @scene_url %>
+View scene: <%= @scene_notification.scene_url %>
 
 ---
 Reply to this email to post in the scene.
-Mute this scene: <%= @mute_url %>
+Mute this scene: <%= @scene_notification.mute_url %>

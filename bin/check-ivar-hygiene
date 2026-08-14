@@ -7,8 +7,8 @@
 # Three violation kinds are counted per file, and this is a PROGRESSIVE ratchet:
 # a changed file may not INCREASE its total violation count vs origin/master.
 # Pre-existing violations are grandfathered (the number can only go down); a new
-# file must land at zero. A separate Fizzy card tracks retiring the ratchet and
-# enforcing zero everywhere.
+# file must land at zero. The ratchet is meant to be retired, enforcing zero
+# everywhere.
 #
 #   V1  ivar WRITE outside #initialize.
 #       An initializer sets up state; other methods should not reassign ivars.
@@ -114,6 +114,18 @@ def accessor_method_names(name, kinds)
 end
 
 # Returns the violation lines for one Ruby source file.
+# V1 does not apply to controllers. The rule reads "an initializer sets up
+# state; other methods should not reassign ivars", which presumes a class you
+# instantiate yourself. Rails instantiates a controller per request and there is
+# no #initialize to assign in — every action that hands data to its view writes
+# an ivar there by the framework's design, so V1 is unsatisfiable rather than
+# unmet. It also collides head-on with bin/check-view-layering, which requires
+# every view-facing ivar to be a presenter built in the action. V2 and V3 still
+# apply to controllers; only the write-location rule is exempt.
+def controller?(rb_path)
+  rb_path.to_s.include?("app/controllers/")
+end
+
 def violations_for(source, rb_path)
   root = Prism.parse(source).value
   accessors = declared_accessors(root)
@@ -128,7 +140,7 @@ def violations_for(source, rb_path)
     method_name = defn.name
 
     writes = [].tap { |into| ivar_writes(defn, into) }.uniq
-    unless method_name == :initialize
+    unless method_name == :initialize || controller?(rb_path)
       writes.each { |name| found << "V1 writes @#{name} in ##{method_name} (assign ivars in #initialize only)" }
     end
 

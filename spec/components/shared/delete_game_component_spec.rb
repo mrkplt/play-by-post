@@ -1,7 +1,8 @@
 require "rails_helper"
 
 RSpec.describe Shared::DeleteGameComponent, type: :component do
-  let(:game) { build_stubbed(:game, name: "Curse of Strahd") }
+  let(:game_model) { build_stubbed(:game, name: "Curse of Strahd") }
+  let(:game) { GamePresenter.new(game_model, policy: instance_double(GamePolicy)) }
   subject(:component) { described_class.new(game: game) }
 
   describe "helper methods" do
@@ -40,7 +41,7 @@ RSpec.describe Shared::DeleteGameComponent, type: :component do
     it "renders the destructive submit disabled, targeting the delete route" do
       submit = page.find("button[data-game-delete-target='submit']", visible: :all)
       expect(submit).to be_disabled
-      form = page.find("form[action='/games/#{game.id}']", visible: :all)
+      form = page.find("form[action='/games/#{game_model.id}']", visible: :all)
       expect(form).to have_css("input[name='_method'][value='delete']", visible: :all)
     end
   end

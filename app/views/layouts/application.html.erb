@@ -11,7 +11,7 @@
   <body>
     <div data-controller="sidebar feedback" data-action="keydown@window->sidebar#closeOnEscape">
       <% if user_signed_in? %>
-        <%= render Shared::NavShellComponent.new(current_user: current_user, active_game_id: content_for(:active_game_id).presence&.to_i) %>
+        <%= render Shared::NavShellComponent.new(current_user: UserPresenter.new(current_user), active_game_id: content_for(:active_game_id).presence&.to_i) %>
       <% end %>
 
       <!-- Main -->

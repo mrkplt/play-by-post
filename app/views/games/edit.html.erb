@@ -1,43 +1,33 @@
-<% content_for :active_game_id, @game.id %>
+<% content_for :active_game_id, @game_presenter.id %>
 
 <%= render Shared::MobileFrameComponent.new do |frame| %>
   <% frame.with_header do %>
     <%= render Shared::HeaderComponent.new(
           title: "Edit Game",
-          breadcrumbs: Shared::BreadcrumbsComponent.new(game: @game)) %>
+          breadcrumbs: Shared::BreadcrumbsComponent.new(game_presenter: @game_presenter)) %>
   <% end %>
 
   <%= render Ui::SectionLabelComponent.new do %>Game Details<% end %>
   <%= render Shared::GameFormComponent.new(
-        game: @game, submit_label: "Save Changes", cancel_href: game_path(@game)) %>
+        game: @game_presenter, submit_label: "Save Changes", cancel_href: game_path(@game_presenter)) %>
 
   <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do %>Post Images<% end %>
   <%= render Ui::CardComponent.new do %>
-    <%= render Ui::SettingsRowComponent.new(
-          label: "Image attachments", sub: "Allow images on posts in this game", last: true) do %>
-      <%= button_to @game.images_disabled? ? "Enable" : "Disable",
-            toggle_images_disabled_game_path(@game), method: :patch,
-            class: "text-[11px] font-bold text-accent bg-transparent border-0 cursor-pointer p-0" %>
-    <% end %>
+    <%= render Shared::ImagesToggleComponent.new(game: @game_presenter) %>
   <% end %>
 
   <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do %>Character Sheets<% end %>
   <%= render Ui::CardComponent.new do %>
-    <%= render Ui::SettingsRowComponent.new(
-          label: "Sheet visibility", sub: "Character sheets shown to all players", last: true) do %>
-      <%= button_to @game.sheets_hidden? ? "Show Character Sheets" : "Hide Character Sheets",
-            toggle_sheets_hidden_game_path(@game), method: :patch,
-            class: "text-[11px] font-bold text-accent bg-transparent border-0 cursor-pointer p-0" %>
-    <% end %>
+    <%= render Shared::SheetsToggleComponent.new(game: @game_presenter) %>
   <% end %>
 
-  <%= render Shared::AiSummariesToggleComponent.new(game: @game) %>
+  <%= render Shared::AiSummariesToggleComponent.new(game: @game_presenter) %>
 
   <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do %>Players<% end %>
   <%= render Ui::CardComponent.new do %>
     <%= render Ui::SettingsRowComponent.new(
           label: "Players & Invitations", sub: "Manage who can play and send invites", last: true) do %>
-      <%= link_to "Manage Players", game_player_management_path(@game),
+      <%= link_to "Manage Players", game_player_management_path(@game_presenter),
             class: "text-[11px] font-bold text-accent no-underline" %>
     <% end %>
   <% end %>

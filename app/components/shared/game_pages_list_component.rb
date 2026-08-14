@@ -13,17 +13,17 @@ class Shared::GamePagesListComponent < ApplicationComponent
 
   EMPTY_TEXT = T.let("No pages yet.", String)
 
-  sig { params(game: Game, pages: T::Array[Page], can_manage: T::Boolean).void }
+  sig { params(game: GamePresenter, pages: T::Array[PagePresenter], can_manage: T::Boolean).void }
   def initialize(game:, pages:, can_manage:)
     @game = game
     @pages = pages
     @can_manage = can_manage
   end
 
-  sig { returns(Game) }
+  sig { returns(GamePresenter) }
   attr_reader :game
 
-  sig { returns(T::Array[Page]) }
+  sig { returns(T::Array[PagePresenter]) }
   attr_reader :pages
 
   sig { returns(T::Boolean) }
@@ -41,20 +41,18 @@ class Shared::GamePagesListComponent < ApplicationComponent
     pages.map { |page| row_for(page) }
   end
 
-  sig { params(page: Page).returns(Shared::ListEntryComponent::Row) }
+  sig { params(page: PagePresenter).returns(Shared::ListEntryComponent::Row) }
   def row_for(page)
-    {
-      title: page.title.to_s,
-      href: helpers.game_page_path(game, page),
-      controls: row_controls(page)
-    }
+    page.list_row_attributes.merge(controls: row_controls(page))
   end
 
   # Only the GM can act on a page, so a player's rows carry no controls at all.
-  sig { params(page: Page).returns(T.nilable(ViewComponent::Base)) }
+  # PageRowActionsComponent takes a PagePresenter, and this list already holds
+  # presenters — so the row is passed straight through with no unwrapping.
+  sig { params(page: PagePresenter).returns(T.nilable(ViewComponent::Base)) }
   def row_controls(page)
     return nil unless can_manage?
 
-    Shared::PageRowActionsComponent.new(game: game, page: page)
+    Shared::PageRowActionsComponent.new(page: page)
   end
 end

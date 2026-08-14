@@ -8,14 +8,11 @@
 class Shared::SceneResolveFormComponent < ApplicationComponent
   extend T::Sig
 
-  sig { params(game: Game, scene: Scene).void }
-  def initialize(game:, scene:)
-    @game = T.let(game, Game)
-    @scene = T.let(scene, Scene)
+  sig { params(resolve_path: String).void }
+  def initialize(resolve_path:)
+    @resolve_path = T.let(resolve_path, String)
   end
 
   sig { returns(String) }
-  def resolve_path
-    helpers.resolve_game_scene_path(@game, @scene)
-  end
+  attr_reader :resolve_path
 end

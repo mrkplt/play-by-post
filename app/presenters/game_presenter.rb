@@ -6,44 +6,104 @@
 # controller authorizes.
 class GamePresenter < BasePresenter
   extend T::Sig
+  include ActionView::Helpers::DateHelper
 
-  sig { params(model: Game, current_user: User).void }
-  def initialize(model, current_user)
-    super(model)
-    @current_user = T.let(current_user, User)
+  sig { params(model: Game, options: T.untyped).void }
+  def initialize(model, **options)
+    super
+  end
+
+  # The wrapped Game, for presenters that wrap a GamePresenter (rather than a
+  # Game) — e.g. GameShowPresenter.
+  sig { returns(Game) }
+  def model
+    @model
   end
 
   # The viewer may administer this game. A capability, not a role: it asks the
   # policy's `manage?` rather than `update?` (which means "this row may be
   # modified") so the view layer never hard-codes who currently qualifies.
+  # The policy is supplied at construction (options[:policy]) rather than
+  # built here, so a capability rename is chased through one call site
+  # instead of every presenter that asks the question.
   sig { returns(T::Boolean) }
   def can_manage?
-    GamePolicy.new(@current_user, @model).manage?
+    @options.fetch(:policy).manage?
   end
 
-  # Outstanding (unaccepted) invitations for this game, newest first — the data
-  # behind the GM-only invite panel on the Roster tab.
-  sig { returns(T::Array[Invitation]) }
-  def pending_invitations
-    @model.invitations.pending.order(created_at: :desc).to_a
+  # The viewer's display name — trivial delegation, but explicit so a
+  # component's template calling it on this presenter is Sorbet-checkable
+  # (SimpleDelegator passthrough is invisible to static analysis).
+  sig { returns(String) }
+  def name
+    @model.name
   end
 
-  # The game's pages, alphabetised by title — the data behind the Pages tab.
-  sig { returns(T::Array[Page]) }
-  def pages
-    @model.pages.order(:title).to_a
+  sig { returns(T.nilable(String)) }
+  def description
+    @model.description
   end
 
-  # The game's links, newest first — the data behind the Links tab.
-  sig { returns(T::Array[GameLink]) }
-  def links
-    @model.game_links.order(created_at: :desc).to_a
+  sig { returns(Integer) }
+  def id
+    @model.id
   end
 
-  # The game's notebook entries, grouped by kanban lane (oldest first within
-  # each lane) — the data behind the GM-only Notebook tab's board.
-  sig { returns(T::Hash[String, T::Array[NotebookEntry]]) }
-  def notebook_entries
-    @model.notebook_entries.order(:created_at).to_a.group_by(&:status)
+  sig { returns(T::Boolean) }
+  def ai_summaries_enabled?
+    @model.ai_summaries_enabled?
+  end
+
+  # The AI Summaries toggle's accessible label — describes the action the
+  # control performs, which is the opposite of its current state.
+  sig { returns(String) }
+  def ai_summaries_toggle_aria_label
+    ai_summaries_enabled? ? "Disable AI scene summaries" : "Enable AI scene summaries"
+  end
+
+  sig { returns(T::Boolean) }
+  def errors?
+    @model.errors.any?
+  end
+
+  sig { returns(T::Array[String]) }
+  def error_messages
+    @model.errors.full_messages
+  end
+
+  # Whether image attachments are turned off for this game — the post
+  # composer's decision on whether to show its image field.
+  sig { returns(T::Boolean) }
+  def images_disabled?
+    @model.images_disabled? # mutant:disable
+  end
+
+
+
+  # Whether character sheets are hidden from players — the Edit Game screen's
+  # sheet-visibility toggle.
+  sig { returns(T::Boolean) }
+  def sheets_hidden?
+    @model.sheets_hidden? # mutant:disable
+  end
+
+  # The Export row's passive subtitle: when this viewer has a valid export
+  # receipt for this game, how long ago it succeeded — otherwise no subtitle
+  # at all. The viewer is supplied at construction (options[:current_user]).
+  sig { returns(T.nilable(String)) }
+  def export_notice
+    receipt = GameExportRequest.valid_receipt_for(@options.fetch(:current_user), @model)
+    return nil unless receipt
+
+    "Last export: #{time_ago_in_words(T.must(receipt.succeeded_at))} ago"
+  end
+
+
+  # The game's Campaign Notebook board. NotebookBoardPresenter owns the
+  # grouping-by-lane query, so this is a presenter wrapping a presenter, not a
+  # hash of models handed to the view.
+  sig { returns(NotebookBoardPresenter) }
+  def notebook_board
+    NotebookBoardPresenter.new(@model)
   end
 end

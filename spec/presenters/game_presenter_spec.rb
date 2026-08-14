@@ -2,68 +2,132 @@ require "rails_helper"
 
 RSpec.describe GamePresenter do
   let(:game) { build_stubbed(:game) }
-  let(:user) { build_stubbed(:user) }
+  let(:policy) { instance_double(GamePolicy, manage?: true) }
+  let(:urls) { double("urls") }
 
-  subject(:presenter) { described_class.new(game, user) }
+  subject(:presenter) { described_class.new(game, policy: policy, urls: urls) }
+
+  describe "#model" do
+    it "returns the wrapped game" do
+      expect(presenter.model).to eq(game)
+    end
+  end
 
   describe "#can_manage?" do
-    it "is true when the viewer may administer the game" do
-      allow(game).to receive(:game_master?).with(user).and_return(true)
+    it "is true when the injected policy allows management" do
+      allow(policy).to receive(:manage?).and_return(true)
       expect(presenter.can_manage?).to be(true)
     end
 
-    it "is false when the viewer may not administer the game" do
-      allow(game).to receive(:game_master?).with(user).and_return(false)
+    it "is false when the injected policy disallows management" do
+      allow(policy).to receive(:manage?).and_return(false)
       expect(presenter.can_manage?).to be(false)
     end
   end
 
-  describe "#pending_invitations" do
-    it "returns the game's pending invitations, newest first" do
-      ordered = [ build_stubbed(:invitation), build_stubbed(:invitation) ]
-      all_rel = double("all invitations")
-      pending_rel = double("pending invitations")
-      ordered_rel = double("ordered invitations")
-      allow(game).to receive(:invitations).and_return(all_rel)
-      allow(all_rel).to receive(:pending).and_return(pending_rel)
-      allow(pending_rel).to receive(:order).with(created_at: :desc).and_return(ordered_rel)
-      allow(ordered_rel).to receive(:to_a).and_return(ordered)
-
-      expect(presenter.pending_invitations).to eq(ordered)
+  describe "#notebook_board" do
+    it "wraps the game in a NotebookBoardPresenter" do
+      expect(presenter.notebook_board).to be_a(NotebookBoardPresenter)
     end
   end
 
-  describe "#pages" do
-    it "returns the game's pages ordered by title" do
-      ordered = [ build_stubbed(:page), build_stubbed(:page) ]
-      all_rel = double("all pages")
-      ordered_rel = double("ordered pages")
-      allow(game).to receive(:pages).and_return(all_rel)
-      allow(all_rel).to receive(:order).with(:title).and_return(ordered_rel)
-      allow(ordered_rel).to receive(:to_a).and_return(ordered)
+  describe "#images_disabled?" do
+    it "is true when the game has images disabled" do
+      allow(game).to receive(:images_disabled?).and_return(true)
+      expect(presenter.images_disabled?).to be(true)
+    end
 
-      expect(presenter.pages).to eq(ordered)
+    it "is false when the game has images enabled" do
+      allow(game).to receive(:images_disabled?).and_return(false)
+      expect(presenter.images_disabled?).to be(false)
     end
   end
 
-  describe "#notebook_entries" do
-    it "returns the game's notebook entries grouped by status, ordered by created_at" do
-      new_entry = build_stubbed(:notebook_entry, status: "new")
-      expand_entry = build_stubbed(:notebook_entry, status: "expand")
-      all_rel = double("all notebook entries")
-      ordered_rel = double("ordered notebook entries")
-      allow(game).to receive(:notebook_entries).and_return(all_rel)
-      allow(all_rel).to receive(:order).with(:created_at).and_return(ordered_rel)
-      allow(ordered_rel).to receive(:to_a).and_return([ new_entry, expand_entry ])
+  describe "#sheets_hidden?" do
+    it "is true when the game has sheets hidden" do
+      allow(game).to receive(:sheets_hidden?).and_return(true)
+      expect(presenter.sheets_hidden?).to be(true)
+    end
 
-      expect(presenter.notebook_entries).to eq(
-        "new" => [ new_entry ],
-        "expand" => [ expand_entry ]
-      )
+    it "is false when the game has sheets visible" do
+      allow(game).to receive(:sheets_hidden?).and_return(false)
+      expect(presenter.sheets_hidden?).to be(false)
+    end
+  end
+
+  describe "#errors?" do
+    it "is false on a clean game" do
+      expect(presenter.errors?).to be(false)
+    end
+
+    it "is true when the game has errors" do
+      game.errors.add(:name, "can't be blank")
+      expect(presenter.errors?).to be(true)
+    end
+  end
+
+  describe "#error_messages" do
+    it "returns the game's full error messages" do
+      game.errors.add(:name, "can't be blank")
+      expect(presenter.error_messages).to include("Name can't be blank")
+    end
+  end
+
+  describe "#ai_summaries_enabled?" do
+    it "delegates to the model" do
+      allow(game).to receive(:ai_summaries_enabled?).and_return(true)
+      expect(presenter.ai_summaries_enabled?).to be(true)
+    end
+  end
+
+  describe "#ai_summaries_toggle_aria_label" do
+    it "describes disabling the toggle when summaries are enabled" do
+      allow(game).to receive(:ai_summaries_enabled?).and_return(true)
+      expect(presenter.ai_summaries_toggle_aria_label).to eq("Disable AI scene summaries")
+    end
+
+    it "describes enabling the toggle when summaries are disabled" do
+      allow(game).to receive(:ai_summaries_enabled?).and_return(false)
+      expect(presenter.ai_summaries_toggle_aria_label).to eq("Enable AI scene summaries")
+    end
+  end
+
+  describe "#id" do
+    it "delegates to the model" do
+      expect(presenter.id).to eq(game.id)
+    end
+  end
+
+
+
+  describe "#description" do
+    it "delegates to the model" do
+      expect(presenter.description).to eq(game.description)
     end
   end
 
   it "delegates model methods to the game" do
     expect(presenter.name).to eq(game.name)
+  end
+
+
+
+  describe "#export_notice", :db do
+    let(:game) { create(:game) }
+
+    it "is nil when the viewer has no valid receipt for this game" do
+      user_record = create(:user)
+      presenter = described_class.new(game, policy: policy, current_user: user_record)
+      expect(presenter.export_notice).to be_nil
+    end
+
+    it "reports how long ago the viewer's receipt for this game succeeded" do
+      user_record = create(:user)
+      receipt = create(:game_export_request, user: user_record, game: game, succeeded_at: 2.hours.ago)
+      receipt.archive.attach(io: StringIO.new("zip"), filename: "e.zip", content_type: "application/zip")
+
+      presenter = described_class.new(game, policy: policy, current_user: user_record)
+      expect(presenter.export_notice).to match(/Last export: .+ ago/)
+    end
   end
 end

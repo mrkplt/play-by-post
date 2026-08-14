@@ -6,7 +6,7 @@
   <%# Display Name %>
   <%= render Ui::SectionLabelComponent.new do %>Display Name<% end %>
   <div class="bg-card border border-card-border rounded-card px-3.5">
-    <%= render Ui::SettingsRowComponent.new(label: @profile.display_name.presence || "Not set", last: true) do %>
+    <%= render Ui::SettingsRowComponent.new(label: @profile_presenter.display_name_or_placeholder, last: true) do %>
       <%= link_to "Edit", edit_profile_path, class: "text-xs font-bold text-accent no-underline" %>
     <% end %>
   </div>
@@ -18,7 +18,7 @@
     <% end %>
     <%= render Ui::SettingsRowComponent.new(label: "Hide OOC by default", sub: "Collapse out-of-character posts", last: true) do %>
       <%= render Ui::ProfileOocToggleComponent.new(
-        hide_ooc: @profile.hide_ooc?,
+        hide_ooc: @profile_presenter.hide_ooc?,
         toggle_url: toggle_hide_ooc_profile_path
       ) %>
     <% end %>
@@ -26,12 +26,12 @@
 
   <%# RSS Feeds %>
   <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do %>RSS Feeds<% end %>
-  <%= render Shared::RssFeedsSectionComponent.new(user: current_user) %>
+  <%= render Shared::RssFeedsSectionComponent.new(rows: @feed_rows) %>
 
   <%# Export %>
   <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do %>Export<% end %>
   <div class="bg-card border border-card-border rounded-card px-3.5">
-    <%= render Ui::SettingsRowComponent.new(label: "All your games", sub: export_all_games_notice(@export_all_receipt), last: true) do %>
+    <%= render Ui::SettingsRowComponent.new(label: "All your games", sub: @user_presenter.export_all_games_notice, last: true) do %>
       <%= button_to "Export All Games", export_all_profile_path, method: :post,
             class: "text-xs font-bold text-accent bg-transparent border-0 cursor-pointer p-0" %>
     <% end %>

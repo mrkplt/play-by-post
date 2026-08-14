@@ -1,11 +1,11 @@
-<% content_for :active_game_id, @game.id %>
+<% content_for :active_game_id, @game_presenter.id %>
 
 <%= render Shared::MobileFrameComponent.new do |frame| %>
   <% frame.with_header do %>
     <%= render Shared::HeaderComponent.new(
           title: "New Character",
-          breadcrumbs: Shared::BreadcrumbsComponent.new(game: @game),
-          secondary_nav: Shared::GameNavComponent.new(game: @game, active_tab: :roster, can_manage: policy(@game).manage?, mode: :link)) %>
+          breadcrumbs: Shared::BreadcrumbsComponent.new(game_presenter: @game_presenter),
+          secondary_nav: Shared::GameNavComponent.new(game_presenter: @game_presenter, active_tab: :roster, mode: :link)) %>
   <% end %>
 
   <% frame.with_footer do %>
@@ -14,12 +14,10 @@
         <%= render Ui::ButtonComponent.new(html_options: { type: "submit", form: "new_character_form" }) do %>Create Character<% end %>
       <% end %>
       <% actions.with_cancel do %>
-        <%= render Ui::ButtonComponent.new(variant: :secondary, url: game_path(@game)) do %>Cancel<% end %>
+        <%= render Ui::ButtonComponent.new(variant: :secondary, url: @character_presenter.cancel_href) do %>Cancel<% end %>
       <% end %>
     <% end %>
   <% end %>
 
-  <%= render Shared::CharacterFormComponent.new(
-        game: @game, character: @character, users: @users,
-        can_assign_owner: policy(@character).assign_owner?) %>
+  <%= render Shared::CharacterFormComponent.new(character: @character_presenter, owner_options: @roster_options_presenter.owner_options) %>
 <% end %>

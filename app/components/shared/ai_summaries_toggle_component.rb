@@ -3,9 +3,9 @@
 class Shared::AiSummariesToggleComponent < ApplicationComponent
   extend T::Sig
 
-  sig { params(game: Game).void }
+  sig { params(game: GamePresenter).void }
   def initialize(game:)
-    @game = T.let(game, Game)
+    @game = T.let(game, GamePresenter)
   end
 
   sig { returns(T::Boolean) }

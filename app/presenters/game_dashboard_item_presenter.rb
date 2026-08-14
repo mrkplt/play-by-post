@@ -1,0 +1,70 @@
+# typed: strict
+
+# One row of the games dashboard: a membership plus the derived values
+# Shared::GameCardComponent needs. `can_manage` arrives precomputed
+# (options[:can_manage]) because it is a per-game Pundit answer the
+# controller already holds via `policy(game)` — the presenter never builds
+# a policy itself (R2). The same policy is handed to the wrapped
+# GamePresenter #game returns, so the two never disagree.
+class GameDashboardItemPresenter < BasePresenter
+  extend T::Sig
+
+  sig { params(model: GameMember, options: T.untyped).void }
+  def initialize(model, **options)
+    super
+  end
+
+  sig { returns(GamePresenter) }
+  def game
+    GamePresenter.new(raw_game, policy: @options.fetch(:policy))
+  end
+
+  sig { returns(T::Boolean) }
+  def can_manage?
+    @options.fetch(:can_manage)
+  end
+
+  sig { returns(T::Boolean) }
+  def former?
+    @model.removed?
+  end
+
+  # "Vex Marrowgate +1" — primary character plus a count of the rest, or nil
+  # when the viewer has no character in this game.
+  sig { returns(T.nilable(String)) }
+  def character_label
+    characters = user_characters
+    primary = characters.first
+    return nil if primary.nil?
+
+    label_for(CharacterPresenter.new(primary), extra_count: characters.length - 1)
+  end
+
+  sig { returns(Integer) }
+  def active_scene_count
+    raw_game.scenes.where(resolved_at: nil).count
+  end
+
+  sig { returns(T::Boolean) }
+  def new_activity?
+    @options.fetch(:games_with_new_activity).include?(raw_game.id)
+  end
+
+  private
+
+  sig { params(character: CharacterPresenter, extra_count: Integer).returns(String) }
+  def label_for(character, extra_count:)
+    name = character.name
+    extra_count.positive? ? "#{name} +#{extra_count}" : name
+  end
+
+  sig { returns(Game) }
+  def raw_game
+    @model.game
+  end
+
+  sig { returns(T::Array[Character]) }
+  def user_characters
+    raw_game.characters.active.where(user: @options.fetch(:current_user)).to_a
+  end
+end

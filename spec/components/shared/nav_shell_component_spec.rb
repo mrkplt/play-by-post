@@ -1,9 +1,10 @@
 require "rails_helper"
 
 RSpec.describe Shared::NavShellComponent, type: :component do
-  subject(:component) { described_class.new(current_user: current_user) }
+  subject(:component) { described_class.new(current_user: current_user_presenter) }
 
   let(:current_user) { create(:user, email: "jane@example.com") }
+  let(:current_user_presenter) { UserPresenter.new(current_user) }
 
   before do
     create(:user_profile, user: current_user, display_name: "Jane Doe")
@@ -37,8 +38,8 @@ RSpec.describe Shared::NavShellComponent, type: :component do
   end
 
   it "exposes current_user and active_game_id" do
-    c = described_class.new(current_user: current_user, active_game_id: 7)
-    expect(c.current_user).to eq(current_user)
+    c = described_class.new(current_user: current_user_presenter, active_game_id: 7)
+    expect(c.current_user).to eq(current_user_presenter)
     expect(c.active_game_id).to eq(7)
   end
 end

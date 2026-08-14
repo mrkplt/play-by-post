@@ -1,11 +1,11 @@
-<% content_for :active_game_id, @game.id %>
+<% content_for :active_game_id, game_presenter.id %>
 
 <%= render Shared::MobileFrameComponent.new do |frame| %>
   <% frame.with_header do %>
     <%= render Shared::HeaderComponent.new(
           title: "New Entry",
-          breadcrumbs: Shared::BreadcrumbsComponent.new(game: @game),
-          secondary_nav: Shared::GameNavComponent.new(game: @game, active_tab: :notebook, can_manage: game_presenter.can_manage?, mode: :link)) %>
+          breadcrumbs: Shared::BreadcrumbsComponent.new(game_presenter: game_presenter),
+          secondary_nav: Shared::GameNavComponent.new(game_presenter: game_presenter, active_tab: :notebook, mode: :link)) %>
   <% end %>
 
   <% frame.with_footer do %>
@@ -14,10 +14,10 @@
         <%= render Ui::ButtonComponent.new(html_options: { type: "submit", form: "notebook_entry_new_form_element" }) do %>Create Entry<% end %>
       <% end %>
       <% actions.with_cancel do %>
-        <%= render Ui::ButtonComponent.new(variant: :secondary, url: game_notebook_entries_path(@game)) do %>Cancel<% end %>
+        <%= render Ui::ButtonComponent.new(variant: :secondary, url: game_routes.notebook_board_href) do %>Cancel<% end %>
       <% end %>
     <% end %>
   <% end %>
 
-  <%= render Shared::NotebookFormComponent.new(game: @game, notebook_entry: @notebook_entry) %>
+  <%= render Shared::NotebookFormComponent.new(game: game_presenter, notebook_entry: @entry_presenter) %>
 <% end %>

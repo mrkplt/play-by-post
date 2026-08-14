@@ -17,7 +17,7 @@
     <% memberships.each do |member| %>
       <%= link_to game_path(member.game_id), class: row_classes(member) do %>
         <span class="w-[18px] text-center flex-shrink-0 text-[15px]">
-          <% case status_icon(member) %>
+          <% case member.status_icon %>
           <% when :crown %>
             <%= helpers.icon "crown-03", class: "w-4 h-4 text-accent inline" %>
           <% when :moon %>
@@ -27,7 +27,7 @@
           <% end %>
         </span>
         <span class="<%= name_classes(member) %>">
-          <%= game_name(member) %>
+          <%= member.game_name %>
         </span>
       <% end %>
     <% end %>

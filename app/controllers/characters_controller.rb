@@ -1,7 +1,8 @@
-# typed: true
+# typed: strict
 
 class CharactersController < ApplicationController
   extend T::Sig
+  include CharacterScoped
 
   before_action :set_game
   before_action :require_game_access!
@@ -13,110 +14,99 @@ class CharactersController < ApplicationController
 
   sig { void }
   def new
-    @character = @game.characters.new
-    authorize @character
-    @users = players_for_select
+    character = game.characters.new
+    authorize character
+    assign_presenters(character)
   end
 
   sig { void }
   def create
-    @character = @game.characters.new
-    authorize @character
+    character = game.characters.new
+    authorize character
 
-    if policy(@character).assign_owner?
-      if params[:character][:user_id].blank?
-        @users = players_for_select
-        @character.errors.add(:base, "Please select a player")
-        return render :new, status: :unprocessable_content
-      end
-      owner = User.find(params[:character][:user_id])
+    if CharacterCreation.new(character, policy(character), params).call(current_user)
+      redirect_to game_character_path(game, character), notice: "Character created."
     else
-      owner = current_user
-    end
-
-    @character.assign_attributes(permitted_attributes(@character))
-    @character.user = owner
-
-    if @character.save
-      redirect_to game_character_path(@game, @character), notice: "Character created."
-    else
-      @users = players_for_select
+      assign_presenters(character)
       render :new, status: :unprocessable_content
     end
   end
 
   sig { void }
   def show
-    authorize @character
-    @versions = @character.character_versions.order(created_at: :desc).includes(:edited_by)
-    @character_owner = UserPresenter.new(@character.user)
-    @version_editor_names = @versions.each_with_object({}) { |v, h| h[v.id] = UserPresenter.new(v.edited_by).display_name_or_email }
+    authorize character
+    @versions = T.let(presenter_builder.versions(character), T.nilable(T::Array[CharacterVersionPresenter]))
+    @character_owner = T.let(UserPresenter.new(character.user), T.nilable(UserPresenter))
+    assign_presenters(character)
   end
 
   sig { void }
   def edit
-    authorize @character
+    authorize character
+    assign_presenters(character)
   end
 
   sig { void }
   def archive
-    authorize @character
-    @character.archive!
-    redirect_to game_character_path(@game, @character), notice: "#{@character.name} archived."
+    authorize character
+    character.archive!
+    redirect_to game_character_path(game, character), notice: "#{character.name} archived."
   end
 
   sig { void }
   def restore
-    authorize @character
-    @character.update!(archived_at: nil)
-    redirect_to game_character_path(@game, @character), notice: "#{@character.name} restored."
+    authorize character
+    character.update!(archived_at: nil)
+    redirect_to game_character_path(game, character), notice: "#{character.name} restored."
   end
 
   sig { void }
   def update
-    authorize @character
-    if @character.update(permitted_attributes(@character))
-      redirect_to game_character_path(@game, @character), notice: "Character updated."
+    authorize character
+    if character.update(permitted_attributes(character))
+      redirect_to game_character_path(game, character), notice: "Character updated."
     else
+      assign_presenters(character)
       render :edit, status: :unprocessable_content
     end
   end
 
   private
 
-  sig { void }
-  def set_game
-    @game = Game.find(params[:game_id])
+  # Populates the game/character presenter pair every read/error render needs.
+  sig { params(character: Character).void }
+  def assign_presenters(character)
+    @game_presenter = T.let(presenter_builder.game_presenter, T.nilable(GamePresenter))
+    @character_presenter = T.let(
+      presenter_builder.character_presenter(character, policy(character)), T.nilable(CharacterPresenter)
+    )
+    @roster_options_presenter = T.let(
+      GameRosterOptionsPresenter.new(T.must(@game_presenter)), T.nilable(GameRosterOptionsPresenter)
+    )
   end
 
-  sig { void }
-  def set_character
-    @character = @game.characters.find(params[:id])
-  end
-
-  sig { returns(T::Array[User]) }
-  def players_for_select
-    @game.active_members.where(role: "player").includes(:user).map(&:user)
+  sig { returns(CharacterPresenterBuilder) }
+  def presenter_builder
+    CharacterPresenterBuilder.new(game, policy(game), urls: self)
   end
 
   sig { void }
   def require_game_access!
-    redirect_to root_path, alert: "You do not have access to this game." unless policy(@game).view?
+    redirect_to root_path, alert: "You do not have access to this game." unless policy(game).view?
   end
 
-  # The hidden-sheet gate: a hidden sheet is visible only to its owner or the GM.
   sig { void }
   def require_visible!
-    redirect_to game_path(@game), alert: "That character sheet is hidden." unless policy(@character).visible?
+    redirect_to game_path(game), alert: "That character sheet is hidden." unless policy(character).visible?
   end
 
   sig { void }
   def require_edit_access!
-    redirect_to game_character_path(@game, @character), alert: "You cannot edit this character." unless policy(@character).update?
+    redirect_to game_character_path(game, character), alert: "You cannot edit this character." unless policy(character).update?
   end
 
   sig { void }
   def require_active_member_for_write!
-    require_active_member!(@game)
+    require_active_member!(game)
   end
 end

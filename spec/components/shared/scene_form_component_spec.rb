@@ -5,12 +5,14 @@ RSpec.describe Shared::SceneFormComponent, type: :component do
   let(:scene) { game.scenes.new }
   let(:user) { build_stubbed(:user, :with_profile) }
   let(:character) { build_stubbed(:character, name: "Seraphina Vex", user: user) }
+  let(:game_presenter) { GamePresenter.new(game, policy: nil) }
+  let(:scene_presenter) { ScenePresenter.new(scene) }
 
   def build_component(**overrides)
     described_class.new(
       **{
-        game: game,
-        scene: scene,
+        game: game_presenter,
+        scene: scene_presenter,
         players_with_characters: [],
         parent_options: [],
         quick: false,
@@ -80,7 +82,7 @@ RSpec.describe Shared::SceneFormComponent, type: :component do
     subject(:render_full) do
       render_inline(build_component(
         quick: false,
-        players_with_characters: [ [ UserPresenter.new(user), [ character ] ] ],
+        players_with_characters: [ ScenePlayerPresenter.new(user, characters: [ character ]) ],
         parent_options: [ [ "The Tavern", 7 ] ],
         selected_character_ids: [ character.id.to_s ]
       ))
@@ -104,7 +106,7 @@ RSpec.describe Shared::SceneFormComponent, type: :component do
 
     it "shows a hint for players with no active characters" do
       render_inline(build_component(
-        players_with_characters: [ [ UserPresenter.new(user), [] ] ]
+        players_with_characters: [ ScenePlayerPresenter.new(user, characters: []) ]
       ))
       expect(page).to have_text("No active characters")
     end

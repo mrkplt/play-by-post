@@ -8,16 +8,17 @@ class Shared::PageRowActionsComponent < ApplicationComponent
 
   CONFIRM = T.let("Delete this page? This cannot be undone.", String)
 
-  sig { params(game: Game, page: Page).void }
-  def initialize(game:, page:)
-    @game = game
-    @page = page
+  sig { params(page: PagePresenter).void }
+  def initialize(page:)
+    @page = T.let(page, PagePresenter)
   end
 
   sig { returns(Game) }
-  attr_reader :game
+  def game
+    page.game
+  end
 
-  sig { returns(Page) }
+  sig { returns(PagePresenter) }
   attr_reader :page
 
   sig { returns(String) }

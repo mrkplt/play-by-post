@@ -4,10 +4,11 @@ RSpec.describe Shared::SceneSummaryEntryComponent, type: :component do
   let(:game) { build_stubbed(:game) }
   let(:scene) { build_stubbed(:scene, game: game, title: "The Cavern", resolved_at: Time.zone.parse("2026-03-10")) }
   let(:summary) { build_stubbed(:scene_summary, scene: scene, body: "A **brave** expedition.") }
-  let(:presenter) { SceneSummaryPresenter.new(summary) }
+  let(:urls) { double("urls", game_scene_path: "/games/1/scenes/2") }
+  let(:presenter) { SceneSummaryPresenter.new(summary, game: game, urls: urls) }
 
   def rendered_component
-    render_inline(described_class.new(summary: presenter, game: game))
+    render_inline(described_class.new(summary: presenter))
     page
   end
 
@@ -31,7 +32,7 @@ RSpec.describe Shared::SceneSummaryEntryComponent, type: :component do
     let(:scene) { build_stubbed(:scene, game: game, title: "Unresolved", resolved_at: nil) }
 
     it "formatted_resolved_at returns nil" do
-      component = described_class.new(summary: presenter, game: game)
+      component = described_class.new(summary: presenter)
       expect(component.formatted_resolved_at).to be_nil
     end
   end

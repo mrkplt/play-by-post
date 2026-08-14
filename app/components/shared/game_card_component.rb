@@ -10,7 +10,7 @@ class Shared::GameCardComponent < ApplicationComponent
 
   sig do
     params(
-      game: Game,
+      game: GamePresenter,
       can_manage: T::Boolean,
       former: T::Boolean,
       character_label: T.nilable(String),
@@ -27,8 +27,13 @@ class Shared::GameCardComponent < ApplicationComponent
     @new_activity = new_activity
   end
 
-  sig { returns(Game) }
+  sig { returns(GamePresenter) }
   attr_reader :game
+
+  sig { returns(String) }
+  def game_path
+    helpers.game_path(game)
+  end
 
   sig { returns(T::Boolean) }
   def show_crown?

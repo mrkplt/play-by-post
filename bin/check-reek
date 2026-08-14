@@ -8,8 +8,8 @@
 # LongParameterList, ...) that the bespoke bin/check-* guards don't cover. There
 # are ~270 pre-existing warnings across the tree, so this is progressive by
 # design — grandfathered smells stay, but a changed file's count can only go
-# down. New files must land at zero. A separate Fizzy card tracks driving the
-# backlog down and, eventually, tightening the ratchet.
+# down. New files must land at zero. The backlog is meant to be driven down and,
+# eventually, the ratchet tightened.
 #
 # What reek checks and which detectors are on/off is configured in .reek.yml
 # (detectors that fight this project's own conventions — UtilityFunction vs the

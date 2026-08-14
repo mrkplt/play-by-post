@@ -2,10 +2,42 @@
 
 class UserPresenter < BasePresenter
   extend T::Sig
+  include ActionView::Helpers::DateHelper
 
   sig { returns(String) }
   def display_name_or_email
     @model.display_name || @model.email.split("@").first
+  end
+
+  # The greeting name for an email: display name when set, otherwise the full
+  # email address. Distinct from #display_name_or_email, which falls back to
+  # the local part only — fine for a compact UI chip, wrong in prose.
+  sig { returns(String) }
+  def display_name_or_full_email
+    @model.display_name.presence || @model.email
+  end
+
+  sig { returns(T.nilable(Integer)) }
+  def id = @model.id
+
+  # This user as a `[label, value]` pair for an owner/player select — the
+  # form's display name (falling back to the full email, unlike
+  # #display_name_or_email's local-part-only fallback used for compact
+  # display elsewhere) paired with the user's id.
+  sig { returns([ String, Integer ]) }
+  def select_option
+    [ @model.display_name || @model.email, T.must(id) ]
+  end
+
+  # The "Export All Games" row's subtitle: the last-export notice when this
+  # user has a valid all-games receipt, otherwise generic delivery/expiry
+  # copy. Mirrors GamePresenter#export_notice for the single-game case.
+  sig { returns(String) }
+  def export_all_games_notice
+    receipt = GameExportRequest.valid_receipt_for(@model, nil)
+    return "Last export: #{time_ago_in_words(T.must(receipt.succeeded_at))} ago" if receipt
+
+    "You'll receive an email with a download link within a few minutes; the link expires after 7 days."
   end
 
   sig { params(limit: T.nilable(Integer)).returns(ActiveRecord::Relation) }
@@ -33,5 +65,30 @@ class UserPresenter < BasePresenter
       .where(game_id: Game.all)
       .includes(:game)
       .sort_by { |m| m.game&.name.to_s }
+  end
+
+  # The profile's RSS Feeds section, one row per non-banned game membership
+  # paired with this user's rss-scoped token for that game (if any). `urls:`
+  # (the constructing controller) is threaded onto each row so it can build
+  # its own feed/revoke/create routes without the component reaching for one.
+  sig { params(urls: T.untyped).returns(T::Array[GameFeedRowPresenter]) }
+  def feed_rows(urls:)
+    tokens_by_game_id = @model.api_tokens.where(scope: "rss").index_by(&:game_id)
+    feed_memberships.filter_map do |membership|
+      game = membership.game
+      next unless game
+
+      GameFeedRowPresenter.new(game, token: tokens_by_game_id[game.id], urls: urls)
+    end
+  end
+
+  private
+
+  sig { returns(T.untyped) }
+  def feed_memberships
+    @model.game_members
+      .where.not(status: "banned")
+      .includes(:game)
+      .order("games.name")
   end
 end

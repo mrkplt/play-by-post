@@ -5,16 +5,16 @@
 class Shared::ChildSceneListComponent < ApplicationComponent
   extend T::Sig
 
-  sig { params(game: Game, child_scenes: T::Array[Scene]).void }
+  sig { params(game: GamePresenter, child_scenes: T::Array[ScenePresenter]).void }
   def initialize(game:, child_scenes:)
-    @game = T.let(game, Game)
-    @child_scenes = T.let(child_scenes, T::Array[Scene])
+    @game = T.let(game, GamePresenter)
+    @child_scenes = T.let(child_scenes, T::Array[ScenePresenter])
   end
 
-  sig { returns(Game) }
+  sig { returns(GamePresenter) }
   attr_reader :game
 
-  sig { returns(T::Array[Scene]) }
+  sig { returns(T::Array[ScenePresenter]) }
   attr_reader :child_scenes
 
   sig { returns(T::Boolean) }
