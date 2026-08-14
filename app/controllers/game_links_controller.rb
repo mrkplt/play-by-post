@@ -20,6 +20,7 @@ class GameLinksController < ApplicationController
   def new
     @game_link = @game.game_links.new
     authorize @game_link
+    @game_presenter = GamePresenter.new(@game, policy: policy(@game))
   end
 
   sig { void }
@@ -30,6 +31,7 @@ class GameLinksController < ApplicationController
     if @game_link.save
       redirect_to game_game_links_path(@game), notice: "Link added."
     else
+      @game_presenter = GamePresenter.new(@game, policy: policy(@game))
       render :new, status: :unprocessable_content
     end
   end
@@ -37,6 +39,7 @@ class GameLinksController < ApplicationController
   sig { void }
   def edit
     authorize @game_link
+    @game_presenter = GamePresenter.new(@game, policy: policy(@game))
   end
 
   sig { void }
@@ -46,6 +49,7 @@ class GameLinksController < ApplicationController
     if @game_link.update(game_link_params)
       redirect_to game_game_links_path(@game), notice: "Link updated."
     else
+      @game_presenter = GamePresenter.new(@game, policy: policy(@game))
       render :edit, status: :unprocessable_content
     end
   end

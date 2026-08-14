@@ -24,6 +24,7 @@ class SceneParticipantsController < ApplicationController
 
     @players_with_characters = players.map { |user| [ UserPresenter.new(user), characters_by_user.fetch(user.id, []) ] }
     @current_character_ids = @scene.scene_participants.where.not(character_id: nil).pluck(:character_id)
+    @game_presenter = GamePresenter.new(@game, policy: policy(@game))
   end
 
   sig { void }

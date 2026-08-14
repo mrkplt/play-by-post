@@ -135,6 +135,7 @@ class GamesController < ApplicationController
   sig { void }
   def edit
     authorize @game
+    @game_presenter = GamePresenter.new(@game, policy: policy(@game))
   end
 
   sig { void }
@@ -143,6 +144,7 @@ class GamesController < ApplicationController
     if @game.update(game_params)
       redirect_to game_player_management_path(@game), notice: "Game updated."
     else
+      @game_presenter = GamePresenter.new(@game, policy: policy(@game))
       render :edit, status: :unprocessable_content
     end
   end

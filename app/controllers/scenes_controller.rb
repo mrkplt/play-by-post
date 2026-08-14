@@ -27,6 +27,7 @@ class ScenesController < ApplicationController
     @scene = @game.scenes.new
     authorize @scene
     @scene_form = build_scene_form
+    @game_presenter = GamePresenter.new(@game, policy: policy(@game))
   end
 
   sig { void }
@@ -42,6 +43,7 @@ class ScenesController < ApplicationController
       redirect_to game_scene_path(@game, @scene), notice: "Scene created."
     else
       @scene_form = build_scene_form
+      @game_presenter = GamePresenter.new(@game, policy: policy(@game))
       render :new, status: :unprocessable_content
     end
   end
@@ -224,14 +226,15 @@ class ScenesController < ApplicationController
     (active + recent_resolved)
   end
 
+  sig { params(scene: Scene, scene_index: T::Hash[Integer, Scene], all_scenes: T::Array[Scene]).returns(Shared::TreeNodeComponent::Node) }
   def build_tree(scene, scene_index, all_scenes)
     children = all_scenes
       .select { |s| s.parent_scene_id == scene.id }
       .sort_by(&:created_at)
-    {
-      scene: scene,
+    Shared::TreeNodeComponent::Node.new(
+      scene_presenter: ScenePresenter.new(scene),
       children: children.map { |c| build_tree(c, scene_index, all_scenes) }
-    }
+    )
   end
 
   sig { returns(ActionController::Parameters) }

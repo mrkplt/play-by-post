@@ -2,10 +2,11 @@ require "rails_helper"
 
 RSpec.describe Shared::TreeNodeComponent, type: :component do
   let(:game)  { build_stubbed(:game) }
+  let(:game_presenter) { GamePresenter.new(game, policy: instance_double(GamePolicy, manage?: false)) }
   let(:scene) { build_stubbed(:scene, game: game, title: "The Keep", created_at: Time.zone.parse("2024-04-01 10:00:00")) }
-  let(:node)  { { scene: scene, children: [] } }
+  let(:node)  { Shared::TreeNodeComponent::Node.new(scene_presenter: ScenePresenter.new(scene), children: []) }
 
-  subject(:component) { described_class.new(node: node, game: game, depth: 0) }
+  subject(:component) { described_class.new(node: node, game_presenter: game_presenter, depth: 0) }
 
   def rendered_component
     render_inline(component)
@@ -45,7 +46,7 @@ RSpec.describe Shared::TreeNodeComponent, type: :component do
   end
 
   context "at depth > 0" do
-    subject(:component) { described_class.new(node: node, game: game, depth: 1) }
+    subject(:component) { described_class.new(node: node, game_presenter: game_presenter, depth: 1) }
 
     it "renders the tree connector" do
       expect(rendered_component).to have_text("└─")
@@ -58,7 +59,12 @@ RSpec.describe Shared::TreeNodeComponent, type: :component do
 
   context "with children" do
     let(:child_scene) { build_stubbed(:scene, game: game, title: "The Cellar", created_at: Time.current) }
-    let(:node) { { scene: scene, children: [ { scene: child_scene, children: [] } ] } }
+    let(:node) do
+      Shared::TreeNodeComponent::Node.new(
+        scene_presenter: ScenePresenter.new(scene),
+        children: [ Shared::TreeNodeComponent::Node.new(scene_presenter: ScenePresenter.new(child_scene), children: []) ]
+      )
+    end
 
     it "renders the child scene title" do
       expect(rendered_component).to have_css("a", text: "The Cellar")

@@ -1,15 +1,28 @@
 # typed: strict
 
-# View model for a game page (detail, form, and list-row screens). The GM-only
-# manage capability is asked of a policy supplied at construction
-# (options[:policy]) rather than looked up in the view, so a capability rename
-# is chased through one construction point instead of every page template.
+# View model for a game page (detail, form, and list-row screens). Both
+# capabilities are asked of policies supplied at construction rather than
+# looked up in the view, so a capability rename is chased through one
+# construction point instead of every page template:
+#
+#   options[:game_policy] — may the viewer administer the game (the game-nav's
+#                           GM-only affordances, present on every page screen)
+#   options[:page_policy] — may the viewer edit/delete this page
 class PagePresenter < BasePresenter
   extend T::Sig
 
+  # The viewer may administer the game this page belongs to — the flag behind
+  # the game-nav's GM-only affordances on every page screen.
+  sig { returns(T::Boolean) }
+  def can_manage_game?
+    @options.fetch(:game_policy).manage?
+  end
+
+  # The viewer may edit/delete this page — Shared::PageDetailComponent's
+  # GM-only affordances.
   sig { returns(T::Boolean) }
   def can_manage?
-    @options.fetch(:policy).manage?
+    @options.fetch(:page_policy).manage?
   end
 
   sig { returns(Game) }

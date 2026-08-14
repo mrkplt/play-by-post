@@ -21,6 +21,7 @@ class SceneSummariesController < ApplicationController
   def new
     @summary = @scene.build_scene_summary
     authorize @summary
+    @game_presenter = GamePresenter.new(@game, policy: policy(@game))
     @summary_presenter = build_summary_presenter
   end
 
@@ -37,6 +38,7 @@ class SceneSummariesController < ApplicationController
     if @summary.save
       redirect_to game_scene_path(@game, @scene), notice: "Summary saved."
     else
+      @game_presenter = GamePresenter.new(@game, policy: policy(@game))
       @summary_presenter = build_summary_presenter
       render :new, status: :unprocessable_content
     end
@@ -45,6 +47,7 @@ class SceneSummariesController < ApplicationController
   sig { void }
   def edit
     authorize @summary
+    @game_presenter = GamePresenter.new(@game, policy: policy(@game))
     @summary_presenter = build_summary_presenter
   end
 
@@ -57,6 +60,7 @@ class SceneSummariesController < ApplicationController
     if @summary.update(attrs)
       redirect_to game_scene_path(@game, @scene), notice: "Summary updated."
     else
+      @game_presenter = GamePresenter.new(@game, policy: policy(@game))
       @summary_presenter = build_summary_presenter
       render :edit, status: :unprocessable_content
     end

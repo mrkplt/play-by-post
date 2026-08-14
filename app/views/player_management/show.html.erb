@@ -4,7 +4,7 @@
   <% frame.with_header do %>
     <%= render Shared::HeaderComponent.new(
           title: "Game Settings",
-          breadcrumbs: Shared::BreadcrumbsComponent.new(game: @game)) %>
+          breadcrumbs: Shared::BreadcrumbsComponent.new(game_presenter: @game_presenter)) %>
   <% end %>
 
   <% if @game_presenter.can_manage? %>

@@ -15,6 +15,8 @@ class CharactersController < ApplicationController
   def new
     @character = @game.characters.new
     authorize @character
+    @users = players_for_select
+    @game_presenter = GamePresenter.new(@game, policy: policy(@game))
     @character_presenter = character_presenter
   end
 
@@ -26,6 +28,7 @@ class CharactersController < ApplicationController
     if policy(@character).assign_owner?
       if params[:character][:user_id].blank?
         @character.errors.add(:base, "Please select a player")
+        @game_presenter = GamePresenter.new(@game, policy: policy(@game))
         @character_presenter = character_presenter
         return render :new, status: :unprocessable_content
       end
@@ -40,6 +43,8 @@ class CharactersController < ApplicationController
     if @character.save
       redirect_to game_character_path(@game, @character), notice: "Character created."
     else
+      @users = players_for_select
+      @game_presenter = GamePresenter.new(@game, policy: policy(@game))
       @character_presenter = character_presenter
       render :new, status: :unprocessable_content
     end
@@ -52,12 +57,14 @@ class CharactersController < ApplicationController
       .map { |version| CharacterVersionPresenter.new(version) }
     @character_owner = UserPresenter.new(@character.user)
     @character_presenter = character_presenter
+    @game_presenter = GamePresenter.new(@game, policy: policy(@game))
   end
 
   sig { void }
   def edit
     authorize @character
     @character_presenter = character_presenter
+    @game_presenter = GamePresenter.new(@game, policy: policy(@game))
   end
 
   sig { void }
@@ -81,6 +88,7 @@ class CharactersController < ApplicationController
       redirect_to game_character_path(@game, @character), notice: "Character updated."
     else
       @character_presenter = character_presenter
+      @game_presenter = GamePresenter.new(@game, policy: policy(@game))
       render :edit, status: :unprocessable_content
     end
   end
