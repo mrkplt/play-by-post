@@ -6,7 +6,7 @@ require "rails_helper"
 # markdown "intrinsically allows fallback to arbitrary HTML," and this is where
 # that fallback is closed (filter_html + a tag/attribute allowlist that also
 # drops unsafe URI schemes). See context/DESIGN_TOKEN_COMPILATION.md's sibling
-# invariant in CLAUDE.md: all prose renders through MarkdownRenderer; never
+# invariant in docs/COMPONENT_CONVENTIONS.md: all prose renders through MarkdownRenderer; never
 # `raw`/`html_safe` user input.
 RSpec.describe MarkdownRenderer do
   def render(text)

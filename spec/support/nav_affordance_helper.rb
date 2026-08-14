@@ -3,8 +3,8 @@
 # request specs — parses response.body with Capybara's node-less HTML parser
 # so specs can assert with CSS instead of raw string matching.
 #
-# These affordances are size-independent invariants (see CLAUDE.md Path 1/2/3
-# rules for responsive testing) — assert them once per converted page at the
+# These affordances are size-independent invariants (see docs/TESTING_NOTES.md
+# Path 1/2/3 rules for responsive testing) — assert them once per converted page at the
 # request-spec level, not per-viewport.
 module NavAffordanceHelper
   def page_node
