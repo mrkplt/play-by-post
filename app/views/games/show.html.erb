@@ -139,7 +139,7 @@
     <%# ===== Notebook panel (GM only) ===== %>
     <% if @game_presenter.can_manage? %>
       <section data-game-tabs-target="panel" data-panel="notebook" hidden>
-        <%= render Shared::NotebookBoardComponent.new(game: @game, entries_by_status: @game_presenter.notebook_entries) %>
+        <%= render Shared::NotebookBoardComponent.new(game: @game_presenter, board: @game_presenter.notebook_board) %>
       </section>
     <% end %>
   <% end %>

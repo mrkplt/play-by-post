@@ -10,6 +10,11 @@
 # are not CRUD name the capability they need (`manage?`) rather than borrowing
 # `update?`, which asks whether the row may be modified — a different question
 # that merely has the same answer while GM and owner are the same person.
+#
+# `@notebook_entry` stays the raw AR record throughout — Pundit's `authorize`
+# and the update/destroy calls need it — and `@entry_presenter` is what the
+# views actually render, built fresh after every mutation so it reflects the
+# entry's current state (including validation errors on a failed save).
 class NotebookEntriesController < ApplicationController
   extend T::Sig
 
@@ -22,13 +27,14 @@ class NotebookEntriesController < ApplicationController
   sig { void }
   def index
     authorize @game.notebook_entries.new, :index?
-    @entries = entries_for(@game)
+    @notebook_board = game_presenter.notebook_board
   end
 
   sig { void }
   def new
     @notebook_entry = @game.notebook_entries.new
     authorize @notebook_entry
+    @entry_presenter = NotebookEntryPresenter.new(@notebook_entry)
   end
 
   sig { void }
@@ -39,6 +45,7 @@ class NotebookEntriesController < ApplicationController
     if @notebook_entry.save
       redirect_to game_notebook_entries_path(@game), notice: "Entry created."
     else
+      @entry_presenter = NotebookEntryPresenter.new(@notebook_entry)
       respond_to do |format|
         format.turbo_stream { render :create_failed }
         format.html { render :new, status: :unprocessable_content }
@@ -49,6 +56,7 @@ class NotebookEntriesController < ApplicationController
   sig { void }
   def edit
     authorize @notebook_entry
+    @entry_presenter = NotebookEntryPresenter.new(@notebook_entry)
   end
 
   sig { void }
@@ -58,6 +66,7 @@ class NotebookEntriesController < ApplicationController
     if @notebook_entry.update(notebook_entry_params)
       redirect_to edit_game_notebook_entry_path(@game, @notebook_entry), notice: "Entry updated."
     else
+      @entry_presenter = NotebookEntryPresenter.new(@notebook_entry)
       render :edit, status: :unprocessable_content
     end
   end
@@ -85,6 +94,7 @@ class NotebookEntriesController < ApplicationController
     if lane_move.standalone?
       redirect_to edit_game_notebook_entry_path(@game, @notebook_entry), notice: "Entry moved."
     else
+      @entry_presenter = NotebookEntryPresenter.new(@notebook_entry)
       render :move, formats: :turbo_stream
     end
   end
@@ -121,11 +131,6 @@ class NotebookEntriesController < ApplicationController
   sig { returns(GamePresenter) }
   def game_presenter
     @game_presenter ||= T.let(GamePresenter.new(@game, policy: policy(@game)), T.nilable(GamePresenter))
-  end
-
-  sig { params(game: Game).returns(T::Array[NotebookEntry]) }
-  def entries_for(game)
-    game.notebook_entries.order(:created_at).to_a
   end
 
   sig { returns(ActionController::Parameters) }

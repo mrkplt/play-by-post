@@ -3,7 +3,7 @@
 
   <div class="flex items-center gap-3 ml-auto">
     <% if promoted? %>
-      <%= link_to promoted_label, game_page_path(game, promoted_page),
+      <%= link_to promoted_label, promoted_page_path,
             class: "text-xs font-semibold text-accent no-underline" %>
     <% else %>
       <%= button_to "Promote", promote_game_notebook_entry_path(game, notebook_entry), method: :post,

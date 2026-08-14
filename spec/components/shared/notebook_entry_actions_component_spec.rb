@@ -2,7 +2,10 @@ require "rails_helper"
 
 RSpec.describe Shared::NotebookEntryActionsComponent, type: :component do
   let(:game) { build_stubbed(:game) }
-  let(:entry) { build_stubbed(:notebook_entry, game: game, title: "Idea", slug: "abc123def456ghij") }
+  let(:game_presenter) { GamePresenter.new(game, policy: instance_double(GamePolicy)) }
+  let(:entry) do
+    NotebookEntryPresenter.new(build_stubbed(:notebook_entry, game: game, title: "Idea", slug: "abc123def456ghij"))
+  end
 
   def routes
     Rails.application.routes.url_helpers
@@ -10,12 +13,13 @@ RSpec.describe Shared::NotebookEntryActionsComponent, type: :component do
 
   def promoted_entry
     promoted_page = build_stubbed(:page, game: game, title: "The Sunken Temple", slug: "temple0000000000")
-    build_stubbed(:notebook_entry, game: game, title: "Idea", slug: "promotedslug1234",
-                  promoted_page: promoted_page)
+    NotebookEntryPresenter.new(
+      build_stubbed(:notebook_entry, game: game, title: "Idea", slug: "promotedslug1234", promoted_page: promoted_page)
+    )
   end
 
   def build_component(**overrides)
-    described_class.new(**{ game: game, notebook_entry: entry }.merge(overrides))
+    described_class.new(**{ game: game_presenter, notebook_entry: entry }.merge(overrides))
   end
 
   describe "rendering" do
@@ -63,7 +67,7 @@ RSpec.describe Shared::NotebookEntryActionsComponent, type: :component do
       expect(page).to have_no_button("Promote")
       expect(page).to have_link(
         "Promoted to: The Sunken Temple",
-        href: routes.game_page_path(game, T.must(promoted.promoted_page))
+        href: routes.game_page_path(game, "temple0000000000")
       )
     end
 

@@ -35,7 +35,7 @@ class Shared::NotebookLaneSelectComponent < ApplicationComponent
   # never run. Discriminating on a parameter is the only reliable signal.
   RESPONSE_MODES = T.let(%i[board standalone].freeze, T::Array[Symbol])
 
-  sig { params(game: Game, notebook_entry: NotebookEntry, mode: Symbol).void }
+  sig { params(game: GamePresenter, notebook_entry: NotebookEntryPresenter, mode: Symbol).void }
   def initialize(game:, notebook_entry:, mode: :board)
     @game = game
     @notebook_entry = notebook_entry
@@ -45,10 +45,10 @@ class Shared::NotebookLaneSelectComponent < ApplicationComponent
   sig { returns(Symbol) }
   attr_reader :mode
 
-  sig { returns(Game) }
+  sig { returns(GamePresenter) }
   attr_reader :game
 
-  sig { returns(NotebookEntry) }
+  sig { returns(NotebookEntryPresenter) }
   attr_reader :notebook_entry
 
   sig { returns(T.nilable(String)) }

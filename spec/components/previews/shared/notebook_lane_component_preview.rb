@@ -24,13 +24,13 @@ class Shared::NotebookLaneComponentPreview < ViewComponent::Preview
 
   def lane(status: "new", entries: [], **options)
     Shared::NotebookLaneComponent.new(
-      game: Game.new(id: 1, name: "Sample Game"),
+      game: GamePresenter.new(Game.new(id: 1, name: "Sample Game"), policy: nil),
       status: status,
       entries: entries,      **options
     )
   end
 
   def sample_entry(id, title)
-    NotebookEntry.new(id: id, title: title, slug: "samplenotebook0#{id}", status: "new")
+    NotebookEntryPresenter.new(NotebookEntry.new(id: id, title: title, slug: "samplenotebook0#{id}", status: "new"))
   end
 end

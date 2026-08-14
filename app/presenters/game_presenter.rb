@@ -42,10 +42,11 @@ class GamePresenter < BasePresenter
     @model.game_links.order(created_at: :desc).to_a
   end
 
-  # The game's notebook entries, grouped by kanban lane (oldest first within
-  # each lane) — the data behind the GM-only Notebook tab's board.
-  sig { returns(T::Hash[String, T::Array[NotebookEntry]]) }
-  def notebook_entries
-    @model.notebook_entries.order(:created_at).to_a.group_by(&:status)
+  # The game's Campaign Notebook board — the data behind the GM-only Notebook
+  # tab. NotebookBoardPresenter owns the grouping-by-lane query, so this is a
+  # presenter wrapping a presenter, not a hash of models handed to the view.
+  sig { returns(NotebookBoardPresenter) }
+  def notebook_board
+    NotebookBoardPresenter.new(@model)
   end
 end

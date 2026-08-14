@@ -12,16 +12,16 @@ class Shared::NotebookEntryActionsComponent < ApplicationComponent
 
   CONFIRM = T.let("Delete this entry? This cannot be undone.", String)
 
-  sig { params(game: Game, notebook_entry: NotebookEntry).void }
+  sig { params(game: GamePresenter, notebook_entry: NotebookEntryPresenter).void }
   def initialize(game:, notebook_entry:)
     @game = game
     @notebook_entry = notebook_entry
   end
 
-  sig { returns(Game) }
+  sig { returns(GamePresenter) }
   attr_reader :game
 
-  sig { returns(NotebookEntry) }
+  sig { returns(NotebookEntryPresenter) }
   attr_reader :notebook_entry
 
   sig { returns(String) }
@@ -34,14 +34,17 @@ class Shared::NotebookEntryActionsComponent < ApplicationComponent
     notebook_entry.promoted?
   end
 
-  sig { returns(Page) }
-  def promoted_page
-    T.must(notebook_entry.promoted_page)
+  # The page a promoted entry became, resolved to a route — the presenter
+  # exposes the page's title/slug rather than the page model itself, since
+  # there is no PagePresenter for this component to receive instead.
+  sig { returns(String) }
+  def promoted_page_path
+    helpers.game_page_path(game, notebook_entry.promoted_page_slug)
   end
 
   sig { returns(String) }
   def promoted_label
-    "Promoted to: #{promoted_page.title}"
+    "Promoted to: #{notebook_entry.promoted_page_title}"
   end
 
   # No lanes on this screen to swap, so the move submits normally and the
