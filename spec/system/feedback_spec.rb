@@ -198,5 +198,42 @@ RSpec.describe "Feedback", type: :feature do
 
       expect(verified_tokens).to eq([ "token-initial", "token-refreshed" ])
     end
+
+    # If reset fails to take — the CDN script blocked, the widget never
+    # registered — the spent token is still sitting in the input. Waiting merely
+    # for a token to be *present* would accept it and replay it, which is the bug
+    # this all exists to prevent; the wait is for a token that actually changed.
+    it "does not replay the spent token when the widget fails to refresh" do
+      visit root_path
+      expect(page).to have_css("input[name='cf-turnstile-response']", visible: :all)
+
+      # Model a widget that never refreshes: remove the real Cloudflare iframe so
+      # it cannot issue further tokens, leave a spent one in the input, and make
+      # reset a no-op. The give-up window is shortened so the example does not sit
+      # out the real one.
+      page.execute_script(<<~JS)
+        window.turnstile = { reset: function () {} };
+        var wrapper = document.querySelector('[data-controller~="turnstile"]');
+        wrapper.setAttribute("data-turnstile-timeout-value", "1000");
+        wrapper.querySelectorAll("iframe").forEach(function (frame) { frame.remove(); });
+        document.querySelector("input[name='cf-turnstile-response']").value = "token-stuck";
+      JS
+
+      click_button "Send Feedback"
+      fill_in "feedback[body]", with: "First report."
+      within("[data-testid='feedback-modal']") { click_button "Submit" }
+      expect(page).to have_text("Thanks for your feedback!")
+
+      within("[data-testid='feedback-modal']") { click_button "Close" }
+      click_button "Send Feedback"
+      fill_in "feedback[body]", with: "Second report."
+      within("[data-testid='feedback-modal']") { click_button "Submit" }
+
+      # The second submit gives up waiting and discards the spent token rather
+      # than replaying it, so siteverify is asked about a blank one and refuses.
+      expect(page).to have_text("Something went wrong")
+      expect(verified_tokens).to eq([ "token-stuck", "" ])
+      expect(Feedback.count).to eq(1)
+    end
   end
 end
