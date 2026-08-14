@@ -43,11 +43,7 @@ class Shared::GamePagesListComponent < ApplicationComponent
 
   sig { params(page: PagePresenter).returns(Shared::ListEntryComponent::Row) }
   def row_for(page)
-    {
-      title: page.title,
-      href: page.href,
-      controls: row_controls(page)
-    }
+    page.list_row_attributes.merge(controls: row_controls(page))
   end
 
   # Only the GM can act on a page, so a player's rows carry no controls at all.

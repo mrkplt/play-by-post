@@ -17,7 +17,7 @@ class NotebookBoardPresenter < BasePresenter
     @entries_by_status ||= T.let(
       @model.notebook_entries.order(:created_at).to_a
         .group_by(&:status)
-        .transform_values { |entries| entries.map { |entry| NotebookEntryPresenter.new(entry) } },
+        .transform_values { |entries| presenters_for(entries) },
       T.nilable(T::Hash[String, T::Array[NotebookEntryPresenter]])
     )
   end
@@ -25,5 +25,12 @@ class NotebookBoardPresenter < BasePresenter
   sig { params(status: String).returns(T::Array[NotebookEntryPresenter]) }
   def entries_for(status)
     entries_by_status.fetch(status, [])
+  end
+
+  private
+
+  sig { params(entries: T::Array[NotebookEntry]).returns(T::Array[NotebookEntryPresenter]) }
+  def presenters_for(entries)
+    entries.map { |entry| NotebookEntryPresenter.new(entry) }
   end
 end

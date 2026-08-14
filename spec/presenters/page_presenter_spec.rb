@@ -44,6 +44,16 @@ RSpec.describe PagePresenter do
     end
   end
 
+  describe "#list_row_attributes" do
+    it "pairs the page's title with its resolved href" do
+      urls = double(game_page_path: "/games/1/pages/2")
+      row_presenter = described_class.new(page_record, game: game, urls: urls,
+        game_policy: game_policy, page_policy: policy)
+
+      expect(row_presenter.list_row_attributes).to eq(title: "Lore", href: "/games/1/pages/2")
+    end
+  end
+
   describe "#body" do
     it "returns the page's body" do
       expect(presenter.body).to eq("# Heading")

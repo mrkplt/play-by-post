@@ -20,7 +20,7 @@ class GameRosterPresenter < BasePresenter
   sig { returns(T::Array[ScenePresenter]) }
   def active_scenes
     hot_ids = hot_scene_ids
-    raw_active_scenes.map { |s| ScenePresenter.new(s, hot_scene_ids: hot_ids) }
+    raw_active_scenes.map { |scene| ScenePresenter.new(scene, hot_scene_ids: hot_ids) }
   end
 
   # The GM's display name — always shown, crowned, at the top of the "In
@@ -37,14 +37,8 @@ class GameRosterPresenter < BasePresenter
   # participation.
   sig { returns(T::Array[T::Hash[Symbol, String]]) }
   def roster_preview
-    rows = raw_active_scenes.flat_map do |scene|
-      scene.scene_participants.filter_map do |sp|
-        next unless sp.character
-
-        { name: T.must(sp.character).name, scene: scene.title }
-      end
-    end
-    rows.uniq { |r| r[:name] }.first(5)
+    rows = raw_active_scenes.flat_map { |scene| SceneRosterRowsPresenter.new(ScenePresenter.new(scene)).rows }
+    rows.uniq { |row| row[:name] }.first(5)
   end
 
   # Active characters visible to the viewer, one presenter per row, for the
@@ -71,7 +65,7 @@ class GameRosterPresenter < BasePresenter
   def banned_members
     return [] unless @model.can_manage?
 
-    game.game_members.where(status: "banned").includes(:user).to_a.map { |m| BannedMemberPresenter.new(m) }
+    game.game_members.where(status: "banned").includes(:user).to_a.map { |member| BannedMemberPresenter.new(member) }
   end
 
   private
@@ -94,7 +88,7 @@ class GameRosterPresenter < BasePresenter
         .active
         .includes(:parent_scene, :child_scenes, :posts, scene_participants: [ :character, :user ])
         .to_a
-        .sort_by { |s| -s.last_activity_at.to_i },
+        .sort_by { |scene| -scene.last_activity_at.to_i },
       T.nilable(T::Array[Scene])
     )
   end
@@ -106,6 +100,6 @@ class GameRosterPresenter < BasePresenter
     last_login = viewer.user_profile&.last_login_at
     return Set.new unless last_login
 
-    Set.new(raw_active_scenes.select { |s| s.last_activity_at.to_i > last_login.to_i }.map(&:id))
+    Set.new(raw_active_scenes.select { |scene| scene.last_activity_at.to_i > last_login.to_i }.map(&:id))
   end
 end

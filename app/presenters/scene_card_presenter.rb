@@ -26,6 +26,6 @@ class SceneCardPresenter < BasePresenter
   # children.
   sig { params(game: GamePresenter).returns(T::Array[ScenePresenter]) }
   def child_scenes_in(game)
-    @model.model.child_scenes.select { |c| c.game_id == game.id }.map { |c| ScenePresenter.new(c) }
+    @model.model.child_scenes.select { |scene| scene.game_id == game.id }.map { |scene| ScenePresenter.new(scene) }
   end
 end

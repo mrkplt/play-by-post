@@ -46,6 +46,14 @@ class PagePresenter < BasePresenter
     @options.fetch(:urls).game_page_path(@options.fetch(:game), @model)
   end
 
+  # This page's own title/href, pre-paired for the Pages list row — the two
+  # values Shared::GamePagesListComponent needs about the page itself, before
+  # it adds the row's GM-only controls.
+  sig { returns({ title: String, href: String }) }
+  def list_row_attributes
+    { title: title, href: href }
+  end
+
   sig { returns(String) }
   def body
     @model.body.to_s

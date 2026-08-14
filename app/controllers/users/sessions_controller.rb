@@ -14,34 +14,15 @@ class Users::SessionsController < Devise::Passwordless::SessionsController
   # empty resource for the form — with the addition of the presenter.
   sig { void }
   def new
-    self.resource = User.new
-    @sign_in_presenter = T.let(
-      SignInPresenter.new(resource), T.nilable(SignInPresenter)
-    )
+    assign_blank_sign_in_presenter
   end
 
   sig { void }
   def create
     email = (params.dig(:user, :email) || params[:email]).to_s.strip.downcase
+    return reject_blank_email if email.blank?
 
-    if email.blank?
-      flash.now[:alert] = "Please enter an email address."
-      self.resource = User.new
-      @sign_in_presenter = T.let(
-        SignInPresenter.new(resource), T.nilable(SignInPresenter)
-      )
-      return render :new, status: :unprocessable_content
-    end
-
-    self.resource = User.find_or_create_by!(email: email)
-    self.resource.create_user_profile!(display_name: email.split("@").first) unless self.resource.user_profile
-    # remember_me: true so the magic link issues a 30-day remember cookie
-    # (config.remember_for) — the login persists across browser restarts and deploys.
-    resource.send_magic_link(remember_me: true)
-    @sign_in_presenter = T.let(
-      SignInPresenter.new(resource, email_sent: true), T.nilable(SignInPresenter)
-    )
-    render :new
+    send_magic_link_to(email)
   end
 
   private
@@ -51,10 +32,31 @@ class Users::SessionsController < Devise::Passwordless::SessionsController
   sig { void }
   def turnstile_verification_failed
     flash.now[:alert] = "Please complete the verification challenge and try again."
-    self.resource = User.new
-    @sign_in_presenter = T.let(
-      SignInPresenter.new(resource), T.nilable(SignInPresenter)
-    )
+    assign_blank_sign_in_presenter
     render :new, status: :unprocessable_content
+  end
+
+  sig { void }
+  def reject_blank_email
+    flash.now[:alert] = "Please enter an email address."
+    assign_blank_sign_in_presenter
+    render :new, status: :unprocessable_content
+  end
+
+  sig { params(email: String).void }
+  def send_magic_link_to(email)
+    self.resource = User.find_or_create_by!(email: email)
+    resource.create_user_profile!(display_name: email.split("@").first) unless resource.user_profile
+    # remember_me: true so the magic link issues a 30-day remember cookie
+    # (config.remember_for) — the login persists across browser restarts and deploys.
+    resource.send_magic_link(remember_me: true)
+    @sign_in_presenter = T.let(SignInPresenter.new(resource, email_sent: true), T.nilable(SignInPresenter))
+    render :new
+  end
+
+  sig { void }
+  def assign_blank_sign_in_presenter
+    self.resource = User.new
+    @sign_in_presenter = T.let(SignInPresenter.new(resource), T.nilable(SignInPresenter))
   end
 end

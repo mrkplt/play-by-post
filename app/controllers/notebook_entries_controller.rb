@@ -30,34 +30,31 @@ class NotebookEntriesController < ApplicationController
 
   sig { void }
   def create
-    notebook_entry = T.must(@game).notebook_entries.new(notebook_entry_params)
-    authorize notebook_entry
+    new_entry = T.must(@game).notebook_entries.new(notebook_entry_params)
+    authorize new_entry
+    return redirect_to game_notebook_entries_path(@game), notice: "Entry created." if new_entry.save
 
-    if notebook_entry.save
-      redirect_to game_notebook_entries_path(@game), notice: "Entry created."
-    else
-      assign_entry_presenter(notebook_entry)
-      respond_to do |format|
-        format.turbo_stream { render :create_failed }
-        format.html { render :new, status: :unprocessable_content }
-      end
+    assign_entry_presenter(new_entry)
+    respond_to do |format|
+      format.turbo_stream { render :create_failed }
+      format.html { render :new, status: :unprocessable_content }
     end
   end
 
   sig { void }
   def edit
     authorize @notebook_entry
-    assign_entry_presenter(T.must(@notebook_entry))
+    assign_entry_presenter(notebook_entry)
   end
 
   sig { void }
   def update
     authorize @notebook_entry
 
-    if T.must(@notebook_entry).update(notebook_entry_params)
+    if notebook_entry.update(notebook_entry_params)
       redirect_to edit_game_notebook_entry_path(@game, @notebook_entry), notice: "Entry updated."
     else
-      assign_entry_presenter(T.must(@notebook_entry))
+      assign_entry_presenter(notebook_entry)
       render :edit, status: :unprocessable_content
     end
   end
@@ -65,7 +62,7 @@ class NotebookEntriesController < ApplicationController
   sig { void }
   def destroy
     authorize @notebook_entry
-    T.must(@notebook_entry).destroy
+    notebook_entry.destroy
     redirect_to game_notebook_entries_path(@game), notice: "Entry deleted."
   end
 
@@ -74,27 +71,31 @@ class NotebookEntriesController < ApplicationController
     authorize @notebook_entry, :manage?
 
     lane_move = NotebookLaneMove.new(params)
-    T.must(@notebook_entry).update!(lane_move.attributes)
-
-    # Branches on an explicit form field, not request format: Turbo advertises
-    # turbo-stream for every unsafe request, so format.html would be dead code.
-    if lane_move.standalone?
-      redirect_to edit_game_notebook_entry_path(@game, @notebook_entry), notice: "Entry moved."
-    else
-      assign_entry_presenter(T.must(@notebook_entry))
-      render :move, formats: :turbo_stream
-    end
+    notebook_entry.update!(lane_move.attributes)
+    respond_to_move(lane_move)
   end
 
   sig { void }
   def promote
     authorize @notebook_entry, :manage?
 
-    page = NotebookEntryPromotion.new(T.must(@notebook_entry)).call
+    page = NotebookEntryPromotion.new(notebook_entry).call
     redirect_to game_page_path(@game, page), notice: "Promoted to a page."
   end
 
   private
+
+  # Branches on an explicit form field, not request format: Turbo advertises
+  # turbo-stream for every unsafe request, so format.html would be dead code.
+  sig { params(lane_move: NotebookLaneMove).void }
+  def respond_to_move(lane_move)
+    if lane_move.standalone?
+      redirect_to edit_game_notebook_entry_path(@game, @notebook_entry), notice: "Entry moved."
+    else
+      assign_entry_presenter(notebook_entry)
+      render :move, formats: :turbo_stream
+    end
+  end
 
   sig { params(notebook_entry: NotebookEntry).void }
   def assign_entry_presenter(notebook_entry)
@@ -109,6 +110,11 @@ class NotebookEntriesController < ApplicationController
   sig { void }
   def set_notebook_entry
     @notebook_entry = T.let(T.must(@game).notebook_entries.find_by!(slug: params[:slug]), T.nilable(NotebookEntry))
+  end
+
+  sig { returns(NotebookEntry) }
+  def notebook_entry
+    T.must(@notebook_entry)
   end
 
   # Memoized rather than set by a before_action: the actions that render it

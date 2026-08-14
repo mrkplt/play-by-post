@@ -14,6 +14,14 @@ class SceneTreeRowPresenter < BasePresenter
     super
   end
 
+  # The wrapped ScenePresenter, for the tree row's link — the route helper
+  # needs a Scene-mappable object, and this is the presenter that already
+  # knows how to answer that (its own #model returns the raw Scene).
+  sig { returns(ScenePresenter) }
+  def scene_presenter
+    @model
+  end
+
   sig { returns(String) }
   def title
     @model.title
@@ -21,12 +29,12 @@ class SceneTreeRowPresenter < BasePresenter
 
   sig { returns(String) }
   def tree_row_css_class
-    @model.resolved? ? "text-slate-500" : "font-semibold"
+    resolved_text_class("font-semibold")
   end
 
   sig { returns(String) }
   def tree_link_css_class
-    @model.resolved? ? "text-slate-500" : ""
+    resolved_text_class("")
   end
 
   # Pre-computed label/variant pairs for Shared::StatusBadgeRowComponent, for
@@ -36,7 +44,7 @@ class SceneTreeRowPresenter < BasePresenter
   sig { returns(T::Array[Shared::StatusBadgeRowComponent::Badge]) }
   def tree_status_badges
     badges = T.let(
-      [ { label: @model.status_label, variant: @model.resolved? ? :gray : :green } ],
+      [ { label: @model.status_label, variant: resolved_status_variant } ],
       T::Array[Shared::StatusBadgeRowComponent::Badge]
     )
     badges << { label: "Private", variant: :yellow } if @model.model.private?
@@ -46,5 +54,25 @@ class SceneTreeRowPresenter < BasePresenter
   sig { returns(String) }
   def formatted_created_at
     @model.formatted_created_at
+  end
+
+  private
+
+  # The one branch on the wrapped scene's resolved state, memoized so
+  # tree_row_css_class/tree_link_css_class/tree_status_badges each read a
+  # plain value rather than re-testing resolved? themselves.
+  sig { returns(T::Boolean) }
+  def resolved
+    @resolved ||= T.let(@model.resolved?, T.nilable(T::Boolean))
+  end
+
+  sig { params(active_class: String).returns(String) }
+  def resolved_text_class(active_class)
+    resolved ? "text-slate-500" : active_class
+  end
+
+  sig { returns(Symbol) }
+  def resolved_status_variant
+    resolved ? :gray : :green
   end
 end

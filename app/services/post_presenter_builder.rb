@@ -22,12 +22,23 @@ class PostPresenterBuilder
     )
   end
 
-  sig do
-    params(
-      post: Post, policy: PostPolicy, game_presenter: GamePresenter, scene_presenter: ScenePresenter
-    ).returns(Shared::PostComposerComponent)
+  # The game/scene presenter pair a page has already built for its own
+  # chrome — bundled so #composer_component takes one argument for "where
+  # this composer lives" instead of two.
+  class PageContext < T::Struct
+    extend T::Sig
+
+    const :game_presenter, GamePresenter
+    const :scene_presenter, ScenePresenter
+
+    sig { params(post_presenter: PostPresenter).returns(Shared::PostComposerComponent) }
+    def composer_for(post_presenter)
+      Shared::PostComposerComponent.new(post: post_presenter, game: game_presenter, scene: scene_presenter)
+    end
   end
-  def composer_component(post, policy, game_presenter, scene_presenter)
-    Shared::PostComposerComponent.new(post: post_presenter(post, policy), game: game_presenter, scene: scene_presenter)
+
+  sig { params(post: Post, policy: PostPolicy, page: PageContext).returns(Shared::PostComposerComponent) }
+  def composer_component(post, policy, page)
+    page.composer_for(post_presenter(post, policy))
   end
 end

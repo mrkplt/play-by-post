@@ -37,7 +37,7 @@ class ScenesController < ApplicationController
   def create
     authorize new_scene
     new_scene.assign_attributes(permitted_attributes(new_scene))
-    attach_uploaded_image(new_scene, @game, param_key: :scene, kind: "scene_image")
+    attach_uploaded_image(new_scene, @game, param_key: :scene)
 
     if new_scene.save
       add_participants(new_scene)

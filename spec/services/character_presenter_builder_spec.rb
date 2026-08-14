@@ -18,15 +18,36 @@ RSpec.describe CharacterPresenterBuilder do
   end
 
   describe "#character_presenter" do
-    it "wraps the character with both policies and the active players" do
+    it "wraps the character with both policies" do
+      result = builder.character_presenter(character, character_policy)
+      expect(result).to be_a(CharacterPresenter)
+    end
+  end
+
+  describe "#owner_options" do
+    it "is empty when the game has no active players" do
       where_rel = double("where rel")
       includes_rel = double("includes rel")
       allow(game).to receive(:active_members).and_return(double(where: where_rel))
       allow(where_rel).to receive(:includes).with(:user).and_return(includes_rel)
       allow(includes_rel).to receive(:map).and_return([])
 
-      result = builder.character_presenter(character, character_policy)
-      expect(result).to be_a(CharacterPresenter)
+      expect(builder.owner_options).to eq([])
+    end
+
+    it "pairs each active player's display name (falling back to email) with their id" do
+      named = build_stubbed(:user, email: "elf@example.com")
+      allow(named).to receive(:display_name).and_return("Elrond")
+      nameless = build_stubbed(:user, email: "orc@example.com")
+      allow(nameless).to receive(:display_name).and_return(nil)
+
+      where_rel = double("where rel")
+      includes_rel = double("includes rel")
+      allow(game).to receive(:active_members).and_return(double(where: where_rel))
+      allow(where_rel).to receive(:includes).with(:user).and_return(includes_rel)
+      allow(includes_rel).to receive(:map).and_return([ named, nameless ])
+
+      expect(builder.owner_options).to eq([ [ "Elrond", named.id ], [ "orc@example.com", nameless.id ] ])
     end
   end
 

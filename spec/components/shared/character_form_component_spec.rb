@@ -6,13 +6,16 @@ RSpec.describe Shared::CharacterFormComponent, type: :component do
   let(:existing_character) { build_stubbed(:character, game: game, name: "Thornwall") }
   let(:archived_character) { build_stubbed(:character, :archived, game: game, name: "Retired") }
 
-  def presenter_for(character, can_assign_owner: false, players: [])
+  def presenter_for(character, can_assign_owner: false)
     character_policy = instance_double(CharacterPolicy, assign_owner?: can_assign_owner)
-    CharacterPresenter.new(character, character_policy: character_policy, players: players)
+    CharacterPresenter.new(character, character_policy: character_policy)
   end
 
   def build_component(character: new_character, can_assign_owner: false, players: [])
-    described_class.new(character: presenter_for(character, can_assign_owner: can_assign_owner, players: players))
+    described_class.new(
+      character: presenter_for(character, can_assign_owner: can_assign_owner),
+      owner_options: players.map { |user| UserPresenter.new(user).select_option }
+    )
   end
 
   def path(name, *args)
@@ -60,7 +63,7 @@ RSpec.describe Shared::CharacterFormComponent, type: :component do
   end
 
   describe "#owner_options" do
-    it "uses display name when present and falls back to email otherwise" do
+    it "exposes the owner_options it was constructed with" do
       named = build_stubbed(:user, email: "elf@example.com")
       allow(named).to receive(:display_name).and_return("Elrond")
       nameless = build_stubbed(:user, email: "orc@example.com")

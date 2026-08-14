@@ -132,26 +132,6 @@ RSpec.describe CharacterPresenter do
     end
   end
 
-  describe "#owner_options" do
-    it "is empty when no players are injected" do
-      expect(presenter.owner_options).to eq([])
-    end
-
-    it "uses display name when present and falls back to email otherwise" do
-      named = build_stubbed(:user, email: "elf@example.com")
-      allow(named).to receive(:display_name).and_return("Elrond")
-      nameless = build_stubbed(:user, email: "orc@example.com")
-      allow(nameless).to receive(:display_name).and_return(nil)
-
-      presenter = described_class.new(
-        character, game_policy: game_policy, character_policy: character_policy,
-        players: [ named, nameless ]
-      )
-
-      expect(presenter.owner_options).to eq([ [ "Elrond", named.id ], [ "orc@example.com", nameless.id ] ])
-    end
-  end
-
   describe "#checkbox_value" do
     it "returns the character's id as a string" do
       expect(presenter.checkbox_value).to eq(character.id.to_s)

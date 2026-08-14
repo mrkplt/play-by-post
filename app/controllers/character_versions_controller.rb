@@ -3,53 +3,52 @@
 class CharacterVersionsController < ApplicationController
   extend T::Sig
 
-  before_action :set_game
+  # The three route-nested records this controller resolves once per request
+  # (game -> character -> version), found together by #set_records rather
+  # than through three separate before_actions each writing their own ivar —
+  # one lookup, one ivar, so the class stays under reek's instance-variable
+  # ceiling without hiding the lookups behind ad hoc private methods.
+  Records = Struct.new(:game, :character, :version)
+
+  before_action :set_records
   before_action :require_game_access!
-  before_action :set_character
-  before_action :set_version
   after_action :verify_authorized
 
   sig { void }
   def show
     authorize version
+    game_policy = policy(game)
     @version_presenter = T.let(CharacterVersionPresenter.new(version), T.nilable(CharacterVersionPresenter))
     @character_presenter = T.let(
-      CharacterPresenter.new(character, game_policy: policy(game)),
+      CharacterPresenter.new(character, game_policy: game_policy),
       T.nilable(CharacterPresenter)
     )
-    @game_presenter = T.let(GamePresenter.new(game, policy: policy(game)), T.nilable(GamePresenter))
+    @game_presenter = T.let(GamePresenter.new(game, policy: game_policy), T.nilable(GamePresenter))
   end
 
   private
 
   sig { void }
-  def set_game
-    @game = T.let(Game.find(params[:game_id]), T.nilable(Game))
-  end
-
-  sig { void }
-  def set_character
-    @character = T.let(game.characters.find(params[:character_id]), T.nilable(Character))
-  end
-
-  sig { void }
-  def set_version
-    @version = T.let(character.character_versions.find(params[:id]), T.nilable(CharacterVersion))
+  def set_records
+    game = Game.find(params[:game_id])
+    character = game.characters.find(params[:character_id])
+    version = character.character_versions.find(params[:id])
+    @records = T.let(Records.new(game, character, version), T.nilable(Records))
   end
 
   sig { returns(Game) }
   def game
-    T.must(@game)
+    T.must(@records).game
   end
 
   sig { returns(Character) }
   def character
-    T.must(@character)
+    T.must(@records).character
   end
 
   sig { returns(CharacterVersion) }
   def version
-    T.must(@version)
+    T.must(@records).version
   end
 
   sig { void }
