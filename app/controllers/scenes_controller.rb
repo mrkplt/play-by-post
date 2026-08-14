@@ -68,7 +68,7 @@ class ScenesController < ApplicationController
       @read_post_ids = PostRead.where(user: current_user, post_id: eligible_ids).pluck(:post_id).to_set
     end
 
-    @scene_presenter = ScenePresenter.new(@scene)
+    @scene_presenter = ScenePresenter.new(@scene, game: @game, urls: self)
     participants = @scene.scene_participants.includes(:character, :user).to_a
     @post_presenters = @posts.map { |post| PostPresenter.new(post, scene_participants: participants) }
   end

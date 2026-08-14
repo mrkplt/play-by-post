@@ -98,20 +98,22 @@ class ScenePresenter < BasePresenter
 
   # The scene screen's footer page-action, resolved to a render-ready
   # label/href/method triple; ScenePageAction owns the rule and the shape.
-  # `urls` is the caller's url_helpers (the view's own `self`), passed in
-  # because the route helper needs the persisted scene.
+  # The game and url_helpers come from construction, so the view reads a
+  # finished href rather than handing the presenter a route helper.
   sig do
-    params(game: Game, can_manage: T::Boolean, is_participant: T::Boolean,
-           membership: T.nilable(GameMember), urls: T.untyped)
+    params(can_manage: T::Boolean, is_participant: T::Boolean,
+           membership: T.nilable(GameMember))
       .returns(T.nilable(ScenePageAction::Resolved))
   end
-  def page_action(game:, can_manage:, is_participant:, membership:, urls:)
+  def page_action(can_manage:, is_participant:, membership:)
     ScenePageAction.resolved_for(
       scene: @model,
       viewer: ScenePageAction::Viewer.new(
         can_manage: can_manage, is_participant: is_participant, membership: membership
       ),
-      route_args: ScenePageAction::RouteArgs.new(urls: urls, game: game)
+      route_args: ScenePageAction::RouteArgs.new(
+        urls: @options[:urls], game: @options[:game]
+      )
     )
   end
 end

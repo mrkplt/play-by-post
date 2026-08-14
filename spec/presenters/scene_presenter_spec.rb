@@ -69,10 +69,11 @@ RSpec.describe ScenePresenter do
     let(:membership) { build_stubbed(:game_member) }
     let(:urls) { double(join_game_scene_participants_path: "/games/1/scenes/2/participants/join") }
 
+    subject(:presenter) { described_class.new(scene, game: game, urls: urls) }
+
     def page_action(**overrides)
       presenter.page_action(
-        **{ game: game, can_manage: false, is_participant: false,
-            membership: membership, urls: urls }.merge(overrides)
+        **{ can_manage: false, is_participant: false, membership: membership }.merge(overrides)
       )
     end
 

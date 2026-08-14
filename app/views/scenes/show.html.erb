@@ -8,7 +8,7 @@
           secondary_nav: Shared::GameNavComponent.new(game: @game, active_tab: :scenes, can_manage: @game_presenter.can_manage?, mode: :link)) %>
   <% end %>
 
-  <% if (page_action = @scene_presenter.page_action(game: @game, can_manage: @game_presenter.can_manage?, is_participant: @is_participant, membership: @current_membership, urls: self)) %>
+  <% if (page_action = @scene_presenter.page_action(can_manage: @game_presenter.can_manage?, is_participant: @is_participant, membership: @current_membership)) %>
     <% frame.with_footer do %>
       <%= render Shared::PageActionsComponent.new do |actions| %>
         <% actions.with_primary do %>
