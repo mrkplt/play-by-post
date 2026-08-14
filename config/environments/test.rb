@@ -9,11 +9,21 @@ Rails.application.configure do
   # While tests run files are not watched, reloading is not necessary.
   config.enable_reloading = false
 
-  # Eager loading loads your entire application. When running a single test locally,
-  # this is usually not necessary, and can slow down your test suite. However, it's
-  # recommended that you enable it in continuous integration systems to ensure eager
-  # loading is working properly before deploying your code.
-  config.eager_load = ENV["CI"].present?
+  # Eager loading, unconditionally — deliberately not the Rails default of
+  # `ENV["CI"].present?`, which loads lazily on a developer's machine and eagerly
+  # on CI. That split makes the test environment behave differently in the two
+  # places it runs, and it has already cost us: under eager loading ViewComponent
+  # compiles a templateless component's `call` at boot, so mutant's rewrite of
+  # that method is a no-op and every mutation of it survives. A branch measured
+  # 98.33% mutation coverage locally and 60% on CI — below the floor — with a
+  # green suite both times, and the gap was environment, not code.
+  #
+  # The saving that split buys is not worth it: measured at ~0.4s on a
+  # single-file run and nil on the full tier (1889 examples: 4.73s lazy vs 4.75s
+  # eager), because the suite ends up loading nearly everything anyway. Eager
+  # loading also catches a class of bug nothing else here does — a file no spec
+  # references that fails to load is silently green when lazy-loaded.
+  config.eager_load = true
 
   # Configure public file server for tests with cache-control for performance.
   config.public_file_server.enabled = true

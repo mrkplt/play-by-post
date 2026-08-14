@@ -6,7 +6,18 @@
 # locally without waiting on CI — before opening a PR, after touching
 # mutation-sensitive code, or when CI is the bottleneck. Expect several
 # minutes: system specs (~90s) and mutation testing (~3-4 min) dominate.
-export PATH="/opt/homebrew/opt/ruby/bin:$PATH"
+#
+# "Everything CI runs" means matching CI's environment, not just its commands.
+# This used to force Homebrew ruby onto PATH — whatever version Homebrew last
+# installed (4.0.2 here), not the .ruby-version CI pins (3.3.6), which is also
+# what the vendored gems are built for. Bootstrap rbenv the way bin/pre-push
+# does so both tiers run on the pinned interpreter. (Eager loading is no longer
+# an axis of divergence: config/environments/test.rb enables it unconditionally
+# rather than keying it off ENV["CI"].)
+export PATH="/opt/homebrew/bin:$PATH"
+if command -v rbenv >/dev/null 2>&1; then
+  eval "$(rbenv init - bash)"
+fi
 
 if bin/docs-only; then
   echo "==> Docs-only change: nothing to check."
