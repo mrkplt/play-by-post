@@ -38,7 +38,7 @@ class Ui::ToastComponent < ApplicationComponent
 
   sig { returns(T::Boolean) }
   def any?
-    @toasts.any?
+    toasts.any?
   end
 
   sig { params(toast: Toast).returns(String) }

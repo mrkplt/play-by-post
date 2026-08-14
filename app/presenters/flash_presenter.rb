@@ -27,13 +27,20 @@ class FlashPresenter < BasePresenter
     super
   end
 
+  sig { returns(T.untyped) }
+  attr_reader :model
+
   sig { returns(T::Array[Ui::ToastComponent::Toast]) }
   def toasts
-    VARIANTS.filter_map do |key, variant|
-      message = __getobj__[key]
-      next if message.blank?
+    VARIANTS.filter_map { |key, variant| toast_for(key, variant) }
+  end
 
-      { message: message.to_s, variant: variant }
-    end
+  private
+
+  # nil for a flash key that is unset or blank, so an empty `notice` never
+  # renders as an empty chip.
+  sig { params(key: String, variant: Symbol).returns(T.nilable(Ui::ToastComponent::Toast)) }
+  def toast_for(key, variant)
+    model[key].presence&.then { |message| { message: message.to_s, variant: variant } }
   end
 end
