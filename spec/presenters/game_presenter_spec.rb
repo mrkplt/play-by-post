@@ -128,4 +128,24 @@ RSpec.describe GamePresenter do
   it "delegates model methods to the game" do
     expect(presenter.name).to eq(game.name)
   end
+
+  describe "#export_notice", :db do
+    let(:game) { create(:game) }
+    subject(:presenter) { described_class.new(game, policy: policy, current_user: user) }
+
+    it "is nil when the viewer has no valid receipt for this game" do
+      user_record = create(:user)
+      presenter = described_class.new(game, policy: policy, current_user: user_record)
+      expect(presenter.export_notice).to be_nil
+    end
+
+    it "reports how long ago the viewer's receipt for this game succeeded" do
+      user_record = create(:user)
+      receipt = create(:game_export_request, user: user_record, game: game, succeeded_at: 2.hours.ago)
+      receipt.archive.attach(io: StringIO.new("zip"), filename: "e.zip", content_type: "application/zip")
+
+      presenter = described_class.new(game, policy: policy, current_user: user_record)
+      expect(presenter.export_notice).to match(/Last export: .+ ago/)
+    end
+  end
 end

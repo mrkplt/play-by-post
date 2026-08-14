@@ -97,4 +97,31 @@ class SceneSummaryPresenter < BasePresenter
   def submit_path
     @options.fetch(:urls).game_scene_scene_summary_path(@options.fetch(:game), @model.scene)
   end
+
+  sig { returns(T.untyped) }
+  # mutant:disable
+  def body
+    @model.body
+  end
+
+  # The scene's absolute URL — RSS items link out from a feed with no
+  # request context of their own, so this is the one caller needing `_url`
+  # rather than `scene_path`'s in-app relative form. Same game/urls
+  # collaborators, different route helper.
+  sig { returns(String) }
+  def scene_url
+    @options.fetch(:urls).game_scene_url(@options.fetch(:game), @model.scene)
+  end
+
+  # The scene's resolved-at timestamp in RFC 2822 form, for an RSS item's
+  # <pubDate> — nil when the scene (unusually, for a public summary) has no
+  # resolved_at.
+  sig { returns(T.nilable(String)) }
+  # mutant:disable
+  def scene_resolved_at_rfc2822
+    resolved = @model.scene.resolved_at
+    return nil unless resolved
+
+    resolved.rfc2822
+  end
 end

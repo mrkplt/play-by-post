@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 
 class InvitationsController < ApplicationController
   extend T::Sig
@@ -10,20 +10,20 @@ class InvitationsController < ApplicationController
 
   sig { void }
   def create
-    @invitation = @game.invitations.new(email: params[:invitation][:email], invited_by: current_user)
-    authorize @invitation
+    invitation = T.must(@game).invitations.new(email: params[:invitation][:email], invited_by: current_user)
+    authorize invitation
 
-    if @invitation.save
-      InvitationMailer.invite(@invitation).deliver_later
-      redirect_to game_path(@game, anchor: "roster"), notice: "Invitation sent to #{@invitation.email}."
+    if invitation.save
+      InvitationMailer.invite(invitation).deliver_later
+      redirect_to game_path(@game, anchor: "roster"), notice: "Invitation sent to #{invitation.email}."
     else
-      redirect_to game_path(@game, anchor: "roster"), alert: @invitation.errors.full_messages.join(", ")
+      redirect_to game_path(@game, anchor: "roster"), alert: invitation.errors.full_messages.join(", ")
     end
   end
 
   sig { void }
   def destroy
-    invitation = @game.invitations.find(params[:id])
+    invitation = T.must(@game).invitations.find(params[:id])
     authorize invitation
     invitation.destroy
     redirect_to game_path(@game, anchor: "roster"), notice: "Invitation cancelled."
@@ -31,7 +31,7 @@ class InvitationsController < ApplicationController
 
   sig { void }
   def resend
-    invitation = @game.invitations.find(params[:id])
+    invitation = T.must(@game).invitations.find(params[:id])
     authorize invitation, :resend?
     InvitationMailer.invite(invitation).deliver_later
     redirect_to game_path(@game, anchor: "roster"), notice: "Invitation resent to #{invitation.email}."
@@ -39,17 +39,17 @@ class InvitationsController < ApplicationController
 
   sig { void }
   def accept
-    @invitation = Invitation.find_by(token: params[:token])
+    invitation = Invitation.find_by(token: params[:token])
 
-    if @invitation.nil? || @invitation.accepted?
+    if invitation.nil? || invitation.accepted?
       redirect_to root_path, alert: "This invitation is invalid or has already been used."
       return
     end
 
-    game = T.must(@invitation.game)
-    user = User.find_or_create_by!(email: @invitation.email)
+    game = T.must(invitation.game)
+    user = User.find_or_create_by!(email: invitation.email)
     game.game_members.find_or_create_by!(user: user, role: "player", status: "active")
-    @invitation.accept!
+    invitation.accept!
 
     sign_in(user)
     redirect_to game_path(game), notice: "Welcome! You've joined #{game.name}."
@@ -59,6 +59,6 @@ class InvitationsController < ApplicationController
 
   sig { void }
   def set_game
-    @game = Game.find(params[:game_id])
+    @game = T.let(Game.find(params[:game_id]), T.nilable(Game))
   end
 end

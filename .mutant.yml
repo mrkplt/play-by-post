@@ -42,6 +42,7 @@ matcher:
     - CharacterPresenter
     - CharacterVersionPresenter
     - GameFilePresenter
+    - GameMemberPresenter
     - GameFeedRowPresenter
     - GameLinkPresenter
     - GamePresenter
@@ -54,6 +55,8 @@ matcher:
     - SceneSummaryPresenter
     - SceneSummaryCollectionPresenter
     - ScenePresenter
+    - SceneParticipantRosterPresenter
+    - SignInPresenter
     - ScenePageAction
     - ScenePageAction::Viewer
     - ScenePageAction::Resolved

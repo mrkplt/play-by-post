@@ -1,5 +1,5 @@
 <div class="max-w-sm mx-auto mt-16 p-8 bg-white border border-slate-200 rounded-lg">
-  <% if @email_sent %>
+  <% if @sign_in_presenter.email_sent? %>
     <h1>Check your email</h1>
     <p>We sent a sign-in link to your inbox. Click it to continue — no password needed.</p>
     <p class="text-xs text-slate-500 mt-4">Didn't get it? Check your spam folder, or <%= link_to "try again", new_user_session_path %>.</p>
