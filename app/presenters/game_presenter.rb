@@ -110,4 +110,28 @@ class GamePresenter < BasePresenter
   def notebook_board
     NotebookBoardPresenter.new(@model)
   end
+
+  # The Campaign Notebook board's own URL — the notebook form screens'
+  # Cancel target, resolved here so a template never builds the route itself
+  # (options[:urls], the constructing controller).
+  sig { returns(String) }
+  def notebook_board_href
+    @options.fetch(:urls).game_notebook_entries_path(@model)
+  end
+
+  # The character form's player selector options — display name (falling back
+  # to email) paired with the user's id — for the game's active players. A
+  # fact about the game's roster, not about any one character, so it lives
+  # here rather than on CharacterPresenter.
+  sig { returns(T::Array[[ String, Integer ]]) }
+  def owner_options
+    players_for_select.map { |user| UserPresenter.new(user).select_option }
+  end
+
+  private
+
+  sig { returns(T::Array[User]) }
+  def players_for_select
+    @model.active_members.where(role: "player").includes(:user).map(&:user)
+  end
 end

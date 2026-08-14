@@ -54,6 +54,25 @@ RSpec.describe PagePresenter do
     end
   end
 
+  describe "#cancel_href" do
+    it "returns the game's Pages tab for an unsaved page" do
+      new_page = game.pages.new
+      urls = double("urls")
+      allow(urls).to receive(:game_path).with(game, anchor: "pages").and_return("/games/1?anchor=pages")
+      presenter = described_class.new(new_page, game: game, urls: urls, game_policy: game_policy, page_policy: policy)
+
+      expect(presenter.cancel_href).to eq("/games/1?anchor=pages")
+    end
+
+    it "returns the page's own show URL for an existing page" do
+      urls = double(game_page_path: "/games/1/pages/2")
+      presenter = described_class.new(page_record, game: game, urls: urls,
+        game_policy: game_policy, page_policy: policy)
+
+      expect(presenter.cancel_href).to eq("/games/1/pages/2")
+    end
+  end
+
   describe "#body" do
     it "returns the page's body" do
       expect(presenter.body).to eq("# Heading")

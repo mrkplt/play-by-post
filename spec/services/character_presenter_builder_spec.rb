@@ -6,8 +6,9 @@ RSpec.describe CharacterPresenterBuilder do
   let(:game_policy) { GamePolicy.new(current_user, game) }
   let(:character) { build_stubbed(:character, game: game) }
   let(:character_policy) { CharacterPolicy.new(current_user, character) }
+  let(:urls) { double("urls") }
 
-  subject(:builder) { described_class.new(game, game_policy) }
+  subject(:builder) { described_class.new(game, game_policy, urls: urls) }
 
   describe "#game_presenter" do
     it "wraps the game with the injected policy" do
@@ -15,47 +16,36 @@ RSpec.describe CharacterPresenterBuilder do
       expect(result).to be_a(GamePresenter)
       expect(result.model).to eq(game)
     end
+
+    it "constructs GamePresenter with exactly the game and the injected policy" do
+      allow(GamePresenter).to receive(:new).and_call_original
+      builder.game_presenter
+      expect(GamePresenter).to have_received(:new).with(game, policy: game_policy)
+    end
   end
 
   describe "#character_presenter" do
-    it "wraps the character with both policies" do
+    it "wraps the character with the injected policy and urls" do
       result = builder.character_presenter(character, character_policy)
       expect(result).to be_a(CharacterPresenter)
-    end
-  end
-
-  describe "#owner_options" do
-    it "is empty when the game has no active players" do
-      where_rel = double("where rel")
-      includes_rel = double("includes rel")
-      allow(game).to receive(:active_members).and_return(double(where: where_rel))
-      allow(where_rel).to receive(:includes).with(:user).and_return(includes_rel)
-      allow(includes_rel).to receive(:map).and_return([])
-
-      expect(builder.owner_options).to eq([])
+      expect(result.__getobj__).to eq(character)
     end
 
-    it "pairs each active player's display name (falling back to email) with their id" do
-      named = build_stubbed(:user, email: "elf@example.com")
-      allow(named).to receive(:display_name).and_return("Elrond")
-      nameless = build_stubbed(:user, email: "orc@example.com")
-      allow(nameless).to receive(:display_name).and_return(nil)
-
-      where_rel = double("where rel")
-      includes_rel = double("includes rel")
-      allow(game).to receive(:active_members).and_return(double(where: where_rel))
-      allow(where_rel).to receive(:includes).with(:user).and_return(includes_rel)
-      allow(includes_rel).to receive(:map).and_return([ named, nameless ])
-
-      expect(builder.owner_options).to eq([ [ "Elrond", named.id ], [ "orc@example.com", nameless.id ] ])
+    it "constructs CharacterPresenter with exactly the character, character_policy, and urls" do
+      allow(CharacterPresenter).to receive(:new).and_call_original
+      builder.character_presenter(character, character_policy)
+      expect(CharacterPresenter).to have_received(:new)
+        .with(character, character_policy: character_policy, urls: urls)
     end
   end
 
   describe "#versions" do
     it "returns each character version, newest first, wrapped as presenters" do
       version = build_stubbed(:character_version)
+      versions_rel = double("versions rel")
       ordered_rel = double("ordered rel")
-      allow(character).to receive(:character_versions).and_return(double(order: ordered_rel))
+      allow(character).to receive(:character_versions).and_return(versions_rel)
+      allow(versions_rel).to receive(:order).with(created_at: :desc).and_return(ordered_rel)
       allow(ordered_rel).to receive(:includes).with(:edited_by).and_return([ version ])
 
       result = builder.versions(character)

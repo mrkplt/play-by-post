@@ -11,7 +11,8 @@
 #                           GM-only affordances, present on every page screen)
 #   options[:page_policy] — may the viewer edit/delete this page
 #   options[:game]/[:urls] — the game and the constructing controller, used to
-#                           resolve this page's own href for the list row
+#                           resolve this page's own href for the list row and
+#                           the form screens' Cancel target
 class PagePresenter < BasePresenter
   extend T::Sig
 
@@ -44,6 +45,16 @@ class PagePresenter < BasePresenter
   sig { returns(String) }
   def href
     @options.fetch(:urls).game_page_path(@options.fetch(:game), @model)
+  end
+
+  # Where Cancel returns to on the form screens: an unsaved page has no show
+  # URL yet, so it goes back to the game's Pages tab; an existing page returns
+  # to its own detail screen (#href).
+  sig { returns(String) }
+  def cancel_href
+    return @options.fetch(:urls).game_path(@options.fetch(:game), anchor: "pages") if new_record?
+
+    href
   end
 
   # This page's own title/href, pre-paired for the Pages list row — the two
