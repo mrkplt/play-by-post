@@ -246,14 +246,57 @@ def visibility_switch(node)
   node.name
 end
 
+# --- Runtime resolution (optional) -----------------------------------------
+#
+# When an ivar is assigned from a helper method, the source says nothing about
+# what comes back — `@users = players_for_select` could be anything. Sorbet
+# already knows: the helper carries a `sig`, and T::Utils.signature_for_method
+# reads its declared return type from the loaded object. That turns the largest
+# and least useful diagnosis ("check what this returns") into a real answer.
+#
+# Booting Rails costs ~1.7s against the gate's ~0.1s, so it is opt-out via
+# NO_RUNTIME=1 and degrades to source inspection if the app cannot load (a
+# broken boot must not turn this gate into a false failure). Everything else in
+# this file stays source-based: R3 and R4 ask about the shape of code, not the
+# behaviour of objects.
+RUNTIME = ENV["NO_RUNTIME"].nil? && begin
+  require File.join(ROOT, "config", "environment")
+  true
+rescue StandardError, LoadError
+  false
+end
+
+# Declared return type of a controller's helper method, or nil when there is no
+# sig to read (~80% of helpers have one).
+def helper_return_type(controller_const, method_name)
+  return nil unless RUNTIME
+
+  klass = Object.const_get(controller_const)
+  return nil unless klass.is_a?(Class)
+
+  method = klass.instance_method(method_name)
+  signature = T::Utils.signature_for_method(method)
+  return_type = signature&.return_type.to_s
+  return nil if return_type.empty? || return_type == "<VOID>"
+
+  return_type
+rescue NameError, StandardError
+  nil
+end
+
 # What an undeclared ivar's assignment says about the work it needs. Two very
 # different jobs hide behind "no declared type", and reporting them identically
 # makes a file look uniformly broken when half of it is already right:
 #   `GamePresenter.new(...)` is CORRECT and only wants the sigil.
 #   `Game.find(...)`         is a raw model and wants a presenter written.
-# The RHS is only a hint (a helper method could return either), so anything
-# unrecognised is reported as needing a look rather than guessed at.
-def undeclared_diagnosis(rhs)
+# A bare helper call is neither until its return type is resolved, which is what
+# the runtime pass is for; without it, such a case is reported as needing a look
+# rather than guessed at.
+def undeclared_diagnosis(rhs, controller_const = nil)
+  if (resolved = resolved_helper_diagnosis(rhs, controller_const))
+    return resolved
+  end
+
   case rhs
   when /\A[A-Z][\w:]*Presenter\.new/, /\bmap\b.*[A-Z][\w:]*Presenter\.new/
     "the assignment already looks like a presenter, so this one likely only needs " \
@@ -265,6 +308,28 @@ def undeclared_diagnosis(rhs)
   else
     "check what this returns: a presenter needs only the sigil, a model or " \
       "primitive needs a presenter written for it"
+  end
+end
+
+# A bare `@x = helper_method` resolved through the helper's declared return
+# type, classified the same way any other type expression is.
+def resolved_helper_diagnosis(rhs, controller_const)
+  return nil if controller_const.nil?
+  return nil unless rhs.match?(/\A[a-z_][\w]*\z/) # a bare method call, no receiver
+
+  return_type = helper_return_type(controller_const, rhs.to_sym)
+  return nil if return_type.nil?
+
+  kinds = type_constants(return_type).map { |const| classify(const) }.uniq
+  if kinds == [ :presenter ]
+    "`#{rhs}` returns #{return_type}, already a presenter — this one only needs " \
+      "the `# typed: strict` sigil and a T.let to become checkable"
+  elsif kinds.include?(:model)
+    "`#{rhs}` returns #{return_type}, which carries a raw model — it needs a " \
+      "presenter; adding the sigil alone will not satisfy R1"
+  else
+    "`#{rhs}` returns #{return_type} — views hold presenters, so this needs one " \
+      "wrapping it"
   end
 end
 
@@ -301,6 +366,8 @@ Dir["app/controllers/**/*.rb"].sort.each do |file|
 
   source = File.read(file, encoding: "utf-8")
   strict = source.start_with?("# typed: strict")
+  controller_const = file.sub("app/controllers/", "").sub(/\.rb\z/, "").split("/")
+    .map { |part| part.split("_").map(&:capitalize).join }.join("::")
 
   controller_ivars(parse(file)).each do |ivar|
     unless strict
@@ -310,7 +377,7 @@ Dir["app/controllers/**/*.rb"].sort.each do |file|
       # and "write a presenter that does not exist yet" into distinct tasks
       # instead of one indistinguishable message repeated down the file.
       violations["R1"] << "#{file}: #{ivar[:name]} (in ##{ivar[:action]}) = #{ivar[:rhs]} — " \
-        "#{undeclared_diagnosis(ivar[:rhs])} (controller is " \
+        "#{undeclared_diagnosis(ivar[:rhs], controller_const)} (controller is " \
         "`# typed: #{source[/# typed: (\w+)/, 1]}`; only `strict` forces the T.let this rule reads)"
       next
     end
@@ -585,7 +652,12 @@ puts <<~GUIDANCE
     "assigns a raw model or query result" — a presenter has to be written
       first. Adding the sigil alone will NOT satisfy R1, it will just change
       the message to a typed violation.
-    "check what this returns" — the assignment is a helper call, so read it.
+    "`helper` returns X" — the assignment called a helper, and X is that
+      helper's declared return type, read off the loaded app. Treat it as the
+      ivar's real type: a presenter needs only the sigil, anything carrying a
+      model needs one written.
+    "check what this returns" — an inline expression with no declared type to
+      read, so open it and see which of the two cases above it is.
   A single controller usually contains both kinds. Doing the sigil-only ones
   does not fix the model ones, and a `T.let(..., Game)` that makes the parser
   happy while a raw model still reaches the view is the violation unchanged.

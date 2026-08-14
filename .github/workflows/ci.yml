@@ -246,6 +246,11 @@ jobs:
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: .ruby-version
+          # Unlike the other Prism-based guards, this one boots the app to read
+          # Sorbet's declared return types off controller helpers, so it needs
+          # the bundle. Without it the gate still runs (it degrades to source
+          # inspection) but reports less about what an ivar actually holds.
+          bundler-cache: true
 
       - name: Enforce view/presenter/component layering
         run: bin/ci-run bin/check-view-layering
