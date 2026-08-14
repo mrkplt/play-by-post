@@ -1,21 +1,20 @@
 # typed: strict
 
-# View model for a character sheet screen. The game-nav "can manage" flag and
-# the sheet's own edit/assign-owner capabilities are asked of policies
-# supplied at construction (options[:game_policy] / options[:character_policy])
-# rather than looked up in the view, so a capability rename is chased through
-# one construction point instead of every character template. Explicit sigs
-# are declared for everything the character form/detail components read —
-# SimpleDelegator passthrough is invisible to Sorbet, so a component may not
-# call an undeclared method on this presenter even though it would resolve
-# at runtime.
+# View model for a character sheet screen. The sheet's own edit/assign-owner
+# capabilities are asked of a policy supplied at construction
+# (options[:character_policy]) rather than looked up in the view, so a
+# capability rename is chased through one construction point instead of every
+# character template. Explicit sigs are declared for everything the character
+# form/detail components read — SimpleDelegator passthrough is invisible to
+# Sorbet, so a component may not call an undeclared method on this presenter
+# even though it would resolve at runtime.
+#
+# options[:urls] — the constructing controller, used to resolve this
+# character's own edit/cancel hrefs so a template never builds a route by
+# walking from this presenter to its game (Law of Demeter: a template may
+# call one method on the presenter it was handed, not reach through it).
 class CharacterPresenter < BasePresenter
   extend T::Sig
-
-  sig { params(model: Character, options: T.untyped).void }
-  def initialize(model, **options)
-    super
-  end
 
   sig { returns(String) }
   def name
@@ -25,13 +24,6 @@ class CharacterPresenter < BasePresenter
   sig { returns(String) }
   def checkbox_value
     id.to_s
-  end
-
-  # The viewer may administer the game this character belongs to — the flag
-  # behind the game-nav's GM-only affordances on every character screen.
-  sig { returns(T::Boolean) }
-  def can_manage_game?
-    @options.fetch(:game_policy).manage?
   end
 
   # The viewer may edit this character sheet.
@@ -50,6 +42,23 @@ class CharacterPresenter < BasePresenter
   sig { returns(Game) }
   def game
     @model.game
+  end
+
+  # This character's own edit URL — the roster/show screen's Edit link.
+  sig { returns(String) }
+  def edit_href
+    @options.fetch(:urls).edit_game_character_path(game, @model)
+  end
+
+  # Where Cancel returns to on the form screens: an unsaved character has no
+  # show URL yet, so it goes back to the game; an existing character returns
+  # to its own sheet.
+  sig { returns(String) }
+  def cancel_href
+    urls = @options.fetch(:urls)
+    return urls.game_path(game) if new_record?
+
+    urls.game_character_path(game, @model)
   end
 
   sig { returns(String) }

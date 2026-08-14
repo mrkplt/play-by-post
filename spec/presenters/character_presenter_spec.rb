@@ -3,23 +3,11 @@ require "rails_helper"
 RSpec.describe CharacterPresenter do
   let(:game) { build_stubbed(:game) }
   let(:character) { build_stubbed(:character, game: game, name: "Thornwall", content: "Sheet content") }
-  let(:game_policy) { instance_double(GamePolicy, manage?: true) }
   let(:character_policy) { instance_double(CharacterPolicy, update?: true, assign_owner?: true) }
+  let(:urls) { double("urls") }
 
   subject(:presenter) do
-    described_class.new(character, game_policy: game_policy, character_policy: character_policy)
-  end
-
-  describe "#can_manage_game?" do
-    it "is true when the injected game policy allows management" do
-      allow(game_policy).to receive(:manage?).and_return(true)
-      expect(presenter.can_manage_game?).to be(true)
-    end
-
-    it "is false when the injected game policy disallows management" do
-      allow(game_policy).to receive(:manage?).and_return(false)
-      expect(presenter.can_manage_game?).to be(false)
-    end
+    described_class.new(character, character_policy: character_policy, urls: urls)
   end
 
   describe "#can_edit?" do
@@ -52,6 +40,28 @@ RSpec.describe CharacterPresenter do
     end
   end
 
+  describe "#edit_href" do
+    it "resolves this character's edit URL" do
+      allow(urls).to receive(:edit_game_character_path).with(game, character).and_return("/games/1/characters/2/edit")
+      expect(presenter.edit_href).to eq("/games/1/characters/2/edit")
+    end
+  end
+
+  describe "#cancel_href" do
+    it "returns the game's URL for an unsaved character" do
+      new_character = game.characters.new
+      allow(urls).to receive(:game_path).with(game).and_return("/games/1")
+      presenter = described_class.new(new_character, character_policy: character_policy, urls: urls)
+
+      expect(presenter.cancel_href).to eq("/games/1")
+    end
+
+    it "returns the character's own show URL for an existing character" do
+      allow(urls).to receive(:game_character_path).with(game, character).and_return("/games/1/characters/2")
+      expect(presenter.cancel_href).to eq("/games/1/characters/2")
+    end
+  end
+
   describe "#name" do
     it "returns the character's name" do
       expect(presenter.name).to eq("Thornwall")
@@ -71,7 +81,7 @@ RSpec.describe CharacterPresenter do
 
     it "is false when content is blank" do
       blank_character = build_stubbed(:character, game: game, content: nil)
-      presenter = described_class.new(blank_character, game_policy: game_policy, character_policy: character_policy)
+      presenter = described_class.new(blank_character, character_policy: character_policy, urls: urls)
       expect(presenter.content?).to be(false)
     end
   end
@@ -81,7 +91,7 @@ RSpec.describe CharacterPresenter do
       expect(presenter.archived?).to be(false)
 
       archived = build_stubbed(:character, :archived, game: game)
-      presenter = described_class.new(archived, game_policy: game_policy, character_policy: character_policy)
+      presenter = described_class.new(archived, character_policy: character_policy, urls: urls)
       expect(presenter.archived?).to be(true)
     end
   end
@@ -91,7 +101,7 @@ RSpec.describe CharacterPresenter do
       expect(presenter.hidden?).to be(false)
 
       hidden = build_stubbed(:character, :hidden, game: game)
-      presenter = described_class.new(hidden, game_policy: game_policy, character_policy: character_policy)
+      presenter = described_class.new(hidden, character_policy: character_policy, urls: urls)
       expect(presenter.hidden?).to be(true)
     end
   end
@@ -99,7 +109,7 @@ RSpec.describe CharacterPresenter do
   describe "#new_record?" do
     it "is true for an unpersisted character" do
       new_character = game.characters.new
-      presenter = described_class.new(new_character, game_policy: game_policy, character_policy: character_policy)
+      presenter = described_class.new(new_character, character_policy: character_policy, urls: urls)
       expect(presenter.new_record?).to be(true)
     end
 

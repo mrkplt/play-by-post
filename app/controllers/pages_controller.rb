@@ -3,15 +3,14 @@
 class PagesController < ApplicationController
   extend T::Sig
 
-  before_action :set_game
   before_action :require_game_access!
-  before_action :set_page, only: %i[show edit update destroy]
   after_action :verify_authorized
 
   sig { void }
   def show
-    authorize page
-    assign_page_presenters(page)
+    subject = page
+    authorize subject
+    assign_page_presenters(subject)
   end
 
   sig { void }
@@ -36,49 +35,50 @@ class PagesController < ApplicationController
 
   sig { void }
   def edit
-    authorize page
-    assign_page_presenters(page)
+    subject = page
+    authorize subject
+    assign_page_presenters(subject)
   end
 
   sig { void }
   def update
-    authorize page
+    subject = page
+    authorize subject
 
-    if page.update(page_params)
-      redirect_to game_page_path(game, page), notice: "Page updated."
+    if subject.update(page_params)
+      redirect_to game_page_path(game, subject), notice: "Page updated."
     else
-      assign_page_presenters(page)
+      assign_page_presenters(subject)
       render :edit, status: :unprocessable_content
     end
   end
 
   sig { void }
   def destroy
-    authorize page
-    page.destroy
+    subject = page
+    authorize subject
+    subject.destroy
     redirect_to game_path(game, anchor: "pages"), notice: "Page deleted."
   end
 
   private
 
-  sig { void }
-  def set_game
-    @game = T.let(Game.find(params[:game_id]), T.nilable(Game))
-  end
-
-  sig { void }
-  def set_page
-    @page = T.let(game.pages.find_by!(slug: params[:slug]), T.nilable(Page))
-  end
-
+  # No before_action ivar for either lookup: neither is read by a template
+  # (templates hold only @game_presenter/@page_presenter), so under
+  # `# typed: strict` an ivar here would itself be a raw model reaching the
+  # view layer's boundary — Sorbet requires a T.let on every ivar write under
+  # `strict`, and the gate reads that declared type. #game re-resolves from
+  # params on every call; #page is called once per action into a local
+  # (`subject`) rather than re-called, because #update mutates that instance
+  # with validation errors that a fresh DB lookup would lose.
   sig { returns(Game) }
   def game
-    T.must(@game)
+    Game.find(params[:game_id])
   end
 
   sig { returns(Page) }
   def page
-    T.must(@page)
+    game.pages.find_by!(slug: params[:slug])
   end
 
   sig { void }
@@ -93,7 +93,7 @@ class PagesController < ApplicationController
 
   sig { params(subject: Page).returns(PagePresenter) }
   def page_presenter(subject)
-    PagePresenter.new(subject, game_policy: policy(game), page_policy: policy(subject))
+    PagePresenter.new(subject, game_policy: policy(game), page_policy: policy(subject), game: game, urls: self)
   end
 
   sig { returns(GamePresenter) }

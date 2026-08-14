@@ -3,52 +3,41 @@
 class CharacterVersionsController < ApplicationController
   extend T::Sig
 
-  # The three route-nested records this controller resolves once per request
-  # (game -> character -> version), found together by #set_records rather
-  # than through three separate before_actions each writing their own ivar —
-  # one lookup, one ivar, so the class stays under reek's instance-variable
-  # ceiling without hiding the lookups behind ad hoc private methods.
-  Records = Struct.new(:game, :character, :version)
-
-  before_action :set_records
   before_action :require_game_access!
   after_action :verify_authorized
 
   sig { void }
   def show
     authorize version
-    game_policy = policy(game)
     @version_presenter = T.let(CharacterVersionPresenter.new(version), T.nilable(CharacterVersionPresenter))
-    @character_presenter = T.let(
-      CharacterPresenter.new(character, game_policy: game_policy),
-      T.nilable(CharacterPresenter)
-    )
-    @game_presenter = T.let(GamePresenter.new(game, policy: game_policy), T.nilable(GamePresenter))
+    @character_presenter = T.let(CharacterPresenter.new(character), T.nilable(CharacterPresenter))
+    @game_presenter = T.let(GamePresenter.new(game, policy: policy(game)), T.nilable(GamePresenter))
   end
 
   private
 
-  sig { void }
-  def set_records
-    game = Game.find(params[:game_id])
-    character = game.characters.find(params[:character_id])
-    version = character.character_versions.find(params[:id])
-    @records = T.let(Records.new(game, character, version), T.nilable(Records))
-  end
-
+  # No before_action ivar: the three route-nested records (game -> character
+  # -> version) are controller-internal plumbing only, never read by a
+  # template, so under `# typed: strict` any ivar holding them (even a Struct)
+  # would itself be a raw model reaching the view layer's boundary — Sorbet
+  # requires a T.let on every ivar write under `strict`, and the gate reads
+  # that declared type. Each accessor re-resolves from params on every call
+  # rather than memoizing into an ivar; #show is the controller's only action,
+  # so the handful of repeated single-row lookups this costs is not worth
+  # reintroducing the ivar that caused the violation.
   sig { returns(Game) }
   def game
-    T.must(@records).game
+    Game.find(params[:game_id])
   end
 
   sig { returns(Character) }
   def character
-    T.must(@records).character
+    game.characters.find(params[:character_id])
   end
 
   sig { returns(CharacterVersion) }
   def version
-    T.must(@records).version
+    character.character_versions.find(params[:id])
   end
 
   sig { void }

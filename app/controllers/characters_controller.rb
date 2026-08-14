@@ -16,7 +16,7 @@ class CharactersController < ApplicationController
   def new
     character = game.characters.new
     authorize character
-    assign_new_form_presenters(character)
+    assign_presenters(character)
   end
 
   sig { void }
@@ -27,7 +27,7 @@ class CharactersController < ApplicationController
     if CharacterCreation.new(character, policy(character), params).call(current_user)
       redirect_to game_character_path(game, character), notice: "Character created."
     else
-      assign_new_form_presenters(character)
+      assign_presenters(character)
       render :new, status: :unprocessable_content
     end
   end
@@ -82,18 +82,9 @@ class CharactersController < ApplicationController
     )
   end
 
-  # #new/#create's presenter trio: the game/character pair every render needs,
-  # plus the player-selector options only these two actions' form can show
-  # (an existing character's owner is fixed, so #edit never needs it).
-  sig { params(character: Character).void }
-  def assign_new_form_presenters(character)
-    assign_presenters(character)
-    @owner_options = T.let(presenter_builder.owner_options, T.nilable(T::Array[[ String, Integer ]]))
-  end
-
   sig { returns(CharacterPresenterBuilder) }
   def presenter_builder
-    CharacterPresenterBuilder.new(game, policy(game))
+    CharacterPresenterBuilder.new(game, policy(game), urls: self)
   end
 
   sig { void }
