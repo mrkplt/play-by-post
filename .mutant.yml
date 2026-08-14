@@ -44,12 +44,14 @@ matcher:
     - CharacterVersionPresenter
     - GameDashboardItemPresenter
     - GameDashboardPresenter
+    - DrawerMembershipPresenter
     - GameFilePresenter
     - GameMemberPresenter
     - GameFeedRowPresenter
     - GameLinkPresenter
     - GamePresenter
     - GameRosterPresenter
+    - GameScenesPanelPresenter
     - GameShowPresenter
     - InvitationPresenter
     - NotebookBoardPresenter

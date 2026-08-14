@@ -16,25 +16,34 @@ class GameShowPresenter < BasePresenter
   # behind the GM-only invite panel on the Roster tab.
   sig { returns(T::Array[InvitationPresenter]) }
   def pending_invitations
-    game.invitations.pending.order(created_at: :desc).to_a.map do |invitation|
-      InvitationPresenter.new(invitation, game: game, urls: @options.fetch(:urls))
-    end
+    @pending_invitations ||= T.let(
+      game.invitations.pending.order(created_at: :desc).to_a.map do |invitation|
+        InvitationPresenter.new(invitation, game: game, urls: @options.fetch(:urls))
+      end,
+      T.nilable(T::Array[InvitationPresenter])
+    )
   end
 
   # The game's pages, alphabetised by title — the data behind the Pages tab.
   sig { returns(T::Array[PagePresenter]) }
   def pages
-    game.pages.order(:title).to_a.map do |page|
-      PagePresenter.new(page, game: game, urls: @options.fetch(:urls))
-    end
+    @pages ||= T.let(
+      game.pages.order(:title).to_a.map do |page|
+        PagePresenter.new(page, game: game, urls: @options.fetch(:urls))
+      end,
+      T.nilable(T::Array[PagePresenter])
+    )
   end
 
   # The game's links, newest first — the data behind the Links tab.
   sig { returns(T::Array[GameLinkPresenter]) }
   def links
-    game.game_links.order(created_at: :desc).to_a.map do |game_link|
-      GameLinkPresenter.new(game_link, game: game, urls: @options.fetch(:urls))
-    end
+    @links ||= T.let(
+      game.game_links.order(created_at: :desc).to_a.map do |game_link|
+        GameLinkPresenter.new(game_link, game: game, urls: @options.fetch(:urls))
+      end,
+      T.nilable(T::Array[GameLinkPresenter])
+    )
   end
 
   # The game's uploaded files, newest first, wrapped for
@@ -43,9 +52,12 @@ class GameShowPresenter < BasePresenter
   # at construction (options[:helpers]).
   sig { returns(T::Array[GameFilePresenter]) }
   def game_files
-    game.game_files.includes(file_attachment: :blob).order(created_at: :desc).to_a.map do |gf|
-      GameFilePresenter.new(gf, game: game, helpers: @options.fetch(:helpers), can_manage: @model.can_manage?)
-    end
+    @game_files ||= T.let(
+      game.game_files.includes(file_attachment: :blob).order(created_at: :desc).to_a.map do |gf|
+        GameFilePresenter.new(gf, game: game, helpers: @options.fetch(:helpers), can_manage: @model.can_manage?)
+      end,
+      T.nilable(T::Array[GameFilePresenter])
+    )
   end
 
   # A blank file record for the Files tab's upload form, wrapped the same way.

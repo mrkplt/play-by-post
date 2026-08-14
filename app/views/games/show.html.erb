@@ -13,11 +13,11 @@
     <%# ===== Scenes panel ===== %>
     <section data-game-tabs-target="panel" data-panel="scenes" class="flex flex-col gap-3">
       <%= render Ui::SectionLabelComponent.new do %>Active Scenes<% end %>
-      <% if @game_roster.active_scenes.empty? %>
+      <% if @game_scenes.active_scenes.empty? %>
         <p class="text-muted-2 text-sm">No active scenes.</p>
       <% else %>
         <div>
-          <% @game_roster.active_scenes.each do |scene| %>
+          <% @game_scenes.active_scenes.each do |scene| %>
             <%= render Shared::SceneCardComponent.new(scene: scene, game: @game_presenter, hot: scene.hot?) %>
           <% end %>
         </div>
@@ -36,12 +36,12 @@
         <%# The crown marks the person this row is about, not the viewer: this
             row IS the GM, so it is always crowned. %>
         <%= render Shared::RosterRowComponent.new(
-              name: @game_roster.gm_name, subtitle: "Running this game",
-              avatar_tone: :dark, crown: true, last: @game_roster.roster_preview.empty?) %>
-        <% @game_roster.roster_preview.each_with_index do |row, i| %>
+              name: @game_scenes.gm_name, subtitle: "Running this game",
+              avatar_tone: :dark, crown: true, last: @game_scenes.roster_preview.empty?) %>
+        <% @game_scenes.roster_preview.each_with_index do |row, i| %>
           <%= render Shared::RosterRowComponent.new(
                 name: row[:name], subtitle: row[:scene],
-                avatar_tone: :gold, last: i == @game_roster.roster_preview.length - 1) %>
+                avatar_tone: :gold, last: i == @game_scenes.roster_preview.length - 1) %>
         <% end %>
       </div>
     </section>

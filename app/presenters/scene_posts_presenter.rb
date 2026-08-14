@@ -35,9 +35,17 @@ class ScenePostsPresenter < BasePresenter
 
   # Ids of this scene's posts the viewer has already read — the unread-aura
   # data Shared::PostItemComponent needs per post.
+  # Memoized: the scene template passes this into every Shared::PostItemComponent
+  # in the posts loop, so an unmemoized read runs SceneReadState.for once per
+  # post (22 queries on a 20-post scene against 3 memoized). The controller
+  # computed this once into an ivar before the layering sweep; memoizing keeps
+  # that single-query behaviour now that it lives on the presenter.
   sig { returns(T::Set[Integer]) }
   def read_post_ids
-    SceneReadState.for(scene: @model.model, posts: published_posts, user: viewer)
+    @read_post_ids ||= T.let(
+      SceneReadState.for(scene: @model.model, posts: published_posts, user: viewer),
+      T.nilable(T::Set[Integer])
+    )
   end
 
   # Published posts, oldest first, each wrapped for display — the scene

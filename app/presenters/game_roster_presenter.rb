@@ -13,59 +13,31 @@ class GameRosterPresenter < BasePresenter
     super
   end
 
-  # The game's active scenes visible to the viewer, most recently active
-  # first — the Scenes panel's card list. Each scene is aware of whether it
-  # counts as "hot" (activity since the viewer's last login), via
-  # ScenePresenter#hot? reading the same hot_scene_ids this presenter derives.
-  sig { returns(T::Array[ScenePresenter]) }
-  def active_scenes
-    hot_ids = hot_scene_ids
-    raw_active_scenes.map { |scene| ScenePresenter.new(scene, hot_scene_ids: hot_ids) }
-  end
 
-  # The GM's display name — always shown, crowned, at the top of the "In
-  # Active Scenes" roster preview.
-  sig { returns(String) }
-  def gm_name
-    gm = game.game_members.game_masters.includes(:user).first&.user
-    gm ? UserPresenter.new(gm).display_name_or_email : "GM"
-  end
 
-  # The "In Active Scenes" roster preview: the GM, then up to five distinct
-  # characters participating in an active scene, each paired with that
-  # scene's title. Banned players are already excluded from scene
-  # participation.
-  sig { returns(T::Array[T::Hash[Symbol, String]]) }
-  def roster_preview
-    rows = raw_active_scenes.flat_map { |scene| SceneRosterRowsPresenter.new(ScenePresenter.new(scene)).rows }
-    rows.uniq { |row| row[:name] }.first(5)
-  end
 
   # Active characters visible to the viewer, one presenter per row, for the
   # Roster tab's character list.
   sig { returns(T::Array[RosterCharacterPresenter]) }
   def roster_characters
-    removed_user_ids = game.game_members.where(status: "removed").pluck(:user_id).to_set
-
-    game.characters.active.visible_to(viewer, game).includes(:user).order(:name).to_a.map do |character|
-      RosterCharacterPresenter.new(character, removed: removed_user_ids.include?(character.user_id))
-    end
+    @roster_characters ||= T.let(build_roster_characters, T.nilable(T::Array[RosterCharacterPresenter]))
   end
 
   # Archived characters visible to the viewer but hidden from the roster —
   # surfaced only as a count ("N inactive characters hidden").
   sig { returns(Integer) }
   def inactive_character_count
-    game.characters.archived.visible_to(viewer, game).count
+    @inactive_character_count ||= T.let(
+      game.characters.archived.visible_to(viewer, game).count,
+      T.nilable(Integer)
+    )
   end
 
   # Banned members, GM-only — empty for a non-manager so the section never
   # renders for a player. One presenter per row.
   sig { returns(T::Array[BannedMemberPresenter]) }
   def banned_members
-    return [] unless @model.can_manage?
-
-    game.game_members.where(status: "banned").includes(:user).to_a.map { |member| BannedMemberPresenter.new(member) }
+    @banned_members ||= T.let(build_banned_members, T.nilable(T::Array[BannedMemberPresenter]))
   end
 
   private
@@ -80,26 +52,23 @@ class GameRosterPresenter < BasePresenter
     @options.fetch(:current_user)
   end
 
-  sig { returns(T::Array[Scene]) }
-  def raw_active_scenes
-    @raw_active_scenes ||= T.let(
-      game.scenes
-        .visible_to(viewer, game)
-        .active
-        .includes(:parent_scene, :child_scenes, :posts, scene_participants: [ :character, :user ])
-        .to_a
-        .sort_by { |scene| -scene.last_activity_at.to_i },
-      T.nilable(T::Array[Scene])
-    )
+
+
+
+
+  sig { returns(T::Array[RosterCharacterPresenter]) }
+  def build_roster_characters
+    removed_user_ids = game.game_members.where(status: "removed").pluck(:user_id).to_set
+
+    game.characters.active.visible_to(viewer, game).includes(:user).order(:name).to_a.map do |character|
+      RosterCharacterPresenter.new(character, removed: removed_user_ids.include?(character.user_id))
+    end
   end
 
-  # Scenes with activity since the viewer last logged in — the source hot
-  # scene ids behind ScenePresenter#hot? for #active_scenes.
-  sig { returns(T::Set[Integer]) }
-  def hot_scene_ids
-    last_login = viewer.user_profile&.last_login_at
-    return Set.new unless last_login
+  sig { returns(T::Array[BannedMemberPresenter]) }
+  def build_banned_members
+    return [] unless @model.can_manage?
 
-    Set.new(raw_active_scenes.select { |scene| scene.last_activity_at.to_i > last_login.to_i }.map(&:id))
+    game.game_members.where(status: "banned").includes(:user).to_a.map { |member| BannedMemberPresenter.new(member) }
   end
 end

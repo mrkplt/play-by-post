@@ -79,6 +79,10 @@ class GamesController < ApplicationController
       GameRosterPresenter.new(T.must(@game_presenter), current_user: current_user),
       T.nilable(GameRosterPresenter)
     )
+    @game_scenes = T.let(
+      GameScenesPanelPresenter.new(T.must(@game_presenter), current_user: current_user),
+      T.nilable(GameScenesPanelPresenter)
+    )
   end
 
   sig { void }

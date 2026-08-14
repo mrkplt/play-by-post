@@ -22,40 +22,28 @@ class Shared::NavDrawerComponent < ApplicationComponent
     @user.display_name_or_email
   end
 
-  sig { returns(T::Array[GameMember]) }
+  # One presenter per game row. Each already knows its own name, whether it is
+  # the active row, and which status glyph it carries — this component only
+  # turns those answers into markup.
+  sig { returns(T::Array[DrawerMembershipPresenter]) }
   def memberships
-    @user.drawer_memberships
+    @memberships ||= T.let(
+      @user.drawer_memberships.map do |membership|
+        DrawerMembershipPresenter.new(membership, active_game_id: @active_game_id)
+      end,
+      T.nilable(T::Array[DrawerMembershipPresenter])
+    )
   end
 
-  sig { params(member: GameMember).returns(T::Boolean) }
-  def active?(member)
-    !@active_game_id.nil? && member.game_id == @active_game_id
-  end
-
-  # Which status glyph a game row shows: :crown (viewer is GM), :moon (former /
-  # removed — dormant but browsable), or :plain (ordinary player game).
-  sig { params(member: GameMember).returns(Symbol) }
-  def status_icon(member)
-    return :crown if member.game_master?
-    return :moon if member.removed?
-
-    :plain
-  end
-
-  sig { params(member: GameMember).returns(String) }
+  sig { params(member: DrawerMembershipPresenter).returns(String) }
   def row_classes(member)
     base = "flex items-center gap-2.5 px-[18px] py-2.5 cursor-pointer no-underline"
-    active?(member) ? "#{base} bg-sidebar-bg" : base
+    member.active? ? "#{base} bg-sidebar-bg" : base
   end
 
-  sig { params(member: GameMember).returns(String) }
-  def game_name(member)
-    T.must(member.game).name
-  end
-
-  sig { params(member: GameMember).returns(String) }
+  sig { params(member: DrawerMembershipPresenter).returns(String) }
   def name_classes(member)
     base = "text-[13px] truncate"
-    active?(member) ? "#{base} text-white font-bold" : "#{base} text-sidebar-text"
+    member.active? ? "#{base} text-white font-bold" : "#{base} text-sidebar-text"
   end
 end
