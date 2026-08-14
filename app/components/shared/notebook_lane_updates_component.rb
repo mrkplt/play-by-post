@@ -13,7 +13,7 @@
 class Shared::NotebookLaneUpdatesComponent < ApplicationComponent
   extend T::Sig
 
-  sig { params(game: Game, notebook_entry: NotebookEntry).void }
+  sig { params(game: GamePresenter, notebook_entry: NotebookEntryPresenter).void }
   def initialize(game:, notebook_entry:)
     @game = game
     @notebook_entry = notebook_entry
@@ -48,8 +48,8 @@ class Shared::NotebookLaneUpdatesComponent < ApplicationComponent
     :expanded
   end
 
-  sig { params(status: String).returns(T::Array[NotebookEntry]) }
+  sig { params(status: String).returns(T::Array[NotebookEntryPresenter]) }
   def entries_in(status)
-    @game.notebook_entries.where(status: status).order(:created_at).to_a
+    @game.notebook_board.entries_for(status)
   end
 end

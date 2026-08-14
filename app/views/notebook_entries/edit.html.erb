@@ -19,6 +19,6 @@
     <% end %>
   <% end %>
 
-  <%= render Shared::NotebookEntryActionsComponent.new(game: @game, notebook_entry: @notebook_entry) %>
-  <%= render Shared::NotebookFormComponent.new(game: @game, notebook_entry: @notebook_entry) %>
+  <%= render Shared::NotebookEntryActionsComponent.new(game: game_presenter, notebook_entry: @entry_presenter) %>
+  <%= render Shared::NotebookFormComponent.new(game: game_presenter, notebook_entry: @entry_presenter) %>
 <% end %>

@@ -8,5 +8,5 @@
           secondary_nav: Shared::GameNavComponent.new(game: @game, active_tab: :notebook, can_manage: game_presenter.can_manage?, mode: :link)) %>
   <% end %>
 
-  <%= render Shared::NotebookBoardComponent.new(game: @game, entries_by_status: @entries.group_by(&:status)) %>
+  <%= render Shared::NotebookBoardComponent.new(game: game_presenter, board: @notebook_board) %>
 <% end %>

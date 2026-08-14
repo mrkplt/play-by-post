@@ -42,6 +42,8 @@ matcher:
     - CharacterPresenter
     - GameFilePresenter
     - GamePresenter
+    - NotebookBoardPresenter
+    - NotebookEntryPresenter
     - PostPresenter
     - SceneSummaryPresenter
     - ScenePresenter
