@@ -21,19 +21,4 @@ module ApplicationHelper
   def render_markdown(text)
     MarkdownRenderer.render(text)
   end
-
-  # Passive "last export" text shown beside the (always-enabled) export button.
-  sig { params(receipt: GameExportRequest).returns(String) }
-  def last_export_notice(receipt)
-    "Last export: #{T.unsafe(self).time_ago_in_words(T.must(receipt.succeeded_at))} ago"
-  end
-
-  # "Export All Games" helper text on the profile page: the last-export notice
-  # when a receipt exists, otherwise generic delivery-window/expiry copy.
-  sig { params(receipt: T.nilable(GameExportRequest)).returns(String) }
-  def export_all_games_notice(receipt)
-    return last_export_notice(receipt) if receipt
-
-    "You'll receive an email with a download link within a few minutes; the link expires after 7 days."
-  end
 end

@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 
 # The Campaign Notebook: a GM-only kanban of short entries (new / expand /
 # done / discard) that can be "promoted" into a full game Page. Unlike
@@ -11,10 +11,13 @@
 # `update?`, which asks whether the row may be modified — a different question
 # that merely has the same answer while GM and owner are the same person.
 #
-# `@notebook_entry` stays the raw AR record throughout — Pundit's `authorize`
-# and the update/destroy calls need it — and `@entry_presenter` is what the
-# views actually render, built fresh after every mutation so it reflects the
-# entry's current state (including validation errors on a failed save).
+# `@notebook_entry` (set by a before_action, on edit/update/destroy/move/
+# promote) stays the raw AR record — Pundit's `authorize` and the
+# update/destroy calls need it — while `new`/`create` build their own local
+# record instead of an ivar (neither view reads it directly). `@entry_presenter`
+# is what every view actually renders, built fresh after every mutation so it
+# reflects the entry's current state (including validation errors on a failed
+# save).
 class NotebookEntriesController < ApplicationController
   extend T::Sig
 
@@ -26,26 +29,30 @@ class NotebookEntriesController < ApplicationController
 
   sig { void }
   def index
-    authorize @game.notebook_entries.new, :index?
-    @notebook_board = game_presenter.notebook_board
+    authorize T.must(@game).notebook_entries.new, :index?
+    @notebook_board = T.let(game_presenter.notebook_board, T.nilable(NotebookBoardPresenter))
   end
 
   sig { void }
   def new
-    @notebook_entry = @game.notebook_entries.new
-    authorize @notebook_entry
-    @entry_presenter = NotebookEntryPresenter.new(@notebook_entry)
+    notebook_entry = T.must(@game).notebook_entries.new
+    authorize notebook_entry
+    @entry_presenter = T.let(
+      NotebookEntryPresenter.new(notebook_entry), T.nilable(NotebookEntryPresenter)
+    )
   end
 
   sig { void }
   def create
-    @notebook_entry = @game.notebook_entries.new(notebook_entry_params)
-    authorize @notebook_entry
+    notebook_entry = T.must(@game).notebook_entries.new(notebook_entry_params)
+    authorize notebook_entry
 
-    if @notebook_entry.save
+    if notebook_entry.save
       redirect_to game_notebook_entries_path(@game), notice: "Entry created."
     else
-      @entry_presenter = NotebookEntryPresenter.new(@notebook_entry)
+      @entry_presenter = T.let(
+        NotebookEntryPresenter.new(notebook_entry), T.nilable(NotebookEntryPresenter)
+      )
       respond_to do |format|
         format.turbo_stream { render :create_failed }
         format.html { render :new, status: :unprocessable_content }
@@ -56,17 +63,21 @@ class NotebookEntriesController < ApplicationController
   sig { void }
   def edit
     authorize @notebook_entry
-    @entry_presenter = NotebookEntryPresenter.new(@notebook_entry)
+    @entry_presenter = T.let(
+      NotebookEntryPresenter.new(T.must(@notebook_entry)), T.nilable(NotebookEntryPresenter)
+    )
   end
 
   sig { void }
   def update
     authorize @notebook_entry
 
-    if @notebook_entry.update(notebook_entry_params)
+    if T.must(@notebook_entry).update(notebook_entry_params)
       redirect_to edit_game_notebook_entry_path(@game, @notebook_entry), notice: "Entry updated."
     else
-      @entry_presenter = NotebookEntryPresenter.new(@notebook_entry)
+      @entry_presenter = T.let(
+        NotebookEntryPresenter.new(T.must(@notebook_entry)), T.nilable(NotebookEntryPresenter)
+      )
       render :edit, status: :unprocessable_content
     end
   end
@@ -74,7 +85,7 @@ class NotebookEntriesController < ApplicationController
   sig { void }
   def destroy
     authorize @notebook_entry
-    @notebook_entry.destroy
+    T.must(@notebook_entry).destroy
     redirect_to game_notebook_entries_path(@game), notice: "Entry deleted."
   end
 
@@ -83,7 +94,7 @@ class NotebookEntriesController < ApplicationController
     authorize @notebook_entry, :manage?
 
     lane_move = NotebookLaneMove.new(params)
-    @notebook_entry.update!(lane_move.attributes)
+    T.must(@notebook_entry).update!(lane_move.attributes)
 
     # On the board the response swaps the affected lanes in place. Off the
     # board there are no lanes to swap, so say what happened and come back.
@@ -94,7 +105,9 @@ class NotebookEntriesController < ApplicationController
     if lane_move.standalone?
       redirect_to edit_game_notebook_entry_path(@game, @notebook_entry), notice: "Entry moved."
     else
-      @entry_presenter = NotebookEntryPresenter.new(@notebook_entry)
+      @entry_presenter = T.let(
+        NotebookEntryPresenter.new(T.must(@notebook_entry)), T.nilable(NotebookEntryPresenter)
+      )
       render :move, formats: :turbo_stream
     end
   end
@@ -103,7 +116,7 @@ class NotebookEntriesController < ApplicationController
   def promote
     authorize @notebook_entry, :manage?
 
-    page = NotebookEntryPromotion.new(@notebook_entry).call
+    page = NotebookEntryPromotion.new(T.must(@notebook_entry)).call
     redirect_to game_page_path(@game, page), notice: "Promoted to a page."
   end
 
@@ -111,12 +124,12 @@ class NotebookEntriesController < ApplicationController
 
   sig { void }
   def set_game
-    @game = Game.find(params[:game_id])
+    @game = T.let(Game.find(params[:game_id]), T.nilable(Game))
   end
 
   sig { void }
   def set_notebook_entry
-    @notebook_entry = @game.notebook_entries.find_by!(slug: params[:slug])
+    @notebook_entry = T.let(T.must(@game).notebook_entries.find_by!(slug: params[:slug]), T.nilable(NotebookEntry))
   end
 
   # The notebook's screens render the game nav, which asks whether the viewer
@@ -130,7 +143,7 @@ class NotebookEntriesController < ApplicationController
   # list.
   sig { returns(GamePresenter) }
   def game_presenter
-    @game_presenter ||= T.let(GamePresenter.new(@game, policy: policy(@game)), T.nilable(GamePresenter))
+    @game_presenter ||= T.let(GamePresenter.new(T.must(@game), policy: policy(@game)), T.nilable(GamePresenter))
   end
 
   sig { returns(ActionController::Parameters) }

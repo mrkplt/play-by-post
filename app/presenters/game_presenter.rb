@@ -6,6 +6,7 @@
 # controller authorizes.
 class GamePresenter < BasePresenter
   extend T::Sig
+  include ActionView::Helpers::DateHelper
 
   sig { params(model: Game, options: T.untyped).void }
   def initialize(model, **options)
@@ -96,6 +97,19 @@ class GamePresenter < BasePresenter
   sig { returns(T::Boolean) }
   def images_disabled?
     @model.images_disabled? # mutant:disable
+  end
+
+  # The Export row's passive subtitle: when this viewer has a valid export
+  # receipt for this game, how long ago it succeeded — otherwise no subtitle
+  # at all. The viewer is supplied at construction (options[:current_user])
+  # rather than looked up here, matching how a policy travels in rather than
+  # being built by the presenter.
+  sig { returns(T.nilable(String)) }
+  def export_notice
+    receipt = GameExportRequest.valid_receipt_for(@options.fetch(:current_user), @model)
+    return nil unless receipt
+
+    "Last export: #{time_ago_in_words(T.must(receipt.succeeded_at))} ago"
   end
 
   # The game's active scenes visible to the viewer, most recently active

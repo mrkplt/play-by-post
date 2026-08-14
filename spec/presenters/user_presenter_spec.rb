@@ -109,6 +109,22 @@ RSpec.describe UserPresenter do
     end
   end
 
+  describe "#export_all_games_notice", :db do
+    it "renders a 'Last export: X ago' notice when a valid all-games receipt exists" do
+      user = create(:user)
+      receipt = create(:game_export_request, :all_games, user: user, succeeded_at: 3.hours.ago)
+      receipt.archive.attach(io: StringIO.new("zip"), filename: "all.zip", content_type: "application/zip")
+
+      expect(described_class.new(user).export_all_games_notice).to match(/\ALast export: .+ ago\z/)
+    end
+
+    it "returns generic delivery-window copy when no receipt is present" do
+      user = create(:user)
+      expect(described_class.new(user).export_all_games_notice)
+        .to eq("You'll receive an email with a download link within a few minutes; the link expires after 7 days.")
+    end
+  end
+
   describe "#feed_rows", db: true do
     let(:user) { create(:user) }
     let(:urls) { double("urls") }

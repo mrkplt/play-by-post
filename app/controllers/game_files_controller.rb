@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 
 class GameFilesController < ApplicationController
   extend T::Sig
@@ -9,23 +9,25 @@ class GameFilesController < ApplicationController
 
   sig { void }
   def index
-    @game_presenter = GamePresenter.new(@game, policy: policy(@game))
-    @game_files = build_game_file_presenters
-    @game_file_presenter = GameFilePresenter.new(@game.game_files.new)
+    @game_presenter = T.let(GamePresenter.new(T.must(@game), policy: policy(@game)), T.nilable(GamePresenter))
+    @game_files = T.let(build_game_file_presenters, T.nilable(T::Array[GameFilePresenter]))
+    @game_file_presenter = T.let(
+      GameFilePresenter.new(T.must(@game).game_files.new), T.nilable(GameFilePresenter)
+    )
   end
 
   sig { void }
   def create
-    authorize @game.game_files.new
+    authorize T.must(@game).game_files.new
     uploaded_file = params.dig(:game_file, :file)
     unless uploaded_file
       redirect_to game_game_files_path(@game), alert: "Please select a file to upload."
       return
     end
 
-    @game_file = @game.game_files.new(filename: uploaded_file.original_filename)
+    game_file = T.must(@game).game_files.new(filename: uploaded_file.original_filename)
     AttachmentUploader.attach(
-      attachment: @game_file.file,
+      attachment: game_file.file,
       attachable: uploaded_file,
       kind: "game_file",
       user: current_user,
@@ -33,12 +35,12 @@ class GameFilesController < ApplicationController
       original_filename: uploaded_file.original_filename
     )
 
-    if @game_file.save
+    if game_file.save
       redirect_to game_game_files_path(@game), notice: "File uploaded."
     else
-      @game_presenter = GamePresenter.new(@game, policy: policy(@game))
-      @game_files = build_game_file_presenters
-      @game_file_presenter = GameFilePresenter.new(@game_file)
+      @game_presenter = T.let(GamePresenter.new(T.must(@game), policy: policy(@game)), T.nilable(GamePresenter))
+      @game_files = T.let(build_game_file_presenters, T.nilable(T::Array[GameFilePresenter]))
+      @game_file_presenter = T.let(GameFilePresenter.new(game_file), T.nilable(GameFilePresenter))
       render :index, status: :unprocessable_content
     end
   end
@@ -48,7 +50,7 @@ class GameFilesController < ApplicationController
   # so an unauthorized caller cannot tell a missing file from a forbidden one.
   sig { void }
   def destroy
-    files = @game.game_files
+    files = T.must(@game).game_files
     authorize files.new
     files.find(params[:id]).destroy
     redirect_to game_game_files_path(@game), notice: "File deleted."
@@ -58,14 +60,15 @@ class GameFilesController < ApplicationController
 
   sig { returns(T::Array[GameFilePresenter]) }
   def build_game_file_presenters
-    @game.game_files.includes(file_attachment: :blob).order(created_at: :desc).map do |gf|
-      GameFilePresenter.new(gf, game: @game, helpers: helpers, can_manage: policy(@game).manage?)
+    game = T.must(@game)
+    game.game_files.includes(file_attachment: :blob).order(created_at: :desc).map do |gf|
+      GameFilePresenter.new(gf, game: game, helpers: helpers, can_manage: policy(game).manage?)
     end
   end
 
   sig { void }
   def set_game
-    @game = Game.find(params[:game_id])
+    @game = T.let(Game.find(params[:game_id]), T.nilable(Game))
   end
 
   sig { void }

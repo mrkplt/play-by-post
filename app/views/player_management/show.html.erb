@@ -13,15 +13,15 @@
 
     <%# Members %>
     <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do %>Members<% end %>
-    <% if @members.empty? %>
+    <% if @roster.empty? %>
       <p class="text-muted-2 text-sm">No players yet.</p>
     <% else %>
       <div class="bg-card border border-card-border rounded-card px-3.5">
-        <% @members.each_with_index do |member, i| %>
+        <% @roster.each_with_index do |member, i| %>
           <%= render Ui::SettingsRowComponent.new(
-                label: @member_display_names[member.user_id],
-                sub: @member_characters[member.user_id],
-                last: i == @members.length - 1) do %>
+                label: member.display_name,
+                sub: member.character_name,
+                last: i == @roster.length - 1) do %>
             <% if member.active? %>
               <%= render Ui::ButtonComponent.new(
                     variant: :text,
@@ -61,7 +61,7 @@
   <%# Export %>
   <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do %>Export<% end %>
   <%= render Ui::CardComponent.new do %>
-    <%= render Ui::SettingsRowComponent.new(label: "This game", sub: @export_notice, last: true) do %>
+    <%= render Ui::SettingsRowComponent.new(label: "This game", sub: @game_presenter.export_notice, last: true) do %>
       <%= render Ui::ButtonComponent.new(variant: :text, url: game_export_path(@game), method: :post) do %>Export Game<% end %>
     <% end %>
   <% end %>

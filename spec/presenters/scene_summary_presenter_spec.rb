@@ -164,4 +164,39 @@ RSpec.describe SceneSummaryPresenter do
       expect(described_class.new(edited_manual).status_label).to eq("Hand-written")
     end
   end
+
+  describe "#body" do
+    it "delegates to the model" do
+      expect(presenter.body).to eq("**Hero** wins.")
+    end
+  end
+
+  describe "#scene_url" do
+    it "builds the scene's absolute URL from the injected game and url_helpers" do
+      game = build_stubbed(:game, id: 7)
+      scene = build_stubbed(:scene, id: 42)
+      allow(summary).to receive(:scene).and_return(scene)
+      urls = double("urls")
+      allow(urls).to receive(:game_scene_url).with(game, scene).and_return("https://example.com/games/7/scenes/42")
+
+      presenter = described_class.new(summary, game: game, urls: urls)
+      expect(presenter.scene_url).to eq("https://example.com/games/7/scenes/42")
+    end
+  end
+
+  describe "#scene_resolved_at_rfc2822" do
+    it "returns nil when the scene has no resolved_at" do
+      scene = build_stubbed(:scene, resolved_at: nil)
+      allow(summary).to receive(:scene).and_return(scene)
+      expect(presenter.scene_resolved_at_rfc2822).to be_nil
+    end
+
+    context "when the scene is resolved" do
+      it "formats the timestamp as RFC 2822" do
+        scene = build_stubbed(:scene, resolved_at: Time.zone.parse("2026-03-10 09:00:00"))
+        allow(summary).to receive(:scene).and_return(scene)
+        expect(presenter.scene_resolved_at_rfc2822).to eq(scene.resolved_at.rfc2822)
+      end
+    end
+  end
 end

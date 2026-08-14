@@ -73,7 +73,14 @@ def public_action_ivar_count(source)
     end
   end
 
-  names.uniq.size
+  # Presenter ivars are not counted. This gate exists to stop a controller
+  # accumulating view LOGIC, and its own remedy is "move the data behind a
+  # view-model (presenter) method". bin/check-view-layering now *requires*
+  # every view-facing ivar to be a presenter, so counting presenters would
+  # penalise the exact fix both gates ask for: converting `@page` (a model the
+  # template interrogates) into `@page_presenter` (a finished view model) reads
+  # as +1 here while strictly reducing what the view can reach.
+  names.uniq.reject { |name| name.to_s.end_with?("_presenter", "_presenters") }.size
 end
 
 changed = `git diff --name-only origin/master -- app/controllers/`.strip.split("\n")
