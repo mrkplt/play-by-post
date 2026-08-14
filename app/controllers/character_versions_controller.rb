@@ -12,8 +12,9 @@ class CharacterVersionsController < ApplicationController
   sig { void }
   def show
     authorize @version
-    @editor = UserPresenter.new(@version.edited_by)
+    @version_presenter = CharacterVersionPresenter.new(@version)
     @character_presenter = CharacterPresenter.new(@character, game_policy: policy(@game))
+    @game_presenter = GamePresenter.new(@game, policy: policy(@game))
   end
 
   private

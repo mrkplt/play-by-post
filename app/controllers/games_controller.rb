@@ -15,7 +15,7 @@ class GamesController < ApplicationController
       GameDashboardPresenter.new(
         memberships,
         current_user: current_user,
-        can_manage_by_game_id: can_manage_by_game_id(memberships),
+        policy_by_game_id: policy_by_game_id(memberships),
         games_with_new_activity: games_with_new_activity(memberships)
       ),
       T.nilable(GameDashboardPresenter)
@@ -67,16 +67,16 @@ class GamesController < ApplicationController
   sig { void }
   def show
     authorize @game
-    @game_presenter = T.let(GamePresenter.new(game, policy: policy(@game)), T.nilable(GamePresenter))
-    @game_show_presenter = T.let(
-      GameShowPresenter.new(T.must(@game_presenter), current_user: current_user),
-      T.nilable(GameShowPresenter)
+    @game_presenter = T.let(
+      GamePresenter.new(game, policy: policy(@game), current_user: current_user, urls: self, helpers: helpers),
+      T.nilable(GamePresenter)
     )
   end
 
   sig { void }
   def edit
     authorize @game
+    @game_presenter = T.let(GamePresenter.new(game, policy: policy(@game)), T.nilable(GamePresenter))
   end
 
   sig { void }
@@ -85,6 +85,7 @@ class GamesController < ApplicationController
     if game.update(game_params)
       redirect_to game_player_management_path(game), notice: "Game updated."
     else
+      @game_presenter = T.let(GamePresenter.new(game, policy: policy(@game)), T.nilable(GamePresenter))
       render :edit, status: :unprocessable_content
     end
   end
@@ -112,15 +113,18 @@ class GamesController < ApplicationController
       .to_a
   end
 
-  # Pundit's `manage?` answer per game, built once in the controller (where
-  # policies belong) rather than per-item in the presenter (R2).
-  sig { params(memberships: T::Array[GameMember]).returns(T::Hash[Integer, T::Boolean]) }
-  def can_manage_by_game_id(memberships)
+  # Pundit's policy per game, built once in the controller (where policies
+  # belong) rather than looked up per-item in the presenter (R2). Each
+  # GameDashboardItemPresenter wraps its game in a GamePresenter carrying
+  # this same policy, so the card's crown and the "can_manage" flag can
+  # never disagree.
+  sig { params(memberships: T::Array[GameMember]).returns(T::Hash[Integer, GamePolicy]) }
+  def policy_by_game_id(memberships)
     memberships.each_with_object({}) do |membership, hash|
       game = membership.game
       next if game.nil?
 
-      hash[game.id] = policy(game).manage?
+      hash[game.id] = policy(game)
     end
   end
 

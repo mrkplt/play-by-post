@@ -4,27 +4,31 @@ RSpec.describe GameDashboardItemPresenter do
   let(:game) { build_stubbed(:game) }
   let(:user) { build_stubbed(:user) }
   let(:membership) { build_stubbed(:game_member, game: game, user: user) }
+  let(:policy) { instance_double(GamePolicy, manage?: true) }
 
   subject(:presenter) do
     described_class.new(
       membership,
       current_user: user,
+      policy: policy,
       can_manage: true,
       games_with_new_activity: [ game.id ]
     )
   end
 
   describe "#game" do
-    it "returns the membership's game" do
-      expect(presenter.game).to eq(game)
+    it "wraps the membership's game in a GamePresenter carrying the same policy" do
+      result = presenter.game
+      expect(result).to be_a(GamePresenter)
+      expect(result.can_manage?).to be(true)
     end
   end
 
   describe "#can_manage?" do
     it "reads the precomputed can_manage option" do
-      expect(described_class.new(membership, current_user: user, can_manage: true,
+      expect(described_class.new(membership, current_user: user, policy: policy, can_manage: true,
         games_with_new_activity: []).can_manage?).to be(true)
-      expect(described_class.new(membership, current_user: user, can_manage: false,
+      expect(described_class.new(membership, current_user: user, policy: policy, can_manage: false,
         games_with_new_activity: []).can_manage?).to be(false)
     end
   end
@@ -32,7 +36,7 @@ RSpec.describe GameDashboardItemPresenter do
   describe "#former?" do
     it "is true for a removed membership" do
       removed = build_stubbed(:game_member, :removed, game: game, user: user)
-      expect(described_class.new(removed, current_user: user, can_manage: true,
+      expect(described_class.new(removed, current_user: user, policy: policy, can_manage: true,
         games_with_new_activity: []).former?).to be(true)
     end
 
@@ -73,7 +77,7 @@ RSpec.describe GameDashboardItemPresenter do
     end
 
     it "is false when the game id is absent" do
-      other = described_class.new(membership, current_user: user, can_manage: true,
+      other = described_class.new(membership, current_user: user, policy: policy, can_manage: true,
         games_with_new_activity: [])
       expect(other.new_activity?).to be(false)
     end

@@ -1,44 +1,23 @@
 # typed: strict
 
+# The Files tab's thumbnail grid plus its lightbox modal. Each file's
+# download/delete URLs and thumbnail/lightbox markup are already resolved on
+# its GameFilePresenter (built with game/helpers/can_manage at construction),
+# so the component only lays out what it is handed.
 class Shared::GalleryComponent < ApplicationComponent
   extend T::Sig
 
-  sig { params(game_files: T::Array[GameFile], game: Game, can_manage: T::Boolean).void }
-  def initialize(game_files:, game:, can_manage: false)
-    @game_files = T.let(game_files.map { |gf| GameFilePresenter.new(gf) }, T::Array[GameFilePresenter])
-    @game       = T.let(game, Game)
+  sig { params(game_files: T::Array[GameFilePresenter], can_manage: T::Boolean).void }
+  def initialize(game_files:, can_manage: false)
+    @game_files = T.let(game_files, T::Array[GameFilePresenter])
     @can_manage = T.let(can_manage, T::Boolean)
   end
 
-  sig { params(gf: GameFilePresenter).returns(T.untyped) }
-  def download_url_for(gf)
-    gf.file.attached? ? T.unsafe(helpers).rails_blob_path(gf.file, disposition: "attachment") : "#"
-  end
+  sig { returns(T::Array[GameFilePresenter]) }
+  attr_reader :game_files
 
-  sig { params(gf: GameFilePresenter).returns(T.untyped) }
-  def delete_url_for(gf)
-    return nil unless @can_manage
-    T.unsafe(helpers).game_game_file_path(@game, gf)
-  end
-
-  sig { params(gf: GameFilePresenter).returns(T.untyped) }
-  def thumb_html_for(gf)
-    thumb = gf.thumbnail
-    return nil unless thumb
-    T.unsafe(helpers).image_tag(T.unsafe(helpers).url_for(thumb), alt: gf.filename, loading: "lazy")
-  end
-
-  sig { params(gf: GameFilePresenter).returns(T.untyped) }
-  def lightbox_html_for(gf)
-    if gf.image? && (display = gf.display_image)
-      T.unsafe(helpers).tag.img(src: T.unsafe(helpers).url_for(display), alt: gf.filename).to_s
-    elsif (thumb = gf.thumbnail)
-      T.unsafe(helpers).tag.img(src: T.unsafe(helpers).url_for(thumb), alt: gf.filename, class: "max-w-full").to_s
-    else
-      T.unsafe(helpers).tag.div(class: "flex flex-col items-center justify-center gap-3 p-8 text-slate-500", data: { testid: "lightbox-placeholder" }) do
-        T.unsafe(helpers).tag.div(gf.file_extension, class: "text-5xl font-bold text-slate-400", data: { testid: "lightbox-placeholder-ext" }) +
-        T.unsafe(helpers).tag.div(gf.human_file_size, class: "text-sm text-slate-400")
-      end.to_s
-    end
+  sig { returns(T::Boolean) }
+  def can_manage?
+    @can_manage
   end
 end

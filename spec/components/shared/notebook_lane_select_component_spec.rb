@@ -2,10 +2,13 @@ require "rails_helper"
 
 RSpec.describe Shared::NotebookLaneSelectComponent, type: :component do
   let(:game) { build_stubbed(:game) }
-  let(:entry) { build_stubbed(:notebook_entry, game: game, title: "Idea", slug: "abc123def456ghij") }
+  let(:game_presenter) { GamePresenter.new(game, policy: instance_double(GamePolicy)) }
+  let(:entry) do
+    NotebookEntryPresenter.new(build_stubbed(:notebook_entry, game: game, title: "Idea", slug: "abc123def456ghij"))
+  end
 
   def build_component(**overrides)
-    described_class.new(**{ game: game, notebook_entry: entry }.merge(overrides))
+    described_class.new(**{ game: game_presenter, notebook_entry: entry }.merge(overrides))
   end
 
   def move_path
@@ -62,7 +65,9 @@ RSpec.describe Shared::NotebookLaneSelectComponent, type: :component do
     end
 
     it "gives each entry's select its own id, so rows do not share a label" do
-      other = build_stubbed(:notebook_entry, game: game, title: "Other", slug: "otherslug1234567")
+      other = NotebookEntryPresenter.new(
+        build_stubbed(:notebook_entry, game: game, title: "Other", slug: "otherslug1234567")
+      )
       render_inline(build_component)
       first_id = page.find("select")["id"]
       render_inline(build_component(notebook_entry: other))
@@ -88,7 +93,9 @@ RSpec.describe Shared::NotebookLaneSelectComponent, type: :component do
     end
 
     it "preselects the entry's current lane" do
-      expanding = build_stubbed(:notebook_entry, game: game, slug: "expandslug123456", status: "expand")
+      expanding = NotebookEntryPresenter.new(
+        build_stubbed(:notebook_entry, game: game, slug: "expandslug123456", status: "expand")
+      )
       render_inline(build_component(notebook_entry: expanding))
       expect(page.find("select option[selected]").value).to eq("expand")
     end

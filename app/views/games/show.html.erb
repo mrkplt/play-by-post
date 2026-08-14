@@ -7,18 +7,18 @@
             title: @game.name,
             crown: @game_presenter.can_manage?,
             gear: game_player_management_path(@game),
-            secondary_nav: Shared::GameNavComponent.new(game: @game, active_tab: :scenes, can_manage: @game_presenter.can_manage?, mode: :switch)) %>
+            secondary_nav: Shared::GameNavComponent.new(game_presenter: @game_presenter, active_tab: :scenes, mode: :switch)) %>
     <% end %>
 
     <%# ===== Scenes panel ===== %>
     <section data-game-tabs-target="panel" data-panel="scenes" class="flex flex-col gap-3">
       <%= render Ui::SectionLabelComponent.new do %>Active Scenes<% end %>
-      <% if @game_show_presenter.active_scenes.empty? %>
+      <% if @game_presenter.active_scenes.empty? %>
         <p class="text-muted-2 text-sm">No active scenes.</p>
       <% else %>
         <div>
-          <% @game_show_presenter.active_scenes.each do |scene| %>
-            <%= render Shared::SceneCardComponent.new(scene: scene, game: @game, hot: scene.hot?) %>
+          <% @game_presenter.active_scenes.each do |scene| %>
+            <%= render Shared::SceneCardComponent.new(scene: scene, game: @game_presenter, hot: scene.hot?) %>
           <% end %>
         </div>
       <% end %>
@@ -36,12 +36,12 @@
         <%# The crown marks the person this row is about, not the viewer: this
             row IS the GM, so it is always crowned. %>
         <%= render Shared::RosterRowComponent.new(
-              name: @game_show_presenter.gm_name, subtitle: "Running this game",
-              avatar_tone: :dark, crown: true, last: @game_show_presenter.roster_preview.empty?) %>
-        <% @game_show_presenter.roster_preview.each_with_index do |row, i| %>
+              name: @game_presenter.gm_name, subtitle: "Running this game",
+              avatar_tone: :dark, crown: true, last: @game_presenter.roster_preview.empty?) %>
+        <% @game_presenter.roster_preview.each_with_index do |row, i| %>
           <%= render Shared::RosterRowComponent.new(
                 name: row[:name], subtitle: row[:scene],
-                avatar_tone: :gold, last: i == @game_show_presenter.roster_preview.length - 1) %>
+                avatar_tone: :gold, last: i == @game_presenter.roster_preview.length - 1) %>
         <% end %>
       </div>
     </section>
@@ -60,18 +60,18 @@
           <%= render Ui::SectionLabelComponent.new do %>Characters<% end %>
           <%= link_to "New Character", new_game_character_path(@game), class: "text-[11px] font-bold text-accent no-underline" %>
         </div>
-        <% if @game_show_presenter.roster_characters.empty? %>
+        <% if @game_presenter.roster_characters.empty? %>
           <p class="text-muted-2 text-sm">No characters yet.</p>
         <% else %>
           <div class="bg-card border border-card-border rounded-card overflow-hidden mt-1">
-            <% @game_show_presenter.roster_characters.each_with_index do |row, i| %>
+            <% @game_presenter.roster_characters.each_with_index do |row, i| %>
               <div data-roster-filter-target="row" data-roster-name="<%= row.filter_key %>">
                 <%= render Shared::RosterRowComponent.new(
                       name: row.character.name,
                       subtitle: "Played by #{row.owner_name}",
                       avatar_tone: row.avatar_tone,
                       dimmed: row.removed?,
-                      last: i == @game_show_presenter.roster_characters.length - 1) do %>
+                      last: i == @game_presenter.roster_characters.length - 1) do %>
                   <% if row.removed? %>
                     <%= render(Ui::BadgeComponent.new(variant: :slate)) { "Removed" } %>
                   <% end %>
@@ -81,23 +81,23 @@
           </div>
         <% end %>
 
-        <% if @game_show_presenter.inactive_character_count.positive? %>
+        <% if @game_presenter.inactive_character_count.positive? %>
           <p class="text-[11px] text-muted-2 text-center mt-3">
-            <%= pluralize(@game_show_presenter.inactive_character_count, "inactive character") %> hidden
+            <%= pluralize(@game_presenter.inactive_character_count, "inactive character") %> hidden
           </p>
         <% end %>
 
-        <% if @game_presenter.can_manage? && @game_show_presenter.banned_members.any? %>
+        <% if @game_presenter.can_manage? && @game_presenter.banned_members.any? %>
           <%= render Ui::SectionLabelComponent.new(html_class: "mt-3") do %>Banned &middot; GM only<% end %>
           <div class="bg-tint-blue-bg border border-tint-blue-border rounded-card overflow-hidden opacity-85 mt-1">
-            <% @game_show_presenter.banned_members.each_with_index do |banned, i| %>
+            <% @game_presenter.banned_members.each_with_index do |banned, i| %>
               <%= render Shared::RosterRowComponent.new(
                     name: banned.display_name,
                     subtitle: "Played by #{banned.display_name}",
                     avatar_tone: :blue,
                     name_class: "text-tint-blue-strong",
                     subtitle_class: "text-tint-blue-soft",
-                    last: i == @game_show_presenter.banned_members.length - 1) do %>
+                    last: i == @game_presenter.banned_members.length - 1) do %>
                 <%= form_with url: game_player_management_game_member_path(@game, banned.member), method: :patch, class: "inline" do |f| %>
                   <%= f.hidden_field :status, value: "active" %>
                   <%= f.submit "Unban", class: "text-[11px] font-bold text-danger-soft bg-transparent border-0 cursor-pointer p-0" %>
@@ -108,7 +108,7 @@
         <% end %>
 
         <% if @game_presenter.can_manage? %>
-          <%= render Shared::InvitePanelComponent.new(game: @game, pending_invitations: @game_presenter.pending_invitations) %>
+          <%= render Shared::InvitePanelComponent.new(game: @game_presenter, pending_invitations: @game_presenter.pending_invitations) %>
         <% end %>
       </div>
     </section>
@@ -116,30 +116,30 @@
     <%# ===== Files panel ===== %>
     <section data-game-tabs-target="panel" data-panel="files" class="flex flex-col gap-3" hidden>
       <% if @game_presenter.can_manage? %>
-        <%= render Shared::FileUploadFormComponent.new(game: @game, game_file: @game_show_presenter.new_game_file) %>
+        <%= render Shared::FileUploadFormComponent.new(game: @game_presenter, game_file: @game_presenter.new_game_file) %>
       <% end %>
-      <% if @game_show_presenter.game_files.empty? %>
+      <% if @game_presenter.game_files.empty? %>
         <p class="text-muted-2 text-sm">No files uploaded yet.</p>
       <% else %>
         <%= render Ui::SectionLabelComponent.new do %>Newest first<% end %>
-        <%= render Shared::GalleryComponent.new(game_files: @game_show_presenter.game_files, game: @game, can_manage: @game_presenter.can_manage?) %>
+        <%= render Shared::GalleryComponent.new(game_files: @game_presenter.game_files, can_manage: @game_presenter.can_manage?) %>
       <% end %>
     </section>
 
     <%# ===== Pages panel ===== %>
     <section data-game-tabs-target="panel" data-panel="pages" hidden>
-      <%= render Shared::GamePagesListComponent.new(game: @game, pages: @game_presenter.pages, can_manage: @game_presenter.can_manage?) %>
+      <%= render Shared::GamePagesListComponent.new(game: @game_presenter, pages: @game_presenter.pages, can_manage: @game_presenter.can_manage?) %>
     </section>
 
     <%# ===== Links panel ===== %>
     <section data-game-tabs-target="panel" data-panel="links" hidden>
-      <%= render Shared::GameLinksListComponent.new(game: @game, game_links: @game_presenter.links, can_manage: @game_presenter.can_manage?) %>
+      <%= render Shared::GameLinksListComponent.new(game: @game_presenter, game_links: @game_presenter.links, can_manage: @game_presenter.can_manage?) %>
     </section>
 
     <%# ===== Notebook panel (GM only) ===== %>
     <% if @game_presenter.can_manage? %>
       <section data-game-tabs-target="panel" data-panel="notebook" hidden>
-        <%= render Shared::NotebookBoardComponent.new(game: @game, entries_by_status: @game_presenter.notebook_entries) %>
+        <%= render Shared::NotebookBoardComponent.new(game: @game_presenter, board: @game_presenter.notebook_board) %>
       </section>
     <% end %>
   <% end %>

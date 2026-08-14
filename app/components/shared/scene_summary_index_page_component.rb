@@ -3,15 +3,23 @@
 class Shared::SceneSummaryIndexPageComponent < ApplicationComponent
   extend T::Sig
 
-  sig { params(game: Game, summaries: T.untyped, pagy: T.untyped).void }
-  def initialize(game:, summaries:, pagy:)
-    @game = T.let(game, Game)
-    @summaries = T.let(summaries, T.untyped)
-    @pagy = T.let(pagy, T.untyped)
+  sig { params(summaries: SceneSummaryCollectionPresenter).void }
+  def initialize(summaries:)
+    @summaries = T.let(summaries, SceneSummaryCollectionPresenter)
   end
 
   sig { returns(T::Boolean) }
   def summaries_empty?
     @summaries.empty?
+  end
+
+  sig { returns(T::Array[SceneSummaryPresenter]) }
+  def entries
+    @summaries.entries
+  end
+
+  sig { returns(String) }
+  def pagy_nav
+    @summaries.pagy_nav
   end
 end

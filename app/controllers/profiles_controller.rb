@@ -9,16 +9,14 @@ class ProfilesController < ApplicationController
   sig { void }
   def show
     authorize @profile
-    @memberships = current_user.game_members
-      .where.not(status: "banned")
-      .includes(:game)
-      .order("games.name")
+    @feed_rows = UserPresenter.new(current_user).feed_rows(urls: self)
     @export_all_receipt = GameExportRequest.valid_receipt_for(current_user, nil)
   end
 
   sig { void }
   def edit
     authorize @profile
+    @profile_presenter = UserProfilePresenter.new(@profile)
   end
 
   sig { void }
@@ -29,6 +27,7 @@ class ProfilesController < ApplicationController
     if @profile.save
       redirect_to root_path, notice: "Display name saved."
     else
+      @profile_presenter = UserProfilePresenter.new(@profile)
       render :edit, status: :unprocessable_content
     end
   end

@@ -4,20 +4,20 @@
   <% frame.with_header do %>
     <%= render Shared::HeaderComponent.new(
           title: @character.name,
-          breadcrumbs: Shared::BreadcrumbsComponent.new(game: @game),
-          secondary_nav: Shared::GameNavComponent.new(game: @game, active_tab: :roster, can_manage: @character_presenter.can_manage_game?, mode: :link)) %>
+          breadcrumbs: Shared::BreadcrumbsComponent.new(game_presenter: @game_presenter),
+          secondary_nav: Shared::GameNavComponent.new(game_presenter: @game_presenter, active_tab: :roster, mode: :link)) %>
   <% end %>
 
   <div class="flex flex-col gap-0.5">
     <span class="text-[11px] text-muted-2">
-      Version — <time data-local-time="<%= @version.created_at.iso8601 %>"><%= @version.created_at.strftime("%b %-d, %Y %-I:%M %p") %></time>
+      Version — <time data-local-time="<%= @version_presenter.created_at_iso8601 %>"><%= @version_presenter.formatted_created_at %></time>
     </span>
-    <span class="text-[11px] text-muted-2">Edited by: <%= @editor.display_name_or_email %></span>
+    <span class="text-[11px] text-muted-2">Edited by: <%= @version_presenter.editor_name %></span>
   </div>
 
   <div class="bg-card border border-card-border rounded-card p-4">
-    <% if @version.content.present? %>
-      <%= render Ui::MarkdownRenderComponent.new(text: @version.content, content_class: "character-sheet-content") %>
+    <% if @version_presenter.content? %>
+      <%= render Ui::MarkdownRenderComponent.new(text: @version_presenter.content, content_class: "character-sheet-content") %>
     <% else %>
       <p class="text-muted-2 m-0 text-sm">No content in this version.</p>
     <% end %>

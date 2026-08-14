@@ -4,8 +4,8 @@
   <% frame.with_header do %>
     <%= render Shared::HeaderComponent.new(
           title: "All Scenes",
-          breadcrumbs: Shared::BreadcrumbsComponent.new(game: @game),
-          secondary_nav: Shared::GameNavComponent.new(game: @game, active_tab: :scenes, can_manage: @game_presenter.can_manage?, mode: :link)) %>
+          breadcrumbs: Shared::BreadcrumbsComponent.new(game_presenter: @game_presenter),
+          secondary_nav: Shared::GameNavComponent.new(game_presenter: @game_presenter, active_tab: :scenes, mode: :link)) %>
   <% end %>
 
   <% if @game_presenter.can_manage? %>
@@ -23,7 +23,7 @@
   <% else %>
     <div class="text-sm">
       <% @scene_tree_presenter.trees.each do |tree| %>
-        <%= render Shared::TreeNodeComponent.new(node: tree, game: @game) %>
+        <%= render Shared::TreeNodeComponent.new(node: tree, game_presenter: @game_presenter) %>
       <% end %>
     </div>
   <% end %>

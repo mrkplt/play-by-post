@@ -4,10 +4,15 @@ RSpec.describe Shared::SceneSummaryComponent, type: :component do
   let(:game) { build_stubbed(:game) }
   let(:scene) { build_stubbed(:scene, game: game) }
   let(:summary) { build_stubbed(:scene_summary, scene: scene, body: "A tale of **glory**.") }
-  let(:presenter) { SceneSummaryPresenter.new(summary) }
+
+  def presenter_for(can_manage:)
+    policy = instance_double(SceneSummaryPolicy, manage?: can_manage)
+    urls = double("urls", edit_game_scene_scene_summary_path: "/edit", game_scene_scene_summary_path: "/summary")
+    SceneSummaryPresenter.new(summary, game: game, urls: urls, policy: policy)
+  end
 
   def rendered(can_manage: false)
-    render_inline(described_class.new(summary: presenter, game: game, scene: scene, can_manage: can_manage))
+    render_inline(described_class.new(summary: presenter_for(can_manage: can_manage)))
     page
   end
 
@@ -35,7 +40,7 @@ RSpec.describe Shared::SceneSummaryComponent, type: :component do
 
   context "with a hand-written summary" do
     it "status_badge_variant returns 'gray'" do
-      component = described_class.new(summary: presenter, game: game, scene: scene, can_manage: false)
+      component = described_class.new(summary: presenter_for(can_manage: false))
       expect(component.status_badge_variant).to eq("gray")
     end
   end
@@ -48,7 +53,7 @@ RSpec.describe Shared::SceneSummaryComponent, type: :component do
     end
 
     it "status_badge_variant returns 'blue'" do
-      component = described_class.new(summary: presenter, game: game, scene: scene, can_manage: false)
+      component = described_class.new(summary: presenter_for(can_manage: false))
       expect(component.status_badge_variant).to eq("blue")
     end
   end
@@ -61,7 +66,7 @@ RSpec.describe Shared::SceneSummaryComponent, type: :component do
     end
 
     it "status_badge_variant returns 'yellow'" do
-      component = described_class.new(summary: presenter, game: game, scene: scene, can_manage: false)
+      component = described_class.new(summary: presenter_for(can_manage: false))
       expect(component.status_badge_variant).to eq("yellow")
     end
   end

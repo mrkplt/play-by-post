@@ -6,7 +6,7 @@ RSpec.describe Ui::MarkdownEditorComponent, type: :component do
   end
 
   def render_editor(**overrides)
-    render_inline(described_class.new(**{ form: build_form_builder, field: :body }.merge(overrides)))
+    render_inline(described_class.new(**{ binding: { form: build_form_builder, field: :body } }.merge(overrides)))
   end
 
   def config(**overrides)
@@ -100,7 +100,7 @@ RSpec.describe Ui::MarkdownEditorComponent, type: :component do
       textarea = page.find("textarea[name='feedback[body]']")
       expect(textarea["required"]).to be_nil
       expect(textarea.text.strip).to be_empty
-      component = described_class.new(form: build_form_builder, field: :body)
+      component = described_class.new(binding: { form: build_form_builder, field: :body })
       expect(component.textarea_options.key?(:value)).to be(false)
     end
 
@@ -130,7 +130,7 @@ RSpec.describe Ui::MarkdownEditorComponent, type: :component do
     end
 
     it "assembles the edit classes into one space-joined string" do
-      component = described_class.new(form: build_form_builder, field: :body)
+      component = described_class.new(binding: { form: build_form_builder, field: :body })
       expect(component.edit_classes)
         .to be_a(String)
         .and eq("markdown-editor w-full #{described_class::EDIT_BASE} overflow-y-auto")

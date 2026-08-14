@@ -47,7 +47,8 @@ RSpec.describe Shared::HeaderComponent, type: :component do
   context "breadcrumbs" do
     it "renders the passed-in breadcrumbs component" do
       game = build_stubbed(:game, name: "The Sunken Archive")
-      expect(rendered(title: "Roster", breadcrumbs: Shared::BreadcrumbsComponent.new(game: game)))
+      game_presenter = GamePresenter.new(game, policy: instance_double(GamePolicy))
+      expect(rendered(title: "Roster", breadcrumbs: Shared::BreadcrumbsComponent.new(game_presenter: game_presenter)))
         .to have_link("The Sunken Archive")
     end
 
@@ -59,7 +60,8 @@ RSpec.describe Shared::HeaderComponent, type: :component do
   context "secondary_nav" do
     it "renders the passed-in secondary nav component" do
       game = build_stubbed(:game)
-      nav = Shared::GameNavComponent.new(game: game, active_tab: :roster, mode: :switch)
+      game_presenter = GamePresenter.new(game, policy: instance_double(GamePolicy, manage?: false))
+      nav = Shared::GameNavComponent.new(game_presenter: game_presenter, active_tab: :roster, mode: :switch)
       expect(rendered(title: "Game", secondary_nav: nav)).to have_css("button[data-tab='roster']")
     end
 

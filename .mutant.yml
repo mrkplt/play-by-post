@@ -41,22 +41,30 @@ matcher:
     # Presenters
     - BannedMemberPresenter
     - CharacterPresenter
+    - CharacterVersionPresenter
     - GameDashboardItemPresenter
     - GameDashboardPresenter
     - GameFilePresenter
+    - GameFeedRowPresenter
+    - GameLinkPresenter
     - GamePresenter
-    - GameShowPresenter
+    - InvitationPresenter
+    - NotebookBoardPresenter
+    - NotebookEntryPresenter
+    - PagePresenter
     - PostPresenter
     - RosterCharacterPresenter
+    - ScenePlayerPresenter
     - SceneSummaryPresenter
+    - SceneSummaryCollectionPresenter
     - ScenePresenter
-    - SceneShowPresenter
     - ScenePageAction
     - ScenePageAction::Viewer
     - ScenePageAction::Resolved
     - ScenePageAction::RouteArgs
     - SceneTreePresenter
     - UserPresenter
+    - UserProfilePresenter
     # Components
     - Ui::SecretFieldComponent
     - Shared::RssFeedsSectionComponent

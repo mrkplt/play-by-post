@@ -9,7 +9,7 @@ RSpec.describe Shared::PageRowActionsComponent, type: :component do
   end
 
   def build_component
-    described_class.new(game: game, page: page_record)
+    described_class.new(page: PagePresenter.new(page_record))
   end
 
   it "links Edit to the page's edit screen" do

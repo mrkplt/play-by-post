@@ -2,13 +2,14 @@ require "rails_helper"
 
 RSpec.describe Shared::NotebookLaneComponent, type: :component do
   let(:game) { build_stubbed(:game) }
+  let(:game_presenter) { GamePresenter.new(game, policy: instance_double(GamePolicy)) }
 
   def entry(title:, slug:, status: "new")
-    build_stubbed(:notebook_entry, game: game, status: status, title: title, slug: slug)
+    NotebookEntryPresenter.new(build_stubbed(:notebook_entry, game: game, status: status, title: title, slug: slug))
   end
 
   def build_component(**overrides)
-    described_class.new(**{ game: game, status: "new", entries: [] }.merge(overrides))
+    described_class.new(**{ game: game_presenter, status: "new", entries: [] }.merge(overrides))
   end
 
   describe ".label_for" do
@@ -152,8 +153,8 @@ RSpec.describe Shared::NotebookLaneComponent, type: :component do
     end
 
     it "does not render entry bodies" do
-      with_body = build_stubbed(:notebook_entry, game: game, status: "new", title: "Titled",
-                                slug: "bodyslug12345678", body: "Body text stays off the board.")
+      with_body = entry(title: "Titled", slug: "bodyslug12345678")
+      allow(with_body).to receive(:body).and_return("Body text stays off the board.")
       render_inline(build_component(entries: [ with_body ]))
 
       expect(page).to have_text("Titled")

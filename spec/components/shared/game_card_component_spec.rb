@@ -1,7 +1,8 @@
 require "rails_helper"
 
 RSpec.describe Shared::GameCardComponent, type: :component do
-  let(:game) { build_stubbed(:game, name: "The Sunken Archive") }
+  let(:game_model) { build_stubbed(:game, name: "The Sunken Archive") }
+  let(:game) { GamePresenter.new(game_model, policy: instance_double(GamePolicy)) }
 
   def rendered(**opts)
     defaults = { game: game, can_manage: false, former: false, character_label: nil, active_scene_count: 2 }
@@ -10,7 +11,7 @@ RSpec.describe Shared::GameCardComponent, type: :component do
   end
 
   it "renders the game name linking to the game" do
-    expect(rendered).to have_css("a[href='#{"/games/#{game.id}"}']", text: "The Sunken Archive")
+    expect(rendered).to have_css("a[href='#{"/games/#{game_model.id}"}']", text: "The Sunken Archive")
   end
 
   it "shows the active scene count" do

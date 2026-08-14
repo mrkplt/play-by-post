@@ -4,11 +4,11 @@
   <% frame.with_header do %>
     <%= render Shared::HeaderComponent.new(
           title: @scene.title,
-          breadcrumbs: Shared::BreadcrumbsComponent.new(game: @game),
-          secondary_nav: Shared::GameNavComponent.new(game: @game, active_tab: :scenes, can_manage: @game_presenter.can_manage?, mode: :link)) %>
+          breadcrumbs: Shared::BreadcrumbsComponent.new(game_presenter: @game_presenter),
+          secondary_nav: Shared::GameNavComponent.new(game_presenter: @game_presenter, active_tab: :scenes, mode: :link)) %>
   <% end %>
 
-  <% if (page_action = @scene_show_presenter.page_action(can_manage: @game_presenter.can_manage?)) %>
+  <% if (page_action = @scene_presenter.page_action(can_manage: @game_presenter.can_manage?)) %>
     <% frame.with_footer do %>
       <%= render Shared::PageActionsComponent.new do |actions| %>
         <% actions.with_primary do %>
@@ -19,7 +19,7 @@
   <% end %>
 
   <div data-controller="ooc-filter"
-       data-ooc-filter-hide-ooc-value="<%= @scene_show_presenter.hide_ooc? %>"
+       data-ooc-filter-hide-ooc-value="<%= @scene_presenter.hide_ooc? %>"
        data-ooc-filter-toggle-url-value="<%= toggle_hide_ooc_profile_path %>">
 
     <%= render Shared::ControlRowComponent.new do %>
@@ -28,13 +28,13 @@
               aria-label="Toggle out-of-character posts">
         <span class="text-[11px] text-muted-2 font-semibold">Hide OOC</span>
         <span data-ooc-filter-target="switch">
-          <%= render Ui::ToggleSwitchComponent.new(on: @scene_show_presenter.hide_ooc?) %>
+          <%= render Ui::ToggleSwitchComponent.new(on: @scene_presenter.hide_ooc?) %>
         </span>
       </button>
     <% end %>
 
     <%# Scene meta / status %>
-    <%= render Shared::StatusBadgeRowComponent.new(badges: @scene_show_presenter.scene_presenter.status_badges) %>
+    <%= render Shared::StatusBadgeRowComponent.new(badges: @scene_presenter.status_badges) %>
 
     <% if @scene.parent_scene.present? %>
       <p class="text-[11px] text-muted-2 m-0">
@@ -44,18 +44,18 @@
 
     <% if @scene.image.attached? %>
       <div>
-        <%= image_tag @scene_show_presenter.scene_presenter.banner_image, class: "max-w-full rounded-card" %>
+        <%= image_tag @scene_presenter.banner_image, class: "max-w-full rounded-card" %>
       </div>
     <% end %>
 
-    <%= render Shared::ChildSceneListComponent.new(game: @game, child_scenes: @scene_show_presenter.visible_child_scenes) %>
+    <%= render Shared::ChildSceneListComponent.new(game: @game_presenter, child_scenes: @scene_presenter.visible_child_scenes) %>
 
-    <%= render Shared::ControlRowComponent.new(label: "Participants: #{@scene_show_presenter.scene_presenter.participant_names}") do %>
-      <%= render Ui::ButtonComponent.new(variant: :text, url: toggle_notification_preference_game_scene_path(@game, @scene), method: :post) do %><%= @scene_show_presenter.scene_presenter.mute_toggle_label(@scene_show_presenter.muted?) %><% end %>
+    <%= render Shared::ControlRowComponent.new(label: "Participants: #{@scene_presenter.participant_names}") do %>
+      <%= render Ui::ButtonComponent.new(variant: :text, url: toggle_notification_preference_game_scene_path(@game, @scene), method: :post) do %><%= @scene_presenter.mute_toggle_label(@scene_presenter.muted?) %><% end %>
     <% end %>
 
-    <% if @scene.resolved? && @scene.resolution.present? %>
-      <%= render Shared::SceneResolutionComponent.new(scene: @scene) %>
+    <% if @scene.resolved? && @scene_presenter.resolution.present? %>
+      <%= render Shared::SceneResolutionComponent.new(resolution: @scene_presenter.resolution) %>
     <% end %>
 
     <%# GM scene actions %>
@@ -67,35 +67,33 @@
           <%= render Ui::ButtonComponent.new(variant: :text, url: edit_game_scene_participants_path(@game, @scene)) do %>Edit Participants<% end %>
           <%= render Ui::ButtonComponent.new(variant: :text, html_options: { class: "text-danger", data: { action: "click->resolve-toggle#toggle" } }) do %>End Scene<% end %>
         <% end %>
-        <%= render Shared::SceneResolveFormComponent.new(game: @game, scene: @scene) %>
+        <%= render Shared::SceneResolveFormComponent.new(resolve_path: @scene_presenter.resolve_path) %>
       </div>
     <% end %>
 
     <%# Posts %>
     <div id="posts" data-controller="unread-aura">
-      <% if @scene_show_presenter.posts_empty? %>
+      <% if @scene_presenter.posts_empty? %>
         <p id="no_posts_message" class="text-muted-2 m-0 text-sm">No posts yet. Be the first!</p>
       <% else %>
-        <% @scene_show_presenter.post_presenters.each do |post_presenter| %>
+        <% @scene_presenter.post_presenters.each do |post_presenter| %>
           <%= render Shared::PostItemComponent.new(
-                post: post_presenter, game: @game, current_user: current_user,
-                scene: @scene, read_post_ids: @scene_show_presenter.read_post_ids) %>
+                post: post_presenter, scene: @scene_presenter, read_post_ids: @scene_presenter.read_post_ids) %>
         <% end %>
       <% end %>
     </div>
 
     <%# Scene summary %>
-    <% if @scene.resolved? && @scene.scene_summary %>
-      <%= render Shared::SceneSummaryComponent.new(
-            summary: SceneSummaryPresenter.new(@scene.scene_summary), game: @game, scene: @scene, can_manage: @game_presenter.can_manage?) %>
+    <% if @scene.resolved? && @scene_summary_presenter %>
+      <%= render Shared::SceneSummaryComponent.new(summary: @scene_summary_presenter) %>
     <% end %>
 
-    <%= render Shared::DraftRecoveryComponent.new(game: @game, scene: @scene, draft: @scene_show_presenter.scene_presenter.recoverable_draft(@scene_show_presenter.draft)) %>
+    <%= render Shared::DraftRecoveryComponent.new(game: @game_presenter, scene: @scene_presenter, draft: @scene_presenter.recoverable_draft(@scene_presenter.draft)) %>
 
     <%# Composer %>
-    <% if @scene_show_presenter.scene_presenter.can_post? %>
+    <% if @scene_presenter.can_post? %>
       <div id="post_composer" class="bg-card border border-card-border rounded-post p-4">
-        <%= render Shared::PostComposerComponent.new(post: @scene_show_presenter.new_post, game: @game, scene: @scene, draft: @scene_show_presenter.draft) %>
+        <%= render Shared::PostComposerComponent.new(post: @scene_presenter.new_post, game: @game_presenter, scene: @scene_presenter, draft: @scene_presenter.draft) %>
       </div>
     <% end %>
   </div>

@@ -6,14 +6,14 @@
 class Shared::InvitePanelComponent < ApplicationComponent
   extend T::Sig
 
-  sig { params(game: Game, pending_invitations: T::Array[Invitation]).void }
+  sig { params(game: GamePresenter, pending_invitations: T::Array[InvitationPresenter]).void }
   # mutant:disable
   def initialize(game:, pending_invitations:)
-    @game = T.let(game, Game)
-    @pending_invitations = T.let(pending_invitations, T::Array[Invitation])
+    @game = T.let(game, GamePresenter)
+    @pending_invitations = T.let(pending_invitations, T::Array[InvitationPresenter])
   end
 
-  sig { returns(T::Array[Invitation]) }
+  sig { returns(T::Array[InvitationPresenter]) }
   attr_reader :pending_invitations
 
   sig { returns(T::Boolean) }
@@ -24,21 +24,6 @@ class Shared::InvitePanelComponent < ApplicationComponent
   sig { returns(String) }
   def invite_url
     helpers.game_player_management_invitations_path(@game)
-  end
-
-  sig { params(invitation: Invitation).returns(String) }
-  def cancel_url(invitation)
-    helpers.game_player_management_invitation_path(@game, invitation)
-  end
-
-  sig { params(invitation: Invitation).returns(String) }
-  def resend_url(invitation)
-    helpers.resend_game_player_management_invitation_path(@game, invitation)
-  end
-
-  sig { params(invitation: Invitation).returns(String) }
-  def sent_label(invitation)
-    "Sent #{helpers.time_ago_in_words(invitation.created_at)} ago"
   end
 
   sig { params(index: Integer).returns(T::Boolean) }

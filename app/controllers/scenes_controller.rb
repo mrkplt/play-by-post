@@ -8,7 +8,7 @@ class ScenesController < ApplicationController
   before_action :set_scene, only: %i[show resolve toggle_notification_preference]
   after_action :verify_authorized, except: :index
 
-  helper_method :scene_form
+  helper_method :scene_form, :game_presenter
 
   sig { void }
   def index
@@ -51,8 +51,9 @@ class ScenesController < ApplicationController
   def show
     authorize @scene
     @game_presenter = T.let(GamePresenter.new(game, policy: policy(@game)), T.nilable(GamePresenter))
-    @scene_show_presenter = T.let(build_scene_show_presenter, T.nilable(SceneShowPresenter))
-    T.must(@scene_show_presenter).mark_visited!
+    @scene_presenter = T.let(build_scene_presenter, T.nilable(ScenePresenter))
+    @scene_summary_presenter = T.let(build_scene_summary_presenter, T.nilable(SceneSummaryPresenter))
+    T.must(@scene_presenter).mark_visited!
   end
 
   sig { void }
@@ -104,10 +105,47 @@ class ScenesController < ApplicationController
     T.must(@scene)
   end
 
-  sig { returns(SceneShowPresenter) }
-  def build_scene_show_presenter
-    scene_presenter = ScenePresenter.new(scene, post_policy: PostPolicy.new(current_user, scene.posts.new))
-    SceneShowPresenter.new(scene_presenter, game: game, urls: self, current_user: current_user)
+  # Memoized rather than set by a before_action: #new/#create render the New
+  # Scene form (not named after either action) via the scene_form helper
+  # method, so there is no single action to hang the assignment on.
+  sig { returns(GamePresenter) }
+  def game_presenter
+    @game_presenter ||= T.let(GamePresenter.new(game, policy: policy(@game)), T.nilable(GamePresenter))
+  end
+
+  sig { returns(ScenePresenter) }
+  def build_scene_presenter
+    ScenePresenter.new(
+      scene, game: game, urls: self, current_user: current_user,
+      post_policy: PostPolicy.new(current_user, scene.posts.new),
+      post_presenters: build_post_presenters
+    )
+  end
+
+  # Published posts wrapped for display, each with its own Pundit-resolved
+  # policy — built here (not in the presenter) because only the controller
+  # has policy(post) (R2: presenters never construct authorization).
+  sig { returns(T::Array[PostPresenter]) }
+  def build_post_presenters
+    posts = scene.posts.published.includes(:user).order(:created_at).to_a
+    participants = scene.scene_participants.includes(:character, :user).to_a
+    posts.map do |post|
+      PostPresenter.new(
+        post, scene_participants: participants, game: game, scene: scene,
+        urls: self, policy: policy(post)
+      )
+    end
+  end
+
+  # nil when the scene has no summary yet — the view's own condition (scene
+  # resolved? && summary present?) reads @scene_summary_presenter directly
+  # rather than this controller building the policy speculatively.
+  sig { returns(T.nilable(SceneSummaryPresenter)) }
+  def build_scene_summary_presenter
+    summary = scene.scene_summary
+    return nil unless summary
+
+    SceneSummaryPresenter.new(summary, game: game, urls: self, policy: SceneSummaryPolicy.new(current_user, summary))
   end
 
   sig { void }
@@ -134,8 +172,8 @@ class ScenesController < ApplicationController
   sig { returns(Shared::SceneFormComponent) }
   def scene_form
     Shared::SceneFormComponent.new(
-      game: game,
-      scene: new_scene,
+      game: game_presenter,
+      scene: ScenePresenter.new(new_scene),
       players_with_characters: active_players_with_characters,
       parent_options: parent_scene_select_options,
       quick: params[:quick].present?,
@@ -169,9 +207,9 @@ class ScenesController < ApplicationController
     end
   end
 
-  # Returns an array of [user, characters] pairs for all active players,
-  # including players with no characters (empty array).
-  sig { returns(T::Array[[ UserPresenter, T::Array[Character] ]]) }
+  # Returns one ScenePlayerPresenter per active player, each carrying its own
+  # active characters (empty array when the player has none).
+  sig { returns(T::Array[ScenePlayerPresenter]) }
   def active_players_with_characters
     players = game.users.joins(:game_members)
       .where(game_members: { game: game, role: "player", status: "active" })
@@ -184,7 +222,7 @@ class ScenesController < ApplicationController
       .order(:name)
       .group_by(&:user_id)
 
-    players.map { |user| [ UserPresenter.new(user), characters_by_user.fetch(user.id, []) ] }
+    players.map { |user| ScenePlayerPresenter.new(user, characters: characters_by_user.fetch(user.id, [])) }
   end
 
   sig { params(new_scene: Scene).void }
@@ -230,16 +268,16 @@ class ScenesController < ApplicationController
   sig do
     params(
       node_scene: Scene, scene_index: T::Hash[Integer, Scene], all_scenes: T::Array[Scene]
-    ).returns(T::Hash[Symbol, T.untyped])
+    ).returns(Shared::TreeNodeComponent::Node)
   end
   def build_tree(node_scene, scene_index, all_scenes)
     children = all_scenes
       .select { |s| s.parent_scene_id == node_scene.id }
       .sort_by(&:created_at)
-    {
-      scene: node_scene,
+    Shared::TreeNodeComponent::Node.new(
+      scene_presenter: ScenePresenter.new(node_scene),
       children: children.map { |c| build_tree(c, scene_index, all_scenes) }
-    }
+    )
   end
 
   sig { returns(ActionController::Parameters) }

@@ -6,7 +6,7 @@ RSpec.describe Shared::PageFormComponent, type: :component do
   let(:existing_page) { build_stubbed(:page, game: game, title: "Lore", slug: "abc123def456ghij") }
 
   def build_component(page:)
-    described_class.new(game: game, page: page)
+    described_class.new(page: PagePresenter.new(page))
   end
 
   def path(name, *args)

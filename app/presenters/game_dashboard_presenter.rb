@@ -24,10 +24,12 @@ class GameDashboardPresenter < BasePresenter
   sig { returns(T::Array[GameDashboardItemPresenter]) }
   def items
     @model.map do |membership|
+      policy = @options.fetch(:policy_by_game_id).fetch(membership.game_id)
       GameDashboardItemPresenter.new(
         membership,
         current_user: @options.fetch(:current_user),
-        can_manage: @options.fetch(:can_manage_by_game_id).fetch(membership.game_id),
+        policy: policy,
+        can_manage: policy.manage?,
         games_with_new_activity: @options.fetch(:games_with_new_activity)
       )
     end

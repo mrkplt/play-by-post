@@ -12,7 +12,8 @@ class SceneSummariesController < ApplicationController
 
   sig { void }
   def index
-    @pagy, @summaries = pagy(SceneSummary.public_for_game(@game), limit: 20)
+    pagy, summaries = pagy(SceneSummary.public_for_game(@game), limit: 20)
+    @summaries_presenter = SceneSummaryCollectionPresenter.new(summaries, game: @game, urls: self, pagy: pagy)
     @game_presenter = GamePresenter.new(@game, policy: policy(@game))
   end
 
@@ -20,6 +21,8 @@ class SceneSummariesController < ApplicationController
   def new
     @summary = @scene.build_scene_summary
     authorize @summary
+    @game_presenter = GamePresenter.new(@game, policy: policy(@game))
+    @summary_presenter = build_summary_presenter
   end
 
   sig { void }
@@ -35,6 +38,8 @@ class SceneSummariesController < ApplicationController
     if @summary.save
       redirect_to game_scene_path(@game, @scene), notice: "Summary saved."
     else
+      @game_presenter = GamePresenter.new(@game, policy: policy(@game))
+      @summary_presenter = build_summary_presenter
       render :new, status: :unprocessable_content
     end
   end
@@ -42,6 +47,8 @@ class SceneSummariesController < ApplicationController
   sig { void }
   def edit
     authorize @summary
+    @game_presenter = GamePresenter.new(@game, policy: policy(@game))
+    @summary_presenter = build_summary_presenter
   end
 
   sig { void }
@@ -53,6 +60,8 @@ class SceneSummariesController < ApplicationController
     if @summary.update(attrs)
       redirect_to game_scene_path(@game, @scene), notice: "Summary updated."
     else
+      @game_presenter = GamePresenter.new(@game, policy: policy(@game))
+      @summary_presenter = build_summary_presenter
       render :edit, status: :unprocessable_content
     end
   end
@@ -65,6 +74,13 @@ class SceneSummariesController < ApplicationController
   end
 
   private
+
+  # Wraps @summary for the form view, injecting the game, url_helpers and the
+  # write policy so the form component never looks any of them up itself.
+  sig { returns(SceneSummaryPresenter) }
+  def build_summary_presenter
+    SceneSummaryPresenter.new(@summary, game: @game, urls: self, policy: policy(@summary))
+  end
 
   sig { void }
   def set_game

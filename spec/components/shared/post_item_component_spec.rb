@@ -2,12 +2,20 @@ require "rails_helper"
 
 RSpec.describe Shared::PostItemComponent, type: :component do
   let(:user) { build_stubbed(:user, email: "author@example.com") }
-  let(:scene) { build_stubbed(:scene, resolved_at: nil) }
+  let(:raw_scene) { build_stubbed(:scene, resolved_at: nil) }
   let(:game) { build_stubbed(:game) }
+  let(:urls) do
+    double(
+      mark_read_game_scene_post_path: "/games/1/scenes/2/posts/3/mark_read",
+      edit_game_scene_post_path: "/games/1/scenes/2/posts/3/edit"
+    )
+  end
+  let(:post_policy) { instance_double(PostPolicy, update?: false) }
+
   let(:post) do
     build_stubbed(:post,
       user: user,
-      scene: scene,
+      scene: raw_scene,
       content: "Hello **world**",
       is_ooc: false,
       last_edited_at: nil,
@@ -15,11 +23,15 @@ RSpec.describe Shared::PostItemComponent, type: :component do
       allow(p).to receive(:game).and_return(game)
     end
   end
-  let(:presenter) { PostPresenter.new(post) }
+  let(:presenter) { build_post_presenter(post) }
 
-  subject(:component) { described_class.new(post: presenter, game: game, current_user: user) }
+  subject(:component) { described_class.new(post: presenter) }
 
   before { allow(game).to receive(:game_master?).and_return(false) }
+
+  def build_post_presenter(model, policy: post_policy)
+    PostPresenter.new(model, game: game, urls: urls, policy: policy)
+  end
 
   def rendered_component
     render_inline(component)
@@ -44,10 +56,10 @@ RSpec.describe Shared::PostItemComponent, type: :component do
     end
 
     it "adds is-hot when the post is unread" do
-      recent = build_stubbed(:post, user: user, scene: scene, content: "New", is_ooc: false,
+      recent = build_stubbed(:post, user: user, scene: raw_scene, content: "New", is_ooc: false,
         last_edited_at: nil, created_at: 1.hour.ago).tap { |p| allow(p).to receive(:game).and_return(game) }
-      c = described_class.new(post: PostPresenter.new(recent), game: game, current_user: user,
-        scene: scene, read_post_ids: Set.new)
+      c = described_class.new(post: build_post_presenter(recent),
+        scene: ScenePresenter.new(raw_scene), read_post_ids: Set.new)
       expect(c.card_classes).to include("is-hot")
     end
   end
@@ -80,12 +92,12 @@ RSpec.describe Shared::PostItemComponent, type: :component do
 
   context "when OOC" do
     let(:post) do
-      build_stubbed(:post, :ooc, user: user, scene: scene, content: "OOC note", created_at: Time.current).tap do |p|
+      build_stubbed(:post, :ooc, user: user, scene: raw_scene, content: "OOC note", created_at: Time.current).tap do |p|
         allow(p).to receive(:game).and_return(game)
       end
     end
-    let(:presenter) { PostPresenter.new(post) }
-    subject(:component) { described_class.new(post: presenter, game: game, current_user: user) }
+    let(:presenter) { build_post_presenter(post) }
+    subject(:component) { described_class.new(post: presenter) }
 
     it "renders the OOC badge" do
       expect(rendered_component).to have_css("[data-testid='ooc-post']")
@@ -104,34 +116,42 @@ RSpec.describe Shared::PostItemComponent, type: :component do
 
   context "when edited" do
     let(:post) do
-      build_stubbed(:post, :edited, user: user, scene: scene, content: "Updated", created_at: Time.current).tap do |p|
+      build_stubbed(:post, :edited, user: user, scene: raw_scene, content: "Updated", created_at: Time.current).tap do |p|
         allow(p).to receive(:game).and_return(game)
       end
     end
-    let(:presenter) { PostPresenter.new(post) }
-    subject(:component) { described_class.new(post: presenter, game: game, current_user: user) }
+    let(:presenter) { build_post_presenter(post) }
+    subject(:component) { described_class.new(post: presenter) }
 
     it "shows the edited indicator" do
       expect(rendered_component).to have_text("(edited)")
     end
   end
 
+  context "when editable by the viewer" do
+    let(:presenter) { build_post_presenter(post, policy: instance_double(PostPolicy, update?: true)) }
+
+    it "renders an Edit link pointing at the presenter's edit URL" do
+      render_inline(component)
+      expect(page).to have_css("a[href='/games/1/scenes/2/posts/3/edit']", text: "Edit")
+    end
+  end
+
   context "unread aura" do
     let(:recent_post) do
-      build_stubbed(:post, user: user, scene: scene, content: "New post",
+      build_stubbed(:post, user: user, scene: raw_scene, content: "New post",
         is_ooc: false, last_edited_at: nil, created_at: 1.hour.ago).tap do |p|
         allow(p).to receive(:game).and_return(game)
       end
     end
-    let(:recent_presenter) { PostPresenter.new(recent_post) }
+    let(:recent_presenter) { build_post_presenter(recent_post) }
+    let(:scene_presenter) { ScenePresenter.new(raw_scene) }
 
     context "when post is unread and recent" do
       subject(:component) do
         described_class.new(
           post: recent_presenter,
-          game: game,
-          current_user: user,
-          scene: scene,
+          scene: scene_presenter,
           read_post_ids: Set.new
         )
       end
@@ -143,7 +163,7 @@ RSpec.describe Shared::PostItemComponent, type: :component do
 
       it "includes the mark-read URL" do
         render_inline(component)
-        expect(page).to have_css("[data-mark-read-url]")
+        expect(page).to have_css("[data-mark-read-url='/games/1/scenes/2/posts/3/mark_read']")
       end
     end
 
@@ -151,9 +171,7 @@ RSpec.describe Shared::PostItemComponent, type: :component do
       subject(:component) do
         described_class.new(
           post: recent_presenter,
-          game: game,
-          current_user: user,
-          scene: scene,
+          scene: scene_presenter,
           read_post_ids: Set.new([ recent_post.id ])
         )
       end
@@ -175,10 +193,8 @@ RSpec.describe Shared::PostItemComponent, type: :component do
 
       subject(:component) do
         described_class.new(
-          post: PostPresenter.new(post_in_resolved),
-          game: game,
-          current_user: user,
-          scene: resolved_scene,
+          post: build_post_presenter(post_in_resolved),
+          scene: ScenePresenter.new(resolved_scene),
           read_post_ids: Set.new
         )
       end
@@ -191,7 +207,7 @@ RSpec.describe Shared::PostItemComponent, type: :component do
 
     context "when no read_post_ids provided" do
       subject(:component) do
-        described_class.new(post: recent_presenter, game: game, current_user: user)
+        described_class.new(post: recent_presenter)
       end
 
       it "sets data-unread to false" do

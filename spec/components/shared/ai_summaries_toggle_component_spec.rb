@@ -8,7 +8,7 @@ RSpec.describe Shared::AiSummariesToggleComponent, type: :component do
   context "when AI summaries are enabled" do
     before { game.update!(ai_summaries_enabled: true) }
 
-    subject(:component) { described_class.new(game: game) }
+    subject(:component) { described_class.new(game: GamePresenter.new(game, policy: instance_double(GamePolicy))) }
 
     it "status_text returns 'enabled'" do
       expect(component.status_text).to eq("enabled")
@@ -36,7 +36,7 @@ RSpec.describe Shared::AiSummariesToggleComponent, type: :component do
   context "when AI summaries are disabled" do
     before { game.update!(ai_summaries_enabled: false) }
 
-    subject(:component) { described_class.new(game: game) }
+    subject(:component) { described_class.new(game: GamePresenter.new(game, policy: instance_double(GamePolicy))) }
 
     it "status_text returns 'disabled'" do
       expect(component.status_text).to eq("disabled")

@@ -12,23 +12,22 @@
 class Shared::ParticipantCheckboxListComponent < ApplicationComponent
   extend T::Sig
 
-  PlayerRow = T.type_alias { [ UserPresenter, T::Array[Character] ] }
   VARIANTS = T.let(%i[card simple].freeze, T::Array[Symbol])
 
   sig do
     params(
-      players_with_characters: T::Array[PlayerRow],
+      players_with_characters: T::Array[ScenePlayerPresenter],
       selected_character_ids: T::Array[String],
       variant: Symbol
     ).void
   end
   def initialize(players_with_characters:, selected_character_ids:, variant: :card)
-    @players_with_characters = T.let(players_with_characters, T::Array[PlayerRow])
+    @players_with_characters = T.let(players_with_characters, T::Array[ScenePlayerPresenter])
     @selected_character_ids = T.let(selected_character_ids, T::Array[String])
     @variant = T.let(variant, Symbol)
   end
 
-  sig { returns(T::Array[PlayerRow]) }
+  sig { returns(T::Array[ScenePlayerPresenter]) }
   attr_reader :players_with_characters
 
   sig { returns(T::Boolean) }
@@ -46,8 +45,8 @@ class Shared::ParticipantCheckboxListComponent < ApplicationComponent
     card? ? "py-2 border-b border-card-divider last:border-b-0" : "flex flex-col gap-1"
   end
 
-  sig { params(character: Character).returns(T::Boolean) }
+  sig { params(character: CharacterPresenter).returns(T::Boolean) }
   def character_checked?(character)
-    @selected_character_ids.include?(character.id.to_s)
+    @selected_character_ids.include?(character.checkbox_value)
   end
 end
