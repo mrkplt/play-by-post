@@ -13,6 +13,6 @@
       <p class="text-xs text-slate-400 mt-1 mb-0">PDF, Word, text, markdown, or image. Max <%= max_megabytes %>MB.</p>
       <p data-file-size-target="warning" class="hidden text-sm text-red-800 mt-2 mb-0" role="alert"></p>
     </div>
-    <%= f.submit "Upload", data: { file_size_target: "submit" }, class: "px-5 py-2 bg-slate-500 text-white rounded text-base cursor-pointer hover:bg-slate-600 inline-block no-underline disabled:opacity-50 disabled:cursor-not-allowed" %>
+    <%= f.submit "Upload", data: { file_size_target: "submit" }, class: "px-5 py-2 bg-accent text-accent-ink rounded-control text-base font-bold cursor-pointer inline-block no-underline transition-colors disabled:opacity-50 disabled:cursor-not-allowed" %>
   <% end %>
 </div>

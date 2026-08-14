@@ -8,20 +8,11 @@
           secondary_nav: Shared::GameNavComponent.new(game: @game, active_tab: :scenes, can_manage: @game_presenter.can_manage?, mode: :link)) %>
   <% end %>
 
-  <% case @scene_presenter.page_action(can_manage: @game_presenter.can_manage?, is_participant: @is_participant, membership: @current_membership) %>
-  <% when :join %>
+  <% if (page_action = @scene_presenter.page_action(can_manage: @game_presenter.can_manage?, is_participant: @is_participant, membership: @current_membership)) %>
     <% frame.with_footer do %>
       <%= render Shared::PageActionsComponent.new do |actions| %>
         <% actions.with_primary do %>
-          <%= render Ui::ButtonComponent.new(url: join_game_scene_participants_path(@game, @scene), method: :post) do %>Join Scene<% end %>
-        <% end %>
-      <% end %>
-    <% end %>
-  <% when :write_summary %>
-    <% frame.with_footer do %>
-      <%= render Shared::PageActionsComponent.new do |actions| %>
-        <% actions.with_primary do %>
-          <%= render Ui::ButtonComponent.new(url: new_game_scene_scene_summary_path(@game, @scene)) do %>Write Summary<% end %>
+          <%= render Ui::ButtonComponent.new(url: page_action.href, method: page_action.http_method) do %><%= page_action.label %><% end %>
         <% end %>
       <% end %>
     <% end %>

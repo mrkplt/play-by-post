@@ -61,14 +61,9 @@ class ScenesController < ApplicationController
 
     @scene.scene_participants.find_by(user: current_user)&.update(last_visited_at: Time.current)
 
-    if @scene.resolved?
-      @read_post_ids = Set.new
-    else
-      eligible_ids = @posts.select { |p| p.created_at > 72.hours.ago }.map(&:id)
-      @read_post_ids = PostRead.where(user: current_user, post_id: eligible_ids).pluck(:post_id).to_set
-    end
+    @read_post_ids = SceneReadState.for(scene: @scene, posts: @posts, user: current_user)
 
-    @scene_presenter = ScenePresenter.new(@scene)
+    @scene_presenter = ScenePresenter.new(@scene, game: @game, urls: self)
     participants = @scene.scene_participants.includes(:character, :user).to_a
     @post_presenters = @posts.map { |post| PostPresenter.new(post, scene_participants: participants) }
   end

@@ -44,6 +44,10 @@ matcher:
     - PostPresenter
     - SceneSummaryPresenter
     - ScenePresenter
+    - ScenePageAction
+    - ScenePageAction::Viewer
+    - ScenePageAction::Resolved
+    - ScenePageAction::RouteArgs
     - UserPresenter
     # Components
     - Ui::SecretFieldComponent
@@ -132,6 +136,7 @@ matcher:
     - MarkdownRenderer
     - NotebookEntryPromotion
     - NotebookLaneMove
+    - SceneReadState
     - SceneSummaryService
     - FizzySweepService
     # Controllers

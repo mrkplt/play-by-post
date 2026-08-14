@@ -96,24 +96,24 @@ class ScenePresenter < BasePresenter
     @model.resolved? ? draft : nil
   end
 
-  # The scene screen's single footer page-action, if any: :join for an
-  # eligible non-participant on an open public scene, :write_summary for the
-  # GM on a resolved scene with no summary yet, or nil (no footer action).
-  # Consolidates the view's join/summary conditionals into one lookup so the
-  # template branches on a symbol instead of chained booleans.
+  # The scene screen's footer page-action, resolved to a render-ready
+  # label/href/method triple; ScenePageAction owns the rule and the shape.
+  # The game and url_helpers come from construction, so the view reads a
+  # finished href rather than handing the presenter a route helper.
   sig do
-    params(
-      can_manage: T::Boolean,
-      is_participant: T::Boolean,
-      membership: T.nilable(GameMember)
-    ).returns(T.nilable(Symbol))
+    params(can_manage: T::Boolean, is_participant: T::Boolean,
+           membership: T.nilable(GameMember))
+      .returns(T.nilable(ScenePageAction::Resolved))
   end
   def page_action(can_manage:, is_participant:, membership:)
-    membership_active = membership.present? && membership.active?
-    if !is_participant && !can_manage && !@model.private? && !@model.resolved? && membership_active
-      :join
-    elsif can_manage && @model.resolved? && @model.scene_summary.blank?
-      :write_summary
-    end
+    ScenePageAction.resolved_for(
+      scene: @model,
+      viewer: ScenePageAction::Viewer.new(
+        can_manage: can_manage, is_participant: is_participant, membership: membership
+      ),
+      route_args: ScenePageAction::RouteArgs.new(
+        urls: @options[:urls], game: @options[:game]
+      )
+    )
   end
 end
