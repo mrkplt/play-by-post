@@ -172,6 +172,43 @@ RSpec.describe "Campaign Notebook", type: :feature do
       expect(page).to have_text("Scrapped Idea")
     end
 
+    # Discarding something is a request to stop seeing it, so the bin must not
+    # spring open around the entry that just landed in it.
+    it "keeps the Discard column shut when an entry is moved into it" do
+      create(:notebook_entry, game: game, title: "Doomed Idea", status: "new")
+      sign_in_as(gm)
+      visit game_notebook_entries_path(game)
+
+      within "#notebook_column_new" do
+        select "Discard", from: "notebook_entry[status]"
+      end
+
+      expect(page).to have_no_css("#notebook_column_new", text: "Doomed Idea")
+      expect(page).to have_css("details#notebook_column_discard")
+      expect(page).to have_no_css("details#notebook_column_discard[open]")
+      expect(page).to have_no_text("Doomed Idea")
+    end
+
+    # The move response replaces the lane containing this select. The
+    # controller blurs it first so the dropdown closes while the element still
+    # exists; without that the popup is stranded over the board. Driving the
+    # select by keyboard keeps focus on it the way a real click does, which
+    # `select` alone does not.
+    it "blurs the lane picker before the move replaces it" do
+      create(:notebook_entry, game: game, title: "Drifting Idea", status: "new")
+      sign_in_as(gm)
+      visit game_notebook_entries_path(game)
+
+      picker = find("#notebook_column_new select")
+      picker.click
+      expect(page.evaluate_script("document.activeElement.tagName")).to eq("SELECT")
+
+      picker.find("option", text: "Expand").select_option
+
+      expect(page).to have_css("#notebook_column_expand", text: "Drifting Idea")
+      expect(page.evaluate_script("document.activeElement.tagName")).not_to eq("SELECT")
+    end
+
     it "links to the page an entry became, instead of offering Promote twice" do
       entry = create(:notebook_entry, game: game, title: "Standalone Idea", body: "Body content.")
       sign_in_as(gm)
