@@ -1,4 +1,4 @@
-<% content_for :active_game_id, @game.id %>
+<% content_for :active_game_id, @game_presenter.id %>
 
 <%= render Shared::MobileFrameComponent.new do |frame| %>
   <% frame.with_header do %>
@@ -17,7 +17,7 @@
       <%= render(Ui::BadgeComponent.new(variant: :yellow)) { "Hidden" } %>
     <% end %>
     <% if @character_presenter.can_edit? %>
-      <%= link_to "Edit", edit_game_character_path(@game, @character), class: "ml-auto text-xs font-semibold text-accent no-underline" %>
+      <%= link_to "Edit", edit_game_character_path(@game_presenter.id, @character_presenter.id), class: "ml-auto text-xs font-semibold text-accent no-underline" %>
     <% end %>
   </div>
 

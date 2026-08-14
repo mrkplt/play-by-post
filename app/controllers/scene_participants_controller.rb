@@ -4,8 +4,6 @@ class SceneParticipantsController < ApplicationController
   extend T::Sig
   include SceneParticipantScoped
 
-  before_action :set_game
-  before_action :set_scene
   before_action :require_active_member_for_write!, only: %i[join]
   after_action :verify_authorized
 

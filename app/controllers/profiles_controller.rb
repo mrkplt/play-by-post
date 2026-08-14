@@ -8,35 +8,39 @@ class ProfilesController < ApplicationController
 
   sig { void }
   def show
-    authorize profile
+    current_profile = profile
+    authorize current_profile
     @user_presenter = T.let(UserPresenter.new(current_user), T.nilable(UserPresenter))
     @feed_rows = T.let(T.must(@user_presenter).feed_rows(urls: self), T.nilable(T::Array[GameFeedRowPresenter]))
-    assign_profile_presenter
+    assign_profile_presenter(current_profile)
   end
 
   sig { void }
   def edit
-    authorize profile
-    assign_profile_presenter
+    current_profile = profile
+    authorize current_profile
+    assign_profile_presenter(current_profile)
   end
 
   sig { void }
   def update
-    authorize profile
-    profile.display_name = params[:user_profile][:display_name]
+    current_profile = profile
+    authorize current_profile
+    current_profile.display_name = params[:user_profile][:display_name]
 
-    if profile.save
+    if current_profile.save
       redirect_to root_path, notice: "Display name saved."
     else
-      assign_profile_presenter
+      assign_profile_presenter(current_profile)
       render :edit, status: :unprocessable_content
     end
   end
 
   sig { void }
   def toggle_hide_ooc
-    authorize profile, :manage?
-    profile.update!(hide_ooc: !profile.hide_ooc?)
+    current_profile = profile
+    authorize current_profile, :manage?
+    current_profile.update!(hide_ooc: !current_profile.hide_ooc?)
     head :ok
   end
 
@@ -62,8 +66,8 @@ class ProfilesController < ApplicationController
     end
   end
 
-  sig { void }
-  def assign_profile_presenter
-    @profile_presenter = T.let(UserProfilePresenter.new(profile), T.nilable(UserProfilePresenter))
+  sig { params(current_profile: UserProfile).void }
+  def assign_profile_presenter(current_profile)
+    @profile_presenter = T.let(UserProfilePresenter.new(current_profile), T.nilable(UserProfilePresenter))
   end
 end
