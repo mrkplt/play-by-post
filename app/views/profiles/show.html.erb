@@ -6,7 +6,7 @@
   <%# Display Name %>
   <%= render Ui::SectionLabelComponent.new do %>Display Name<% end %>
   <div class="bg-card border border-card-border rounded-card px-3.5">
-    <%= render Ui::SettingsRowComponent.new(label: @profile.display_name.presence || "Not set", last: true) do %>
+    <%= render Ui::SettingsRowComponent.new(label: @profile_presenter.display_name_or_placeholder, last: true) do %>
       <%= link_to "Edit", edit_profile_path, class: "text-xs font-bold text-accent no-underline" %>
     <% end %>
   </div>
@@ -18,7 +18,7 @@
     <% end %>
     <%= render Ui::SettingsRowComponent.new(label: "Hide OOC by default", sub: "Collapse out-of-character posts", last: true) do %>
       <%= render Ui::ProfileOocToggleComponent.new(
-        hide_ooc: @profile.hide_ooc?,
+        hide_ooc: @profile_presenter.hide_ooc?,
         toggle_url: toggle_hide_ooc_profile_path
       ) %>
     <% end %>

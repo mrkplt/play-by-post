@@ -237,7 +237,10 @@ R1_SKIP_CONTROLLERS = %w[
   application_controller.rb
   data_application_controller.rb
   turnstile_verification.rb
+  inbound_emails_controller.rb
 ].freeze
+# inbound_emails_controller.rb: a webhook ingress (Resend -> ActionMailbox),
+# not the view layer — it renders no templates, so R1 has nothing to enforce.
 
 def visibility_switch(node)
   return nil unless node.is_a?(Prism::CallNode) && node.receiver.nil?

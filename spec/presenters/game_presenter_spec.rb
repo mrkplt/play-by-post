@@ -68,6 +68,18 @@ RSpec.describe GamePresenter do
     end
   end
 
+  describe "#ai_summaries_toggle_aria_label" do
+    it "describes disabling the toggle when summaries are enabled" do
+      allow(game).to receive(:ai_summaries_enabled?).and_return(true)
+      expect(presenter.ai_summaries_toggle_aria_label).to eq("Disable AI scene summaries")
+    end
+
+    it "describes enabling the toggle when summaries are disabled" do
+      allow(game).to receive(:ai_summaries_enabled?).and_return(false)
+      expect(presenter.ai_summaries_toggle_aria_label).to eq("Enable AI scene summaries")
+    end
+  end
+
   describe "#id" do
     it "delegates to the model" do
       expect(presenter.id).to eq(game.id)

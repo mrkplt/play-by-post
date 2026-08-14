@@ -200,6 +200,7 @@ matcher:
     - CharacterScoped
     - ImageAttachable
     - PostScoped
+    - ProfileScoped
     # Jobs
     - PostDigestJob
     - ExportJob
