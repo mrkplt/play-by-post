@@ -11,7 +11,7 @@
 # Extracted from ScenesController#show so the window boundary and the query's
 # scoping are assertable directly, rather than only through a rendered page
 # where a wrong-but-equivalent query produces identical HTML.
-class SceneReadState
+module SceneReadState
   extend T::Sig
 
   # Posts older than this are never marked unread.
