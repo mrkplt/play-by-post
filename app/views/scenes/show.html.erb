@@ -4,8 +4,8 @@
   <% frame.with_header do %>
     <%= render Shared::HeaderComponent.new(
           title: @scene.title,
-          breadcrumbs: Shared::BreadcrumbsComponent.new(game: @game),
-          secondary_nav: Shared::GameNavComponent.new(game: @game, active_tab: :scenes, can_manage: @game_presenter.can_manage?, mode: :link)) %>
+          breadcrumbs: Shared::BreadcrumbsComponent.new(game_presenter: @game_presenter),
+          secondary_nav: Shared::GameNavComponent.new(game_presenter: @game_presenter, active_tab: :scenes, mode: :link)) %>
   <% end %>
 
   <% if (page_action = @scene_presenter.page_action(can_manage: @game_presenter.can_manage?, is_participant: @is_participant, membership: @current_membership)) %>

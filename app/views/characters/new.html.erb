@@ -4,8 +4,8 @@
   <% frame.with_header do %>
     <%= render Shared::HeaderComponent.new(
           title: "New Character",
-          breadcrumbs: Shared::BreadcrumbsComponent.new(game: @game),
-          secondary_nav: Shared::GameNavComponent.new(game: @game, active_tab: :roster, can_manage: policy(@game).manage?, mode: :link)) %>
+          breadcrumbs: Shared::BreadcrumbsComponent.new(game_presenter: @game_presenter),
+          secondary_nav: Shared::GameNavComponent.new(game_presenter: @game_presenter, active_tab: :roster, mode: :link)) %>
   <% end %>
 
   <% frame.with_footer do %>
@@ -21,5 +21,5 @@
 
   <%= render Shared::CharacterFormComponent.new(
         game: @game, character: @character, users: @users,
-        can_assign_owner: policy(@character).assign_owner?) %>
+        can_assign_owner: @character_presenter.can_assign_owner?) %>
 <% end %>

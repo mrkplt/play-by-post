@@ -21,6 +21,7 @@ class PostsController < ApplicationController
   sig { void }
   def edit
     authorize @post
+    @game_presenter = GamePresenter.new(@game, policy: policy(@game))
   end
 
   sig { void }

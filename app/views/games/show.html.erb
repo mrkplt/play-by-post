@@ -7,7 +7,7 @@
             title: @game.name,
             crown: @game_presenter.can_manage?,
             gear: game_player_management_path(@game),
-            secondary_nav: Shared::GameNavComponent.new(game: @game, active_tab: :scenes, can_manage: @game_presenter.can_manage?, mode: :switch)) %>
+            secondary_nav: Shared::GameNavComponent.new(game_presenter: @game_presenter, active_tab: :scenes, mode: :switch)) %>
     <% end %>
 
     <%# ===== Scenes panel ===== %>

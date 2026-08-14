@@ -4,7 +4,7 @@
   <% frame.with_header do %>
     <%= render Shared::HeaderComponent.new(
           title: "New Summary",
-          breadcrumbs: Shared::BreadcrumbsComponent.new(game: @game)) %>
+          breadcrumbs: Shared::BreadcrumbsComponent.new(game_presenter: @game_presenter)) %>
   <% end %>
 
   <% frame.with_footer do %>

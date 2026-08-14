@@ -11,9 +11,9 @@
 class Shared::NavDrawerComponent < ApplicationComponent
   extend T::Sig
 
-  sig { params(current_user: User, active_game_id: T.nilable(Integer)).void }
+  sig { params(current_user: UserPresenter, active_game_id: T.nilable(Integer)).void }
   def initialize(current_user:, active_game_id: nil)
-    @user = T.let(UserPresenter.new(current_user), UserPresenter)
+    @user = T.let(current_user, UserPresenter)
     @active_game_id = active_game_id
   end
 

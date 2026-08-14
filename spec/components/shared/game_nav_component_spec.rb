@@ -3,19 +3,23 @@ require "rails_helper"
 RSpec.describe Shared::GameNavComponent, type: :component do
   let(:game) { build_stubbed(:game) }
 
-  def rendered(**opts)
-    render_inline(described_class.new(game: game, active_tab: :scenes, **opts))
+  def game_presenter(can_manage: false)
+    GamePresenter.new(game, policy: instance_double(GamePolicy, manage?: can_manage))
+  end
+
+  def rendered(can_manage: false, **opts)
+    render_inline(described_class.new(game_presenter: game_presenter(can_manage: can_manage), active_tab: :scenes, **opts))
     page
   end
 
   it "exposes five tabs to a non-GM" do
-    component = described_class.new(game: game, active_tab: :scenes, can_manage: false)
+    component = described_class.new(game_presenter: game_presenter(can_manage: false), active_tab: :scenes)
     render_inline(component)
     expect(component.tabs.map(&:label)).to eq(%w[Scenes Roster Files Pages Links])
   end
 
   it "adds a Notebook tab for the GM" do
-    component = described_class.new(game: game, active_tab: :scenes, can_manage: true)
+    component = described_class.new(game_presenter: game_presenter(can_manage: true), active_tab: :scenes)
     render_inline(component)
     expect(component.tabs.map(&:label)).to eq(%w[Scenes Roster Files Pages Links Notebook])
   end

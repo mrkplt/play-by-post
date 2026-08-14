@@ -16,6 +16,8 @@ class CharactersController < ApplicationController
     @character = @game.characters.new
     authorize @character
     @users = players_for_select
+    @game_presenter = GamePresenter.new(@game, policy: policy(@game))
+    @character_presenter = character_presenter
   end
 
   sig { void }
@@ -27,6 +29,8 @@ class CharactersController < ApplicationController
       if params[:character][:user_id].blank?
         @users = players_for_select
         @character.errors.add(:base, "Please select a player")
+        @game_presenter = GamePresenter.new(@game, policy: policy(@game))
+        @character_presenter = character_presenter
         return render :new, status: :unprocessable_content
       end
       owner = User.find(params[:character][:user_id])
@@ -41,6 +45,8 @@ class CharactersController < ApplicationController
       redirect_to game_character_path(@game, @character), notice: "Character created."
     else
       @users = players_for_select
+      @game_presenter = GamePresenter.new(@game, policy: policy(@game))
+      @character_presenter = character_presenter
       render :new, status: :unprocessable_content
     end
   end
@@ -52,12 +58,14 @@ class CharactersController < ApplicationController
     @character_owner = UserPresenter.new(@character.user)
     @version_editor_names = @versions.each_with_object({}) { |v, h| h[v.id] = UserPresenter.new(v.edited_by).display_name_or_email }
     @character_presenter = character_presenter
+    @game_presenter = GamePresenter.new(@game, policy: policy(@game))
   end
 
   sig { void }
   def edit
     authorize @character
     @character_presenter = character_presenter
+    @game_presenter = GamePresenter.new(@game, policy: policy(@game))
   end
 
   sig { void }
@@ -81,6 +89,7 @@ class CharactersController < ApplicationController
       redirect_to game_character_path(@game, @character), notice: "Character updated."
     else
       @character_presenter = character_presenter
+      @game_presenter = GamePresenter.new(@game, policy: policy(@game))
       render :edit, status: :unprocessable_content
     end
   end
