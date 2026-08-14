@@ -5,36 +5,35 @@ class InvitationsController < ApplicationController
 
   skip_before_action :authenticate_user!, only: %i[accept]
 
-  before_action :set_game, except: %i[accept]
   after_action :verify_authorized, except: %i[accept]
 
   sig { void }
   def create
-    invitation = T.must(@game).invitations.new(email: params[:invitation][:email], invited_by: current_user)
+    invitation = game.invitations.new(email: params[:invitation][:email], invited_by: current_user)
     authorize invitation
 
     if invitation.save
       InvitationMailer.invite(invitation).deliver_later
-      redirect_to game_path(@game, anchor: "roster"), notice: "Invitation sent to #{invitation.email}."
+      redirect_to game_path(game, anchor: "roster"), notice: "Invitation sent to #{invitation.email}."
     else
-      redirect_to game_path(@game, anchor: "roster"), alert: invitation.errors.full_messages.join(", ")
+      redirect_to game_path(game, anchor: "roster"), alert: invitation.errors.full_messages.join(", ")
     end
   end
 
   sig { void }
   def destroy
-    invitation = T.must(@game).invitations.find(params[:id])
+    invitation = game.invitations.find(params[:id])
     authorize invitation
     invitation.destroy
-    redirect_to game_path(@game, anchor: "roster"), notice: "Invitation cancelled."
+    redirect_to game_path(game, anchor: "roster"), notice: "Invitation cancelled."
   end
 
   sig { void }
   def resend
-    invitation = T.must(@game).invitations.find(params[:id])
+    invitation = game.invitations.find(params[:id])
     authorize invitation, :resend?
     InvitationMailer.invite(invitation).deliver_later
-    redirect_to game_path(@game, anchor: "roster"), notice: "Invitation resent to #{invitation.email}."
+    redirect_to game_path(game, anchor: "roster"), notice: "Invitation resent to #{invitation.email}."
   end
 
   sig { void }
@@ -57,8 +56,11 @@ class InvitationsController < ApplicationController
 
   private
 
-  sig { void }
-  def set_game
-    @game = T.let(Game.find(params[:game_id]), T.nilable(Game))
+  # Used only internally (associations, redirect targets) — never read by a
+  # template (this controller renders no views of its own), so it is not an
+  # ivar.
+  sig { returns(Game) }
+  def game
+    Game.find(params[:game_id])
   end
 end

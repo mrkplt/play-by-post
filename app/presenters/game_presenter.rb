@@ -54,6 +54,13 @@ class GamePresenter < BasePresenter
     @model.ai_summaries_enabled?
   end
 
+  # The AI Summaries toggle's accessible label — describes the action the
+  # control performs, which is the opposite of its current state.
+  sig { returns(String) }
+  def ai_summaries_toggle_aria_label
+    ai_summaries_enabled? ? "Disable AI scene summaries" : "Enable AI scene summaries"
+  end
+
   sig { returns(T::Boolean) }
   def errors?
     @model.errors.any?

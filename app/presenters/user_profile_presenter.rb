@@ -13,6 +13,18 @@ class UserProfilePresenter < BasePresenter
     super
   end
 
+  # The Display Name row's label: the saved name, or a placeholder when none
+  # has been set yet.
+  sig { returns(String) }
+  def display_name_or_placeholder
+    @model.display_name.presence || "Not set"
+  end
+
+  sig { returns(T::Boolean) }
+  def hide_ooc?
+    @model.hide_ooc?
+  end
+
   sig { returns(T::Boolean) }
   def display_name_errors?
     @model.errors[:display_name].any?
