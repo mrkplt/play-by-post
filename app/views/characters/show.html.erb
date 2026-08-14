@@ -3,17 +3,17 @@
 <%= render Shared::MobileFrameComponent.new do |frame| %>
   <% frame.with_header do %>
     <%= render Shared::HeaderComponent.new(
-          title: @character.name,
+          title: @character_presenter.name,
           breadcrumbs: Shared::BreadcrumbsComponent.new(game_presenter: @game_presenter),
           secondary_nav: Shared::GameNavComponent.new(game_presenter: @game_presenter, active_tab: :roster, mode: :link)) %>
   <% end %>
 
   <div class="flex items-center gap-2 flex-wrap">
     <span class="text-[11px] text-muted-2">Player: <%= @character_owner.display_name_or_email %></span>
-    <% if @character.archived? %>
+    <% if @character_presenter.archived? %>
       <%= render(Ui::BadgeComponent.new(variant: :gray)) { "Archived" } %>
     <% end %>
-    <% if @character.hidden? %>
+    <% if @character_presenter.hidden? %>
       <%= render(Ui::BadgeComponent.new(variant: :yellow)) { "Hidden" } %>
     <% end %>
     <% if @character_presenter.can_edit? %>
@@ -22,8 +22,8 @@
   </div>
 
   <div class="bg-card border border-card-border rounded-card p-4">
-    <% if @character.content.present? %>
-      <%= render Ui::MarkdownRenderComponent.new(text: @character.content, content_class: "character-sheet-content") %>
+    <% if @character_presenter.content? %>
+      <%= render Ui::MarkdownRenderComponent.new(text: @character_presenter.content, content_class: "character-sheet-content") %>
     <% else %>
       <p class="text-muted-2 m-0 text-sm">No sheet content yet.</p>
     <% end %>
