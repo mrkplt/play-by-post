@@ -98,4 +98,58 @@ RSpec.describe "Feedback", type: :feature do
       expect(submit_bottom).to be <= viewport_height
     end
   end
+
+  # Turnstile tokens are single-use and the modal never navigates, so before the
+  # widget was taught to reset itself the second submit replayed the spent token
+  # from the first and was rejected. Turnstile is off in the test env by default;
+  # forcing it on is what puts the real widget (and its token) in the page.
+  context "with Turnstile enabled" do
+    before do
+      allow(Turnstile).to receive(:enabled?).and_return(true)
+      # Stands in for siteverify, enforcing the one rule that matters here: a
+      # token is accepted once and rejected on replay.
+      spent = []
+      allow(TurnstileVerifier).to receive(:verify) do |token:, **|
+        value = token.to_s
+        next false if value.blank? || spent.include?(value)
+
+        spent << value
+        true
+      end
+      resize_window_to_viewport(1280, 900)
+    end
+
+    it "accepts a second submission, refreshing the spent token in between" do
+      visit root_path
+
+      # The real Cloudflare script owns the response input, so wait for it before
+      # overriding reset() — writing into the input the script actually created.
+      expect(page).to have_css("input[name='cf-turnstile-response']", visible: :all)
+      page.execute_script(<<~JS)
+        window.__turnstileResets = 0;
+        window.turnstile = {
+          reset: function (element) {
+            window.__turnstileResets += 1;
+            var input = (element || document).querySelector("input[name='cf-turnstile-response']");
+            if (input) { input.value = "token-" + window.__turnstileResets; }
+          }
+        };
+        document.querySelector("input[name='cf-turnstile-response']").value = "token-0";
+      JS
+
+      click_button "Send Feedback"
+      fill_in "feedback[body]", with: "First report."
+      within("[data-testid='feedback-modal']") { click_button "Submit" }
+      expect(page).to have_text("Thanks for your feedback!")
+
+      within("[data-testid='feedback-modal']") { click_button "Close" }
+      click_button "Send Feedback"
+      fill_in "feedback[body]", with: "Second report."
+      within("[data-testid='feedback-modal']") { click_button "Submit" }
+
+      expect(page).to have_text("Thanks for your feedback!")
+      expect(Feedback.count).to eq(2)
+      expect(page.evaluate_script("window.__turnstileResets")).to be >= 1
+    end
+  end
 end
