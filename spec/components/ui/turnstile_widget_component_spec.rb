@@ -48,10 +48,11 @@ RSpec.describe Ui::TurnstileWidgetComponent, type: :component do
       expect(page).to have_css("div[data-controller='#{described_class::STIMULUS_CONTROLLER}']")
     end
 
-    it "resets the widget when the surrounding form announces a completed submit" do
+    it "keeps the widget inside the controller's element so it can be reset" do
       render_inline(described_class.new)
-      wrapper = page.find("div[data-controller='#{described_class::STIMULUS_CONTROLLER}']")
-      expect(wrapper["data-action"]).to eq("turnstile:reset->#{described_class::STIMULUS_CONTROLLER}#reset")
+      expect(page).to have_css(
+        "div[data-controller='#{described_class::STIMULUS_CONTROLLER}'] div.cf-turnstile"
+      )
     end
 
     # data-action means one thing to Stimulus and another to Turnstile; keeping the

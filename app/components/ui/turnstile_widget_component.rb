@@ -43,10 +43,7 @@ class Ui::TurnstileWidgetComponent < ApplicationComponent
 
   sig { returns(T::Hash[Symbol, String]) }
   def wrapper_data
-    {
-      controller: STIMULUS_CONTROLLER,
-      action: "turnstile:reset->#{STIMULUS_CONTROLLER}#reset"
-    }
+    { controller: STIMULUS_CONTROLLER }
   end
 
   # `action:` here is Turnstile's own label for the form being protected.
