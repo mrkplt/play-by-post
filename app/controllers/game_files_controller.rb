@@ -3,7 +3,6 @@
 class GameFilesController < ApplicationController
   extend T::Sig
 
-  before_action :set_game
   before_action :require_game_access!
   after_action :verify_authorized, except: :index
 
@@ -82,14 +81,12 @@ class GameFilesController < ApplicationController
     end
   end
 
-  sig { void }
-  def set_game
-    @game = T.let(Game.find(params[:game_id]), T.nilable(Game))
-  end
-
+  # Looked up on demand rather than cached in a before_action ivar: no
+  # template reads it directly (only @game_presenter's output does), so
+  # nothing needs it to persist as request state.
   sig { returns(Game) }
   def game
-    T.must(@game)
+    Game.find(params[:game_id])
   end
 
   sig { void }

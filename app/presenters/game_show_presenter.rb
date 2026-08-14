@@ -60,6 +60,11 @@ class GameShowPresenter < BasePresenter
     )
   end
 
+  sig { returns(T::Boolean) }
+  def game_files?
+    game_files.any?
+  end
+
   # A blank file record for the Files tab's upload form, wrapped the same way.
   sig { returns(GameFilePresenter) }
   def new_game_file

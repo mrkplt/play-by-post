@@ -15,9 +15,9 @@ class RosterCharacterPresenter < BasePresenter
     super
   end
 
-  sig { returns(Character) }
-  def character
-    @model
+  sig { returns(String) }
+  def character_name
+    @model.name
   end
 
   sig { returns(String) }

@@ -74,6 +74,29 @@ RSpec.describe GameShowPresenter do
     end
   end
 
+  describe "#game_files?" do
+    it "is true when the game has files" do
+      file = build_stubbed(:game_file)
+      includes_rel = double("includes rel")
+      ordered_rel = double("ordered rel")
+      allow(game).to receive(:game_files).and_return(double(includes: includes_rel))
+      allow(includes_rel).to receive(:order).with(created_at: :desc).and_return(ordered_rel)
+      allow(ordered_rel).to receive(:to_a).and_return([ file ])
+
+      expect(presenter.game_files?).to be(true)
+    end
+
+    it "is false when the game has no files" do
+      includes_rel = double("includes rel")
+      ordered_rel = double("ordered rel")
+      allow(game).to receive(:game_files).and_return(double(includes: includes_rel))
+      allow(includes_rel).to receive(:order).with(created_at: :desc).and_return(ordered_rel)
+      allow(ordered_rel).to receive(:to_a).and_return([])
+
+      expect(presenter.game_files?).to be(false)
+    end
+  end
+
   describe "#new_game_file" do
     it "returns a blank file record wrapped for the upload form" do
       blank = build_stubbed(:game_file)

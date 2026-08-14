@@ -6,9 +6,9 @@ RSpec.describe RosterCharacterPresenter do
 
   subject(:presenter) { described_class.new(character, removed: false) }
 
-  describe "#character" do
-    it "returns the wrapped character" do
-      expect(presenter.character).to eq(character)
+  describe "#character_name" do
+    it "returns the wrapped character's name" do
+      expect(presenter.character_name).to eq("Vex")
     end
   end
 

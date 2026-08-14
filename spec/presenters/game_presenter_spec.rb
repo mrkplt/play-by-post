@@ -43,6 +43,18 @@ RSpec.describe GamePresenter do
     end
   end
 
+  describe "#sheets_hidden?" do
+    it "is true when the game has sheets hidden" do
+      allow(game).to receive(:sheets_hidden?).and_return(true)
+      expect(presenter.sheets_hidden?).to be(true)
+    end
+
+    it "is false when the game has sheets visible" do
+      allow(game).to receive(:sheets_hidden?).and_return(false)
+      expect(presenter.sheets_hidden?).to be(false)
+    end
+  end
+
   describe "#errors?" do
     it "is false on a clean game" do
       expect(presenter.errors?).to be(false)

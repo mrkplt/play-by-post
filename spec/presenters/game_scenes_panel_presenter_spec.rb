@@ -57,5 +57,57 @@ RSpec.describe GameScenesPanelPresenter do
 
       expect(presenter.roster_preview).to eq([])
     end
+
+    it "active_scenes? is true when there are active scenes" do
+      expect(presenter.active_scenes?).to be(true)
+    end
+
+    it "roster_preview_empty? is true when the roster preview has no rows" do
+      sp = double("scene_participant", character: nil)
+      allow(scene).to receive(:scene_participants).and_return([ sp ])
+
+      expect(presenter.roster_preview_empty?).to be(true)
+    end
+
+    it "roster_preview_empty? is false when the roster preview has rows" do
+      character = build_stubbed(:character, name: "Vex")
+      sp = double("scene_participant", character: character)
+      allow(scene).to receive(:scene_participants).and_return([ sp ])
+
+      expect(presenter.roster_preview_empty?).to be(false)
+    end
+
+    it "gm_row_last? is true when the roster preview is empty" do
+      sp = double("scene_participant", character: nil)
+      allow(scene).to receive(:scene_participants).and_return([ sp ])
+
+      expect(presenter.gm_row_last?).to be(true)
+    end
+
+    it "gm_row_last? is false when the roster preview has rows" do
+      character = build_stubbed(:character, name: "Vex")
+      sp = double("scene_participant", character: character)
+      allow(scene).to receive(:scene_participants).and_return([ sp ])
+
+      expect(presenter.gm_row_last?).to be(false)
+    end
+
+    it "roster_preview_last? is true only for the final index" do
+      character = build_stubbed(:character, name: "Vex")
+      sp = double("scene_participant", character: character)
+      allow(scene).to receive(:scene_participants).and_return([ sp ])
+
+      expect(presenter.roster_preview_last?(0)).to be(true)
+      expect(presenter.roster_preview_last?(-1)).to be(false)
+    end
+  end
+
+  describe "#active_scenes?" do
+    it "is false when there are no active scenes" do
+      allow(game).to receive_message_chain(:scenes, :visible_to, :active, :includes, :to_a).and_return([])
+      allow(current_user).to receive(:user_profile).and_return(nil)
+
+      expect(presenter.active_scenes?).to be(false)
+    end
   end
 end
