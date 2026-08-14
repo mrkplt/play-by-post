@@ -10,7 +10,7 @@
   <% frame.with_footer do %>
     <%= render Shared::PageActionsComponent.new do |actions| %>
       <% actions.with_primary do %>
-        <%= render Ui::ButtonComponent.new(html_options: { type: "submit", form: "edit_post_#{@post.id}_form" }) do %>Save<% end %>
+        <%= render Ui::ButtonComponent.new(html_options: { type: "submit", form: "edit_post_#{@post_presenter.id}_form" }) do %>Save<% end %>
       <% end %>
       <% actions.with_cancel do %>
         <%= render Ui::ButtonComponent.new(variant: :secondary, url: game_scene_path(@game, @scene)) do %>Cancel<% end %>
@@ -18,5 +18,5 @@
     <% end %>
   <% end %>
 
-  <%= render Shared::PostEditFormComponent.new(game: @game, scene: @scene, post: @post) %>
+  <%= render Shared::PostEditFormComponent.new(game: @game_presenter, scene: @scene_presenter, post: @post_presenter) %>
 <% end %>

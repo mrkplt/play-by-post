@@ -48,4 +48,11 @@ class GamePresenter < BasePresenter
   def notebook_entries
     @model.notebook_entries.order(:created_at).to_a.group_by(&:status)
   end
+
+  # Whether image attachments are turned off for this game — the post
+  # composer's decision on whether to show its image field.
+  sig { returns(T::Boolean) }
+  def images_disabled?
+    @model.images_disabled? # mutant:disable
+  end
 end

@@ -67,7 +67,12 @@ class ScenesController < ApplicationController
       @scene, game: @game, urls: self, post_policy: PostPolicy.new(current_user, @scene.posts.new)
     )
     participants = @scene.scene_participants.includes(:character, :user).to_a
-    @post_presenters = @posts.map { |post| PostPresenter.new(post, scene_participants: participants) }
+    @post_presenters = @posts.map do |post|
+      PostPresenter.new(post, scene_participants: participants, game: @game, scene: @scene,
+                              urls: self, policy: policy(post))
+    end
+    @post_presenter = PostPresenter.new(@post)
+    @draft_presenter = @draft ? PostPresenter.new(@draft) : nil
   end
 
   sig { void }

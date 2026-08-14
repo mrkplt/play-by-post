@@ -64,6 +64,18 @@ RSpec.describe GamePresenter do
     end
   end
 
+  describe "#images_disabled?" do
+    it "is true when the game has images disabled" do
+      allow(game).to receive(:images_disabled?).and_return(true)
+      expect(presenter.images_disabled?).to be(true)
+    end
+
+    it "is false when the game has images enabled" do
+      allow(game).to receive(:images_disabled?).and_return(false)
+      expect(presenter.images_disabled?).to be(false)
+    end
+  end
+
   it "delegates model methods to the game" do
     expect(presenter.name).to eq(game.name)
   end

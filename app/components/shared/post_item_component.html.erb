@@ -2,7 +2,7 @@
      class="<%= card_classes %>"
      data-ooc="<%= ooc? %>"
      data-unread="<%= unread? %>"
-     <% if unread? %>data-mark-read-url="<%= mark_read_game_scene_post_path(@game, (@scene || @post.scene), @post) %>"<% end %>
+     <% if unread? %>data-mark-read-url="<%= @post.mark_read_url %>"<% end %>
      <% if ooc? %>data-testid="ooc-post"<% end %>>
 
   <%# Floated author block — body text wraps around it, illuminated-manuscript style %>
@@ -20,7 +20,7 @@
         content_class: "post-content text-body-ink leading-[1.65] #{ooc? ? 'text-sm' : 'text-base'}",
         content_attributes: { data: { testid: "post-content" } }) %>
 
-  <% if @post.image.attached? %>
+  <% if @post.image_attached? %>
     <div class="mt-2 clear-left">
       <%= image_tag @post.display_image, class: "max-w-full rounded" %>
     </div>
@@ -32,8 +32,8 @@
     <% if @post.last_edited_at.present? %>
       <span class="italic">(edited)</span>
     <% end %>
-    <% if @post.editable_by?(@current_user) %>
-      <%= link_to "Edit", edit_game_scene_post_path(@game, (@scene || @post.scene), @post), class: "text-accent font-semibold" %>
+    <% if @post.editable_by_viewer? %>
+      <%= link_to "Edit", @post.edit_url, class: "text-accent font-semibold" %>
     <% end %>
   </div>
 </div>

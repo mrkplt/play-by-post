@@ -13,6 +13,11 @@ class ScenePresenter < BasePresenter
     @model.resolved? ? "Resolved" : "Active"
   end
 
+  sig { returns(T::Boolean) }
+  def resolved?
+    @model.resolved? # mutant:disable
+  end
+
   # Pre-computed label/variant pairs for Shared::StatusBadgeRowComponent, for
   # the scene screen's meta row: Private and Resolved, each shown only when
   # true (no badge at all for an ordinary public, active scene).
@@ -90,12 +95,15 @@ class ScenePresenter < BasePresenter
     muted ? "Unmute notifications" : "Mute notifications"
   end
 
-  # The draft worth surfacing as a recovery notice: the composer disappears
-  # once a scene resolves, so a leftover draft is only worth recovering in
-  # that state. `draft` is whatever the controller found (or nil).
-  sig { params(draft: T.nilable(Post)).returns(T.nilable(Post)) }
+  # The draft worth surfacing as a recovery notice, wrapped for
+  # Shared::DraftRecoveryComponent: the composer disappears once a scene
+  # resolves, so a leftover draft is only worth recovering in that state.
+  # `draft` is whatever model the controller found (or nil).
+  sig { params(draft: T.nilable(Post)).returns(T.nilable(PostPresenter)) }
   def recoverable_draft(draft)
-    @model.resolved? ? draft : nil
+    return nil unless @model.resolved? && draft
+
+    PostPresenter.new(draft)
   end
 
   # The scene screen's footer page-action, resolved to a render-ready
@@ -117,5 +125,32 @@ class ScenePresenter < BasePresenter
         urls: @options[:urls], game: @options[:game]
       )
     )
+  end
+
+  # The composer's autosave-draft endpoint, resolved here so the composer
+  # component never holds the game/scene models it would need to build the
+  # URL itself. `urls`/`game` are supplied at construction (options[:urls],
+  # options[:game]) — the same collaborators #page_action reads.
+  sig { returns(String) }
+  def save_draft_url
+    url_helpers.save_draft_game_scene_posts_path(scene_game, @model) # mutant:disable
+  end
+
+  # The "discard this draft" endpoint, resolved the same way as save_draft_url.
+  sig { returns(String) }
+  def discard_draft_url
+    url_helpers.discard_draft_game_scene_posts_path(scene_game, @model) # mutant:disable
+  end
+
+  private
+
+  sig { returns(T.untyped) }
+  def url_helpers
+    @options.fetch(:urls)
+  end
+
+  sig { returns(Game) }
+  def scene_game
+    @options.fetch(:game)
   end
 end
