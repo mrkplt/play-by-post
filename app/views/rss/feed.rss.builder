@@ -11,7 +11,7 @@ xml.rss(version: "2.0") do
         xml.title summary.scene_title
         xml.link summary.scene_url
         xml.guid summary.scene_url, isPermaLink: true
-        xml.pubDate summary.scene_resolved_at_rfc2822 if summary.scene_resolved_at_rfc2822
+        xml.pubDate summary.scene_resolved_at_pub_date if summary.scene_resolved_at_pub_date
         xml.description summary.body
       end
     end

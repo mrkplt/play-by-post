@@ -8,15 +8,18 @@
 #
 # The component derives its rendering mode (new vs edit), labels, and back-href
 # from the presenter it is handed, so the view renders it with just the
-# presenter — no form-construction logic in the template. The player-selector
-# options and the assign-owner capability both live on CharacterPresenter, so
-# this component never receives a raw model or a raw array of users.
+# presenter — no form-construction logic in the template. The assign-owner
+# capability lives on CharacterPresenter; the player-selector options are a
+# fact about the game's roster rather than any one character, so they are
+# built by CharacterPresenterBuilder and passed in directly — this component
+# never receives a raw model or a raw array of users either way.
 class Shared::CharacterFormComponent < ApplicationComponent
   extend T::Sig
 
-  sig { params(character: CharacterPresenter).void }
-  def initialize(character:)
+  sig { params(character: CharacterPresenter, owner_options: T::Array[[ String, Integer ]]).void }
+  def initialize(character:, owner_options: [])
     @character = T.let(character, CharacterPresenter)
+    @owner_options = T.let(owner_options, T::Array[[ String, Integer ]])
   end
 
   sig { returns(Game) }
@@ -56,9 +59,7 @@ class Shared::CharacterFormComponent < ApplicationComponent
   end
 
   sig { returns(T::Array[[ String, Integer ]]) }
-  def owner_options
-    character.owner_options
-  end
+  attr_reader :owner_options
 
   sig { returns(String) }
   def content_label

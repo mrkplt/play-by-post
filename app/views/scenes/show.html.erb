@@ -51,7 +51,7 @@
     <%= render Shared::ChildSceneListComponent.new(game: @game_presenter, child_scenes: @scene_show.visible_child_scenes) %>
 
     <%= render Shared::ControlRowComponent.new(label: "Participants: #{@scene_presenter.participant_names}") do %>
-      <%= render Ui::ButtonComponent.new(variant: :text, url: toggle_notification_preference_game_scene_path(@game, @scene), method: :post) do %><%= @scene_show.mute_toggle_label(@scene_show.muted?) %><% end %>
+      <%= render Ui::ButtonComponent.new(variant: :text, url: toggle_notification_preference_game_scene_path(@game, @scene), method: :post) do %><%= @scene_show.mute_toggle_label %><% end %>
     <% end %>
 
     <% if @scene.resolved? && @scene_presenter.resolution.present? %>

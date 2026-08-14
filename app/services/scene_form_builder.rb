@@ -37,14 +37,22 @@ class SceneFormBuilder
   # keeps the id typed while ScenePresenter supplies the display label.
   sig { returns(T::Array[[ String, Integer ]]) }
   def parent_scene_select_options
-    parent_scene_options.map { |s| [ ScenePresenter.new(s).parent_option_label, s.id ] }
+    parent_scene_options.map { |scene| [ ScenePresenter.new(scene).parent_option_label, scene.id ] }
   end
 
   sig { returns(T::Array[Scene]) }
   def parent_scene_options
-    active = @game.scenes.active.order(created_at: :desc).to_a
-    recent_resolved = @game.scenes.resolved.order(resolved_at: :desc).limit(3).to_a
-    (active + recent_resolved)
+    active_parent_scenes + recent_resolved_parent_scenes
+  end
+
+  sig { returns(T::Array[Scene]) }
+  def active_parent_scenes
+    @game.scenes.active.order(created_at: :desc).to_a
+  end
+
+  sig { returns(T::Array[Scene]) }
+  def recent_resolved_parent_scenes
+    @game.scenes.resolved.order(resolved_at: :desc).limit(3).to_a
   end
 
   # Characters that should start checked: any resubmitted in params, unioned
@@ -57,8 +65,9 @@ class SceneFormBuilder
 
   sig { returns(String) }
   def back_href
-    if @params[:parent_scene_id].present?
-      @urls.game_scene_path(@game, @params[:parent_scene_id])
+    parent_scene_id = @params[:parent_scene_id]
+    if parent_scene_id.present?
+      @urls.game_scene_path(@game, parent_scene_id)
     else
       @urls.game_path(@game)
     end

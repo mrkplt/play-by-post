@@ -18,7 +18,6 @@ class Shared::TreeNodeComponent < ApplicationComponent
   sig { params(node: Node, game_presenter: GamePresenter, depth: Integer).void }
   def initialize(node:, game_presenter:, depth: 0)
     @scene          = T.let(SceneTreeRowPresenter.new(node.scene_presenter), SceneTreeRowPresenter)
-    @scene_presenter = T.let(node.scene_presenter, ScenePresenter)
     @children       = T.let(node.children, T::Array[Node])
     @game_presenter = T.let(game_presenter, GamePresenter)
     @depth          = T.let(depth, Integer)

@@ -48,20 +48,24 @@ class PostsController < ApplicationController
   sig { void }
   def create
     post = draft_or_new_post
+    post_policy = policy(post)
     authorize post, :create?
-    attach_uploaded_image(post, @game, param_key: :post, kind: "post_image")
+    attach_uploaded_image(post, @game, param_key: :post)
     assign_game_and_scene_presenters
 
     if post.save
       participants = T.must(@scene).scene_participants.includes(:character, :user).to_a
-      built = presenter_builder.post_presenter(post, policy(post), scene_participants: participants)
+      built = presenter_builder.post_presenter(post, post_policy, scene_participants: participants)
       @post_presenter = T.let(built, T.nilable(PostPresenter))
       respond_to do |format|
         format.turbo_stream
         format.html { redirect_to game_scene_path(@game, @scene) }
       end
     else
-      component = presenter_builder.composer_component(post, policy(post), T.must(@game_presenter), T.must(@scene_presenter))
+      page = PostPresenterBuilder::PageContext.new(
+        game_presenter: T.must(@game_presenter), scene_presenter: T.must(@scene_presenter)
+      )
+      component = presenter_builder.composer_component(post, post_policy, page)
       respond_to do |format|
         format.turbo_stream { render turbo_stream: turbo_stream.replace("post_composer", component) }
         format.html { redirect_to game_scene_path(@game, @scene), alert: "Could not create post." }
@@ -87,9 +91,19 @@ class PostsController < ApplicationController
   sig { returns(Post) }
   def draft_or_new_post
     existing_draft = T.must(@scene).posts.drafts.find_by(user: current_user)
-    return existing_draft.tap { |d| d.assign_attributes(post_params.merge(draft: false, last_edited_at: nil)) } if existing_draft
+    return update_draft_attributes(existing_draft) if existing_draft
 
-    T.must(@scene).posts.new(post_params).tap { |p| p.user = current_user }
+    new_post_from_params
+  end
+
+  sig { params(draft: Post).returns(Post) }
+  def update_draft_attributes(draft)
+    draft.tap { |post| post.assign_attributes(post_params.merge(draft: false, last_edited_at: nil)) }
+  end
+
+  sig { returns(Post) }
+  def new_post_from_params
+    T.must(@scene).posts.new(post_params).tap { |post| post.user = current_user }
   end
 
   sig { void }

@@ -65,6 +65,7 @@ matcher:
     - SceneSummaryCollectionPresenter
     - ScenePresenter
     - SceneParticipantRosterPresenter
+    - SceneRosterRowsPresenter
     - SceneTreeRowPresenter
     - SignInPresenter
     - ScenePageAction
@@ -164,7 +165,9 @@ matcher:
     - NotebookEntryPromotion
     - NotebookLaneMove
     - PostPresenterBuilder
+    - PostPresenterBuilder::PageContext
     - SceneFormBuilder
+    - SceneParticipantSync
     - SceneReadState
     - SceneSummaryService
     - FizzySweepService

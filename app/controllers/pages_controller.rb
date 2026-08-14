@@ -11,16 +11,14 @@ class PagesController < ApplicationController
   sig { void }
   def show
     authorize page
-    @game_presenter = T.let(game_presenter, T.nilable(GamePresenter))
-    @page_presenter = T.let(page_presenter(page), T.nilable(PagePresenter))
+    assign_page_presenters(page)
   end
 
   sig { void }
   def new
     new_page = game.pages.new
     authorize new_page
-    @game_presenter = T.let(game_presenter, T.nilable(GamePresenter))
-    @page_presenter = T.let(page_presenter(new_page), T.nilable(PagePresenter))
+    assign_page_presenters(new_page)
   end
 
   sig { void }
@@ -31,8 +29,7 @@ class PagesController < ApplicationController
     if new_page.save
       redirect_to game_page_path(game, new_page), notice: "Page created."
     else
-      @game_presenter = T.let(game_presenter, T.nilable(GamePresenter))
-      @page_presenter = T.let(page_presenter(new_page), T.nilable(PagePresenter))
+      assign_page_presenters(new_page)
       render :new, status: :unprocessable_content
     end
   end
@@ -40,8 +37,7 @@ class PagesController < ApplicationController
   sig { void }
   def edit
     authorize page
-    @game_presenter = T.let(game_presenter, T.nilable(GamePresenter))
-    @page_presenter = T.let(page_presenter(page), T.nilable(PagePresenter))
+    assign_page_presenters(page)
   end
 
   sig { void }
@@ -51,8 +47,7 @@ class PagesController < ApplicationController
     if page.update(page_params)
       redirect_to game_page_path(game, page), notice: "Page updated."
     else
-      @game_presenter = T.let(game_presenter, T.nilable(GamePresenter))
-      @page_presenter = T.let(page_presenter(page), T.nilable(PagePresenter))
+      assign_page_presenters(page)
       render :edit, status: :unprocessable_content
     end
   end
@@ -104,5 +99,11 @@ class PagesController < ApplicationController
   sig { returns(GamePresenter) }
   def game_presenter
     GamePresenter.new(game, policy: policy(game))
+  end
+
+  sig { params(subject: Page).void }
+  def assign_page_presenters(subject)
+    @game_presenter = T.let(game_presenter, T.nilable(GamePresenter))
+    @page_presenter = T.let(page_presenter(subject), T.nilable(PagePresenter))
   end
 end

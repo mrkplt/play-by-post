@@ -38,9 +38,9 @@ RSpec.describe CharacterVersionPresenter do
     end
   end
 
-  describe "#created_at_iso8601" do
+  describe "#created_at_timestamp" do
     it "formats the timestamp as iso8601" do
-      expect(presenter.created_at_iso8601).to eq(version.created_at.iso8601)
+      expect(presenter.created_at_timestamp).to eq(version.created_at.iso8601)
     end
   end
 

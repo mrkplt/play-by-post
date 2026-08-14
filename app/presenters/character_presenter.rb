@@ -19,12 +19,12 @@ class CharacterPresenter < BasePresenter
 
   sig { returns(String) }
   def name
-    @model.name
+    @model.name.to_s
   end
 
   sig { returns(String) }
   def checkbox_value
-    @model.id.to_s
+    id.to_s
   end
 
   # The viewer may administer the game this character belongs to — the flag
@@ -50,11 +50,6 @@ class CharacterPresenter < BasePresenter
   sig { returns(Game) }
   def game
     @model.game
-  end
-
-  sig { returns(String) }
-  def name
-    @model.name.to_s
   end
 
   sig { returns(String) }
@@ -87,16 +82,5 @@ class CharacterPresenter < BasePresenter
   sig { returns(T::Array[String]) }
   def error_messages
     @model.errors.full_messages
-  end
-
-  # The character form's player selector options — display name (falling back
-  # to email) paired with the user's id — built from the players supplied at
-  # construction (options[:players]) rather than the component receiving raw
-  # users to map itself.
-  sig { returns(T::Array[[ String, Integer ]]) }
-  def owner_options
-    T.cast(@options.fetch(:players, []), T::Array[User]).map do |user|
-      [ user.display_name || user.email, user.id ]
-    end
   end
 end

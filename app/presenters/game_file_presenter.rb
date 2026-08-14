@@ -11,6 +11,14 @@ class GameFilePresenter < BasePresenter
   extend T::Sig
   include ActionView::Helpers::NumberHelper
 
+  CONTENT_TYPE_EXTENSIONS = T.let({
+    "application/pdf" => "PDF",
+    "application/msword" => "DOC",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document" => "DOCX",
+    "text/plain" => "TXT",
+    "text/markdown" => "MD"
+  }.freeze, T::Hash[String, String])
+
   sig { params(model: GameFile, options: T.untyped).void }
   def initialize(model, **options)
     super
@@ -18,9 +26,10 @@ class GameFilePresenter < BasePresenter
 
   sig { returns(String) }
   def download_url
-    return "#" unless @model.file.attached?
+    attached = file
+    return "#" unless attached.attached?
 
-    T.cast(@options.fetch(:helpers).rails_blob_path(@model.file, disposition: "attachment"), String)
+    T.cast(@options.fetch(:helpers).rails_blob_path(attached, disposition: "attachment"), String)
   end
 
   sig { returns(T.nilable(String)) }
@@ -42,15 +51,16 @@ class GameFilePresenter < BasePresenter
   sig { returns(String) }
   def lightbox_html
     helpers = @options.fetch(:helpers)
+    tag = helpers.tag
 
     if image? && (display = display_image)
-      helpers.tag.img(src: helpers.url_for(display), alt: filename).to_s
+      tag.img(src: helpers.url_for(display), alt: filename).to_s
     elsif (thumb = thumbnail)
-      helpers.tag.img(src: helpers.url_for(thumb), alt: filename, class: "max-w-full").to_s
+      tag.img(src: helpers.url_for(thumb), alt: filename, class: "max-w-full").to_s
     else
-      helpers.tag.div(class: "flex flex-col items-center justify-center gap-3 p-8 text-slate-500", data: { testid: "lightbox-placeholder" }) do
-        helpers.tag.div(file_extension, class: "text-5xl font-bold text-slate-400", data: { testid: "lightbox-placeholder-ext" }) +
-        helpers.tag.div(human_file_size, class: "text-sm text-slate-400")
+      tag.div(class: "flex flex-col items-center justify-center gap-3 p-8 text-slate-500", data: { testid: "lightbox-placeholder" }) do
+        tag.div(file_extension, class: "text-5xl font-bold text-slate-400", data: { testid: "lightbox-placeholder-ext" }) +
+        tag.div(human_file_size, class: "text-sm text-slate-400")
       end.to_s
     end
   end
@@ -62,14 +72,16 @@ class GameFilePresenter < BasePresenter
 
   sig { returns(T.nilable(String)) }
   def error_message
-    @model.errors[:file].first || @model.errors.full_messages.first
+    errors = @model.errors
+    errors[:file].first || errors.full_messages.first
   end
 
   sig { returns(String) }
   def human_file_size
-    return "" unless @model.file.attached?
+    attached = file
+    return "" unless attached.attached?
 
-    T.must(number_to_human_size(@model.file.byte_size))
+    T.must(number_to_human_size(attached.byte_size))
   end
 
   sig { returns(T::Boolean) }
@@ -79,12 +91,13 @@ class GameFilePresenter < BasePresenter
 
   sig { returns(T.nilable(T.any(ActiveStorage::VariantWithRecord, ActiveStorage::Preview))) }
   def thumbnail
-    return unless @model.file.attached?
+    attached = file
+    return unless attached.attached?
 
     if @model.image?
-      @model.file.variant(resize_to_limit: [ 240, 240 ], format: :jpeg, quality: 80)
-    elsif @model.pdf? && @model.file.previewable?
-      @model.file.preview(resize_to_limit: [ 240, 240 ], format: :jpeg, quality: 80)
+      attached.variant(resize_to_limit: [ 240, 240 ], format: :jpeg, quality: 80)
+    elsif @model.pdf? && attached.previewable?
+      attached.preview(resize_to_limit: [ 240, 240 ], format: :jpeg, quality: 80)
     end
   end
 
@@ -112,15 +125,9 @@ class GameFilePresenter < BasePresenter
 
   sig { returns(String) }
   def content_type_extension
-    return "" unless @model.file.attached?
+    attached = file
+    return "" unless attached.attached?
 
-    case @model.file.content_type
-    when "application/pdf" then "PDF"
-    when "application/msword" then "DOC"
-    when "application/vnd.openxmlformats-officedocument.wordprocessingml.document" then "DOCX"
-    when "text/plain" then "TXT"
-    when "text/markdown" then "MD"
-    else "FILE"
-    end
+    CONTENT_TYPE_EXTENSIONS.fetch(attached.content_type, "FILE")
   end
 end

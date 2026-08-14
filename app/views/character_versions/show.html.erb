@@ -1,16 +1,16 @@
-<% content_for :active_game_id, @game.id %>
+<% content_for :active_game_id, @game_presenter.id %>
 
 <%= render Shared::MobileFrameComponent.new do |frame| %>
   <% frame.with_header do %>
     <%= render Shared::HeaderComponent.new(
-          title: @character.name,
+          title: @character_presenter.name,
           breadcrumbs: Shared::BreadcrumbsComponent.new(game_presenter: @game_presenter),
           secondary_nav: Shared::GameNavComponent.new(game_presenter: @game_presenter, active_tab: :roster, mode: :link)) %>
   <% end %>
 
   <div class="flex flex-col gap-0.5">
     <span class="text-[11px] text-muted-2">
-      Version — <time data-local-time="<%= @version_presenter.created_at_iso8601 %>"><%= @version_presenter.formatted_created_at %></time>
+      Version — <time data-local-time="<%= @version_presenter.created_at_timestamp %>"><%= @version_presenter.formatted_created_at %></time>
     </span>
     <span class="text-[11px] text-muted-2">Edited by: <%= @version_presenter.editor_name %></span>
   </div>

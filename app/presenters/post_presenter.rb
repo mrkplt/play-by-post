@@ -11,7 +11,8 @@ class PostPresenter < BasePresenter
   sig { returns(String) }
   def author_display_name
     participant = scene_participants.find { |sp| sp.user_id == @model.user_id }
-    participant&.display_name || @model.user.display_name || @model.user.email
+    user = @model.user
+    participant&.display_name || user.display_name || user.email
   end
 
   sig { returns(String) }

@@ -11,29 +11,21 @@ class SceneSummaryPresenter < BasePresenter
   sig { returns(String) }
   # mutant:disable
   def status_label
-    if @model.ai_generated? && @model.edited?
-      "Edited"
-    elsif @model.ai_generated?
-      "AI-generated"
-    else
-      "Hand-written"
-    end
+    return "Hand-written" unless @model.ai_generated?
+
+    @model.edited? ? "Edited" : "AI-generated"
   end
 
   sig { returns(T.nilable(String)) }
   # mutant:disable
   def formatted_generated_at
-    return nil unless @model.generated_at
-
-    @model.generated_at.strftime("%b %-d, %Y")
+    (generated_at = @model.generated_at) && generated_at.strftime("%b %-d, %Y")
   end
 
   sig { returns(T.nilable(String)) }
   # mutant:disable
   def formatted_edited_at
-    return nil unless @model.edited_at
-
-    @model.edited_at.strftime("%b %-d, %Y")
+    (edited_at = @model.edited_at) && edited_at.strftime("%b %-d, %Y")
   end
 
   sig { returns(T::Boolean) }
@@ -118,7 +110,7 @@ class SceneSummaryPresenter < BasePresenter
   # resolved_at.
   sig { returns(T.nilable(String)) }
   # mutant:disable
-  def scene_resolved_at_rfc2822
+  def scene_resolved_at_pub_date
     resolved = @model.scene.resolved_at
     return nil unless resolved
 

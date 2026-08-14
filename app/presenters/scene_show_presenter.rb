@@ -16,9 +16,9 @@ class SceneShowPresenter < BasePresenter
 
   # The mute/unmute control's label, derived from the viewer's current
   # notification-preference state.
-  sig { params(muted: T::Boolean).returns(String) }
-  def mute_toggle_label(muted)
-    muted ? "Unmute notifications" : "Mute notifications"
+  sig { returns(String) }
+  def mute_toggle_label
+    muted? ? "Unmute notifications" : "Mute notifications"
   end
 
   # Whether the viewer has muted notifications for this scene.
@@ -75,7 +75,7 @@ class SceneShowPresenter < BasePresenter
   # list.
   sig { returns(T::Array[ScenePresenter]) }
   def visible_child_scenes
-    @model.model.child_scenes.visible_to(viewer, show_game).order(:created_at).to_a.map { |s| ScenePresenter.new(s) }
+    @model.model.child_scenes.visible_to(viewer, show_game).order(:created_at).to_a.map { |scene| ScenePresenter.new(scene) }
   end
 
   private

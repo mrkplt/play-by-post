@@ -11,11 +11,13 @@ RSpec.describe SceneShowPresenter do
 
   describe "#mute_toggle_label" do
     it "returns Unmute notifications when muted" do
-      expect(presenter.mute_toggle_label(true)).to eq("Unmute notifications")
+      allow(NotificationPreference).to receive(:muted?).and_return(true)
+      expect(presenter.mute_toggle_label).to eq("Unmute notifications")
     end
 
     it "returns Mute notifications when not muted" do
-      expect(presenter.mute_toggle_label(false)).to eq("Mute notifications")
+      allow(NotificationPreference).to receive(:muted?).and_return(false)
+      expect(presenter.mute_toggle_label).to eq("Mute notifications")
     end
   end
 

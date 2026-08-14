@@ -12,6 +12,15 @@ class UserPresenter < BasePresenter
   sig { returns(T.nilable(Integer)) }
   def id = @model.id
 
+  # This user as a `[label, value]` pair for an owner/player select — the
+  # form's display name (falling back to the full email, unlike
+  # #display_name_or_email's local-part-only fallback used for compact
+  # display elsewhere) paired with the user's id.
+  sig { returns([ String, Integer ]) }
+  def select_option
+    [ @model.display_name || @model.email, T.must(id) ]
+  end
+
   # The "Export All Games" row's subtitle: the last-export notice when this
   # user has a valid all-games receipt, otherwise generic delivery/expiry
   # copy. Mirrors GamePresenter#export_notice for the single-game case.
@@ -56,17 +65,22 @@ class UserPresenter < BasePresenter
   # its own feed/revoke/create routes without the component reaching for one.
   sig { params(urls: T.untyped).returns(T::Array[GameFeedRowPresenter]) }
   def feed_rows(urls:)
-    memberships = @model.game_members
-      .where.not(status: "banned")
-      .includes(:game)
-      .order("games.name")
     tokens_by_game_id = @model.api_tokens.where(scope: "rss").index_by(&:game_id)
-
-    memberships.filter_map do |membership|
+    feed_memberships.filter_map do |membership|
       game = membership.game
       next unless game
 
       GameFeedRowPresenter.new(game, token: tokens_by_game_id[game.id], urls: urls)
     end
+  end
+
+  private
+
+  sig { returns(T.untyped) }
+  def feed_memberships
+    @model.game_members
+      .where.not(status: "banned")
+      .includes(:game)
+      .order("games.name")
   end
 end

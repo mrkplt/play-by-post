@@ -184,18 +184,18 @@ RSpec.describe SceneSummaryPresenter do
     end
   end
 
-  describe "#scene_resolved_at_rfc2822" do
+  describe "#scene_resolved_at_pub_date" do
     it "returns nil when the scene has no resolved_at" do
       scene = build_stubbed(:scene, resolved_at: nil)
       allow(summary).to receive(:scene).and_return(scene)
-      expect(presenter.scene_resolved_at_rfc2822).to be_nil
+      expect(presenter.scene_resolved_at_pub_date).to be_nil
     end
 
     context "when the scene is resolved" do
       it "formats the timestamp as RFC 2822" do
         scene = build_stubbed(:scene, resolved_at: Time.zone.parse("2026-03-10 09:00:00"))
         allow(summary).to receive(:scene).and_return(scene)
-        expect(presenter.scene_resolved_at_rfc2822).to eq(scene.resolved_at.rfc2822)
+        expect(presenter.scene_resolved_at_pub_date).to eq(scene.resolved_at.rfc2822)
       end
     end
   end

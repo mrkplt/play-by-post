@@ -10,11 +10,11 @@ class GameLinksController < ApplicationController
 
   sig { void }
   def index
-    new_link = game.game_links.new
-    authorize new_link
+    links = game.game_links
+    authorize links.new
     @game_presenter = T.let(game_presenter, T.nilable(GamePresenter))
     @game_links = T.let(
-      game.game_links.order(created_at: :desc).to_a.map { |gl| game_link_presenter(gl) },
+      links.order(created_at: :desc).to_a.map { |gl| game_link_presenter(gl) },
       T.nilable(T::Array[GameLinkPresenter])
     )
   end
@@ -23,8 +23,7 @@ class GameLinksController < ApplicationController
   def new
     new_link = game.game_links.new
     authorize new_link
-    @game_presenter = T.let(game_presenter, T.nilable(GamePresenter))
-    @game_link_presenter = T.let(game_link_presenter(new_link), T.nilable(GameLinkPresenter))
+    assign_form_presenters(new_link)
   end
 
   sig { void }
@@ -35,8 +34,7 @@ class GameLinksController < ApplicationController
     if new_link.save
       redirect_to game_game_links_path(game), notice: "Link added."
     else
-      @game_presenter = T.let(game_presenter, T.nilable(GamePresenter))
-      @game_link_presenter = T.let(game_link_presenter(new_link), T.nilable(GameLinkPresenter))
+      assign_form_presenters(new_link)
       render :new, status: :unprocessable_content
     end
   end
@@ -44,8 +42,7 @@ class GameLinksController < ApplicationController
   sig { void }
   def edit
     authorize game_link
-    @game_presenter = T.let(game_presenter, T.nilable(GamePresenter))
-    @game_link_presenter = T.let(game_link_presenter(game_link), T.nilable(GameLinkPresenter))
+    assign_form_presenters(game_link)
   end
 
   sig { void }
@@ -55,8 +52,7 @@ class GameLinksController < ApplicationController
     if game_link.update(game_link_params)
       redirect_to game_game_links_path(game), notice: "Link updated."
     else
-      @game_presenter = T.let(game_presenter, T.nilable(GamePresenter))
-      @game_link_presenter = T.let(game_link_presenter(game_link), T.nilable(GameLinkPresenter))
+      assign_form_presenters(game_link)
       render :edit, status: :unprocessable_content
     end
   end
@@ -69,6 +65,12 @@ class GameLinksController < ApplicationController
   end
 
   private
+
+  sig { params(link: GameLink).void }
+  def assign_form_presenters(link)
+    @game_presenter = T.let(game_presenter, T.nilable(GamePresenter))
+    @game_link_presenter = T.let(game_link_presenter(link), T.nilable(GameLinkPresenter))
+  end
 
   sig { void }
   def set_game

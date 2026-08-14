@@ -28,8 +28,10 @@ class CharacterVersionPresenter < BasePresenter
     @model.created_at.strftime("%b %-d, %Y %-I:%M %p")
   end
 
+  # ISO 8601, for the <time datetime="..."> attribute the version-history row
+  # renders alongside #formatted_created_at's human-readable text.
   sig { returns(String) }
-  def created_at_iso8601
+  def created_at_timestamp
     @model.created_at.iso8601
   end
 

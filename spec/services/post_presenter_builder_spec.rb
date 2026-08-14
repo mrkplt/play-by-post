@@ -29,8 +29,26 @@ RSpec.describe PostPresenterBuilder do
     it "builds a composer component wrapping the post presenter" do
       game_presenter = GamePresenter.new(game, policy: GamePolicy.new(current_user, game))
       scene_presenter = ScenePresenter.new(scene)
+      page = PostPresenterBuilder::PageContext.new(game_presenter: game_presenter, scene_presenter: scene_presenter)
 
-      result = builder.composer_component(post, policy, game_presenter, scene_presenter)
+      result = builder.composer_component(post, policy, page)
+      expect(result).to be_a(Shared::PostComposerComponent)
+    end
+  end
+end
+
+RSpec.describe PostPresenterBuilder::PageContext do
+  let(:game) { build_stubbed(:game) }
+  let(:current_user) { build_stubbed(:user) }
+  let(:game_presenter) { GamePresenter.new(game, policy: GamePolicy.new(current_user, game)) }
+  let(:scene_presenter) { ScenePresenter.new(build_stubbed(:scene)) }
+  let(:post_presenter) { PostPresenter.new(build_stubbed(:post)) }
+
+  subject(:page) { described_class.new(game_presenter: game_presenter, scene_presenter: scene_presenter) }
+
+  describe "#composer_for" do
+    it "builds a composer component with this context's game and scene" do
+      result = page.composer_for(post_presenter)
       expect(result).to be_a(Shared::PostComposerComponent)
     end
   end

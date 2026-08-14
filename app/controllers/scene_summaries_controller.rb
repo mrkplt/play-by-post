@@ -12,12 +12,13 @@ class SceneSummariesController < ApplicationController
 
   sig { void }
   def index
-    pagy, summaries = pagy(SceneSummary.public_for_game(T.must(@game)), limit: 20)
+    game = T.must(@game)
+    pagy, summaries = pagy(SceneSummary.public_for_game(game), limit: 20)
     @summaries_presenter = T.let(
       SceneSummaryCollectionPresenter.new(summaries, game: @game, urls: self, pagy: pagy),
       T.nilable(SceneSummaryCollectionPresenter)
     )
-    @game_presenter = T.let(GamePresenter.new(T.must(@game), policy: policy(@game)), T.nilable(GamePresenter))
+    @game_presenter = T.let(GamePresenter.new(game, policy: policy(@game)), T.nilable(GamePresenter))
   end
 
   sig { void }
@@ -29,18 +30,18 @@ class SceneSummariesController < ApplicationController
 
   sig { void }
   def create
-    authorize SceneSummary.new(scene_id: T.must(@scene).id), :create?
-    if T.must(@scene).scene_summary.present?
-      redirect_to edit_game_scene_scene_summary_path(@game, @scene),
-                  alert: "A summary already exists. Edit it instead."
-      return
+    scene = T.must(@scene)
+    authorize SceneSummary.new(scene_id: scene.id), :create?
+    if scene.scene_summary.present?
+      return redirect_to edit_game_scene_scene_summary_path(@game, @scene),
+                          alert: "A summary already exists. Edit it instead."
     end
 
-    summary = T.must(@scene).build_scene_summary(summary_params.merge(edited_by: current_user, edited_at: Time.current))
-    if summary.save
+    new_summary = scene.build_scene_summary(summary_params.merge(edited_by: current_user, edited_at: Time.current))
+    if new_summary.save
       redirect_to game_scene_path(@game, @scene), notice: "Summary saved."
     else
-      assign_presenters(summary)
+      assign_presenters(new_summary)
       render :new, status: :unprocessable_content
     end
   end
@@ -54,13 +55,11 @@ class SceneSummariesController < ApplicationController
   sig { void }
   def update
     authorize @summary
-    attrs = summary_params.merge(edited_by: current_user, edited_at: Time.current,
-                                 generated_at: nil, model_used: nil,
-                                 input_tokens: nil, output_tokens: nil)
-    if T.must(@summary).update(attrs)
+    summary = T.must(@summary)
+    if summary.apply_manual_edit(body: summary_params[:body], editor: current_user)
       redirect_to game_scene_path(@game, @scene), notice: "Summary updated."
     else
-      assign_presenters(T.must(@summary))
+      assign_presenters(summary)
       render :edit, status: :unprocessable_content
     end
   end

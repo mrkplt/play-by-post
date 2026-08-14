@@ -37,8 +37,7 @@ class GameDashboardItemPresenter < BasePresenter
     primary = characters.first
     return nil if primary.nil?
 
-    extra = characters.length - 1
-    extra.positive? ? "#{primary.name} +#{extra}" : primary.name
+    label_for(CharacterPresenter.new(primary), extra_count: characters.length - 1)
   end
 
   sig { returns(Integer) }
@@ -52,6 +51,12 @@ class GameDashboardItemPresenter < BasePresenter
   end
 
   private
+
+  sig { params(character: CharacterPresenter, extra_count: Integer).returns(String) }
+  def label_for(character, extra_count:)
+    name = character.name
+    extra_count.positive? ? "#{name} +#{extra_count}" : name
+  end
 
   sig { returns(Game) }
   def raw_game
