@@ -3,23 +3,21 @@
 class Shared::FileUploadFormComponent < ApplicationComponent
   extend T::Sig
 
-  sig { params(game: Game, game_file: T.nilable(GameFile)).void }
+  sig { params(game: GamePresenter, game_file: T.nilable(GameFilePresenter)).void }
   # mutant:disable
   def initialize(game:, game_file: nil)
-    @game = T.let(game, Game)
-    @game_file = T.let(game_file, T.nilable(GameFile))
+    @game = T.let(game, GamePresenter)
+    @game_file = T.let(game_file, T.nilable(GameFilePresenter))
   end
 
   sig { returns(T::Boolean) }
   def error?
-    @game_file&.errors&.any? || false
+    @game_file&.error? || false
   end
 
   sig { returns(T.nilable(String)) }
   def error_message
-    return unless @game_file
-
-    @game_file.errors[:file].first || @game_file.errors.full_messages.first
+    @game_file&.error_message
   end
 
   sig { returns(Integer) }

@@ -7,12 +7,11 @@ xml.rss(version: "2.0") do
     xml.language "en"
 
     @summaries.each do |summary|
-      scene = summary.scene
       xml.item do
-        xml.title scene.title
-        xml.link game_scene_url(@game_presenter, scene)
-        xml.guid game_scene_url(@game_presenter, scene), isPermaLink: true
-        xml.pubDate scene.resolved_at.rfc2822 if scene.resolved_at
+        xml.title summary.scene_title
+        xml.link summary.scene_url
+        xml.guid summary.scene_url, isPermaLink: true
+        xml.pubDate summary.scene_resolved_at_rfc2822 if summary.scene_resolved_at_rfc2822
         xml.description summary.body
       end
     end

@@ -3,3 +3,7 @@
 --ignore=tmp/
 --ignore=vendor/
 --ignore=sorbet/rbi/dsl/lookbook/
+# Agent worktrees are full checkouts of this repo living inside it. Without
+# this, srb parses every class and RBI twice and reports thousands of
+# duplicate-definition errors that say nothing about the working tree.
+--ignore=.claude/worktrees/

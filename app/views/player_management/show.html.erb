@@ -4,12 +4,12 @@
   <% frame.with_header do %>
     <%= render Shared::HeaderComponent.new(
           title: "Game Settings",
-          breadcrumbs: Shared::BreadcrumbsComponent.new(game: @game)) %>
+          breadcrumbs: Shared::BreadcrumbsComponent.new(game_presenter: @game_presenter)) %>
   <% end %>
 
   <% if @game_presenter.can_manage? %>
     <%# Game Details %>
-    <%= render Shared::GameDetailsComponent.new(game: @game) %>
+    <%= render Shared::GameDetailsComponent.new(game: @game_presenter) %>
 
     <%# Members %>
     <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do %>Members<% end %>
@@ -68,6 +68,6 @@
 
   <% if @game_presenter.can_manage? %>
     <%# Danger Zone — GM-only game deletion %>
-    <%= render Shared::DeleteGameComponent.new(game: @game) %>
+    <%= render Shared::DeleteGameComponent.new(game: @game_presenter) %>
   <% end %>
 <% end %>

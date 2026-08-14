@@ -1,22 +1,29 @@
 # typed: strict
 
-# View model for the Campaign Notebook index: a game's notebook entries,
-# grouped by kanban lane. Wraps the array the controller loads so the view
-# never groups raw NotebookEntry records itself — "which lane does this
-# belong to" is the board's display logic, not a template concern.
+# View model for a game's Campaign Notebook board: the kanban of entries the
+# GM works, grouped by lane. Owns the grouping query so no view, controller or
+# component groups NotebookEntry rows by status itself — that grouping is a
+# join a presenter does, not a hash the view builds.
 class NotebookBoardPresenter < BasePresenter
   extend T::Sig
 
-  sig { params(model: T::Array[NotebookEntry], options: T.untyped).void }
+  sig { params(model: Game, options: T.untyped).void }
   def initialize(model, **options)
     super
   end
 
-  # Shared::NotebookBoardComponent's own contract (T::Hash[String,
-  # T::Array[NotebookEntry]]) is unchanged here — grouping the raw entries by
-  # status is exactly the display-logic decision this presenter owns.
-  sig { returns(T::Hash[String, T::Array[NotebookEntry]]) }
+  sig { returns(T::Hash[String, T::Array[NotebookEntryPresenter]]) }
   def entries_by_status
-    @model.group_by(&:status)
+    @entries_by_status ||= T.let(
+      @model.notebook_entries.order(:created_at).to_a
+        .group_by(&:status)
+        .transform_values { |entries| entries.map { |entry| NotebookEntryPresenter.new(entry) } },
+      T.nilable(T::Hash[String, T::Array[NotebookEntryPresenter]])
+    )
+  end
+
+  sig { params(status: String).returns(T::Array[NotebookEntryPresenter]) }
+  def entries_for(status)
+    entries_by_status.fetch(status, [])
   end
 end

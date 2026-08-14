@@ -25,11 +25,13 @@ class SceneParticipantsController < ApplicationController
       .order(:name)
       .group_by(&:user_id)
 
-    rows = players.map { |user| [ UserPresenter.new(user), characters_by_user.fetch(user.id, []) ] }
+    @players_with_characters = T.let(
+      players.map { |user| ScenePlayerPresenter.new(user, characters: characters_by_user.fetch(user.id, [])) },
+      T.nilable(T::Array[ScenePlayerPresenter])
+    )
     selected_ids = T.must(@scene).scene_participants.where.not(character_id: nil).pluck(:character_id)
-    @roster = T.let(
-      SceneParticipantRosterPresenter.new(rows, selected_character_ids: selected_ids.map(&:to_s)),
-      T.nilable(SceneParticipantRosterPresenter)
+    @current_character_ids = T.let(
+      SceneParticipantRosterPresenter.new(selected_ids), T.nilable(SceneParticipantRosterPresenter)
     )
   end
 

@@ -3,9 +3,14 @@ require "rails_helper"
 RSpec.describe Shared::SceneSummaryIndexPageComponent, type: :component do
   let(:game) { build_stubbed(:game, name: "Myth Quest") }
   let(:pagy) { double("Pagy", series_nav: "") }
+  let(:urls) { double("urls", game_scene_path: "/games/1/scenes/2") }
+
+  def collection_presenter_for(summaries)
+    SceneSummaryCollectionPresenter.new(summaries, game: game, urls: urls, pagy: pagy)
+  end
 
   context "when summaries is empty" do
-    subject(:component) { described_class.new(game: game, summaries: [], pagy: pagy) }
+    subject(:component) { described_class.new(summaries: collection_presenter_for([])) }
 
     it "summaries_empty? returns true" do
       expect(component.summaries_empty?).to be(true)
@@ -22,7 +27,7 @@ RSpec.describe Shared::SceneSummaryIndexPageComponent, type: :component do
     let(:summary) { build_stubbed(:scene_summary, scene: scene) }
 
     subject(:component) do
-      described_class.new(game: game, summaries: [ SceneSummaryPresenter.new(summary) ], pagy: pagy)
+      described_class.new(summaries: collection_presenter_for([ summary ]))
     end
 
     it "summaries_empty? returns false" do

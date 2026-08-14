@@ -9,10 +9,8 @@ class GameFilesController < ApplicationController
 
   sig { void }
   def index
-    @game_file_collection = T.let(
-      GameFileCollectionPresenter.new(files_for(T.must(@game))), T.nilable(GameFileCollectionPresenter)
-    )
     @game_presenter = T.let(GamePresenter.new(T.must(@game), policy: policy(@game)), T.nilable(GamePresenter))
+    @game_files = T.let(build_game_file_presenters, T.nilable(T::Array[GameFilePresenter]))
     @game_file_presenter = T.let(
       GameFilePresenter.new(T.must(@game).game_files.new), T.nilable(GameFilePresenter)
     )
@@ -40,10 +38,8 @@ class GameFilesController < ApplicationController
     if game_file.save
       redirect_to game_game_files_path(@game), notice: "File uploaded."
     else
-      @game_file_collection = T.let(
-        GameFileCollectionPresenter.new(files_for(T.must(@game))), T.nilable(GameFileCollectionPresenter)
-      )
       @game_presenter = T.let(GamePresenter.new(T.must(@game), policy: policy(@game)), T.nilable(GamePresenter))
+      @game_files = T.let(build_game_file_presenters, T.nilable(T::Array[GameFilePresenter]))
       @game_file_presenter = T.let(GameFilePresenter.new(game_file), T.nilable(GameFilePresenter))
       render :index, status: :unprocessable_content
     end
@@ -62,6 +58,14 @@ class GameFilesController < ApplicationController
 
   private
 
+  sig { returns(T::Array[GameFilePresenter]) }
+  def build_game_file_presenters
+    game = T.must(@game)
+    game.game_files.includes(file_attachment: :blob).order(created_at: :desc).map do |gf|
+      GameFilePresenter.new(gf, game: game, helpers: helpers, can_manage: policy(game).manage?)
+    end
+  end
+
   sig { void }
   def set_game
     @game = T.let(Game.find(params[:game_id]), T.nilable(Game))
@@ -70,10 +74,5 @@ class GameFilesController < ApplicationController
   sig { void }
   def require_game_access!
     redirect_to root_path, alert: "You do not have access to this game." unless policy(@game).view?
-  end
-
-  sig { params(game: Game).returns(ActiveRecord::Relation) }
-  def files_for(game)
-    game.game_files.includes(file_attachment: :blob).order(created_at: :desc)
   end
 end

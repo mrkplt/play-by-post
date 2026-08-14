@@ -1,7 +1,8 @@
 require "rails_helper"
 
 RSpec.describe Shared::InvitePanelComponent, type: :component do
-  let(:game) { build_stubbed(:game) }
+  let(:game_model) { build_stubbed(:game) }
+  let(:game) { GamePresenter.new(game_model, policy: instance_double(GamePolicy)) }
 
   context "with no pending invitations" do
     subject(:component) { described_class.new(game: game, pending_invitations: []) }
@@ -24,7 +25,8 @@ RSpec.describe Shared::InvitePanelComponent, type: :component do
   end
 
   context "with pending invitations" do
-    let(:invitation) { build_stubbed(:invitation, game: game, email: "pending@example.com", created_at: 2.hours.ago) }
+    let(:invitation_model) { build_stubbed(:invitation, game: game_model, email: "pending@example.com", created_at: 2.hours.ago) }
+    let(:invitation) { InvitationPresenter.new(invitation_model, game: game_model, urls: Rails.application.routes.url_helpers) }
     subject(:component) { described_class.new(game: game, pending_invitations: [ invitation ]) }
 
     it "pending? returns true" do

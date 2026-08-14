@@ -3,7 +3,12 @@
 class Shared::PostComposerComponent < ApplicationComponent
   extend T::Sig
 
-  sig { params(post: Post, game: Game, scene: Scene, draft: T.nilable(Post)).void }
+  sig do
+    params(
+      post: PostPresenter, game: GamePresenter, scene: ScenePresenter,
+      draft: T.nilable(PostPresenter)
+    ).void
+  end
   def initialize(post:, game:, scene:, draft: nil)
     @post  = post
     @game  = game

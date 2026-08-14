@@ -2,11 +2,9 @@
 <%= turbo_stream.append "posts" do %>
   <%= render Shared::PostItemComponent.new(
         post: @post_presenter,
-        game: @game,
-        current_user: current_user,
-        scene: @scene
+        scene: @scene_presenter
       ) %>
 <% end %>
 <%= turbo_stream.replace "post_composer" do %>
-  <%= render Shared::PostComposerComponent.new(post: Post.new, game: @game, scene: @scene) %>
+  <%= render Shared::PostComposerComponent.new(post: PostPresenter.new(Post.new), game: @game_presenter, scene: @scene_presenter) %>
 <% end %>

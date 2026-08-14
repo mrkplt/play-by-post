@@ -1,6 +1,10 @@
 # typed: strict
 
-# View model for a single Campaign Notebook entry's new/edit form.
+# View model for a single Campaign Notebook entry: the title/status/slug the
+# board and lane components render, plus the promoted-page facts the entry's
+# actions need. There is no PagePresenter yet, so the promoted page's title
+# and slug are exposed directly here rather than handing components the page
+# model itself — a component builds the link from these primitives.
 class NotebookEntryPresenter < BasePresenter
   extend T::Sig
 
@@ -9,33 +13,58 @@ class NotebookEntryPresenter < BasePresenter
     super
   end
 
+  sig { returns(String) }
+  def title
+    @model.title.to_s
+  end
+
+  sig { returns(String) }
+  def slug
+    @model.slug.to_s
+  end
+
+  sig { returns(String) }
+  def status
+    @model.status.to_s
+  end
+
+  sig { returns(T.nilable(String)) }
+  def status_previously_was
+    @model.status_previously_was
+  end
+
   sig { returns(T::Boolean) }
-  # mutant:disable
   def new_record?
     @model.new_record?
   end
 
-  sig { returns(T::Boolean) }
-  # mutant:disable
-  def persisted?
-    @model.persisted?
-  end
-
   sig { returns(T.nilable(Integer)) }
-  # mutant:disable
   def id
     @model.id
   end
 
-  sig { returns(T.untyped) }
-  # mutant:disable
-  def title
-    @model.title
+  sig { returns(T::Boolean) }
+  def errors?
+    @model.errors.any?
   end
 
-  sig { returns(ActiveModel::Errors) }
-  # mutant:disable
-  def errors
-    @model.errors
+  sig { returns(T::Array[String]) }
+  def error_messages
+    @model.errors.full_messages
+  end
+
+  sig { returns(T::Boolean) }
+  def promoted?
+    @model.promoted?
+  end
+
+  sig { returns(String) }
+  def promoted_page_title
+    @model.promoted_page.title
+  end
+
+  sig { returns(String) }
+  def promoted_page_slug
+    @model.promoted_page.slug.to_s
   end
 end

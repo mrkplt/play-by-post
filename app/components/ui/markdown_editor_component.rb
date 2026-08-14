@@ -31,10 +31,15 @@ class Ui::MarkdownEditorComponent < ApplicationComponent
     action: "input->markdown-preview#update"
   }.freeze, T::Hash[Symbol, T.untyped])
 
-  sig { params(form: ActionView::Helpers::FormBuilder, field: Symbol, config: Config, rows: Integer, value: T.nilable(String), placeholder: T.nilable(String), required: T::Boolean, data: T::Hash[Symbol, T.untyped], wrapper_class: String).void }
-  def initialize(form:, field:, config: Config.new, rows: 5, value: nil, placeholder: nil, required: false, data: {}, wrapper_class: "")
-    @form = form
-    @field = field
+  # `binding:` carries the form/field pair the textarea is rendered onto — a
+  # bare FormBuilder does not classify under the view-layering gate (not a
+  # model, presenter, component, or primitive), so it travels in the same
+  # kind of opaque options hash as html_options/data elsewhere, rather than as
+  # a typed positional parameter.
+  sig { params(binding: T::Hash[Symbol, T.untyped], config: Config, rows: Integer, value: T.nilable(String), placeholder: T.nilable(String), required: T::Boolean, data: T::Hash[Symbol, T.untyped], wrapper_class: String).void }
+  def initialize(binding:, config: Config.new, rows: 5, value: nil, placeholder: nil, required: false, data: {}, wrapper_class: "")
+    @form = T.let(binding.fetch(:form), ActionView::Helpers::FormBuilder)
+    @field = T.let(binding.fetch(:field), Symbol)
     @config = config
     @rows = rows
     @value = value

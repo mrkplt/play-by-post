@@ -13,8 +13,9 @@ class SceneSummariesController < ApplicationController
   sig { void }
   def index
     pagy, summaries = pagy(SceneSummary.public_for_game(T.must(@game)), limit: 20)
-    @summary_collection = T.let(
-      SceneSummaryCollectionPresenter.new(summaries, pagy: pagy), T.nilable(SceneSummaryCollectionPresenter)
+    @summaries_presenter = T.let(
+      SceneSummaryCollectionPresenter.new(summaries, game: @game, urls: self, pagy: pagy),
+      T.nilable(SceneSummaryCollectionPresenter)
     )
     @game_presenter = T.let(GamePresenter.new(T.must(@game), policy: policy(@game)), T.nilable(GamePresenter))
   end
@@ -23,7 +24,8 @@ class SceneSummariesController < ApplicationController
   def new
     summary = T.must(@scene).build_scene_summary
     authorize summary
-    @summary_presenter = T.let(SceneSummaryPresenter.new(summary), T.nilable(SceneSummaryPresenter))
+    @game_presenter = T.let(GamePresenter.new(T.must(@game), policy: policy(@game)), T.nilable(GamePresenter))
+    @summary_presenter = T.let(build_summary_presenter(summary), T.nilable(SceneSummaryPresenter))
   end
 
   sig { void }
@@ -39,7 +41,8 @@ class SceneSummariesController < ApplicationController
     if summary.save
       redirect_to game_scene_path(@game, @scene), notice: "Summary saved."
     else
-      @summary_presenter = T.let(SceneSummaryPresenter.new(summary), T.nilable(SceneSummaryPresenter))
+      @game_presenter = T.let(GamePresenter.new(T.must(@game), policy: policy(@game)), T.nilable(GamePresenter))
+      @summary_presenter = T.let(build_summary_presenter(summary), T.nilable(SceneSummaryPresenter))
       render :new, status: :unprocessable_content
     end
   end
@@ -47,7 +50,8 @@ class SceneSummariesController < ApplicationController
   sig { void }
   def edit
     authorize @summary
-    @summary_presenter = T.let(SceneSummaryPresenter.new(T.must(@summary)), T.nilable(SceneSummaryPresenter))
+    @game_presenter = T.let(GamePresenter.new(T.must(@game), policy: policy(@game)), T.nilable(GamePresenter))
+    @summary_presenter = T.let(build_summary_presenter(T.must(@summary)), T.nilable(SceneSummaryPresenter))
   end
 
   sig { void }
@@ -59,7 +63,8 @@ class SceneSummariesController < ApplicationController
     if T.must(@summary).update(attrs)
       redirect_to game_scene_path(@game, @scene), notice: "Summary updated."
     else
-      @summary_presenter = T.let(SceneSummaryPresenter.new(T.must(@summary)), T.nilable(SceneSummaryPresenter))
+      @game_presenter = T.let(GamePresenter.new(T.must(@game), policy: policy(@game)), T.nilable(GamePresenter))
+      @summary_presenter = T.let(build_summary_presenter(T.must(@summary)), T.nilable(SceneSummaryPresenter))
       render :edit, status: :unprocessable_content
     end
   end
@@ -72,6 +77,13 @@ class SceneSummariesController < ApplicationController
   end
 
   private
+
+  # Wraps a summary for the form view, injecting the game, url_helpers and the
+  # write policy so the form component never looks any of them up itself.
+  sig { params(summary: SceneSummary).returns(SceneSummaryPresenter) }
+  def build_summary_presenter(summary)
+    SceneSummaryPresenter.new(summary, game: @game, urls: self, policy: policy(summary))
+  end
 
   sig { void }
   def set_game

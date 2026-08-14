@@ -26,7 +26,7 @@
 
   <%# RSS Feeds %>
   <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do %>RSS Feeds<% end %>
-  <%= render Shared::RssFeedsSectionComponent.new(user: current_user) %>
+  <%= render Shared::RssFeedsSectionComponent.new(rows: @feed_rows) %>
 
   <%# Export %>
   <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do %>Export<% end %>

@@ -1,30 +1,34 @@
 # typed: strict
 
-# View model for the Campaign Log index: a page of SceneSummary rows plus
-# their Pagy pagination state. Wraps the relation so the view never iterates
-# raw SceneSummary records or reaches for a bare Pagy object directly — both
-# travel together because "is there anything to show" and "how do we page
-# through it" are one screen's display logic, not two.
+# View model for the campaign-log listing: a page of scene summaries plus its
+# Pagy state. Wraps the paginated collection so the index component asks
+# "how many / empty state / the entries themselves" of one presenter, instead
+# of holding a raw array of models and a bare Pagy object to interrogate.
+# The game, url_helpers and policy needed to build each entry's paths are
+# supplied at construction and threaded through to every SceneSummaryPresenter
+# this hands back, so a summary entry never builds its own paths either.
 class SceneSummaryCollectionPresenter < BasePresenter
   extend T::Sig
 
-  sig { params(model: ActiveRecord::Relation, options: T.untyped).void }
-  def initialize(model, **options)
-    super
-  end
-
   sig { returns(T::Boolean) }
   def empty?
-    @model.empty? # mutant:disable
+    @model.empty?
   end
 
+  # Each summary in the current page, wrapped with the same game/url_helpers
+  # every SceneSummaryPresenter needs to resolve its scene's path.
   sig { returns(T::Array[SceneSummaryPresenter]) }
-  def summaries
-    @model.map { |summary| SceneSummaryPresenter.new(summary) }
+  def entries
+    @model.map do |summary|
+      SceneSummaryPresenter.new(summary, game: @options.fetch(:game), urls: @options.fetch(:urls))
+    end
   end
 
-  sig { returns(T.untyped) }
-  def pagy
-    @options.fetch(:pagy)
+  # Pagy's own series-nav markup — Pagy is a plain object (not an
+  # ActiveRecord model), so handing it through is not a layering violation;
+  # this method exists so the component never touches @options[:pagy] itself.
+  sig { returns(String) }
+  def pagy_nav
+    @options.fetch(:pagy).series_nav
   end
 end

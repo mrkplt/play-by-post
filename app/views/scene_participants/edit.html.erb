@@ -4,8 +4,8 @@
   <% frame.with_header do %>
     <%= render Shared::HeaderComponent.new(
           title: "Edit Participants — #{@scene.title}",
-          breadcrumbs: Shared::BreadcrumbsComponent.new(game: @game),
-          secondary_nav: Shared::GameNavComponent.new(game: @game, active_tab: :scenes, can_manage: @game_presenter.can_manage?, mode: :link)) %>
+          breadcrumbs: Shared::BreadcrumbsComponent.new(game_presenter: @game_presenter),
+          secondary_nav: Shared::GameNavComponent.new(game_presenter: @game_presenter, active_tab: :scenes, mode: :link)) %>
   <% end %>
 
   <% frame.with_footer do %>
@@ -21,8 +21,8 @@
 
   <%= form_with url: game_scene_participants_path(@game, @scene), method: :patch, html: { id: "scene_participants_edit_form" } do %>
     <%= render Shared::ParticipantCheckboxListComponent.new(
-          players_with_characters: @roster.rows,
-          selected_character_ids: @roster.selected_character_ids,
+          players_with_characters: @players_with_characters,
+          selected_character_ids: @current_character_ids.selected_character_ids,
           variant: :simple) %>
   <% end %>
 <% end %>

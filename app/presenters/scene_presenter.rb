@@ -4,13 +4,56 @@ class ScenePresenter < BasePresenter
   extend T::Sig
 
   sig { returns(String) }
+  def title
+    @model.title
+  end
+
+  # This scene's child scenes that belong to the given game, wrapped for
+  # display — the scene card's "continued in" links show only same-game
+  # children. Takes the game explicitly rather than reading @options[:game]
+  # so callers that never call #page_action are not forced to construct with
+  # a game they do not otherwise need.
+  sig { params(game: GamePresenter).returns(T::Array[ScenePresenter]) }
+  def child_scenes_in(game)
+    @model.child_scenes.select { |c| c.game_id == game.id }.map { |c| ScenePresenter.new(c) }
+  end
+
+  sig { returns(T::Boolean) }
+  def parent_scene?
+    @model.parent_scene.present?
+  end
+
+  sig { returns(ScenePresenter) }
+  def parent_scene_presenter
+    ScenePresenter.new(@model.parent_scene)
+  end
+
+  sig { returns(String) }
   def parent_option_label
     @model.resolved? ? "#{@model.title} (Resolved)" : @model.title
+  end
+
+  # Whether the scene currently carries validation errors — the New Scene /
+  # Quick Scene form's re-render after a failed #create reads this instead of
+  # a component reaching into @model.errors directly.
+  sig { returns(T::Boolean) }
+  def errors?
+    @model.errors.any?
+  end
+
+  sig { returns(T::Array[String]) }
+  def error_messages
+    @model.errors.full_messages
   end
 
   sig { returns(String) }
   def status_label
     @model.resolved? ? "Resolved" : "Active"
+  end
+
+  sig { returns(T::Boolean) }
+  def resolved?
+    @model.resolved? # mutant:disable
   end
 
   # Pre-computed label/variant pairs for Shared::StatusBadgeRowComponent, for
@@ -73,6 +116,22 @@ class ScenePresenter < BasePresenter
     @model.image.variant(resize_to_limit: [ 1200, nil ], format: :jpeg, quality: 85)
   end
 
+  # The GM-facing resolution text shown once a scene is resolved. Named for
+  # what it shows rather than delegated to raw `resolution`, so the presenter
+  # (not the component) owns reading it off the model.
+  sig { returns(T.nilable(String)) }
+  def resolution
+    @model.resolution
+  end
+
+  # The "End Scene" form's submit target, resolved from the game and
+  # url_helpers supplied at construction (options[:game] / options[:urls]) so
+  # the component never builds a route itself.
+  sig { returns(String) }
+  def resolve_path
+    @options.fetch(:urls).resolve_game_scene_path(@options.fetch(:game), @model)
+  end
+
   # Whether this viewer may post into the scene right now: the post policy allows
   # it and the scene is still open. Keeps the composer's visibility sourced from
   # the same policy PostsController authorizes with. The policy is supplied at
@@ -90,12 +149,15 @@ class ScenePresenter < BasePresenter
     muted ? "Unmute notifications" : "Mute notifications"
   end
 
-  # The draft worth surfacing as a recovery notice: the composer disappears
-  # once a scene resolves, so a leftover draft is only worth recovering in
-  # that state. `draft` is whatever the controller found (or nil).
-  sig { params(draft: T.nilable(Post)).returns(T.nilable(Post)) }
+  # The draft worth surfacing as a recovery notice, wrapped for
+  # Shared::DraftRecoveryComponent: the composer disappears once a scene
+  # resolves, so a leftover draft is only worth recovering in that state.
+  # `draft` is whatever model the controller found (or nil).
+  sig { params(draft: T.nilable(Post)).returns(T.nilable(PostPresenter)) }
   def recoverable_draft(draft)
-    @model.resolved? ? draft : nil
+    return nil unless @model.resolved? && draft
+
+    PostPresenter.new(draft)
   end
 
   # The scene screen's footer page-action, resolved to a render-ready
@@ -117,5 +179,32 @@ class ScenePresenter < BasePresenter
         urls: @options[:urls], game: @options[:game]
       )
     )
+  end
+
+  # The composer's autosave-draft endpoint, resolved here so the composer
+  # component never holds the game/scene models it would need to build the
+  # URL itself. `urls`/`game` are supplied at construction (options[:urls],
+  # options[:game]) — the same collaborators #page_action reads.
+  sig { returns(String) }
+  def save_draft_url
+    url_helpers.save_draft_game_scene_posts_path(scene_game, @model) # mutant:disable
+  end
+
+  # The "discard this draft" endpoint, resolved the same way as save_draft_url.
+  sig { returns(String) }
+  def discard_draft_url
+    url_helpers.discard_draft_game_scene_posts_path(scene_game, @model) # mutant:disable
+  end
+
+  private
+
+  sig { returns(T.untyped) }
+  def url_helpers
+    @options.fetch(:urls)
+  end
+
+  sig { returns(Game) }
+  def scene_game
+    @options.fetch(:game)
   end
 end

@@ -5,8 +5,9 @@ require "rails_helper"
 RSpec.describe Shared::SceneResolveFormComponent, type: :component do
   let(:game) { build_stubbed(:game) }
   let(:scene) { build_stubbed(:scene, game: game) }
+  let(:resolve_path) { "/games/#{game.id}/scenes/#{scene.id}/resolve" }
 
-  subject(:component) { described_class.new(game: game, scene: scene) }
+  subject(:component) { described_class.new(resolve_path: resolve_path) }
 
   # The form lives inside the `hidden` [data-resolve-toggle-target='form'] wrapper, so its contents
   # are inspected with visible: :all.
@@ -15,7 +16,7 @@ RSpec.describe Shared::SceneResolveFormComponent, type: :component do
 
     it "posts to the scene's resolve route" do
       expect(page).to have_css(
-        "form[action='/games/#{game.id}/scenes/#{scene.id}/resolve']", visible: :all
+        "form[action='#{resolve_path}']", visible: :all
       )
     end
 

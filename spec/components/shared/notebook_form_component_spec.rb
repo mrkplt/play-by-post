@@ -2,11 +2,14 @@ require "rails_helper"
 
 RSpec.describe Shared::NotebookFormComponent, type: :component do
   let(:game) { build_stubbed(:game) }
-  let(:new_entry) { game.notebook_entries.new }
-  let(:existing_entry) { build_stubbed(:notebook_entry, game: game, title: "Idea", slug: "abc123def456ghij") }
+  let(:game_presenter) { GamePresenter.new(game, policy: instance_double(GamePolicy)) }
+  let(:new_entry) { NotebookEntryPresenter.new(game.notebook_entries.new) }
+  let(:existing_entry) do
+    NotebookEntryPresenter.new(build_stubbed(:notebook_entry, game: game, title: "Idea", slug: "abc123def456ghij"))
+  end
 
   def build_component(notebook_entry:)
-    described_class.new(game: game, notebook_entry: NotebookEntryPresenter.new(notebook_entry))
+    described_class.new(game: game_presenter, notebook_entry: notebook_entry)
   end
 
   def path(name, *args)

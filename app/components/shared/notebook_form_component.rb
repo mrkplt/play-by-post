@@ -7,13 +7,13 @@
 class Shared::NotebookFormComponent < ApplicationComponent
   extend T::Sig
 
-  sig { params(game: Game, notebook_entry: NotebookEntryPresenter).void }
+  sig { params(game: GamePresenter, notebook_entry: NotebookEntryPresenter).void }
   def initialize(game:, notebook_entry:)
-    @game = T.let(game, Game)
+    @game = T.let(game, GamePresenter)
     @notebook_entry = T.let(notebook_entry, NotebookEntryPresenter)
   end
 
-  sig { returns(Game) }
+  sig { returns(GamePresenter) }
   attr_reader :game
 
   sig { returns(NotebookEntryPresenter) }
@@ -43,11 +43,11 @@ class Shared::NotebookFormComponent < ApplicationComponent
 
   sig { returns(T::Boolean) }
   def errors?
-    @notebook_entry.errors.any?
+    @notebook_entry.errors?
   end
 
   sig { returns(T::Array[String]) }
   def error_messages
-    @notebook_entry.errors.full_messages
+    @notebook_entry.error_messages
   end
 end

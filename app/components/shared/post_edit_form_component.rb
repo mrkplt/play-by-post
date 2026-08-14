@@ -7,20 +7,20 @@
 class Shared::PostEditFormComponent < ApplicationComponent
   extend T::Sig
 
-  sig { params(game: Game, scene: Scene, post: Post).void }
+  sig { params(game: GamePresenter, scene: ScenePresenter, post: PostPresenter).void }
   def initialize(game:, scene:, post:)
-    @game = T.let(game, Game)
-    @scene = T.let(scene, Scene)
-    @post = T.let(post, Post)
+    @game = T.let(game, GamePresenter)
+    @scene = T.let(scene, ScenePresenter)
+    @post = T.let(post, PostPresenter)
   end
 
-  sig { returns(Game) }
+  sig { returns(GamePresenter) }
   attr_reader :game
 
-  sig { returns(Scene) }
+  sig { returns(ScenePresenter) }
   attr_reader :scene
 
-  sig { returns(Post) }
+  sig { returns(PostPresenter) }
   attr_reader :post
 
   sig { returns(String) }

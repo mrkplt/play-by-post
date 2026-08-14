@@ -10,11 +10,13 @@ class ProfilesController < ApplicationController
   def show
     authorize @profile
     @user_presenter = T.let(UserPresenter.new(current_user), T.nilable(UserPresenter))
+    @feed_rows = T.let(T.must(@user_presenter).feed_rows(urls: self), T.nilable(T::Array[GameFeedRowPresenter]))
   end
 
   sig { void }
   def edit
     authorize @profile
+    @profile_presenter = T.let(UserProfilePresenter.new(T.must(@profile)), T.nilable(UserProfilePresenter))
   end
 
   sig { void }
@@ -25,6 +27,7 @@ class ProfilesController < ApplicationController
     if T.must(@profile).save
       redirect_to root_path, notice: "Display name saved."
     else
+      @profile_presenter = T.let(UserProfilePresenter.new(T.must(@profile)), T.nilable(UserProfilePresenter))
       render :edit, status: :unprocessable_content
     end
   end

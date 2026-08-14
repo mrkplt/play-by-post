@@ -7,7 +7,13 @@
 # wants, and omitting one is how you turn it off. That keeps each region's own
 # settings (the preview's height, its extra classes) with the region instead of
 # spread across the editor's parameter list.
-class Ui::MarkdownEditorComponent::Config
+#
+# A T::Struct rather than a plain class: this is data constructed by callers
+# (`Config.new(...)`, `Config.with_preview(...)`), not a class with behaviour
+# of its own beyond deriving values from that data — the view-layering gate's
+# CONTAINER SHAPES rule reaches for T::Struct exactly here ("the same data
+# when something CONSTRUCTS it").
+class Ui::MarkdownEditorComponent::Config < T::Struct
   extend T::Sig
 
   # The editor's height scale, in viewport units so an editor grows with the
@@ -31,16 +37,8 @@ class Ui::MarkdownEditorComponent::Config
 
   # The default surface: a toolbar above, a preview below capped at :md, and a
   # textarea capped at :lg. Pass `regions: []` for a bare textarea.
-  sig do
-    params(
-      edit_height: T.nilable(Symbol),
-      regions: T::Array[Ui::MarkdownEditorComponent::Region]
-    ).void
-  end
-  def initialize(edit_height: :lg, regions: Ui::MarkdownEditorComponent::Config.default_regions)
-    @edit_height = edit_height
-    @regions = regions
-  end
+  const :edit_height, T.nilable(Symbol), default: :lg
+  const :regions, T::Array[Ui::MarkdownEditorComponent::Region], factory: -> { Ui::MarkdownEditorComponent::Config.default_regions }
 
   # The overwhelmingly common surface: a toolbar above and a live preview
   # below. `content_class` is the preview's domain styling hook and is the only
@@ -64,12 +62,12 @@ class Ui::MarkdownEditorComponent::Config
 
   sig { params(placement: Symbol).returns(T::Array[ViewComponent::Base]) }
   def components_placed(placement)
-    @regions.select { |region| region.placement == placement }.map(&:component)
+    regions.select { |region| region.placement == placement }.map(&:component)
   end
 
   sig { returns(T::Boolean) }
   def edit_scroll?
-    !@edit_height.nil?
+    !edit_height.nil?
   end
 
   # The textarea's max-height declaration, nil when the textarea is uncapped.
@@ -77,7 +75,7 @@ class Ui::MarkdownEditorComponent::Config
   # bare key out; HEIGHTS.fetch raises on a step outside the scale.
   sig { returns(T.nilable(String)) }
   def edit_max_height
-    height = @edit_height
+    height = edit_height
     return nil if height.nil?
 
     "max-height: #{HEIGHTS.fetch(height)}"

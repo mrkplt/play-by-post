@@ -10,6 +10,14 @@
 # are not CRUD name the capability they need (`manage?`) rather than borrowing
 # `update?`, which asks whether the row may be modified — a different question
 # that merely has the same answer while GM and owner are the same person.
+#
+# `@notebook_entry` (set by a before_action, on edit/update/destroy/move/
+# promote) stays the raw AR record — Pundit's `authorize` and the
+# update/destroy calls need it — while `new`/`create` build their own local
+# record instead of an ivar (neither view reads it directly). `@entry_presenter`
+# is what every view actually renders, built fresh after every mutation so it
+# reflects the entry's current state (including validation errors on a failed
+# save).
 class NotebookEntriesController < ApplicationController
   extend T::Sig
 
@@ -22,16 +30,14 @@ class NotebookEntriesController < ApplicationController
   sig { void }
   def index
     authorize T.must(@game).notebook_entries.new, :index?
-    @notebook_board = T.let(
-      NotebookBoardPresenter.new(entries_for(T.must(@game))), T.nilable(NotebookBoardPresenter)
-    )
+    @notebook_board = T.let(game_presenter.notebook_board, T.nilable(NotebookBoardPresenter))
   end
 
   sig { void }
   def new
     notebook_entry = T.must(@game).notebook_entries.new
     authorize notebook_entry
-    @notebook_entry_presenter = T.let(
+    @entry_presenter = T.let(
       NotebookEntryPresenter.new(notebook_entry), T.nilable(NotebookEntryPresenter)
     )
   end
@@ -44,7 +50,7 @@ class NotebookEntriesController < ApplicationController
     if notebook_entry.save
       redirect_to game_notebook_entries_path(@game), notice: "Entry created."
     else
-      @notebook_entry_presenter = T.let(
+      @entry_presenter = T.let(
         NotebookEntryPresenter.new(notebook_entry), T.nilable(NotebookEntryPresenter)
       )
       respond_to do |format|
@@ -57,7 +63,7 @@ class NotebookEntriesController < ApplicationController
   sig { void }
   def edit
     authorize @notebook_entry
-    @notebook_entry_presenter = T.let(
+    @entry_presenter = T.let(
       NotebookEntryPresenter.new(T.must(@notebook_entry)), T.nilable(NotebookEntryPresenter)
     )
   end
@@ -69,7 +75,7 @@ class NotebookEntriesController < ApplicationController
     if T.must(@notebook_entry).update(notebook_entry_params)
       redirect_to edit_game_notebook_entry_path(@game, @notebook_entry), notice: "Entry updated."
     else
-      @notebook_entry_presenter = T.let(
+      @entry_presenter = T.let(
         NotebookEntryPresenter.new(T.must(@notebook_entry)), T.nilable(NotebookEntryPresenter)
       )
       render :edit, status: :unprocessable_content
@@ -99,6 +105,9 @@ class NotebookEntriesController < ApplicationController
     if lane_move.standalone?
       redirect_to edit_game_notebook_entry_path(@game, @notebook_entry), notice: "Entry moved."
     else
+      @entry_presenter = T.let(
+        NotebookEntryPresenter.new(T.must(@notebook_entry)), T.nilable(NotebookEntryPresenter)
+      )
       render :move, formats: :turbo_stream
     end
   end
@@ -135,11 +144,6 @@ class NotebookEntriesController < ApplicationController
   sig { returns(GamePresenter) }
   def game_presenter
     @game_presenter ||= T.let(GamePresenter.new(T.must(@game), policy: policy(@game)), T.nilable(GamePresenter))
-  end
-
-  sig { params(game: Game).returns(T::Array[NotebookEntry]) }
-  def entries_for(game)
-    game.notebook_entries.order(:created_at).to_a
   end
 
   sig { returns(ActionController::Parameters) }

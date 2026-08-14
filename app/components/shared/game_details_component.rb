@@ -7,9 +7,9 @@
 class Shared::GameDetailsComponent < ApplicationComponent
   extend T::Sig
 
-  sig { params(game: Game).void }
+  sig { params(game: GamePresenter).void }
   def initialize(game:)
-    @game = T.let(game, Game)
+    @game = T.let(game, GamePresenter)
   end
 
   sig { returns(String) }
@@ -20,6 +20,11 @@ class Shared::GameDetailsComponent < ApplicationComponent
   sig { returns(T::Boolean) }
   def description?
     @game.description.present?
+  end
+
+  sig { returns(String) }
+  def description
+    @game.description.to_s
   end
 
   sig { returns(String) }

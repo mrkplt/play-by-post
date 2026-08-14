@@ -21,6 +21,16 @@ class PostsController < ApplicationController
   sig { void }
   def edit
     authorize @post
+    @game_presenter = T.let(
+      GamePresenter.new(T.must(@game), policy: policy(@game)), T.nilable(GamePresenter)
+    )
+    @scene_presenter = T.let(
+      ScenePresenter.new(T.must(@scene), game: @game, urls: self), T.nilable(ScenePresenter)
+    )
+    @post_presenter = T.let(
+      PostPresenter.new(T.must(@post), game: @game, scene: @scene, urls: self, policy: policy(@post)),
+      T.nilable(PostPresenter)
+    )
   end
 
   sig { void }
@@ -60,9 +70,19 @@ class PostsController < ApplicationController
     authorize post, :create?
     attach_image(post)
 
+    @game_presenter = T.let(
+      GamePresenter.new(T.must(@game), policy: policy(@game)), T.nilable(GamePresenter)
+    )
+    @scene_presenter = T.let(
+      ScenePresenter.new(T.must(@scene), game: @game, urls: self), T.nilable(ScenePresenter)
+    )
+
     if post.save
       @post_presenter = T.let(
-        PostPresenter.new(post, scene_participants: T.must(@scene).scene_participants.includes(:character, :user).to_a),
+        PostPresenter.new(
+          post, scene_participants: T.must(@scene).scene_participants.includes(:character, :user).to_a,
+                game: @game, scene: @scene, urls: self, policy: policy(post)
+        ),
         T.nilable(PostPresenter)
       )
       respond_to do |format|
@@ -71,7 +91,13 @@ class PostsController < ApplicationController
       end
     else
       respond_to do |format|
-        format.turbo_stream { render turbo_stream: turbo_stream.replace("post_composer", Shared::PostComposerComponent.new(post: post, game: T.must(@game), scene: T.must(@scene))) }
+        format.turbo_stream do
+          post_presenter = PostPresenter.new(post, game: @game, scene: @scene, urls: self, policy: policy(post))
+          render turbo_stream: turbo_stream.replace(
+            "post_composer",
+            Shared::PostComposerComponent.new(post: post_presenter, game: T.must(@game_presenter), scene: T.must(@scene_presenter))
+          )
+        end
         format.html { redirect_to game_scene_path(@game, @scene), alert: "Could not create post." }
       end
     end

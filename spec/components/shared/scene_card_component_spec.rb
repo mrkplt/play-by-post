@@ -2,12 +2,13 @@ require "rails_helper"
 
 RSpec.describe Shared::SceneCardComponent, type: :component do
   let(:game) { build_stubbed(:game) }
+  let(:game_presenter) { GamePresenter.new(game, policy: instance_double(GamePolicy)) }
   let(:scene) do
     build_stubbed(:scene, game: game, title: "The Tavern", updated_at: 2.days.ago)
   end
   let(:presenter) { ScenePresenter.new(scene) }
 
-  subject(:component) { described_class.new(scene: presenter, game: game) }
+  subject(:component) { described_class.new(scene: presenter, game: game_presenter) }
 
   def rendered_component
     render_inline(component)
@@ -42,13 +43,13 @@ RSpec.describe Shared::SceneCardComponent, type: :component do
   end
 
   it "glows when hot" do
-    render_inline(described_class.new(scene: presenter, game: game, hot: true))
+    render_inline(described_class.new(scene: presenter, game: game_presenter, hot: true))
     expect(page).to have_css("div.attn-item.is-hot")
   end
 
   it "reports hot? state" do
-    expect(described_class.new(scene: presenter, game: game, hot: true).hot?).to be true
-    expect(described_class.new(scene: presenter, game: game).hot?).to be false
+    expect(described_class.new(scene: presenter, game: game_presenter, hot: true).hot?).to be true
+    expect(described_class.new(scene: presenter, game: game_presenter).hot?).to be false
   end
 
   context "when the scene has a parent" do

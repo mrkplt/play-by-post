@@ -38,7 +38,7 @@ class GamesController < ApplicationController
       primary_character = user_characters.first
       additional_character_count = [ user_characters.length - 1, 0 ].max
       {
-        game: game,
+        game: GamePresenter.new(game, policy: policy(game)),
         membership: membership,
         active_scene_count: active_scenes,
         primary_character: primary_character,
@@ -55,6 +55,7 @@ class GamesController < ApplicationController
   def new
     @game = Game.new
     authorize @game
+    @game_presenter = GamePresenter.new(@game, policy: policy(@game))
   end
 
   sig { void }
@@ -65,6 +66,7 @@ class GamesController < ApplicationController
       @game.game_members.create!(user: current_user, role: "game_master", status: "active")
       redirect_to @game, notice: "Game created."
     else
+      @game_presenter = GamePresenter.new(@game, policy: policy(@game))
       render :new, status: :unprocessable_content
     end
   end
@@ -94,6 +96,8 @@ class GamesController < ApplicationController
   sig { void }
   def show
     authorize @game
+    @game_presenter = GamePresenter.new(@game, policy: policy(@game), urls: self)
+
     raw_scenes = @game.scenes
       .visible_to(current_user, @game)
       .active
@@ -102,7 +106,6 @@ class GamesController < ApplicationController
       .sort_by { |s| -s.last_activity_at.to_i }
     @active_scenes = raw_scenes.map { |s| ScenePresenter.new(s) }
 
-    @game_presenter = GamePresenter.new(@game, policy: policy(@game))
     @gm_name = gm_display_name
     @roster_preview = roster_preview_rows(raw_scenes)
     @hot_scene_ids = hot_scene_ids(raw_scenes)
@@ -129,12 +132,14 @@ class GamesController < ApplicationController
 
     # Files tab
     @game_files = @game.game_files.includes(file_attachment: :blob).order(created_at: :desc)
-    @game_file = @game.game_files.new
+      .map { |gf| GameFilePresenter.new(gf, game: @game, helpers: helpers, can_manage: @game_presenter.can_manage?) }
+    @game_file_presenter = GameFilePresenter.new(@game.game_files.new)
   end
 
   sig { void }
   def edit
     authorize @game
+    @game_presenter = GamePresenter.new(@game, policy: policy(@game))
   end
 
   sig { void }
@@ -143,6 +148,7 @@ class GamesController < ApplicationController
     if @game.update(game_params)
       redirect_to game_player_management_path(@game), notice: "Game updated."
     else
+      @game_presenter = GamePresenter.new(@game, policy: policy(@game))
       render :edit, status: :unprocessable_content
     end
   end

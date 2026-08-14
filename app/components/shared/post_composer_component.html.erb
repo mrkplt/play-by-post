@@ -2,7 +2,7 @@
     multipart: true,
     data: {
       controller: "post-draft",
-      post_draft_save_url_value: save_draft_game_scene_posts_path(@game, @scene)
+      post_draft_save_url_value: @scene.save_draft_url
     } do |f| %>
   <% if @post.errors.any? %>
     <div class="bg-red-50 border border-red-300 rounded-lg px-3 py-2 mb-3 text-sm text-red-600">
@@ -15,9 +15,9 @@
   <%= render Ui::SectionLabelComponent.new(html_class: "mb-2") do %>Post a Reply<% end %>
 
   <%= render Ui::MarkdownEditorComponent.new(
-        form: f, field: :content,
+        binding: { form: f, field: :content },
         config: Ui::MarkdownEditorComponent::Config.with_preview(content_class: "post-content"),
-        value: @draft&.content.to_s,
+        value: @draft&.content,
         placeholder: "Write your post... (markdown)",
         data: {
           post_draft_target: "content",

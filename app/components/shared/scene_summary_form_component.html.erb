@@ -4,7 +4,7 @@
   </div>
 <% end %>
 
-<%= form_with model: @summary, url: game_scene_scene_summary_path(@game, @scene), html: { id: form_id }, class: "flex flex-col gap-4" do |f| %>
+<%= form_with model: @summary, url: @summary.submit_path, html: { id: form_id }, class: "flex flex-col gap-4" do |f| %>
   <% if has_errors? %>
     <div class="bg-tint-blue-bg border border-tint-blue-border rounded-card p-3 text-sm text-danger">
       <% error_messages.each do |message| %>
@@ -16,7 +16,7 @@
   <div class="flex flex-col gap-1.5">
     <%= f.label :body, "Summary", class: "text-[11px] font-bold text-muted uppercase tracking-[0.05em]" %>
     <%= render Ui::MarkdownEditorComponent.new(
-          form: f, field: :body,
+          binding: { form: f, field: :body },
           config: Ui::MarkdownEditorComponent::Config.with_preview,
           rows: 10,
           placeholder: "Write a narrative summary of this scene...") %>

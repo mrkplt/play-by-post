@@ -18,7 +18,7 @@ class RssController < DataApplicationController
     game = T.must(token.game)
     @game_presenter = T.let(GamePresenter.new(game, policy: policy(game)), T.nilable(GamePresenter))
     @summaries = T.let(
-      SceneSummary.public_for_game(game).limit(20).map { |s| SceneSummaryPresenter.new(s) },
+      SceneSummary.public_for_game(game).limit(20).map { |s| SceneSummaryPresenter.new(s, game: game, urls: self) },
       T.nilable(T::Array[SceneSummaryPresenter])
     )
     render :feed, formats: :rss, layout: false

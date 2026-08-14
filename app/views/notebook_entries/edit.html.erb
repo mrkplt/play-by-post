@@ -4,8 +4,8 @@
   <% frame.with_header do %>
     <%= render Shared::HeaderComponent.new(
           title: "Edit — #{@notebook_entry.title}",
-          breadcrumbs: Shared::BreadcrumbsComponent.new(game: @game),
-          secondary_nav: Shared::GameNavComponent.new(game: @game, active_tab: :notebook, can_manage: game_presenter.can_manage?, mode: :link)) %>
+          breadcrumbs: Shared::BreadcrumbsComponent.new(game_presenter: game_presenter),
+          secondary_nav: Shared::GameNavComponent.new(game_presenter: game_presenter, active_tab: :notebook, mode: :link)) %>
   <% end %>
 
   <% frame.with_footer do %>
@@ -19,6 +19,6 @@
     <% end %>
   <% end %>
 
-  <%= render Shared::NotebookEntryActionsComponent.new(game: @game, notebook_entry: @notebook_entry) %>
-  <%= render Shared::NotebookFormComponent.new(game: @game, notebook_entry: @notebook_entry_presenter) %>
+  <%= render Shared::NotebookEntryActionsComponent.new(game: game_presenter, notebook_entry: @entry_presenter) %>
+  <%= render Shared::NotebookFormComponent.new(game: game_presenter, notebook_entry: @entry_presenter) %>
 <% end %>

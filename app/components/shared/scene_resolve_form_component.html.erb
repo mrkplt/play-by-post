@@ -2,7 +2,7 @@
   <%= form_with url: resolve_path, method: :patch do |f| %>
     <%= f.label :resolution, "Outcome (optional, markdown supported)", class: "block text-sm font-semibold mb-1" %>
     <%= render Ui::MarkdownEditorComponent.new(
-          form: f, field: :resolution,
+          binding: { form: f, field: :resolution },
           config: Ui::MarkdownEditorComponent::Config.with_preview,
           rows: 3,
           placeholder: "What happened? What was gained or lost?") %>

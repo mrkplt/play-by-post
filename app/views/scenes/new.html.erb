@@ -4,8 +4,8 @@
   <% frame.with_header do %>
     <%= render Shared::HeaderComponent.new(
           title: @scene_form.heading,
-          breadcrumbs: Shared::BreadcrumbsComponent.new(game: @game),
-          secondary_nav: Shared::GameNavComponent.new(game: @game, active_tab: :scenes, can_manage: policy(@game).manage?, mode: :link)) %>
+          breadcrumbs: Shared::BreadcrumbsComponent.new(game_presenter: @game_presenter),
+          secondary_nav: Shared::GameNavComponent.new(game_presenter: @game_presenter, active_tab: :scenes, mode: :link)) %>
   <% end %>
 
   <% frame.with_footer do %>

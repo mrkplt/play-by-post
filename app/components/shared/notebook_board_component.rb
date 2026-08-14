@@ -17,14 +17,16 @@ class Shared::NotebookBoardComponent < ApplicationComponent
 
   DISCARD_STATUS = T.let("discard", String)
 
-
-  sig { params(game: Game, entries_by_status: T::Hash[String, T::Array[NotebookEntry]]).void }
-  def initialize(game:, entries_by_status:)
+  # `game:` is the GamePresenter, needed by lanes to build each row's edit and
+  # move links. Grouping entries by lane is NotebookBoardPresenter's job, not
+  # this component's — `board` hands back finished per-status arrays.
+  sig { params(game: GamePresenter, board: NotebookBoardPresenter).void }
+  def initialize(game:, board:)
     @game = game
-    @entries_by_status = entries_by_status
+    @board = board
   end
 
-  sig { returns(Game) }
+  sig { returns(GamePresenter) }
   attr_reader :game
 
   sig { returns(T::Array[String]) }
@@ -32,9 +34,9 @@ class Shared::NotebookBoardComponent < ApplicationComponent
     VISIBLE_STATUSES
   end
 
-  sig { params(status: String).returns(T::Array[NotebookEntry]) }
+  sig { params(status: String).returns(T::Array[NotebookEntryPresenter]) }
   def entries_for(status)
-    @entries_by_status.fetch(status, [])
+    @board.entries_for(status)
   end
 
   sig { params(status: String).returns(String) }
@@ -61,7 +63,7 @@ class Shared::NotebookBoardComponent < ApplicationComponent
     (visible_statuses + [ DISCARD_STATUS ]).map { |status| lane_for(status) }
   end
 
-  sig { returns(T::Array[NotebookEntry]) }
+  sig { returns(T::Array[NotebookEntryPresenter]) }
   def discarded_entries
     entries_for("discard")
   end

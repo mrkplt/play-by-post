@@ -4,12 +4,12 @@
   <% frame.with_header do %>
     <%= render Shared::HeaderComponent.new(
           title: "Edit Game",
-          breadcrumbs: Shared::BreadcrumbsComponent.new(game: @game)) %>
+          breadcrumbs: Shared::BreadcrumbsComponent.new(game_presenter: @game_presenter)) %>
   <% end %>
 
   <%= render Ui::SectionLabelComponent.new do %>Game Details<% end %>
   <%= render Shared::GameFormComponent.new(
-        game: @game, submit_label: "Save Changes", cancel_href: game_path(@game)) %>
+        game: @game_presenter, submit_label: "Save Changes", cancel_href: game_path(@game)) %>
 
   <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do %>Post Images<% end %>
   <%= render Ui::CardComponent.new do %>
@@ -31,7 +31,7 @@
     <% end %>
   <% end %>
 
-  <%= render Shared::AiSummariesToggleComponent.new(game: @game) %>
+  <%= render Shared::AiSummariesToggleComponent.new(game: @game_presenter) %>
 
   <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do %>Players<% end %>
   <%= render Ui::CardComponent.new do %>

@@ -1,7 +1,9 @@
 require "rails_helper"
 
 RSpec.describe Shared::SidebarComponent, type: :component do
-  subject(:component) { described_class.new(current_user: current_user) }
+  subject(:component) { described_class.new(current_user: current_user_presenter, games: games) }
+
+  let(:games) { [] }
 
   def rendered_component
     render_inline(component)
@@ -9,7 +11,7 @@ RSpec.describe Shared::SidebarComponent, type: :component do
   end
 
   context "when signed out" do
-    let(:current_user) { nil }
+    let(:current_user_presenter) { nil }
 
     it "renders the brand link" do
       expect(rendered_component).to have_css(".sidebar-brand")
@@ -30,11 +32,11 @@ RSpec.describe Shared::SidebarComponent, type: :component do
   end
 
   context "when signed in" do
-    let(:current_user) { build_stubbed(:user, email: "jane@example.com") }
+    let(:user) { build_stubbed(:user, email: "jane@example.com") }
+    let(:current_user_presenter) { UserPresenter.new(user) }
 
     before do
-      allow(current_user).to receive(:display_name).and_return("Jane Doe")
-      allow(current_user).to receive(:games).and_return(double(any?: false))
+      allow(user).to receive(:display_name).and_return("Jane Doe")
     end
 
     it "renders the user section" do
@@ -52,43 +54,36 @@ RSpec.describe Shared::SidebarComponent, type: :component do
     it "renders the profile settings link" do
       expect(rendered_component).to have_css("a[href='/profile']")
     end
-  end
 
-  describe "#can_manage?" do
-    let(:game) { build_stubbed(:game) }
+    context "with games" do
+      let(:game) { build_stubbed(:game, name: "Sunken Archive") }
+      let(:game_presenter) { GamePresenter.new(game, policy: instance_double(GamePolicy, manage?: can_manage)) }
+      let(:games) { [ game_presenter ] }
 
-    context "when signed out" do
-      let(:current_user) { nil }
+      context "when the viewer may administer the game" do
+        let(:can_manage) { true }
 
-      it "returns false" do
-        expect(component.can_manage?(game)).to eq(false)
+        it "renders the game name and the crown" do
+          html = rendered_component
+          expect(html).to have_text("Sunken Archive")
+          expect(html).to have_css(".sidebar-link svg.text-accent")
+        end
+      end
+
+      context "when the viewer may not administer the game" do
+        let(:can_manage) { false }
+
+        it "renders the game name without a crown" do
+          html = rendered_component
+          expect(html).to have_text("Sunken Archive")
+          expect(html).not_to have_css(".sidebar-link svg.text-accent")
+        end
       end
     end
 
-    context "when the viewer may administer the game" do
-      let(:current_user) { build_stubbed(:user) }
-
-      it "returns true" do
-        allow(game).to receive(:game_master?).with(current_user).and_return(true)
-        expect(component.can_manage?(game)).to eq(true)
-      end
-    end
-
-    context "when the viewer may not administer the game" do
-      let(:current_user) { build_stubbed(:user) }
-
-      it "returns false" do
-        allow(game).to receive(:game_master?).with(current_user).and_return(false)
-        expect(component.can_manage?(game)).to eq(false)
-      end
-    end
-
-    context "when the user is not a member of the game" do
-      let(:current_user) { build_stubbed(:user) }
-
-      it "returns false" do
-        allow(game).to receive(:game_master?).with(current_user).and_return(false)
-        expect(component.can_manage?(game)).to eq(false)
+    context "without games" do
+      it "does not render any game links" do
+        expect(rendered_component).not_to have_css(".sidebar-link[href^='/games/']")
       end
     end
   end
