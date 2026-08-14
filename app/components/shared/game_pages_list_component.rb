@@ -51,10 +51,13 @@ class Shared::GamePagesListComponent < ApplicationComponent
   end
 
   # Only the GM can act on a page, so a player's rows carry no controls at all.
+  # PageRowActionsComponent's own template never asks a capability question —
+  # the gate above is this method's `can_manage?` check — so the presenter is
+  # built without a policy.
   sig { params(page: Page).returns(T.nilable(ViewComponent::Base)) }
   def row_controls(page)
     return nil unless can_manage?
 
-    Shared::PageRowActionsComponent.new(game: game, page: page)
+    Shared::PageRowActionsComponent.new(page: PagePresenter.new(page))
   end
 end

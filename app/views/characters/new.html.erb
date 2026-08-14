@@ -19,7 +19,5 @@
     <% end %>
   <% end %>
 
-  <%= render Shared::CharacterFormComponent.new(
-        game: @game, character: @character, users: @users,
-        can_assign_owner: policy(@character).assign_owner?) %>
+  <%= render Shared::CharacterFormComponent.new(character: @character_presenter) %>
 <% end %>

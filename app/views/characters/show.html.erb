@@ -30,5 +30,5 @@
   </div>
 
   <%= render Shared::CharacterVersionHistoryComponent.new(
-        game: @game, character: @character, versions: @versions.to_a, editor_names: @version_editor_names) %>
+        character: @character_presenter, versions: @versions) %>
 <% end %>

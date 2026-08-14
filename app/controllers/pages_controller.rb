@@ -11,12 +11,14 @@ class PagesController < ApplicationController
   sig { void }
   def show
     authorize @page
+    @page_presenter = page_presenter
   end
 
   sig { void }
   def new
     @page = @game.pages.new
     authorize @page
+    @page_presenter = page_presenter
   end
 
   sig { void }
@@ -27,6 +29,7 @@ class PagesController < ApplicationController
     if @page.save
       redirect_to game_page_path(@game, @page), notice: "Page created."
     else
+      @page_presenter = page_presenter
       render :new, status: :unprocessable_content
     end
   end
@@ -34,6 +37,7 @@ class PagesController < ApplicationController
   sig { void }
   def edit
     authorize @page
+    @page_presenter = page_presenter
   end
 
   sig { void }
@@ -43,6 +47,7 @@ class PagesController < ApplicationController
     if @page.update(page_params)
       redirect_to game_page_path(@game, @page), notice: "Page updated."
     else
+      @page_presenter = page_presenter
       render :edit, status: :unprocessable_content
     end
   end
@@ -74,5 +79,10 @@ class PagesController < ApplicationController
   sig { returns(ActionController::Parameters) }
   def page_params
     params.require(:page).permit(:title, :body)
+  end
+
+  sig { returns(PagePresenter) }
+  def page_presenter
+    PagePresenter.new(@page, policy: policy(@page))
   end
 end

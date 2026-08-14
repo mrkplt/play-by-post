@@ -3,40 +3,38 @@
 # The collapsible version-history table on a character sheet: one row per
 # snapshot linking to the historical version, with the editor's name. Kept as a
 # component so its table styling lives out of the view template.
+#
+# Takes the character (for the row link's route args) and an array of
+# CharacterVersionPresenter — each version presenter exposes its own
+# `editor_name`, so this component no longer needs a separate lookup hash
+# keyed by version id alongside the array of versions.
 class Shared::CharacterVersionHistoryComponent < ApplicationComponent
   extend T::Sig
 
   sig do
     params(
-      game: Game,
-      character: Character,
-      versions: T::Array[CharacterVersion],
-      editor_names: T::Hash[Integer, String]
+      character: CharacterPresenter,
+      versions: T::Array[CharacterVersionPresenter]
     ).void
   end
-  def initialize(game:, character:, versions:, editor_names:)
-    @game = T.let(game, Game)
-    @character = T.let(character, Character)
-    @versions = T.let(versions, T::Array[CharacterVersion])
-    @editor_names = T.let(editor_names, T::Hash[Integer, String])
+  def initialize(character:, versions:)
+    @character = T.let(character, CharacterPresenter)
+    @versions = T.let(versions, T::Array[CharacterVersionPresenter])
   end
 
   sig { returns(Game) }
-  attr_reader :game
+  def game
+    @character.game
+  end
 
-  sig { returns(Character) }
+  sig { returns(CharacterPresenter) }
   attr_reader :character
 
-  sig { returns(T::Array[CharacterVersion]) }
+  sig { returns(T::Array[CharacterVersionPresenter]) }
   attr_reader :versions
 
   sig { returns(Integer) }
   def version_count
     @versions.size
-  end
-
-  sig { params(version: CharacterVersion).returns(T.nilable(String)) }
-  def editor_name(version)
-    @editor_names[version.id]
   end
 end
