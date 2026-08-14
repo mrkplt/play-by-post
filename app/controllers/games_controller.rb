@@ -75,7 +75,7 @@ class GamesController < ApplicationController
       T.nilable(GameShowPresenter)
     )
     @game_roster = T.let(
-      GameRosterPresenter.new(T.must(@game_presenter), current_user: current_user),
+      GameRosterPresenter.new(T.must(@game_presenter), current_user: current_user, urls: self),
       T.nilable(GameRosterPresenter)
     )
     @game_scenes = T.let(

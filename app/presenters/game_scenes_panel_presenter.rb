@@ -21,6 +21,11 @@ class GameScenesPanelPresenter < BasePresenter
     @active_scenes ||= T.let(build_active_scenes, T.nilable(T::Array[ScenePresenter]))
   end
 
+  sig { returns(T::Boolean) }
+  def active_scenes?
+    active_scenes.any?
+  end
+
   # The GM's display name — always shown, crowned, at the top of the preview.
   sig { returns(String) }
   def gm_name
@@ -33,6 +38,24 @@ class GameScenesPanelPresenter < BasePresenter
   sig { returns(T::Array[T::Hash[Symbol, String]]) }
   def roster_preview
     @roster_preview ||= T.let(build_roster_preview, T.nilable(T::Array[T::Hash[Symbol, String]]))
+  end
+
+  sig { returns(T::Boolean) }
+  def roster_preview_empty?
+    roster_preview.empty?
+  end
+
+  # Whether the GM row is the only row in the preview — the crowned GM row's
+  # "last" flag (no divider under it) when no players have joined an active
+  # scene yet.
+  sig { returns(T::Boolean) }
+  def gm_row_last?
+    roster_preview_empty?
+  end
+
+  sig { params(index: Integer).returns(T::Boolean) }
+  def roster_preview_last?(index)
+    index == roster_preview.length - 1
   end
 
   private
