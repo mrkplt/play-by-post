@@ -1,17 +1,21 @@
 <div class="flex items-center gap-3 flex-wrap">
   <%= render lane_select %>
 
-  <div class="flex items-center gap-3 ml-auto">
+  <%# Promote and Delete are the only destructive/irreversible actions on this
+      screen and they sit side by side, so they carry the same >= 44px touch
+      target every other control here already has. As bare text they measured
+      16px tall on a phone and could not be reliably tapped. %>
+  <div class="flex items-center gap-2 ml-auto">
     <% if promoted? %>
       <%= link_to promoted_label, promoted_page_path,
-            class: "text-xs font-semibold text-accent no-underline" %>
+            class: "text-xs font-semibold text-accent no-underline inline-flex items-center min-h-11 px-2" %>
     <% else %>
       <%= button_to "Promote", promote_game_notebook_entry_path(game, notebook_entry), method: :post,
-            class: "text-xs font-semibold text-accent bg-transparent border-0 cursor-pointer p-0" %>
+            class: "text-xs font-semibold text-accent bg-transparent border-0 cursor-pointer inline-flex items-center min-h-11 px-2" %>
     <% end %>
 
     <%= button_to "Delete", game_notebook_entry_path(game, notebook_entry), method: :delete,
           form: { data: { turbo_confirm: confirm } },
-          class: "text-xs font-semibold text-danger bg-transparent border-0 cursor-pointer p-0" %>
+          class: "text-xs font-semibold text-danger bg-transparent border-0 cursor-pointer inline-flex items-center min-h-11 px-2" %>
   </div>
 </div>
