@@ -31,7 +31,14 @@
 #
 #   R4  Components take presenters, components, arrays of components, and
 #       hashes. Never a raw model — a component holding a model computes what the
-#       presenter should have.
+#       presenter should have. Every method, not just initialize.
+#
+#   R5  Templates do not reach through an object.
+#       A template may ask its presenter a question; it may not walk through one
+#       object to fetch state off another. Not a hop count — `game.gm.present?`
+#       asks an object about itself and is fine — but whether the intermediate
+#       hands back a MODEL the template then reads. Runtime-resolved; skipped
+#       when the app cannot load.
 #
 # Classification is by INHERITANCE, not by name. Every class under app/ is
 # indexed with its superclass, and a constant is resolved by walking that chain
@@ -546,6 +553,74 @@ Dir["app/components/**/*.rb"].sort.each do |file|
 end
 
 # ---------------------------------------------------------------------------
+# R5 — Templates do not reach through an object.
+#
+# A template may ask the presenter it was handed a question; it may not walk
+# through one object to fetch state from another. The test is not chain length
+# — `game.gm.present?` is fine, it asks an object about itself — but whether an
+# intermediate call hands back a MODEL, which the template then interrogates.
+# `@scene_presenter.parent_scene.title` reaches: `parent_scene` returns a Scene
+# and the template pulls `title` off it. The fix is one named presenter method
+# returning the finished value.
+#
+# Resolution is runtime, because the answer needs real classes: the ivar's
+# declared T.let type gives the receiver, the intermediate's `sig` gives what it
+# returns, and where a presenter does not define the method at all its
+# `initialize` sig says what SimpleDelegator forwards to. Without the app loaded
+# this check is skipped rather than guessed at.
+# ---------------------------------------------------------------------------
+
+if RUNTIME
+  model_names = Dir["app/models/*.rb"].map { |f| File.basename(f, ".rb").split("_").map(&:capitalize).join }.to_set
+
+  hands_back_model = lambda do |klass, meth, depth = 0|
+    next false if klass.nil? || depth > 3
+
+    signature = begin
+      T::Utils.signature_for_method(klass.instance_method(meth))
+    rescue NameError, StandardError
+      nil
+    end
+    next signature.return_type.to_s.scan(/[A-Z]\w*/).any? { |c| model_names.include?(c) } if signature
+
+    unless klass.instance_methods(false).include?(meth)
+      # SimpleDelegator forwards it — resolve against what the presenter wraps.
+      wrapped = begin
+        init = T::Utils.signature_for_method(klass.instance_method(:initialize))
+        init&.arg_types&.first&.last.to_s.safe_constantize
+      rescue NameError, StandardError
+        nil
+      end
+      next hands_back_model.call(wrapped, meth, depth + 1) if wrapped && wrapped != klass
+    end
+
+    next false if klass.respond_to?(:column_names) && klass.column_names.include?(meth.to_s)
+    klass.respond_to?(:reflect_on_association) && !klass.reflect_on_association(meth).nil?
+  end
+
+  ivar_types = {}
+  Dir["app/controllers/**/*.rb", "app/mailers/**/*.rb"].each do |file|
+    source = File.read(file, encoding: "utf-8")
+    source.scan(/@(\w+)\s*=\s*T\.let\(.*?,\s*T\.nilable\((\w+)\)\s*\)/m) { |n, t| ivar_types[n] ||= t }
+    source.scan(/@(\w+)\s*=\s*(\w+)\.new/) { |n, t| ivar_types[n] ||= t }
+  end
+
+  Dir["app/views/**/*.erb", "app/components/**/*.erb"].sort.each do |file|
+    File.read(file, encoding: "utf-8").scan(/@(\w+)\.(\w+[?!]?)\.(\w+[?!]?)/) do |ivar, middle, terminal|
+      klass = ivar_types[ivar]&.safe_constantize
+      next unless klass.is_a?(Class)
+
+      method_name = middle.to_s.chomp("?").chomp("!").to_sym
+      next unless hands_back_model.call(klass, method_name)
+
+      violations["R5"] << "#{file}: `@#{ivar}.#{middle}.#{terminal}` — `#{ivar_types[ivar]}##{middle}` " \
+        "hands back a model and the template reads `#{terminal}` off it; expose one presenter method " \
+        "returning the finished value"
+    end
+  end
+end
+
+# ---------------------------------------------------------------------------
 # Report
 # ---------------------------------------------------------------------------
 
@@ -553,19 +628,20 @@ DESCRIPTIONS = {
   "R1" => "Views hold only presenters",
   "R2" => "Policies are injected, never looked up",
   "R3" => "Presenters take (subject, options)",
-  "R4" => "Components take presenters, components, arrays of components, hashes"
+  "R4" => "Components take presenters, components, arrays of components, hashes",
+  "R5" => "Templates do not reach through an object"
 }.freeze
 
 total = violations.values.sum(&:size)
 
 if total.zero?
-  puts "View-layering check: OK (all four layering rules hold)"
+  puts "View-layering check: OK (all layering rules hold)"
   exit 0
 end
 
 puts "View-layering check: FAIL — #{total} violation(s)\n\n"
 
-%w[R1 R2 R3 R4].each do |rule|
+%w[R1 R2 R3 R4 R5].each do |rule|
   found = violations[rule]
   puts "#{rule} — #{DESCRIPTIONS[rule]}: #{found.size} violation(s)"
   found.each { |line| puts "    #{line}" }
