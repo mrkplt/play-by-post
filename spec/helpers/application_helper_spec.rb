@@ -254,29 +254,4 @@ RSpec.describe ApplicationHelper, type: :helper do
       expect(result).to be_html_safe
     end
   end
-
-  describe "#last_export_notice" do
-    it "renders a 'Last export: X ago' notice from the receipt's succeeded_at" do
-      user = create(:user, :with_profile)
-      game = create(:game)
-      receipt = create(:game_export_request, user: user, game: game, succeeded_at: 3.hours.ago)
-
-      expect(helper.last_export_notice(receipt)).to match(/\ALast export: .+ ago\z/)
-      expect(helper.last_export_notice(receipt)).to include("hours")
-    end
-  end
-
-  describe "#export_all_games_notice" do
-    it "delegates to last_export_notice when a receipt is present" do
-      user = create(:user, :with_profile)
-      receipt = create(:game_export_request, :all_games, user: user, succeeded_at: 3.hours.ago)
-
-      expect(helper.export_all_games_notice(receipt)).to match(/\ALast export: .+ ago\z/)
-    end
-
-    it "returns generic delivery-window copy when no receipt is present" do
-      expect(helper.export_all_games_notice(nil))
-        .to eq("You'll receive an email with a download link within a few minutes; the link expires after 7 days.")
-    end
-  end
 end

@@ -7,7 +7,7 @@ RSpec.describe Shared::SceneSummaryFormComponent, type: :component do
   context "when creating a new summary" do
     let(:summary) { SceneSummary.new }
 
-    subject(:component) { described_class.new(game: game, scene: scene, summary: summary) }
+    subject(:component) { described_class.new(game: game, scene: scene, summary: SceneSummaryPresenter.new(summary)) }
 
     it "editing? returns false" do
       expect(component.editing?).to be(false)
@@ -47,7 +47,7 @@ RSpec.describe Shared::SceneSummaryFormComponent, type: :component do
   context "when editing an existing summary" do
     let(:summary) { build_stubbed(:scene_summary, scene: scene) }
 
-    subject(:component) { described_class.new(game: game, scene: scene, summary: summary) }
+    subject(:component) { described_class.new(game: game, scene: scene, summary: SceneSummaryPresenter.new(summary)) }
 
     it "editing? returns true" do
       expect(component.editing?).to be(true)
@@ -74,7 +74,7 @@ RSpec.describe Shared::SceneSummaryFormComponent, type: :component do
   context "when editing an AI-generated summary" do
     let(:summary) { build_stubbed(:scene_summary, :ai_generated, scene: scene) }
 
-    subject(:component) { described_class.new(game: game, scene: scene, summary: summary) }
+    subject(:component) { described_class.new(game: game, scene: scene, summary: SceneSummaryPresenter.new(summary)) }
 
     it "show_ai_notice? returns true" do
       expect(component.show_ai_notice?).to be(true)
@@ -89,7 +89,7 @@ RSpec.describe Shared::SceneSummaryFormComponent, type: :component do
   context "when editing a non-AI-generated summary" do
     let(:summary) { build_stubbed(:scene_summary, generated_at: nil, scene: scene) }
 
-    subject(:component) { described_class.new(game: game, scene: scene, summary: summary) }
+    subject(:component) { described_class.new(game: game, scene: scene, summary: SceneSummaryPresenter.new(summary)) }
 
     it "show_ai_notice? returns false" do
       expect(component.show_ai_notice?).to be(false)
@@ -99,7 +99,7 @@ RSpec.describe Shared::SceneSummaryFormComponent, type: :component do
   context "when not editing but generated_at is present" do
     let(:summary) { SceneSummary.new(generated_at: Time.current) }
 
-    subject(:component) { described_class.new(game: game, scene: scene, summary: summary) }
+    subject(:component) { described_class.new(game: game, scene: scene, summary: SceneSummaryPresenter.new(summary)) }
 
     it "show_ai_notice? returns false because not editing" do
       expect(component.show_ai_notice?).to be(false)
@@ -113,7 +113,7 @@ RSpec.describe Shared::SceneSummaryFormComponent, type: :component do
       s
     end
 
-    subject(:component) { described_class.new(game: game, scene: scene, summary: summary) }
+    subject(:component) { described_class.new(game: game, scene: scene, summary: SceneSummaryPresenter.new(summary)) }
 
     it "has_errors? returns true" do
       expect(component.has_errors?).to be(true)

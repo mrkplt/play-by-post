@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 
 class ProfilesController < ApplicationController
   extend T::Sig
@@ -9,11 +9,7 @@ class ProfilesController < ApplicationController
   sig { void }
   def show
     authorize @profile
-    @memberships = current_user.game_members
-      .where.not(status: "banned")
-      .includes(:game)
-      .order("games.name")
-    @export_all_receipt = GameExportRequest.valid_receipt_for(current_user, nil)
+    @user_presenter = T.let(UserPresenter.new(current_user), T.nilable(UserPresenter))
   end
 
   sig { void }
@@ -24,9 +20,9 @@ class ProfilesController < ApplicationController
   sig { void }
   def update
     authorize @profile
-    @profile.display_name = params[:user_profile][:display_name]
+    T.must(@profile).display_name = params[:user_profile][:display_name]
 
-    if @profile.save
+    if T.must(@profile).save
       redirect_to root_path, notice: "Display name saved."
     else
       render :edit, status: :unprocessable_content
@@ -36,7 +32,7 @@ class ProfilesController < ApplicationController
   sig { void }
   def toggle_hide_ooc
     authorize @profile, :manage?
-    @profile.update!(hide_ooc: !@profile.hide_ooc?)
+    T.must(@profile).update!(hide_ooc: !T.must(@profile).hide_ooc?)
     head :ok
   end
 
@@ -59,6 +55,6 @@ class ProfilesController < ApplicationController
 
   sig { void }
   def set_profile
-    @profile = current_user.user_profile || current_user.build_user_profile
+    @profile = T.let(current_user.user_profile || current_user.build_user_profile, T.nilable(UserProfile))
   end
 end

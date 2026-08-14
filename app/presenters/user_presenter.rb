@@ -2,10 +2,22 @@
 
 class UserPresenter < BasePresenter
   extend T::Sig
+  include ActionView::Helpers::DateHelper
 
   sig { returns(String) }
   def display_name_or_email
     @model.display_name || @model.email.split("@").first
+  end
+
+  # The "Export All Games" row's subtitle: the last-export notice when this
+  # user has a valid all-games receipt, otherwise generic delivery/expiry
+  # copy. Mirrors GamePresenter#export_notice for the single-game case.
+  sig { returns(String) }
+  def export_all_games_notice
+    receipt = GameExportRequest.valid_receipt_for(@model, nil)
+    return "Last export: #{time_ago_in_words(T.must(receipt.succeeded_at))} ago" if receipt
+
+    "You'll receive an email with a download link within a few minutes; the link expires after 7 days."
   end
 
   sig { params(limit: T.nilable(Integer)).returns(ActiveRecord::Relation) }

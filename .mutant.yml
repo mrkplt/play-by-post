@@ -41,10 +41,17 @@ matcher:
     # Presenters
     - CharacterPresenter
     - GameFilePresenter
+    - GameFileCollectionPresenter
+    - GameMemberPresenter
     - GamePresenter
     - PostPresenter
     - SceneSummaryPresenter
+    - SceneSummaryCollectionPresenter
     - ScenePresenter
+    - NotebookBoardPresenter
+    - NotebookEntryPresenter
+    - SceneParticipantRosterPresenter
+    - SignInPresenter
     - ScenePageAction
     - ScenePageAction::Viewer
     - ScenePageAction::Resolved

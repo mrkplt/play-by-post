@@ -18,5 +18,6 @@
     <% end %>
   <% end %>
 
-  <%= render Shared::SceneSummaryIndexPageComponent.new(game: @game, summaries: @summaries, pagy: @pagy) %>
+  <%= render Shared::SceneSummaryIndexPageComponent.new(
+        game: @game, summaries: @summary_collection.summaries, pagy: @summary_collection.pagy) %>
 <% end %>

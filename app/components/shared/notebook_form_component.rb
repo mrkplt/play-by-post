@@ -7,16 +7,16 @@
 class Shared::NotebookFormComponent < ApplicationComponent
   extend T::Sig
 
-  sig { params(game: Game, notebook_entry: NotebookEntry).void }
+  sig { params(game: Game, notebook_entry: NotebookEntryPresenter).void }
   def initialize(game:, notebook_entry:)
     @game = T.let(game, Game)
-    @notebook_entry = T.let(notebook_entry, NotebookEntry)
+    @notebook_entry = T.let(notebook_entry, NotebookEntryPresenter)
   end
 
   sig { returns(Game) }
   attr_reader :game
 
-  sig { returns(NotebookEntry) }
+  sig { returns(NotebookEntryPresenter) }
   attr_reader :notebook_entry
 
   sig { returns(T::Boolean) }

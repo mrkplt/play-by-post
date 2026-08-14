@@ -3,12 +3,12 @@
 class Shared::SceneSummaryFormComponent < ApplicationComponent
   extend T::Sig
 
-  sig { params(game: Game, scene: Scene, summary: SceneSummary).void }
+  sig { params(game: Game, scene: Scene, summary: SceneSummaryPresenter).void }
   # mutant:disable
   def initialize(game:, scene:, summary:)
     @game = T.let(game, Game)
     @scene = T.let(scene, Scene)
-    @summary = T.let(summary, SceneSummary)
+    @summary = T.let(summary, SceneSummaryPresenter)
   end
 
   sig { returns(T::Boolean) }

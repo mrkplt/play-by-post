@@ -9,13 +9,13 @@
   <% end %>
 
   <% if @game_presenter.can_manage? %>
-    <%= render Shared::FileUploadFormComponent.new(game: @game, game_file: @game_file) %>
+    <%= render Shared::FileUploadFormComponent.new(game: @game, game_file: @game_file_presenter.__getobj__) %>
   <% end %>
 
-  <% if @game_files.empty? %>
+  <% if @game_file_collection.empty? %>
     <p class="text-muted-2 text-sm">No files uploaded yet.</p>
   <% else %>
     <%= render Ui::SectionLabelComponent.new do %>Newest first<% end %>
-    <%= render Shared::GalleryComponent.new(game_files: @game_files.to_a, game: @game, can_manage: @game_presenter.can_manage?) %>
+    <%= render Shared::GalleryComponent.new(game_files: @game_file_collection.models, game: @game, can_manage: @game_presenter.can_manage?) %>
   <% end %>
 <% end %>

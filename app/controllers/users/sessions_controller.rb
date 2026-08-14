@@ -1,10 +1,24 @@
-# typed: true
+# typed: strict
 
 class Users::SessionsController < Devise::Passwordless::SessionsController
   extend T::Sig
   include TurnstileVerification
 
   before_action :verify_turnstile!, only: :create
+
+  # Overrides Devise::SessionsController#new (GET /users/sign_in) rather than
+  # calling super: this is also the recall target Warden re-routes to when a
+  # magic-link token fails authentication (expired, already used), so the
+  # presenter must be built for it too, not only for the #create paths this
+  # controller overrides below. The body mirrors Devise's own #new — build an
+  # empty resource for the form — with the addition of the presenter.
+  sig { void }
+  def new
+    self.resource = User.new
+    @sign_in_presenter = T.let(
+      SignInPresenter.new(resource), T.nilable(SignInPresenter)
+    )
+  end
 
   sig { void }
   def create
@@ -13,6 +27,9 @@ class Users::SessionsController < Devise::Passwordless::SessionsController
     if email.blank?
       flash.now[:alert] = "Please enter an email address."
       self.resource = User.new
+      @sign_in_presenter = T.let(
+        SignInPresenter.new(resource), T.nilable(SignInPresenter)
+      )
       return render :new, status: :unprocessable_content
     end
 
@@ -21,7 +38,9 @@ class Users::SessionsController < Devise::Passwordless::SessionsController
     # remember_me: true so the magic link issues a 30-day remember cookie
     # (config.remember_for) — the login persists across browser restarts and deploys.
     resource.send_magic_link(remember_me: true)
-    @email_sent = true
+    @sign_in_presenter = T.let(
+      SignInPresenter.new(resource, email_sent: true), T.nilable(SignInPresenter)
+    )
     render :new
   end
 
@@ -33,6 +52,9 @@ class Users::SessionsController < Devise::Passwordless::SessionsController
   def turnstile_verification_failed
     flash.now[:alert] = "Please complete the verification challenge and try again."
     self.resource = User.new
+    @sign_in_presenter = T.let(
+      SignInPresenter.new(resource), T.nilable(SignInPresenter)
+    )
     render :new, status: :unprocessable_content
   end
 end

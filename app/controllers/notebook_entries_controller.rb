@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 
 # The Campaign Notebook: a GM-only kanban of short entries (new / expand /
 # done / discard) that can be "promoted" into a full game Page. Unlike
@@ -21,24 +21,32 @@ class NotebookEntriesController < ApplicationController
 
   sig { void }
   def index
-    authorize @game.notebook_entries.new, :index?
-    @entries = entries_for(@game)
+    authorize T.must(@game).notebook_entries.new, :index?
+    @notebook_board = T.let(
+      NotebookBoardPresenter.new(entries_for(T.must(@game))), T.nilable(NotebookBoardPresenter)
+    )
   end
 
   sig { void }
   def new
-    @notebook_entry = @game.notebook_entries.new
-    authorize @notebook_entry
+    notebook_entry = T.must(@game).notebook_entries.new
+    authorize notebook_entry
+    @notebook_entry_presenter = T.let(
+      NotebookEntryPresenter.new(notebook_entry), T.nilable(NotebookEntryPresenter)
+    )
   end
 
   sig { void }
   def create
-    @notebook_entry = @game.notebook_entries.new(notebook_entry_params)
-    authorize @notebook_entry
+    notebook_entry = T.must(@game).notebook_entries.new(notebook_entry_params)
+    authorize notebook_entry
 
-    if @notebook_entry.save
+    if notebook_entry.save
       redirect_to game_notebook_entries_path(@game), notice: "Entry created."
     else
+      @notebook_entry_presenter = T.let(
+        NotebookEntryPresenter.new(notebook_entry), T.nilable(NotebookEntryPresenter)
+      )
       respond_to do |format|
         format.turbo_stream { render :create_failed }
         format.html { render :new, status: :unprocessable_content }
@@ -49,15 +57,21 @@ class NotebookEntriesController < ApplicationController
   sig { void }
   def edit
     authorize @notebook_entry
+    @notebook_entry_presenter = T.let(
+      NotebookEntryPresenter.new(T.must(@notebook_entry)), T.nilable(NotebookEntryPresenter)
+    )
   end
 
   sig { void }
   def update
     authorize @notebook_entry
 
-    if @notebook_entry.update(notebook_entry_params)
+    if T.must(@notebook_entry).update(notebook_entry_params)
       redirect_to edit_game_notebook_entry_path(@game, @notebook_entry), notice: "Entry updated."
     else
+      @notebook_entry_presenter = T.let(
+        NotebookEntryPresenter.new(T.must(@notebook_entry)), T.nilable(NotebookEntryPresenter)
+      )
       render :edit, status: :unprocessable_content
     end
   end
@@ -65,7 +79,7 @@ class NotebookEntriesController < ApplicationController
   sig { void }
   def destroy
     authorize @notebook_entry
-    @notebook_entry.destroy
+    T.must(@notebook_entry).destroy
     redirect_to game_notebook_entries_path(@game), notice: "Entry deleted."
   end
 
@@ -74,7 +88,7 @@ class NotebookEntriesController < ApplicationController
     authorize @notebook_entry, :manage?
 
     lane_move = NotebookLaneMove.new(params)
-    @notebook_entry.update!(lane_move.attributes)
+    T.must(@notebook_entry).update!(lane_move.attributes)
 
     # On the board the response swaps the affected lanes in place. Off the
     # board there are no lanes to swap, so say what happened and come back.
@@ -93,7 +107,7 @@ class NotebookEntriesController < ApplicationController
   def promote
     authorize @notebook_entry, :manage?
 
-    page = NotebookEntryPromotion.new(@notebook_entry).call
+    page = NotebookEntryPromotion.new(T.must(@notebook_entry)).call
     redirect_to game_page_path(@game, page), notice: "Promoted to a page."
   end
 
@@ -101,12 +115,12 @@ class NotebookEntriesController < ApplicationController
 
   sig { void }
   def set_game
-    @game = Game.find(params[:game_id])
+    @game = T.let(Game.find(params[:game_id]), T.nilable(Game))
   end
 
   sig { void }
   def set_notebook_entry
-    @notebook_entry = @game.notebook_entries.find_by!(slug: params[:slug])
+    @notebook_entry = T.let(T.must(@game).notebook_entries.find_by!(slug: params[:slug]), T.nilable(NotebookEntry))
   end
 
   # The notebook's screens render the game nav, which asks whether the viewer
@@ -120,7 +134,7 @@ class NotebookEntriesController < ApplicationController
   # list.
   sig { returns(GamePresenter) }
   def game_presenter
-    @game_presenter ||= T.let(GamePresenter.new(@game, policy: policy(@game)), T.nilable(GamePresenter))
+    @game_presenter ||= T.let(GamePresenter.new(T.must(@game), policy: policy(@game)), T.nilable(GamePresenter))
   end
 
   sig { params(game: Game).returns(T::Array[NotebookEntry]) }

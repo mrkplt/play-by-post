@@ -48,4 +48,22 @@ class SceneSummaryPresenter < BasePresenter
   def scene
     @model.scene
   end
+
+  sig { returns(T::Boolean) }
+  # mutant:disable
+  def persisted?
+    @model.persisted?
+  end
+
+  sig { returns(ActiveModel::Errors) }
+  # mutant:disable
+  def errors
+    @model.errors
+  end
+
+  sig { returns(T.untyped) }
+  # mutant:disable
+  def body
+    @model.body
+  end
 end

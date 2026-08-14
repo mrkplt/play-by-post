@@ -6,7 +6,7 @@ RSpec.describe Shared::NotebookFormComponent, type: :component do
   let(:existing_entry) { build_stubbed(:notebook_entry, game: game, title: "Idea", slug: "abc123def456ghij") }
 
   def build_component(notebook_entry:)
-    described_class.new(game: game, notebook_entry: notebook_entry)
+    described_class.new(game: game, notebook_entry: NotebookEntryPresenter.new(notebook_entry))
   end
 
   def path(name, *args)

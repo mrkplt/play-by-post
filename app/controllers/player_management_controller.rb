@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 
 class PlayerManagementController < ApplicationController
   extend T::Sig
@@ -10,16 +10,19 @@ class PlayerManagementController < ApplicationController
   sig { void }
   def show
     authorize @game, :manage_players?
-    @game_presenter = GamePresenter.new(@game, policy: policy(@game))
+    @game_presenter = T.let(
+      GamePresenter.new(T.must(@game), policy: policy(@game), current_user: current_user),
+      T.nilable(GamePresenter)
+    )
 
     if policy(@game).manage?
-      @members = @game.game_members.where.not(status: "banned").where(role: "player").includes(:user)
-      @member_display_names = @members.each_with_object({}) { |m, h| h[m.user_id] = UserPresenter.new(m.user).display_name_or_email }
-      @member_characters = character_names_by_user
+      characters_by_user = character_names_by_user
+      members = T.must(@game).game_members.where.not(status: "banned").where(role: "player").includes(:user)
+      @roster = T.let(
+        members.map { |m| GameMemberPresenter.new(m, character_name: characters_by_user[m.user_id]) },
+        T.nilable(T::Array[GameMemberPresenter])
+      )
     end
-
-    @export_receipt = GameExportRequest.valid_receipt_for(current_user, @game)
-    @export_notice = @export_receipt ? T.unsafe(view_context).last_export_notice(@export_receipt) : nil
   end
 
   private
@@ -27,14 +30,14 @@ class PlayerManagementController < ApplicationController
   # First active character name per user, for the Members list subtitle.
   sig { returns(T::Hash[Integer, String]) }
   def character_names_by_user
-    @game.characters.active.each_with_object({}) do |c, h|
+    T.must(@game).characters.active.each_with_object({}) do |c, h|
       h[c.user_id] ||= c.name
     end
   end
 
   sig { void }
   def set_game
-    @game = Game.find(params[:game_id])
+    @game = T.let(Game.find(params[:game_id]), T.nilable(Game))
   end
 
   # Not redundant with `authorize`: this gates before the action runs and gives

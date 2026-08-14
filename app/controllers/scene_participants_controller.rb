@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 
 class SceneParticipantsController < ApplicationController
   extend T::Sig
@@ -11,38 +11,45 @@ class SceneParticipantsController < ApplicationController
   sig { void }
   def edit
     authorize @scene, :manage_participants?
-    players = @game.users.joins(:game_members)
+    @game_presenter = T.let(
+      GamePresenter.new(T.must(@game), policy: policy(@game)), T.nilable(GamePresenter)
+    )
+    players = T.must(@game).users.joins(:game_members)
       .where(game_members: { game: @game, role: "player", status: "active" })
       .order("user_profiles.display_name")
       .joins("LEFT JOIN user_profiles ON user_profiles.user_id = users.id")
 
-    characters_by_user = @game.characters.active
-      .joins("INNER JOIN game_members ON game_members.user_id = characters.user_id AND game_members.game_id = #{@game.id}")
+    characters_by_user = T.must(@game).characters.active
+      .joins("INNER JOIN game_members ON game_members.user_id = characters.user_id AND game_members.game_id = #{T.must(@game).id}")
       .where(game_members: { role: "player", status: "active" })
       .order(:name)
       .group_by(&:user_id)
 
-    @players_with_characters = players.map { |user| [ UserPresenter.new(user), characters_by_user.fetch(user.id, []) ] }
-    @current_character_ids = @scene.scene_participants.where.not(character_id: nil).pluck(:character_id)
+    rows = players.map { |user| [ UserPresenter.new(user), characters_by_user.fetch(user.id, []) ] }
+    selected_ids = T.must(@scene).scene_participants.where.not(character_id: nil).pluck(:character_id)
+    @roster = T.let(
+      SceneParticipantRosterPresenter.new(rows, selected_character_ids: selected_ids.map(&:to_s)),
+      T.nilable(SceneParticipantRosterPresenter)
+    )
   end
 
   sig { void }
   def update
     authorize @scene, :manage_participants?
-    gm = T.must(@game.game_master)
+    gm = T.must(@game).game_master
     character_ids = Array(params[:character_ids]).map(&:to_i)
-    characters = @game.characters.where(id: character_ids)
+    characters = T.must(@game).characters.where(id: character_ids)
     player_user_ids = characters.map(&:user_id)
 
     # Remove player rows not in the new set; always keep GM row
-    @scene.scene_participants.where.not(user_id: gm.id).where.not(user_id: player_user_ids).destroy_all
+    T.must(@scene).scene_participants.where.not(user_id: T.must(gm).id).where.not(user_id: player_user_ids).destroy_all
 
     # Ensure GM row exists (no character)
-    @scene.scene_participants.find_or_create_by!(user_id: gm.id)
+    T.must(@scene).scene_participants.find_or_create_by!(user_id: T.must(gm).id)
 
     # Upsert each selected character
     characters.each do |character|
-      sp = @scene.scene_participants.find_or_initialize_by(user_id: character.user_id)
+      sp = T.must(@scene).scene_participants.find_or_initialize_by(user_id: character.user_id)
       sp.character = character
       sp.save!
     end
@@ -53,17 +60,17 @@ class SceneParticipantsController < ApplicationController
   sig { void }
   def join
     authorize @scene, :join?
-    if @scene.private? && !policy(@scene).visible?
+    if T.must(@scene).private? && !policy(@scene).visible?
       redirect_to game_scene_path(@game, @scene), alert: "Cannot join a private scene."
       return
     end
 
-    if @scene.resolved?
+    if T.must(@scene).resolved?
       redirect_to game_scene_path(@game, @scene), alert: "Cannot join a resolved scene."
       return
     end
 
-    @scene.scene_participants.find_or_create_by!(user: current_user)
+    T.must(@scene).scene_participants.find_or_create_by!(user: current_user)
     redirect_to game_scene_path(@game, @scene), notice: "You have joined this scene."
   end
 
@@ -71,16 +78,16 @@ class SceneParticipantsController < ApplicationController
 
   sig { void }
   def set_game
-    @game = Game.find(params[:game_id])
+    @game = T.let(Game.find(params[:game_id]), T.nilable(Game))
   end
 
   sig { void }
   def set_scene
-    @scene = @game.scenes.find(params[:scene_id])
+    @scene = T.let(T.must(@game).scenes.find(params[:scene_id]), T.nilable(Scene))
   end
 
   sig { void }
   def require_active_member_for_write!
-    require_active_member!(@game)
+    require_active_member!(T.must(@game))
   end
 end
