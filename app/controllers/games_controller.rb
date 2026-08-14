@@ -71,6 +71,14 @@ class GamesController < ApplicationController
       GamePresenter.new(game, policy: policy(@game), current_user: current_user, urls: self, helpers: helpers),
       T.nilable(GamePresenter)
     )
+    @game_show = T.let(
+      GameShowPresenter.new(T.must(@game_presenter), current_user: current_user, urls: self, helpers: helpers),
+      T.nilable(GameShowPresenter)
+    )
+    @game_roster = T.let(
+      GameRosterPresenter.new(T.must(@game_presenter), current_user: current_user),
+      T.nilable(GameRosterPresenter)
+    )
   end
 
   sig { void }

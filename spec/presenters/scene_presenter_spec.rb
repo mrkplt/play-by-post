@@ -5,61 +5,25 @@ RSpec.describe ScenePresenter do
 
   subject(:presenter) { described_class.new(scene) }
 
-  describe "#can_post?" do
-    it "is true when the post policy allows it and the scene is open" do
-      post_policy = instance_double(PostPolicy, create?: true)
-      presenter = described_class.new(scene, post_policy: post_policy)
-      allow(scene).to receive(:resolved?).and_return(false)
-      expect(presenter.can_post?).to be(true)
-    end
-
-    it "is false when the scene is resolved" do
-      post_policy = instance_double(PostPolicy, create?: true)
-      presenter = described_class.new(scene, post_policy: post_policy)
-      allow(scene).to receive(:resolved?).and_return(true)
-      expect(presenter.can_post?).to be(false)
-    end
-
-    it "is false when the post policy denies it" do
-      post_policy = instance_double(PostPolicy, create?: false)
-      presenter = described_class.new(scene, post_policy: post_policy)
-      allow(scene).to receive(:resolved?).and_return(false)
-      expect(presenter.can_post?).to be(false)
-    end
-  end
-
-  describe "#mute_toggle_label" do
-    it "returns Unmute notifications when muted" do
-      expect(presenter.mute_toggle_label(true)).to eq("Unmute notifications")
-    end
-
-    it "returns Mute notifications when not muted" do
-      expect(presenter.mute_toggle_label(false)).to eq("Mute notifications")
-    end
-  end
-
-  describe "#recoverable_draft" do
-    let(:draft) { PostPresenter.new(build_stubbed(:post, :draft, scene: scene)) }
-
-    it "returns the draft presenter when the scene is resolved" do
-      allow(scene).to receive(:resolved?).and_return(true)
-      expect(presenter.recoverable_draft(draft)).to eq(draft)
-    end
-
-    it "is nil when the scene is not resolved, even with a draft present" do
-      allow(scene).to receive(:resolved?).and_return(false)
-      expect(presenter.recoverable_draft(draft)).to be_nil
-    end
-
-    it "is nil when there is no draft, even on a resolved scene" do
-      allow(scene).to receive(:resolved?).and_return(true)
-      expect(presenter.recoverable_draft(nil)).to be_nil
-    end
-  end
-
   describe "#model" do
     it "returns the wrapped scene" do
       expect(presenter.model).to eq(scene)
+    end
+  end
+
+  describe "#hot?" do
+    it "is false when the id is not among the supplied hot_scene_ids" do
+      scene.id = 5
+      expect(described_class.new(scene, hot_scene_ids: Set.new([ 1, 2 ])).hot?).to be(false)
+    end
+
+    it "is true when the id is among the supplied hot_scene_ids" do
+      scene.id = 5
+      expect(described_class.new(scene, hot_scene_ids: Set.new([ 5 ])).hot?).to be(true)
+    end
+
+    it "is false when no hot_scene_ids were supplied" do
+      expect(presenter.hot?).to be(false)
     end
   end
 
@@ -157,25 +121,6 @@ RSpec.describe ScenePresenter do
     end
   end
 
-  describe "#tree_status_badges" do
-    it "always includes the Active status badge for an active scene" do
-      expect(presenter.tree_status_badges).to eq([ { label: "Active", variant: :green } ])
-    end
-
-    it "always includes the Resolved status badge for a resolved scene" do
-      scene = build(:scene, :resolved)
-      expect(described_class.new(scene).tree_status_badges).to eq([ { label: "Resolved", variant: :gray } ])
-    end
-
-    it "adds Private after the status badge for a private scene" do
-      scene = build(:scene, :private)
-      expect(described_class.new(scene).tree_status_badges).to eq([
-        { label: "Active", variant: :green },
-        { label: "Private", variant: :yellow }
-      ])
-    end
-  end
-
   describe "#formatted_created_at" do
     it "formats the timestamp" do
       expect(presenter.formatted_created_at).to eq("Mar 10, 2024  9:00am")
@@ -205,30 +150,6 @@ RSpec.describe ScenePresenter do
         double(includes: [ sp1, sp2 ])
       )
       expect(presenter.participant_names).to eq("Alice, Bob")
-    end
-  end
-
-  describe "#tree_row_css_class" do
-    context "when active" do
-      it { expect(presenter.tree_row_css_class).to eq("font-semibold") }
-    end
-
-    context "when resolved" do
-      let(:scene) { build(:scene, :resolved) }
-
-      it { expect(presenter.tree_row_css_class).to eq("text-slate-500") }
-    end
-  end
-
-  describe "#tree_link_css_class" do
-    context "when active" do
-      it { expect(presenter.tree_link_css_class).to eq("") }
-    end
-
-    context "when resolved" do
-      let(:scene) { build(:scene, :resolved) }
-
-      it { expect(presenter.tree_link_css_class).to eq("text-slate-500") }
     end
   end
 
@@ -286,180 +207,6 @@ RSpec.describe ScenePresenter do
 
       presenter = described_class.new(scene, game: game, urls: urls)
       expect(presenter.resolve_path).to eq("/games/1/scenes/2/resolve")
-    end
-  end
-
-  describe "with a current_user" do
-    let(:current_user) { build_stubbed(:user) }
-    let(:game) { build_stubbed(:game) }
-    let(:urls) { double(join_game_scene_participants_path: "/games/1/scenes/2/participants/join") }
-
-    subject(:presenter) { described_class.new(scene, game: game, urls: urls, current_user: current_user) }
-
-    describe "#page_action" do
-      let(:membership) { build_stubbed(:game_member) }
-
-      before do
-        allow(scene).to receive(:participant?).with(current_user).and_return(false)
-        allow(game).to receive(:member_for).with(current_user).and_return(membership)
-      end
-
-      def page_action(**overrides)
-        presenter.page_action(**{ can_manage: false }.merge(overrides))
-      end
-
-      it "wraps the viewer facts and its own scene when asking for the action" do
-        allow(ScenePageAction).to receive(:for).and_return(ScenePageAction::JOIN)
-
-        page_action
-
-        expect(ScenePageAction).to have_received(:for) do |scene:, viewer:|
-          expect(scene).to eq(self.scene)
-          expect(viewer).to have_attributes(
-            can_manage: false, is_participant: false, membership: membership
-          )
-        end
-      end
-
-      it "resolves the action's route against the caller's url helpers" do
-        allow(ScenePageAction).to receive(:for).and_return(ScenePageAction::JOIN)
-
-        expect(page_action).to have_attributes(
-          label: "Join Scene",
-          href: "/games/1/scenes/2/participants/join",
-          http_method: :post
-        )
-        expect(urls).to have_received(:join_game_scene_participants_path).with(game, scene)
-      end
-
-      it "is nil when there is no action, without touching the url helpers" do
-        allow(ScenePageAction).to receive(:for).and_return(nil)
-
-        expect(page_action).to be_nil
-        expect(urls).not_to have_received(:join_game_scene_participants_path)
-      end
-    end
-
-    describe "#participant?" do
-      it "asks the model whether the viewer participates" do
-        allow(scene).to receive(:participant?).with(current_user).and_return(true)
-        expect(presenter.participant?).to be(true)
-      end
-    end
-
-    describe "#viewer_membership" do
-      it "asks the game for the viewer's membership" do
-        membership = build_stubbed(:game_member)
-        allow(game).to receive(:member_for).with(current_user).and_return(membership)
-        expect(presenter.viewer_membership).to eq(membership)
-      end
-    end
-
-    describe "#muted?" do
-      it "asks NotificationPreference whether the viewer has muted this scene" do
-        allow(NotificationPreference).to receive(:muted?).with(scene, current_user).and_return(true)
-        expect(presenter.muted?).to be(true)
-      end
-    end
-
-    describe "#hide_ooc?" do
-      it "is true when the viewer's profile has hide_ooc set" do
-        profile = double("profile", hide_ooc?: true)
-        allow(current_user).to receive(:user_profile).and_return(profile)
-        expect(presenter.hide_ooc?).to be(true)
-      end
-
-      it "is false when the viewer has no profile" do
-        allow(current_user).to receive(:user_profile).and_return(nil)
-        expect(presenter.hide_ooc?).to be(false)
-      end
-    end
-
-    describe "#visible_child_scenes" do
-      it "returns child scenes visible to the viewer, ordered by creation, wrapped as presenters" do
-        child = build_stubbed(:scene)
-        visible_rel = double("visible rel")
-        ordered_rel = double("ordered rel")
-        allow(scene).to receive(:child_scenes).and_return(double(visible_to: visible_rel))
-        allow(visible_rel).to receive(:order).with(:created_at).and_return(ordered_rel)
-        allow(ordered_rel).to receive(:to_a).and_return([ child ])
-
-        result = presenter.visible_child_scenes
-        expect(result.length).to eq(1)
-        expect(result.first).to be_a(ScenePresenter)
-      end
-    end
-
-    describe "#draft" do
-      it "returns the viewer's draft post in this scene, wrapped, if any" do
-        draft = build_stubbed(:post, :draft)
-        drafts_rel = double("drafts rel")
-        allow(scene).to receive(:posts).and_return(double(drafts: drafts_rel))
-        allow(drafts_rel).to receive(:find_by).with(user: current_user).and_return(draft)
-
-        result = presenter.draft
-        expect(result).to be_a(PostPresenter)
-      end
-
-      it "is nil when the viewer has no draft" do
-        drafts_rel = double("drafts rel")
-        allow(scene).to receive(:posts).and_return(double(drafts: drafts_rel))
-        allow(drafts_rel).to receive(:find_by).with(user: current_user).and_return(nil)
-
-        expect(presenter.draft).to be_nil
-      end
-    end
-
-    describe "#new_post" do
-      it "returns a blank post presenter for the composer" do
-        expect(presenter.new_post).to be_a(PostPresenter)
-      end
-    end
-
-    describe "#posts_empty? and #post_presenters" do
-      it "reports empty and returns an empty array when the controller supplied none" do
-        expect(presenter.posts_empty?).to be(true)
-        expect(presenter.post_presenters).to eq([])
-      end
-
-      it "returns the controller-supplied post presenters unchanged" do
-        post_presenter = PostPresenter.new(build_stubbed(:post))
-        with_posts = described_class.new(
-          scene, game: game, urls: urls, current_user: current_user, post_presenters: [ post_presenter ]
-        )
-
-        expect(with_posts.posts_empty?).to be(false)
-        expect(with_posts.post_presenters).to eq([ post_presenter ])
-      end
-    end
-
-    describe "#read_post_ids" do
-      it "asks SceneReadState for the viewer's read post ids" do
-        allow(scene).to receive_message_chain(:posts, :published, :includes, :order, :to_a).and_return([])
-        allow(SceneReadState).to receive(:for).and_return(Set.new([ 1, 2 ]))
-
-        expect(presenter.read_post_ids).to eq(Set.new([ 1, 2 ]))
-      end
-    end
-
-    describe "#mark_visited!" do
-      it "updates the viewer's scene_participant last_visited_at when present" do
-        sp = double("scene_participant")
-        find_by_rel = double("find_by rel")
-        allow(scene).to receive(:scene_participants).and_return(find_by_rel)
-        allow(find_by_rel).to receive(:find_by).with(user: current_user).and_return(sp)
-        expect(sp).to receive(:update).with(last_visited_at: kind_of(ActiveSupport::TimeWithZone))
-
-        presenter.mark_visited!
-      end
-
-      it "does nothing when the viewer has no scene_participant" do
-        find_by_rel = double("find_by rel")
-        allow(scene).to receive(:scene_participants).and_return(find_by_rel)
-        allow(find_by_rel).to receive(:find_by).with(user: current_user).and_return(nil)
-
-        expect { presenter.mark_visited! }.not_to raise_error
-      end
     end
   end
 

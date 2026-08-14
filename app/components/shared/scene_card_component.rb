@@ -9,6 +9,7 @@ class Shared::SceneCardComponent < ApplicationComponent
   sig { params(scene: ScenePresenter, game: GamePresenter, hot: T::Boolean).void }
   def initialize(scene:, game:, hot: false)
     @scene = scene
+    @card = T.let(SceneCardPresenter.new(scene), SceneCardPresenter)
     @game = game
     @hot = hot
   end
@@ -23,9 +24,19 @@ class Shared::SceneCardComponent < ApplicationComponent
     helpers.game_scene_path(@game, @scene)
   end
 
+  sig { returns(T::Boolean) }
+  def parent_scene?
+    @card.parent_scene?
+  end
+
+  sig { returns(ScenePresenter) }
+  def parent_scene_presenter
+    @card.parent_scene_presenter
+  end
+
   sig { returns(T::Array[ScenePresenter]) }
   def child_scenes
-    @scene.child_scenes_in(@game)
+    @card.child_scenes_in(@game)
   end
 
   sig { params(child: ScenePresenter).returns(String) }

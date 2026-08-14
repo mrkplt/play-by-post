@@ -49,17 +49,23 @@ matcher:
     - GameFeedRowPresenter
     - GameLinkPresenter
     - GamePresenter
+    - GameRosterPresenter
+    - GameShowPresenter
     - InvitationPresenter
     - NotebookBoardPresenter
     - NotebookEntryPresenter
     - PagePresenter
     - PostPresenter
     - RosterCharacterPresenter
+    - SceneCardPresenter
     - ScenePlayerPresenter
+    - ScenePostsPresenter
+    - SceneShowPresenter
     - SceneSummaryPresenter
     - SceneSummaryCollectionPresenter
     - ScenePresenter
     - SceneParticipantRosterPresenter
+    - SceneTreeRowPresenter
     - SignInPresenter
     - ScenePageAction
     - ScenePageAction::Viewer
@@ -149,12 +155,16 @@ matcher:
     # Services
     - AttachmentUploader
     - TurnstileVerifier
+    - CharacterCreation
+    - CharacterPresenterBuilder
     - ExportDelivery
     - EmailContentExtractor
     - GameExportService
     - MarkdownRenderer
     - NotebookEntryPromotion
     - NotebookLaneMove
+    - PostPresenterBuilder
+    - SceneFormBuilder
     - SceneReadState
     - SceneSummaryService
     - FizzySweepService
@@ -182,6 +192,9 @@ matcher:
     - FeedbackController
     - Users::SessionsController
     - TurnstileVerification
+    - CharacterScoped
+    - ImageAttachable
+    - PostScoped
     # Jobs
     - PostDigestJob
     - ExportJob

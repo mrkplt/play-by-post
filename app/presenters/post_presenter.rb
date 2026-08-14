@@ -78,25 +78,20 @@ class PostPresenter < BasePresenter
   end
 
   # Whether this post's author is the game's GM — the post item's avatar-tone
-  # decision (dark for the GM, gold for players). Asks the game directly
-  # rather than a policy: this is a display fact about who wrote the post, not
-  # an authorization question. The game is supplied at construction
-  # (options[:game]) so the presenter never looks up its own collaborators.
+  # decision. The game is supplied at construction (options[:game]).
   sig { returns(T::Boolean) }
   def author_is_gm?
     @options.fetch(:game).game_master?(@model.user) # mutant:disable
   end
 
-  # The "mark read" endpoint for this post — resolved here so the component
-  # never holds the game/scene models it would need to build the URL itself.
-  # `urls`/`game`/`scene` are supplied at construction (options[:urls],
-  # options[:game], options[:scene]).
+  # The "mark read" / edit endpoints for this post, resolved here so the
+  # component never holds the game/scene models to build a URL of its own.
+  # `urls`/`game`/`scene` are supplied at construction.
   sig { returns(String) }
   def mark_read_url
     url_helpers.mark_read_game_scene_post_path(post_game, post_scene, @model) # mutant:disable
   end
 
-  # The edit-this-post URL, resolved the same way as mark_read_url.
   sig { returns(String) }
   def edit_url
     url_helpers.edit_game_scene_post_path(post_game, post_scene, @model) # mutant:disable

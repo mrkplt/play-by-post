@@ -2,6 +2,7 @@
 
 class ScenesController < ApplicationController
   extend T::Sig
+  include ImageAttachable
 
   before_action :set_game
   before_action :require_game_access!
@@ -36,7 +37,7 @@ class ScenesController < ApplicationController
   def create
     authorize new_scene
     new_scene.assign_attributes(permitted_attributes(new_scene))
-    attach_image(new_scene)
+    attach_uploaded_image(new_scene, @game, param_key: :scene, kind: "scene_image")
 
     if new_scene.save
       add_participants(new_scene)
@@ -51,9 +52,11 @@ class ScenesController < ApplicationController
   def show
     authorize @scene
     @game_presenter = T.let(GamePresenter.new(game, policy: policy(@game)), T.nilable(GamePresenter))
-    @scene_presenter = T.let(build_scene_presenter, T.nilable(ScenePresenter))
+    @scene_presenter = T.let(ScenePresenter.new(scene, game: game, urls: self), T.nilable(ScenePresenter))
+    @scene_show = T.let(build_scene_show_presenter, T.nilable(SceneShowPresenter))
+    @scene_posts = T.let(build_scene_posts_presenter, T.nilable(ScenePostsPresenter))
     @scene_summary_presenter = T.let(build_scene_summary_presenter, T.nilable(SceneSummaryPresenter))
-    T.must(@scene_presenter).mark_visited!
+    T.must(@scene_posts).mark_visited!
   end
 
   sig { void }
@@ -113,10 +116,15 @@ class ScenesController < ApplicationController
     @game_presenter ||= T.let(GamePresenter.new(game, policy: policy(@game)), T.nilable(GamePresenter))
   end
 
-  sig { returns(ScenePresenter) }
-  def build_scene_presenter
-    ScenePresenter.new(
-      scene, game: game, urls: self, current_user: current_user,
+  sig { returns(SceneShowPresenter) }
+  def build_scene_show_presenter
+    SceneShowPresenter.new(T.must(@scene_presenter), game: game, urls: self, current_user: current_user)
+  end
+
+  sig { returns(ScenePostsPresenter) }
+  def build_scene_posts_presenter
+    ScenePostsPresenter.new(
+      T.must(@scene_presenter), game: game, urls: self, current_user: current_user,
       post_policy: PostPolicy.new(current_user, scene.posts.new),
       post_presenters: build_post_presenters
     )
@@ -171,58 +179,7 @@ class ScenesController < ApplicationController
   # error re-render both present it without it being a controller ivar.
   sig { returns(Shared::SceneFormComponent) }
   def scene_form
-    Shared::SceneFormComponent.new(
-      game: game_presenter,
-      scene: ScenePresenter.new(new_scene),
-      players_with_characters: active_players_with_characters,
-      parent_options: parent_scene_select_options,
-      quick: params[:quick].present?,
-      selected_character_ids: selected_character_ids,
-      selected_parent_scene_id: params[:parent_scene_id]&.to_s,
-      back_href: scene_form_back_href
-    )
-  end
-
-  # Parent-scene dropdown pairs: [label, id]. Built from raw scenes so Sorbet
-  # keeps the id typed while ScenePresenter supplies the display label.
-  sig { returns(T::Array[[ String, Integer ]]) }
-  def parent_scene_select_options
-    parent_scene_options.map { |s| [ ScenePresenter.new(s).parent_option_label, s.id ] }
-  end
-
-  # Characters that should start checked: any resubmitted in params, unioned
-  # with any already attached to the scene (present when re-rendering an edit).
-  sig { returns(T::Array[String]) }
-  def selected_character_ids
-    from_params = Array(params[:character_ids]).map(&:to_s)
-    from_params | new_scene.scene_participants.filter_map { |sp| sp.character_id&.to_s }
-  end
-
-  sig { returns(String) }
-  def scene_form_back_href
-    if params[:parent_scene_id].present?
-      game_scene_path(game, params[:parent_scene_id])
-    else
-      game_path(game)
-    end
-  end
-
-  # Returns one ScenePlayerPresenter per active player, each carrying its own
-  # active characters (empty array when the player has none).
-  sig { returns(T::Array[ScenePlayerPresenter]) }
-  def active_players_with_characters
-    players = game.users.joins(:game_members)
-      .where(game_members: { game: game, role: "player", status: "active" })
-      .order("user_profiles.display_name")
-      .joins("LEFT JOIN user_profiles ON user_profiles.user_id = users.id")
-
-    characters_by_user = game.characters.active
-      .joins("INNER JOIN game_members ON game_members.user_id = characters.user_id AND game_members.game_id = #{game.id}")
-      .where(game_members: { role: "player", status: "active" })
-      .order(:name)
-      .group_by(&:user_id)
-
-    players.map { |user| ScenePlayerPresenter.new(user, characters: characters_by_user.fetch(user.id, [])) }
+    SceneFormBuilder.new(game, new_scene, params, self).form_component(game_presenter)
   end
 
   sig { params(new_scene: Scene).void }
@@ -258,13 +215,6 @@ class ScenesController < ApplicationController
     end
   end
 
-  sig { returns(T::Array[Scene]) }
-  def parent_scene_options
-    active = game.scenes.active.order(created_at: :desc).to_a
-    recent_resolved = game.scenes.resolved.order(resolved_at: :desc).limit(3).to_a
-    (active + recent_resolved)
-  end
-
   sig do
     params(
       node_scene: Scene, scene_index: T::Hash[Integer, Scene], all_scenes: T::Array[Scene]
@@ -283,20 +233,5 @@ class ScenesController < ApplicationController
   sig { returns(ActionController::Parameters) }
   def scene_params
     params.require(:scene).permit(:title, :private, :parent_scene_id)
-  end
-
-  sig { params(scene: Scene).void }
-  def attach_image(scene)
-    image = params.dig(:scene, :image)
-    return unless image.respond_to?(:original_filename)
-
-    AttachmentUploader.attach(
-      attachment: scene.image,
-      attachable: image,
-      kind: "scene_image",
-      user: current_user,
-      game: @game,
-      original_filename: image.original_filename
-    )
   end
 end

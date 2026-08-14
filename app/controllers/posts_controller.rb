@@ -2,6 +2,8 @@
 
 class PostsController < ApplicationController
   extend T::Sig
+  include ImageAttachable
+  include PostScoped
 
   before_action :set_game
   before_action :set_scene
@@ -21,33 +23,20 @@ class PostsController < ApplicationController
   sig { void }
   def edit
     authorize @post
-    @game_presenter = T.let(
-      GamePresenter.new(T.must(@game), policy: policy(@game)), T.nilable(GamePresenter)
-    )
-    @scene_presenter = T.let(
-      ScenePresenter.new(T.must(@scene), game: @game, urls: self), T.nilable(ScenePresenter)
-    )
-    @post_presenter = T.let(
-      PostPresenter.new(T.must(@post), game: @game, scene: @scene, urls: self, policy: policy(@post)),
-      T.nilable(PostPresenter)
-    )
+    assign_game_and_scene_presenters
+    @post_presenter = T.let(presenter_builder.post_presenter(T.must(@post), policy(@post)), T.nilable(PostPresenter))
   end
 
   sig { void }
   def discard_draft
-    draft = T.must(@scene).posts.drafts.find_by(user: current_user)
-    draft&.destroy
+    T.must(@scene).posts.drafts.find_by(user: current_user)&.destroy
     redirect_to game_scene_path(@game, @scene), notice: "Draft discarded."
   end
 
   sig { void }
   def save_draft
     draft = T.must(@scene).posts.drafts.find_or_initialize_by(user: current_user)
-    draft.assign_attributes(
-      content: params.dig(:post, :content),
-      is_ooc: params.dig(:post, :is_ooc) || false,
-      draft: true
-    )
+    draft.assign_attributes(content: params.dig(:post, :content), is_ooc: params.dig(:post, :is_ooc) || false, draft: true)
 
     if draft.save
       render json: { id: draft.id }, status: :ok
@@ -58,46 +47,23 @@ class PostsController < ApplicationController
 
   sig { void }
   def create
-    existing_draft = T.must(@scene).posts.drafts.find_by(user: current_user)
-
-    post = if existing_draft
-      existing_draft.assign_attributes(post_params.merge(draft: false, last_edited_at: nil))
-      existing_draft
-    else
-      T.must(@scene).posts.new(post_params).tap { |p| p.user = current_user }
-    end
-
+    post = draft_or_new_post
     authorize post, :create?
-    attach_image(post)
-
-    @game_presenter = T.let(
-      GamePresenter.new(T.must(@game), policy: policy(@game)), T.nilable(GamePresenter)
-    )
-    @scene_presenter = T.let(
-      ScenePresenter.new(T.must(@scene), game: @game, urls: self), T.nilable(ScenePresenter)
-    )
+    attach_uploaded_image(post, @game, param_key: :post, kind: "post_image")
+    assign_game_and_scene_presenters
 
     if post.save
-      @post_presenter = T.let(
-        PostPresenter.new(
-          post, scene_participants: T.must(@scene).scene_participants.includes(:character, :user).to_a,
-                game: @game, scene: @scene, urls: self, policy: policy(post)
-        ),
-        T.nilable(PostPresenter)
-      )
+      participants = T.must(@scene).scene_participants.includes(:character, :user).to_a
+      built = presenter_builder.post_presenter(post, policy(post), scene_participants: participants)
+      @post_presenter = T.let(built, T.nilable(PostPresenter))
       respond_to do |format|
         format.turbo_stream
         format.html { redirect_to game_scene_path(@game, @scene) }
       end
     else
+      component = presenter_builder.composer_component(post, policy(post), T.must(@game_presenter), T.must(@scene_presenter))
       respond_to do |format|
-        format.turbo_stream do
-          post_presenter = PostPresenter.new(post, game: @game, scene: @scene, urls: self, policy: policy(post))
-          render turbo_stream: turbo_stream.replace(
-            "post_composer",
-            Shared::PostComposerComponent.new(post: post_presenter, game: T.must(@game_presenter), scene: T.must(@scene_presenter))
-          )
-        end
+        format.turbo_stream { render turbo_stream: turbo_stream.replace("post_composer", component) }
         format.html { redirect_to game_scene_path(@game, @scene), alert: "Could not create post." }
       end
     end
@@ -113,26 +79,30 @@ class PostsController < ApplicationController
 
   private
 
-  sig { void }
-  def set_game
-    @game = T.let(Game.find(params[:game_id]), T.nilable(Game))
+  sig { returns(PostPresenterBuilder) }
+  def presenter_builder
+    PostPresenterBuilder.new(@game, @scene, self)
+  end
+
+  sig { returns(Post) }
+  def draft_or_new_post
+    existing_draft = T.must(@scene).posts.drafts.find_by(user: current_user)
+    return existing_draft.tap { |d| d.assign_attributes(post_params.merge(draft: false, last_edited_at: nil)) } if existing_draft
+
+    T.must(@scene).posts.new(post_params).tap { |p| p.user = current_user }
   end
 
   sig { void }
-  def set_scene
-    @scene = T.let(T.must(@game).scenes.find(params[:scene_id]), T.nilable(Scene))
-  end
-
-  sig { void }
-  def set_post
-    @post = T.let(T.must(@scene).posts.find(params[:id]), T.nilable(Post))
+  def assign_game_and_scene_presenters
+    @game_presenter = T.let(GamePresenter.new(T.must(@game), policy: policy(@game)), T.nilable(GamePresenter))
+    @scene_presenter = T.let(ScenePresenter.new(T.must(@scene), game: @game, urls: self), T.nilable(ScenePresenter))
   end
 
   sig { void }
   def require_participant!
-    unless policy(T.must(@scene).posts.new).participate?
-      redirect_to game_scene_path(@game, @scene), alert: "You are not a participant in this scene."
-    end
+    return if policy(T.must(@scene).posts.new).participate?
+
+    redirect_to game_scene_path(@game, @scene), alert: "You are not a participant in this scene."
   end
 
   sig { void }
@@ -148,20 +118,5 @@ class PostsController < ApplicationController
   sig { returns(ActionController::Parameters) }
   def post_params
     params.require(:post).permit(:content, :is_ooc)
-  end
-
-  sig { params(post: Post).void }
-  def attach_image(post)
-    image = params.dig(:post, :image)
-    return unless image.respond_to?(:original_filename)
-
-    AttachmentUploader.attach(
-      attachment: post.image,
-      attachable: image,
-      kind: "post_image",
-      user: current_user,
-      game: @game,
-      original_filename: image.original_filename
-    )
   end
 end
