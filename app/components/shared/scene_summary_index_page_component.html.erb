@@ -1,11 +1,8 @@
 <% if summaries_empty? %>
   <p class="text-muted-2 text-sm">No summaries yet. Summaries appear here once scenes are resolved.</p>
 <% else %>
-  <% @summaries.each do |summary| %>
-    <%= render Shared::SceneSummaryEntryComponent.new(
-          summary: SceneSummaryPresenter.new(summary),
-          game: @game
-        ) %>
+  <% entries.each do |summary| %>
+    <%= render Shared::SceneSummaryEntryComponent.new(summary: summary) %>
   <% end %>
-  <%== @pagy.series_nav %>
+  <%== pagy_nav %>
 <% end %>

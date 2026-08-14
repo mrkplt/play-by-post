@@ -4,7 +4,7 @@
   </div>
 <% end %>
 
-<%= form_with model: @summary, url: game_scene_scene_summary_path(@game, @scene), html: { id: form_id }, class: "flex flex-col gap-4" do |f| %>
+<%= form_with model: @summary, url: @summary.submit_path, html: { id: form_id }, class: "flex flex-col gap-4" do |f| %>
   <% if has_errors? %>
     <div class="bg-tint-blue-bg border border-tint-blue-border rounded-card p-3 text-sm text-danger">
       <% error_messages.each do |message| %>

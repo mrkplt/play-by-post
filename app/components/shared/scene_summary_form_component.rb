@@ -3,13 +3,14 @@
 class Shared::SceneSummaryFormComponent < ApplicationComponent
   extend T::Sig
 
-  sig { params(game: Game, scene: Scene, summary: SceneSummary).void }
+  sig { params(summary: SceneSummaryPresenter).void }
   # mutant:disable
-  def initialize(game:, scene:, summary:)
-    @game = T.let(game, Game)
-    @scene = T.let(scene, Scene)
-    @summary = T.let(summary, SceneSummary)
+  def initialize(summary:)
+    @summary = T.let(summary, SceneSummaryPresenter)
   end
+
+  sig { returns(SceneSummaryPresenter) }
+  attr_reader :summary
 
   sig { returns(T::Boolean) }
   def editing?

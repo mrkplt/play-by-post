@@ -259,6 +259,29 @@ RSpec.describe ScenePresenter do
     end
   end
 
+  describe "#resolution" do
+    it "returns the model's resolution" do
+      allow(scene).to receive(:resolution).and_return("The dragon fell.")
+      expect(presenter.resolution).to eq("The dragon fell.")
+    end
+
+    it "returns nil when there is no resolution" do
+      allow(scene).to receive(:resolution).and_return(nil)
+      expect(presenter.resolution).to be_nil
+    end
+  end
+
+  describe "#resolve_path" do
+    it "builds the scene's resolve path from the injected game and url_helpers" do
+      game = build_stubbed(:game)
+      urls = double("urls")
+      allow(urls).to receive(:resolve_game_scene_path).with(game, scene).and_return("/games/1/scenes/2/resolve")
+
+      presenter = described_class.new(scene, game: game, urls: urls)
+      expect(presenter.resolve_path).to eq("/games/1/scenes/2/resolve")
+    end
+  end
+
   describe "delegation" do
     it "delegates resolved? to the model" do
       allow(scene).to receive(:resolved?).and_return(true)

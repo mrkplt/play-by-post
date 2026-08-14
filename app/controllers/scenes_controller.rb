@@ -68,6 +68,11 @@ class ScenesController < ApplicationController
     )
     participants = @scene.scene_participants.includes(:character, :user).to_a
     @post_presenters = @posts.map { |post| PostPresenter.new(post, scene_participants: participants) }
+
+    summary = @scene.scene_summary
+    @scene_summary_presenter = summary && SceneSummaryPresenter.new(
+      summary, game: @game, urls: self, policy: SceneSummaryPolicy.new(current_user, summary)
+    )
   end
 
   sig { void }
