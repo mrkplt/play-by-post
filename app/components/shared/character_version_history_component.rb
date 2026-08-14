@@ -24,7 +24,7 @@ class Shared::CharacterVersionHistoryComponent < ApplicationComponent
 
   sig { returns(Game) }
   def game
-    @character.game
+    character.game
   end
 
   sig { returns(CharacterPresenter) }
@@ -35,6 +35,6 @@ class Shared::CharacterVersionHistoryComponent < ApplicationComponent
 
   sig { returns(Integer) }
   def version_count
-    @versions.size
+    versions.size
   end
 end

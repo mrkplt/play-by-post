@@ -32,7 +32,7 @@ class Shared::GameCardComponent < ApplicationComponent
 
   sig { returns(String) }
   def game_path
-    helpers.game_path(@game)
+    helpers.game_path(game)
   end
 
   sig { returns(T::Boolean) }

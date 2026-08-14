@@ -15,7 +15,7 @@ class Shared::PageDetailComponent < ApplicationComponent
 
   sig { returns(Game) }
   def game
-    @page.game
+    page.game
   end
 
   sig { returns(PagePresenter) }
@@ -23,21 +23,21 @@ class Shared::PageDetailComponent < ApplicationComponent
 
   sig { returns(String) }
   def title
-    @page.title
+    page.title
   end
 
   sig { returns(T::Boolean) }
   def can_manage?
-    @page.can_manage?
+    page.can_manage?
   end
 
   sig { returns(T::Boolean) }
   def body?
-    @page.body?
+    page.body?
   end
 
   sig { returns(String) }
   def body
-    @page.body
+    page.body
   end
 end

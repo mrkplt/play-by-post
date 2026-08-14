@@ -15,7 +15,7 @@ class Shared::PageRowActionsComponent < ApplicationComponent
 
   sig { returns(Game) }
   def game
-    @page.game
+    page.game
   end
 
   sig { returns(PagePresenter) }

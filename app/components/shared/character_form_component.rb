@@ -21,7 +21,7 @@ class Shared::CharacterFormComponent < ApplicationComponent
 
   sig { returns(Game) }
   def game
-    @character.game
+    character.game
   end
 
   sig { returns(CharacterPresenter) }
@@ -29,19 +29,19 @@ class Shared::CharacterFormComponent < ApplicationComponent
 
   sig { returns(T::Boolean) }
   def new_record?
-    @character.new_record?
+    character.new_record?
   end
 
   sig { returns(T::Boolean) }
   def archived?
-    @character.archived?
+    character.archived?
   end
 
   # The GM's player selector only makes sense when creating a new character on
   # someone's behalf; once created, ownership is fixed.
   sig { returns(T::Boolean) }
   def owner_select?
-    new_record? && @character.can_assign_owner?
+    new_record? && character.can_assign_owner?
   end
 
   sig { returns(T::Boolean) }
@@ -52,12 +52,12 @@ class Shared::CharacterFormComponent < ApplicationComponent
   # Archive/restore is a GM affordance on an existing character.
   sig { returns(T::Boolean) }
   def archive_section?
-    !new_record? && @character.can_assign_owner?
+    !new_record? && character.can_assign_owner?
   end
 
   sig { returns(T::Array[[ String, Integer ]]) }
   def owner_options
-    @character.owner_options
+    character.owner_options
   end
 
   sig { returns(String) }
@@ -72,21 +72,21 @@ class Shared::CharacterFormComponent < ApplicationComponent
 
   sig { returns(String) }
   def back_href
-    new_record? ? helpers.game_path(game) : helpers.game_character_path(game, @character)
+    new_record? ? helpers.game_path(game) : helpers.game_character_path(game, character)
   end
 
   sig { returns(String) }
   def form_id
-    new_record? ? "new_character_form" : "edit_character_#{@character.id}_form"
+    new_record? ? "new_character_form" : "edit_character_#{character.id}_form"
   end
 
   sig { returns(T::Boolean) }
   def errors?
-    @character.errors?
+    character.errors?
   end
 
   sig { returns(T::Array[String]) }
   def error_messages
-    @character.error_messages
+    character.error_messages
   end
 end
