@@ -1,0 +1,680 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Enforces the layering contract between models, presenters, components and
+# views. The boundaries are otherwise convention only, so they erode silently:
+# a raw model reaches a template, a view calls `policy(...)` itself, a presenter
+# news up its own collaborators, and nothing fails until someone notices by eye.
+#
+#   R1  Views hold only presenters.
+#       Every instance variable a view touches must be a presenter. Not a model,
+#       not a component, not a primitive, not a collection of models. Assigning a
+#       controller-built component would satisfy "no raw model in the ERB" while
+#       moving the model into the controller — presenters-only closes that.
+#
+#   R2  Policies are injected, never looked up.
+#       A view never calls `policy(...)`; a presenter or component never calls
+#       `SomePolicy.new`. Policy instances arrive in the presenter's options hash
+#       as `policy:`. A capability rename then changes one construction point
+#       instead of being chased through templates.
+#
+#   R3  Presenters take (subject, options).
+#       One positional subject — a model, a presenter, or an array of either —
+#       plus an options hash. No second positional, no loose keywords, no
+#       url_helpers, no view context. This is the rule that `page_action(game:,
+#       can_manage:, is_participant:, membership:, urls:)` violated.
+#
+#   R4  Components take presenters, components, arrays of components, and
+#       hashes. Never a raw model — a component holding a model computes what the
+#       presenter should have.
+#
+# Classification is by INHERITANCE, not by name. Every class under app/ is
+# indexed with its superclass, and a constant is resolved by walking that chain
+# to a known root (ApplicationRecord / BasePresenter / ApplicationComponent).
+# A name-based check would confuse `SceneSummary` (model) with
+# `SceneSummaryPresenter`, would not know what `ScenePageAction` is, and would
+# be fooled by a `class FooPresenter` that never inherits BasePresenter — named
+# like a presenter, but not one.
+#
+# R1 reads the `T.let` type declarations that `# typed: strict` forces onto
+# controller instance variables; a controller that is not yet strict cannot be
+# checked and is reported as such rather than silently passing.
+#
+# This gate has no grandfather list and no ratchet: it reports every violation
+# it finds. Exemptions, if any, are added deliberately as named constants below.
+
+require "prism"
+
+ROOT = File.expand_path("..", __dir__)
+Dir.chdir(ROOT)
+
+# ---------------------------------------------------------------------------
+# Class index: constant -> superclass, built from source across app/.
+# ---------------------------------------------------------------------------
+
+PARENT = {}
+STRUCT_CONSTS = []
+# `Name = T.type_alias { <type> }` — a named interface describing the shape of
+# data, not a class. It has no superclass to walk, so it is indexed by its body
+# and resolved transitively: the alias is exactly as legal as what it contains.
+# `Badge = T.type_alias { { label: String, variant: Symbol } }` is a hash of
+# primitives and passes; `PlayerRow = T.type_alias { [ UserPresenter,
+# T::Array[Character] ] }` hides raw models one level down and does not.
+TYPE_ALIASES = {}
+
+def index_type_alias(node)
+  return unless node.is_a?(Prism::ConstantWriteNode)
+
+  value = node.value
+  return unless value.is_a?(Prism::CallNode) && value.name == :type_alias
+  return if value.block.nil?
+
+  TYPE_ALIASES[node.name.to_s] = value.block.slice
+end
+
+def index_classes(node, path, file)
+  return if node.nil?
+
+  index_type_alias(node)
+
+  if node.is_a?(Prism::ClassNode)
+    name = node.constant_path.slice
+    full = path.empty? ? name : "#{path.join('::')}::#{name}"
+    superclass = node.superclass&.slice
+    PARENT[full] = superclass
+    PARENT[name] ||= superclass
+    if superclass.to_s.include?("T::Struct")
+      STRUCT_CONSTS << full
+      STRUCT_CONSTS << name
+    end
+    node.compact_child_nodes.each { |child| index_classes(child, path + [ name ], file) }
+    return
+  end
+
+  if node.is_a?(Prism::ModuleNode)
+    name = node.constant_path.slice
+    node.compact_child_nodes.each { |child| index_classes(child, path + [ name ], file) }
+    return
+  end
+
+  node.compact_child_nodes.each { |child| index_classes(child, path, file) }
+end
+
+Dir["app/**/*.rb"].each do |file|
+  index_classes(Prism.parse(File.read(file, encoding: "utf-8")).value, [], file)
+end
+
+MODEL_ROOT     = "ApplicationRecord"
+PRESENTER_ROOT = "BasePresenter"
+COMPONENT_ROOTS = [ "ApplicationComponent", "ViewComponent::Base" ].freeze
+
+# Types that are structural rather than domain objects: rule 4 permits hashes,
+# and a T::Struct is a typed hash. Primitives are likewise not a layer.
+PRIMITIVES = %w[
+  String Symbol Integer Float Numeric TrueClass FalseClass NilClass Object
+  Date Time DateTime ActiveSupport::TimeWithZone
+].freeze
+
+GENERICS = %w[T T::Array T::Hash T::Boolean T::Set T::Range T::Enumerable].freeze
+
+def ancestry(const)
+  chain = [ const ]
+  seen = {}
+  while (parent = PARENT[chain.last]) && !seen[parent]
+    seen[parent] = true
+    chain << parent
+  end
+  chain
+end
+
+# :model | :presenter | :component | :struct | :policy | :primitive | :unknown
+def classify(const)
+  return :primitive if PRIMITIVES.include?(const)
+  return :struct if STRUCT_CONSTS.include?(const) ||
+    STRUCT_CONSTS.any? { |s| s.split("::").last == const }
+
+  chain = ancestry(const)
+  return :model     if chain.include?(MODEL_ROOT)
+  return :presenter if chain.include?(PRESENTER_ROOT)
+  return :component if COMPONENT_ROOTS.any? { |root| chain.include?(root) } ||
+    COMPONENT_ROOTS.include?(const)
+  return :policy    if chain.include?("ApplicationPolicy")
+  :unknown
+end
+
+# The domain constants a type expression exposes to the component, with the
+# generic wrappers (T.nilable, T::Array[...]) stripped:
+# `T.nilable(T::Array[Post])` -> ["Post"].
+#
+# A HASH IS OPAQUE. Rule 4 permits hashes, and it permits them without asking
+# what is inside: the hash is how a component takes the messy, irregular data a
+# real front end needs — html_options, data attributes, a FormBuilder, a config
+# bag — without that becoming a typed parameter for every case. Looking inside
+# would make the gate an arbiter of the component's own API, which is the
+# component's `sig` to declare and Sorbet's to enforce. So `T::Hash[...]` and a
+# hash-shaped type alias short-circuit here and expose nothing.
+#
+# Arrays and tuples are NOT opaque — they are a sequence of the thing itself,
+# so `T::Array[Character]` is raw models reaching the component no matter how it
+# is named. That is what tells `Badge` (a hash) from `PlayerRow` (a tuple
+# holding T::Array[Character]), and stops an alias becoming a place models hide.
+HASH_TYPE = /\A(?:T::Hash\[|\{)/
+
+def type_constants(type, seen = [])
+  return [] if type.strip.match?(HASH_TYPE)
+
+  type.scan(/[A-Z][A-Za-z0-9_:]*/)
+    .reject { |const| GENERICS.include?(const) || const == "T" }
+    .flat_map do |const|
+      short = const.split("::").last
+      body = TYPE_ALIASES[const] || TYPE_ALIASES[short]
+      if body && !seen.include?(const)
+        # An alias naming a hash is a hash: opaque, like any other.
+        inner = body.sub(/\A\s*(?:do|\{)\s*/, "").sub(/\s*(?:end|\})\s*\z/, "")
+        type_constants(inner.strip.match?(HASH_TYPE) ? "{}" : inner, seen + [ const ])
+      else
+        [ const ]
+      end
+    end
+    .uniq
+end
+
+# ---------------------------------------------------------------------------
+# Shared AST helpers
+# ---------------------------------------------------------------------------
+
+def each_node(node, &block)
+  return if node.nil?
+  block.call(node)
+  node.compact_child_nodes.each { |child| each_node(child, &block) }
+end
+
+def parse(file)
+  Prism.parse(File.read(file, encoding: "utf-8")).value
+end
+
+# The `sig` preceding `def initialize` — Sorbet's declared types for it.
+# Comment lines may sit between the two (`# mutant:disable` does, on five
+# components), so they are skipped rather than treated as a missing sig.
+SIG_GAP = '(?:\s*#[^\n]*\n)*\s*'
+
+def sig_before_initialize(source)
+  source[/sig do(.*?)end#{SIG_GAP}def initialize/m, 1] ||
+    source[/sig \{(.*?)\}#{SIG_GAP}def initialize/m, 1]
+end
+
+# name => declared type, from a sig's params(...) list.
+def sig_params(sig)
+  return {} if sig.nil?
+
+  body = sig[/params\((.*)\)\s*\.?\s*(?:void|returns)/m, 1] || sig[/params\((.*)\)/m, 1]
+  return {} if body.nil?
+
+  body.scan(/(\w+):\s*(T\.nilable\([^)]*\)|T::Array\[[^\]]*\]|T::Hash\[[^\]]*\]|[A-Z][\w:]*)/).to_h
+end
+
+def find_initialize(root)
+  found = nil
+  each_node(root) { |n| found ||= n if n.is_a?(Prism::DefNode) && n.name == :initialize }
+  found
+end
+
+violations = Hash.new { |hash, key| hash[key] = [] }
+
+# ---------------------------------------------------------------------------
+# R1 — Views hold only presenters.
+#
+# Read from the controller, not the ERB: a template can only reach a model
+# through an ivar, so constraining what a controller assigns constrains what a
+# view can hold. `# typed: strict` forces a T.let on every ivar, which is the
+# declaration this reads.
+# ---------------------------------------------------------------------------
+
+# Mailers, layouts and error pages are not the view layer this rule governs:
+# they have no Pundit and no ViewComponents, and their ivars come from mailer
+# methods rather than controller actions.
+R1_SKIP_CONTROLLERS = %w[
+  application_controller.rb
+  data_application_controller.rb
+  turnstile_verification.rb
+].freeze
+
+def visibility_switch(node)
+  return nil unless node.is_a?(Prism::CallNode) && node.receiver.nil?
+  return nil unless %i[private protected public].include?(node.name)
+  return nil unless node.arguments.nil? || node.arguments.arguments.empty?
+  node.name
+end
+
+# Ivars assigned in public methods, with the T.let type when one is declared.
+def controller_ivars(root)
+  klass = nil
+  each_node(root) { |n| klass ||= n if n.is_a?(Prism::ClassNode) }
+  return [] unless klass
+
+  statements = klass.body.is_a?(Prism::StatementsNode) ? klass.body.body : []
+  visibility = :public
+  found = []
+
+  statements.each do |node|
+    if (switch = visibility_switch(node))
+      visibility = switch
+    elsif node.is_a?(Prism::DefNode) && visibility == :public
+      each_node(node) do |inner|
+        next unless inner.is_a?(Prism::InstanceVariableWriteNode) ||
+          inner.is_a?(Prism::InstanceVariableOrWriteNode)
+
+        value = inner.value&.slice.to_s
+        declared = value[/T\.let\(.*?,\s*(.+)\)\s*\z/m, 1]
+        found << { name: inner.name.to_s, action: node.name.to_s, type: declared, rhs: value }
+      end
+    end
+  end
+
+  found.uniq { |ivar| [ ivar[:name], ivar[:action] ] }
+end
+
+Dir["app/controllers/**/*.rb"].sort.each do |file|
+  next if R1_SKIP_CONTROLLERS.include?(File.basename(file))
+
+  source = File.read(file, encoding: "utf-8")
+  strict = source.start_with?("# typed: strict")
+
+  controller_ivars(parse(file)).each do |ivar|
+    unless strict
+      violations["R1"] << "#{file}: #{ivar[:name]} (in ##{ivar[:action]}) has no declared type — " \
+        "controller is `# typed: #{source[/# typed: (\w+)/, 1]}`; only `strict` forces the T.let this rule reads"
+      next
+    end
+
+    consts = type_constants(ivar[:type].to_s)
+    kinds = consts.map { |const| classify(const) }.uniq
+
+    next if !kinds.empty? && kinds.all? { |kind| kind == :presenter }
+
+    violations["R1"] << "#{file}: #{ivar[:name]} (in ##{ivar[:action]}) is " \
+      "#{ivar[:type] || ivar[:rhs]} [#{kinds.join(', ')}] — views hold only presenters"
+  end
+end
+
+# ---------------------------------------------------------------------------
+# R2 — Policies are injected, never looked up.
+# ---------------------------------------------------------------------------
+
+Dir["app/views/**/*.erb", "app/components/**/*.erb"].sort.each do |file|
+  File.readlines(file, encoding: "utf-8").each_with_index do |line, index|
+    next unless line =~ /\bpolicy\(/
+    violations["R2"] << "#{file}:#{index + 1}: calls `policy(...)` — " \
+      "inject the policy into the presenter's options hash instead"
+  end
+end
+
+Dir["app/presenters/**/*.rb", "app/components/**/*.rb"].sort.each do |file|
+  each_node(parse(file)) do |node|
+    next unless node.is_a?(Prism::CallNode) && node.name == :new
+    receiver = node.receiver&.slice.to_s
+    next unless receiver.end_with?("Policy")
+
+    violations["R2"] << "#{file}: constructs `#{receiver}.new(...)` — " \
+      "a presenter/component is handed a policy, it does not build one"
+  end
+end
+
+# ---------------------------------------------------------------------------
+# R3 — Presenters take (subject, options).
+#
+# Structural: exactly one required positional and a **options rest, with no
+# loose keywords. The subject's own type is deliberately not inspected — a
+# model, a presenter, or an array of either are all legitimate subjects.
+# ---------------------------------------------------------------------------
+
+Dir["app/presenters/**/*.rb"].sort.each do |file|
+  root = parse(file)
+  klass = nil
+  each_node(root) { |n| klass ||= n if n.is_a?(Prism::ClassNode) }
+  next if klass.nil?
+  # Only presenters proper: BasePresenter itself defines the contract, and a
+  # T::Struct value object living here is not a presenter.
+  next unless classify(klass.constant_path.slice) == :presenter
+  next if File.basename(file) == "base_presenter.rb"
+
+  init = find_initialize(root)
+  next if init.nil? # inherits BasePresenter's conforming (model, **options)
+
+  params = init.parameters
+  positionals = params&.requireds&.size.to_i
+  optionals = params&.optionals&.size.to_i
+  keywords = params&.keywords&.size.to_i
+  kwrest = params&.keyword_rest
+  rest = params&.rest
+
+  problems = []
+  problems << "#{positionals} positional parameters (expected exactly 1: the subject)" if positionals != 1
+  problems << "#{optionals} optional positional parameter(s)" if optionals.positive?
+  problems << "#{keywords} loose keyword parameter(s) (collaborators belong in the options hash)" if keywords.positive?
+  problems << "a splat parameter" unless rest.nil?
+  problems << "no **options parameter" if kwrest.nil?
+
+  next if problems.empty?
+
+  violations["R3"] << "#{file}: `initialize(#{params&.slice})` — #{problems.join('; ')}"
+end
+
+# ---------------------------------------------------------------------------
+# R4 — Components take presenters, components, arrays of components, hashes.
+# ---------------------------------------------------------------------------
+
+Dir["app/components/**/*.rb"].sort.each do |file|
+  source = File.read(file, encoding: "utf-8")
+  root = parse(file)
+  klass = nil
+  each_node(root) { |n| klass ||= n if n.is_a?(Prism::ClassNode) }
+  next if klass.nil?
+  next unless classify(klass.constant_path.slice) == :component
+
+  sig = sig_before_initialize(source)
+  init = find_initialize(root)
+  next if init.nil?
+
+  if sig.nil?
+    violations["R4"] << "#{file}: `initialize` has no sig — parameter types cannot be checked"
+    next
+  end
+
+  sig_params(sig).each do |name, type|
+    consts = type_constants(type)
+    next if consts.empty?
+
+    kinds = consts.map { |const| classify(const) }.uniq
+    # Presenters, components and primitives are the leaves; hashes, structs and
+    # type aliases are permitted CONTAINERS, already resolved to their contents
+    # by type_constants. A container holding a model still fails — that is the
+    # PlayerRow case, and the reason containers are not simply whitelisted.
+    next if (kinds - [ :presenter, :component, :struct, :primitive ]).empty?
+
+    violations["R4"] << "#{file}: `#{name}: #{type}` [#{kinds.join(', ')}] — " \
+      "components take presenters, components, arrays of components, hashes and structs"
+  end
+end
+
+# ---------------------------------------------------------------------------
+# Report
+# ---------------------------------------------------------------------------
+
+DESCRIPTIONS = {
+  "R1" => "Views hold only presenters",
+  "R2" => "Policies are injected, never looked up",
+  "R3" => "Presenters take (subject, options)",
+  "R4" => "Components take presenters, components, arrays of components, hashes"
+}.freeze
+
+total = violations.values.sum(&:size)
+
+if total.zero?
+  puts "View-layering check: OK (all four layering rules hold)"
+  exit 0
+end
+
+puts "View-layering check: FAIL — #{total} violation(s)\n\n"
+
+%w[R1 R2 R3 R4].each do |rule|
+  found = violations[rule]
+  puts "#{rule} — #{DESCRIPTIONS[rule]}: #{found.size} violation(s)"
+  found.each { |line| puts "    #{line}" }
+  puts
+end
+
+puts <<~GUIDANCE
+  ============================================================================
+  WHAT THIS MEANS AND WHAT TO DO NEXT
+  ============================================================================
+
+  Each violation above says the same thing: a decision is being made in the
+  wrong layer. Move that decision to the layer that owns it. The fix is
+  usually smaller than the code it replaces — applying this to
+  ScenePresenter#page_action took it from five parameters to three and dropped
+  the file's smell count.
+
+  You are probably here mid-task, wanting the smallest change that gets you
+  moving again. The four shortcuts below all look like that change, and each
+  leaves the codebase worse than the violation did:
+
+    Weakening the gate — an exemption, a skip list, a ratchet, a `next if` for
+    your file. This gate reports every violation deliberately, so that a leak
+    is visible while someone is in a position to fix it. Silencing it converts
+    a fixable problem into an invisible one.
+
+    Moving the violation — putting the model in a hash, renaming the
+    parameter, wrapping it in a struct, hoisting it into the controller. The
+    model still reaches the template; it is just harder to find next time.
+
+    Passing a model "just this once" because the presenter does not exist yet.
+    Writing that presenter IS the task the violation is describing.
+
+    Reading a rule as a naming convention. Classification is by inheritance:
+    calling a class FooPresenter does not make it one.
+
+  Believe a violation is wrong? Say so to the user — name the file, the type,
+  and your reasoning — rather than working around it or editing this file.
+
+  ============================================================================
+  THE ARCHITECTURE THIS GATE ENFORCES
+  ============================================================================
+
+  THE FOUR LAYERS
+  ---------------
+    MODEL      Domain state and behaviour. Knows nothing about being shown.
+    PRESENTER  Display LOGIC. Turns a model into presentation-ready values:
+               formatted dates, derived flags, capability answers, labels.
+               Decides WHAT is shown. Never emits markup.
+    COMPONENT  Markup. Decides HOW something is shown: HTML structure, CSS
+               classes, which sub-components render. Never computes what to
+               show from a model.
+    VIEW       Composition only. Renders components and reads presenters.
+               Holds no logic of its own.
+
+  The split that matters most, because most violations blur it:
+  PRESENTERS MANAGE DISPLAY LOGIC. COMPONENTS CHOOSE MARKUP. A presenter
+  saying "this scene shows a Private badge, yellow" is display logic and
+  belongs in the presenter. The component turning that into a
+  Ui::BadgeComponent is markup and belongs in the component. If a component
+  is deciding whether something is private, the presenter is missing.
+
+  ----------------------------------------------------------------------------
+  R1 — VIEWS HOLD ONLY PRESENTERS
+  ----------------------------------------------------------------------------
+  Every instance variable a view touches must be a presenter. Not a model, not
+  a component, not a primitive, not an array of models.
+
+  WHY: a raw model in a template can be asked anything — `@game.scenes.where(...)`
+  is available right there — so "no logic in ERB" is unenforceable at the
+  boundary. The data being present is the problem. A presenter exposes a
+  finished, named answer instead of an object to interrogate.
+
+  WHY NOT COMPONENTS EITHER: assigning a controller-built component would
+  satisfy "no raw model in the ERB" while moving the model into the controller.
+  The controller hands the view ONE kind of thing; components are constructed
+  in templates from presenter data.
+
+  HOW TO FIX — three shapes, by what the ivar currently holds:
+
+    A MODEL -> wrap it, expose what the view needs as named methods:
+      # controller
+      @scene_presenter = T.let(ScenePresenter.new(scene, policy: ...),
+                               ScenePresenter)
+      # view
+      <%= @scene_presenter.status_label %>
+
+    A PRIMITIVE (a boolean, a count, an id list) -> this is a presenter method
+    that got inlined into the controller. The controller computed it because
+    the view needed an answer; that answer is display logic. Move the
+    computation onto the presenter and delete the ivar.
+
+    A COLLECTION -> either an array of presenters, or a presenter that presents
+    the collection. Prefer the latter when the view asks anything ABOUT the
+    collection — how many, whether it is empty, what order it is in — because
+    those questions otherwise become logic in the template.
+
+  NOTE: this rule reads the `T.let` type Sorbet requires under `# typed:
+  strict`. A controller reported as "no declared type" is not yet strict —
+  make it strict (`srb tc -a` autocorrects most declarations) so its ivars
+  become checkable.
+
+  ----------------------------------------------------------------------------
+  R2 — POLICIES ARE INJECTED, NEVER LOOKED UP
+  ----------------------------------------------------------------------------
+  A view never calls `policy(...)`. A presenter or component never calls
+  `SomePolicy.new`. Policy instances are handed to the presenter at
+  construction, in the options hash: `{ policy: <instance> }`.
+
+  WHY: authorization reached-for rather than supplied means a capability rename
+  has to be chased through templates instead of changed at one construction
+  point. Ask a capability (`manage?`, `resolve?`), never a role (`gm?`) and
+  never a CRUD predicate borrowed for a different purpose (`update?` used to
+  mean "is GM").
+
+  WHY IT PAYS FOR ITSELF IN SPECS: a presenter spec must never test a policy —
+  policies are tested in spec/policies. Today a spec has to stub the constant
+  AND know how the presenter builds it internally:
+      allow(PostPolicy).to receive(:new).with(user, new_post)
+        .and_return(instance_double(PostPolicy, create?: create))
+  That `.with(...)` is private implementation leaking into the test. Injected,
+  it is one line with no constant reference:
+      described_class.new(scene, policy: instance_double(PostPolicy, create?: true))
+
+  HOW TO FIX
+    Controller (where the user and record are already in hand):
+      @game_presenter = T.let(
+        GamePresenter.new(game, policy: GamePolicy.new(current_user, game)),
+        GamePresenter
+      )
+    Presenter:
+      sig { returns(T::Boolean) }
+      def can_manage? = @options.fetch(:policy).manage?
+    View: `<% if @game_presenter.can_manage? %>` — no policy call anywhere.
+
+  ----------------------------------------------------------------------------
+  R3 — PRESENTERS TAKE (subject, options)
+  ----------------------------------------------------------------------------
+  One positional subject — a MODEL, another PRESENTER, or an ARRAY of either —
+  plus an options hash. Nothing else: no second positional, no loose keyword
+  arguments, no url_helpers, no view context.
+
+  WHY: a free-form signature is how
+  `page_action(game:, can_manage:, is_participant:, membership:, urls:)`
+  happened — five parameters, one of which handed the presenter a CAPABILITY
+  (`urls: self`) instead of finished data. Collaborators travel in the options
+  hash so the contract lives in BasePresenter rather than being reinvented per
+  subclass.
+
+  A PRESENTER SUBJECT IS LEGAL AND INTENDED. Presenters compose: a presenter
+  wrapping a presenter, or presenting an array of presenters, is how collection
+  display logic ("how many", "empty state", ordering) gets out of the template.
+
+  HOW TO FIX
+      # before
+      def initialize(model, current_user)
+      def initialize(model, scene_participants: [])
+      # after
+      def initialize(model, **options)   # BasePresenter already does this
+        super
+      end
+    Read collaborators from @options. Applying this rule makes code SMALLER:
+    ScenePresenter#page_action went 5 params -> 3 and its reek count dropped.
+
+  ----------------------------------------------------------------------------
+  R4 — COMPONENTS TAKE PRESENTERS, COMPONENTS, ARRAYS OF COMPONENTS, HASHES
+  ----------------------------------------------------------------------------
+  Never a raw model.
+
+  WHY: a component holding a model computes what the presenter should have —
+  that is where presenter/component split violations start.
+
+  WHAT THE CLASSIFIER DOES, so you can predict it:
+    * Classification is BY INHERITANCE, NOT BY NAME. Every class under app/ is
+      indexed with its superclass and resolved by walking to ApplicationRecord
+      (model) / BasePresenter (presenter) / ApplicationComponent (component).
+      `SceneSummary` (model) and `SceneSummaryPresenter` (presenter) sort
+      correctly, and a `class FooPresenter` that never inherits BasePresenter
+      is NOT a presenter no matter what it is called.
+    * A HASH IS OPAQUE. The gate permits hashes and does not look inside. The
+      hash is how a component takes the messy, irregular reality of a front end
+      — html_options, data attributes, a form binding, a config bag — without
+      each case becoming a typed parameter. This LOCALIZES the mess rather than
+      blessing it (see the warning below). What is in the hash is the
+      component's own `sig` to declare and Sorbet's to enforce, not this gate's.
+    * ARRAYS, TUPLES AND TYPE ALIASES ARE TRANSPARENT — resolved through to
+      their contents. An array is a sequence of the thing itself, so
+      `T::Array[Character]` is raw models entering the component however it is
+      named. This is why `Badge = T.type_alias { { label: String, variant:
+      Symbol } }` passes (a hash) and `PlayerRow = T.type_alias { [
+      UserPresenter, T::Array[Character] ] }` fails (a tuple hiding models).
+
+  CONTAINER SHAPES — which to reach for:
+    T.type_alias  A NAMED INTERFACE for data written as a LITERAL at the call
+                  site. No constructor. Use when the shape is just data.
+    T::Struct     The same data when something CONSTRUCTS it. Gets defaults,
+                  validation and dot-access. Use when there is a `.new`.
+    Presenter     When the shape pairs display data with domain objects, or has
+                  behaviour. If a "shape" holds a model, this is your answer.
+    The choice is about WHO BUILDS THE THING, not about layering — all three are
+    containers to this gate, and all are exactly as legal as their contents.
+
+  HOW TO FIX
+      # before — the component receives models and works out what to show
+      def initialize(game:, scene:, posts:)
+      # after — the presenter carries the finished values
+      def initialize(scene_presenter:)
+
+    Ask what the component actually reads off each model. If it reads two or
+    three values, the presenter exposes those values. If it reads a value
+    per item in a collection, give the ITEM its own presenter and pass an
+    array of them — do not pass models plus a lookup table keyed by id.
+
+    When the component genuinely needs a domain object to render a link or a
+    form binding, it needs the value it would derive from it (a path, a name,
+    an id), not the object. Derive it in the presenter and pass the result.
+
+  WARNING — A HASH IS NOT A LOOPHOLE
+    The gate does not look inside hashes, so a model CAN be smuggled through
+    one. Doing that deliberately defeats the point. The tell is a hash keyed by
+    a model id, paired with an array of those models: it is a join the
+    presenter should have done. `editor_names: T::Hash[Integer, String]`
+    alongside `versions: T::Array[CharacterVersion]` should be a
+    CharacterVersionPresenter exposing `editor_name`. If you find yourself
+    putting a model in a hash to pass this gate, you have found the violation,
+    not the fix.
+
+  ============================================================================
+  HOW TO COMPOSE, END TO END
+  ============================================================================
+    1. CONTROLLER builds presenters, injecting policies and collaborators:
+         @scene_presenter = T.let(
+           ScenePresenter.new(scene, policy: ScenePolicy.new(current_user, scene),
+                                     game: game),
+           ScenePresenter
+         )
+    2. PRESENTER answers display questions as named methods — capabilities from
+       the injected policy, formatted values, derived flags, collections of
+       presenters.
+    3. VIEW composes: renders components, passing presenter values.
+    4. COMPONENT owns markup and CSS, receiving finished data — presenters,
+       other components, arrays of components, hashes.
+
+  THE TEST TO APPLY TO YOUR FIX
+    Does the model still reach the template, by any route (ivar, component
+    parameter, array, tuple, or hidden in a hash)? If yes, the violation moved
+    instead of being fixed. The decision belongs one layer down, every time.
+
+  This gate has NO grandfather list and NO ratchet: every violation is
+  reported. Adding an exemption to make it pass defeats its purpose.
+
+  ----------------------------------------------------------------------------
+  This file is the enforced statement of these rules — the rules and the code
+  that checks them live together here so they cannot drift apart. Other
+  documents (.claude/CLAUDE.md) point at this gate rather than restating it.
+  Everything needed to fix a violation is in this output; there is nothing
+  further to read.
+GUIDANCE
+
+exit 1

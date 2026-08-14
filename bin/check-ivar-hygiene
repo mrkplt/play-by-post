@@ -7,8 +7,8 @@
 # Three violation kinds are counted per file, and this is a PROGRESSIVE ratchet:
 # a changed file may not INCREASE its total violation count vs origin/master.
 # Pre-existing violations are grandfathered (the number can only go down); a new
-# file must land at zero. A separate Fizzy card tracks retiring the ratchet and
-# enforcing zero everywhere.
+# file must land at zero. The ratchet is meant to be retired, enforcing zero
+# everywhere.
 #
 #   V1  ivar WRITE outside #initialize.
 #       An initializer sets up state; other methods should not reassign ivars.

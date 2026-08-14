@@ -18,8 +18,8 @@
 #
 # Progressive by design: only models changed vs origin/master are inspected, and
 # a changed model may not INCREASE its callback count. Pre-existing callbacks are
-# grandfathered (the count can only go down); a new model must land at zero. A
-# separate Fizzy card tracks retiring the ratchet and enforcing zero everywhere.
+# grandfathered (the count can only go down); a new model must land at zero. The
+# ratchet is meant to be retired, enforcing zero everywhere.
 
 require "prism"
 

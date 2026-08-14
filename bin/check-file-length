@@ -16,9 +16,9 @@
 #      frozen, so the number can only go down. (Same "must not increase" ratchet
 #      as the controller-ivar / CSS / ERB-logic gates.)
 #
-# Only files added or modified vs origin/master are inspected. A separate Fizzy
-# card tracks retiring the ratchet and enforcing the flat 100-line ceiling
-# everywhere once the grandfathered files are split.
+# Only files added or modified vs origin/master are inspected. The ratchet is
+# meant to be retired once the grandfathered files are split, enforcing the flat
+# 100-line ceiling everywhere.
 
 require "prism"
 

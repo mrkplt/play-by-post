@@ -12,7 +12,7 @@
 #     content scanner does NOT reliably extract arbitrary values from string
 #     literals, so the utility is never compiled into the stylesheet at all —
 #     the element renders with no colour. This is exactly how the OOC toggle,
-#     avatar, and badge tones shipped invisible (Fizzy #59). Parking the raw
+#     avatar, and badge tones shipped invisible. Parking the raw
 #     palette in .rb tone tables was NOT sanctioned — it was silently broken.
 #     See context/DESIGN_TOKEN_COMPILATION.md.
 #

@@ -26,7 +26,7 @@
 # This is a full-tree presence check (like check-authorization), not a diff
 # ratchet: the tree is currently complete, so it stays complete. A genuinely
 # spec-less controller (e.g. a pure redirect stub) can be allowlisted with a
-# reason. A separate Fizzy card tracks deepening these specs beyond mere presence.
+# reason. These specs are meant to be deepened beyond mere presence over time.
 
 require "pathname"
 

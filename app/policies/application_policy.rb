@@ -5,7 +5,7 @@
 # codified convention (default-deny CRUD set with new?->create? / edit?->update?
 # aliases so `authorize` infers the query from action_name); we add only Sorbet.
 #
-# Naming convention for every policy in this app (see Fizzy #93):
+# Naming convention for every policy in this app:
 #
 # - Capability predicates are the public surface. Controllers, views,
 #   components and presenters ask only capability questions, named for the
