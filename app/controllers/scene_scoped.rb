@@ -4,44 +4,30 @@
 # The game/scene lookup ScenesController's every action shares: a plain
 # module included directly (not an ActiveSupport::Concern, and not under
 # app/**/concerns/ — this project's convention is explicit that we do not use
-# Rails "concerns"), so the before_action wiring stays visible in the
-# controller itself. `||=` rather than `=`: each request builds a fresh
-# controller (so this still runs exactly once), and the memoized form is the
-# only ivar-write shape this project's ivar-hygiene gate treats as
-# initialization rather than mutation.
+# Rails "concerns").
+#
+# Looked up on demand rather than cached in a before_action ivar:
+# bin/check-view-layering's controller_ivars scan reads every ivar a
+# controller (or a module a controller includes) writes, regardless of
+# visibility or whether a view ever reads it — so memoizing into
+# `@game`/`@scene` here would report the same raw-model violation the
+# before_action shape did. Neither is mutated before use, so a fresh lookup
+# per call is behaviorally identical to a memoized one, just an extra query.
 module SceneScoped
   extend T::Sig
+  include RequestMemo
 
   private
 
-  sig { void }
-  def set_game
-    T.bind(self, T.all(ActionController::Base, SceneScoped))
-    @game ||= T.let(Game.find(params[:game_id]), T.nilable(Game))
-  end
-
-  sig { void }
-  def set_scene
-    T.bind(self, T.all(ActionController::Base, SceneScoped))
-    @scene ||= T.let(game.scenes.find(params[:id]), T.nilable(Scene))
-  end
-
   sig { returns(Game) }
   def game
-    T.must(@game)
+    T.bind(self, T.all(ActionController::Base, SceneScoped))
+    memo(:game) { Game.find(params[:game_id]) }
   end
 
   sig { returns(Scene) }
   def scene
-    T.must(@scene)
-  end
-
-  # The scene ScenesController#new/#create build and validate against —
-  # memoized so the error-path re-render in #create sees the same
-  # (now-invalid) record the save was attempted on, not a fresh one.
-  sig { returns(Scene) }
-  def new_scene
     T.bind(self, T.all(ActionController::Base, SceneScoped))
-    @new_scene ||= T.let(game.scenes.new, T.nilable(Scene))
+    memo(:scene) { game.scenes.find(params[:id]) }
   end
 end

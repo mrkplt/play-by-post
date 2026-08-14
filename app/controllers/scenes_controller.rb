@@ -5,12 +5,11 @@ class ScenesController < ApplicationController
   include ImageAttachable
   include SceneScoped
 
-  before_action :set_game
   before_action :require_game_access!
-  before_action :set_scene, only: %i[show resolve toggle_notification_preference]
+  before_action :check_scene_visibility!, only: %i[show resolve toggle_notification_preference]
   after_action :verify_authorized, except: :index
 
-  helper_method :scene_form, :game_presenter
+  helper_method :game_presenter
 
   sig { void }
   def index
@@ -27,15 +26,19 @@ class ScenesController < ApplicationController
       T.nilable(SceneTreePresenter)
     )
     @game_presenter = T.let(GamePresenter.new(game, policy: policy(game), urls: self), T.nilable(GamePresenter))
+    @game_routes = T.let(GameRoutesPresenter.new(T.must(@game_presenter), urls: self), T.nilable(GameRoutesPresenter))
   end
 
   sig { void }
   def new
+    new_scene = game.scenes.new
     authorize new_scene
+    render locals: { scene_form: build_scene_form(new_scene) }
   end
 
   sig { void }
   def create
+    new_scene = game.scenes.new
     authorize new_scene
     new_scene.assign_attributes(permitted_attributes(new_scene))
     attach_uploaded_image(new_scene, game, param_key: :scene)
@@ -45,7 +48,7 @@ class ScenesController < ApplicationController
       notify_new_scene(new_scene)
       redirect_to game_scene_path(game, new_scene), notice: "Scene created."
     else
-      render :new, status: :unprocessable_content
+      render :new, status: :unprocessable_content, locals: { scene_form: build_scene_form(new_scene) }
     end
   end
 
@@ -88,15 +91,6 @@ class ScenesController < ApplicationController
   end
 
   private
-
-  # Overrides SceneScoped#set_scene to add the visibility redirect this
-  # controller's #show/#resolve/#toggle_notification_preference need — the
-  # lookup itself stays in the shared module.
-  sig { void }
-  def set_scene
-    super
-    check_scene_visibility!
-  end
 
   # Memoized rather than set by a before_action: #new/#create render the New
   # Scene form (not named after either action) via the scene_form helper
@@ -156,11 +150,14 @@ class ScenesController < ApplicationController
     redirect_to root_path, alert: "You do not have access to this game." unless policy(game).view?
   end
 
-  # Assembles the New Scene / Quick Scene form component from the current
-  # request. Exposed to the view via helper_method so #new and #create's
-  # error re-render both present it without it being a controller ivar.
-  sig { returns(Shared::SceneFormComponent) }
-  def scene_form
+  # Assembles the New Scene / Quick Scene form component for a given scene
+  # build. Passed to the template as a `render locals:` value from #new and
+  # #create's error re-render, rather than a helper_method memoizing the
+  # scene in an ivar — #create needs the SAME (now-invalid) record the save
+  # was attempted on, not a fresh `game.scenes.new`, so each action builds it
+  # once as a local and threads it through explicitly.
+  sig { params(new_scene: Scene).returns(Shared::SceneFormComponent) }
+  def build_scene_form(new_scene)
     SceneFormBuilder.new(game, new_scene, params, self).form_component(game_presenter)
   end
 

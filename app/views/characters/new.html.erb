@@ -19,5 +19,5 @@
     <% end %>
   <% end %>
 
-  <%= render Shared::CharacterFormComponent.new(character: @character_presenter, owner_options: @game_presenter.owner_options) %>
+  <%= render Shared::CharacterFormComponent.new(character: @character_presenter, owner_options: @roster_options_presenter.owner_options) %>
 <% end %>

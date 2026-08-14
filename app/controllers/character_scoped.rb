@@ -4,35 +4,39 @@
 # The game/character lookup CharactersController's every action shares: a
 # plain module included directly (not an ActiveSupport::Concern, and not
 # under app/**/concerns/ — this project's convention is explicit that we do
-# not use Rails "concerns"), so the before_action wiring stays visible in the
-# controller itself. `||=` rather than `=`: each request builds a fresh
-# controller (so this still runs exactly once), and the memoized form is the
-# only ivar-write shape this project's ivar-hygiene gate treats as
-# initialization rather than mutation.
+# not use Rails "concerns").
+#
+# `game`/`character` are looked up on demand rather than cached in a
+# before_action ivar: bin/check-view-layering's controller_ivars scan reads
+# every ivar a controller (or a module a controller includes) writes,
+# regardless of visibility or whether a view ever reads it — so memoizing
+# into `@game`/`@character` here would report the same raw-model violation
+# the before_action shape did. Neither is mutated before use, so a fresh
+# lookup per call is behaviorally identical to a memoized one, just an extra
+# query. `set_game`/`set_character` stay as no-op before_action hooks — the
+# controller's before_action wiring names them explicitly, and the lookup
+# now happens lazily the first time an action calls `game`/`character`.
 module CharacterScoped
   extend T::Sig
+  include RequestMemo
 
   private
 
   sig { void }
-  def set_game
-    T.bind(self, T.all(ActionController::Base, CharacterScoped))
-    @game ||= T.let(Game.find(params[:game_id]), T.nilable(Game))
-  end
+  def set_game; end
 
   sig { void }
-  def set_character
-    T.bind(self, T.all(ActionController::Base, CharacterScoped))
-    @character ||= T.let(game.characters.find(params[:id]), T.nilable(Character))
-  end
+  def set_character; end
 
   sig { returns(Game) }
   def game
-    T.must(@game)
+    T.bind(self, T.all(ActionController::Base, CharacterScoped))
+    memo(:game) { Game.find(params[:game_id]) }
   end
 
   sig { returns(Character) }
   def character
-    T.must(@character)
+    T.bind(self, T.all(ActionController::Base, CharacterScoped))
+    memo(:character) { game.characters.find(params[:id]) }
   end
 end

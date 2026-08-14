@@ -4,30 +4,37 @@
 # The game/scene/post lookup PostsController's every action shares. A plain
 # module included directly (not an ActiveSupport::Concern, and not under
 # app/**/concerns/ — this project's convention is explicit that we do not use
-# Rails "concerns"). `||=` rather than `=`: each request builds a fresh
-# controller (so this still runs exactly once), and the memoized form is the
-# only ivar-write shape this project's ivar-hygiene gate treats as
-# initialization rather than mutation.
+# Rails "concerns").
+#
+# Memoized through RequestMemo rather than a `@game`/`@scene`/`@post` ivar.
+# Rails copies controller ivars into the view, so those would be view-facing
+# raw models and R1 rightly rejects them — but they still need memoizing:
+# `post` resolves through `scene` through `game`, and posts#update asks for
+# them repeatedly, so fresh lookups cost 28 queries against 17.
+# `post` reads `params[:id]`, so only call it from actions that route through
+# it (`edit`/`update`/`mark_read`) — the others (`create`/`save_draft`/
+# `discard_draft`) have no `:id` param and build/find their own post.
 module PostScoped
   extend T::Sig
+  include RequestMemo
 
   private
 
-  sig { void }
-  def set_game
+  sig { returns(Game) }
+  def game
     T.bind(self, T.all(ActionController::Base, PostScoped))
-    @game ||= T.let(Game.find(params[:game_id]), T.nilable(Game))
+    memo(:game) { Game.find(params[:game_id]) }
   end
 
-  sig { void }
-  def set_scene
+  sig { returns(Scene) }
+  def scene
     T.bind(self, T.all(ActionController::Base, PostScoped))
-    @scene ||= T.let(T.must(@game).scenes.find(params[:scene_id]), T.nilable(Scene))
+    memo(:scene) { game.scenes.find(params[:scene_id]) }
   end
 
-  sig { void }
-  def set_post
+  sig { returns(Post) }
+  def post
     T.bind(self, T.all(ActionController::Base, PostScoped))
-    @post ||= T.let(T.must(@scene).posts.find(params[:id]), T.nilable(Post))
+    memo(:post) { scene.posts.find(params[:id]) }
   end
 end

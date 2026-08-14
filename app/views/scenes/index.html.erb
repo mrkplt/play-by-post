@@ -12,7 +12,7 @@
     <% frame.with_footer do %>
       <%= render Shared::PageActionsComponent.new do |actions| %>
         <% actions.with_primary do %>
-          <%= render Ui::ButtonComponent.new(url: @game_presenter.new_scene_path) do %>New Scene<% end %>
+          <%= render Ui::ButtonComponent.new(url: @game_routes.new_scene_path) do %>New Scene<% end %>
         <% end %>
       <% end %>
     <% end %>

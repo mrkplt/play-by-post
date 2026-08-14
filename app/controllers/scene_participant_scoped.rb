@@ -7,35 +7,30 @@
 # own — nonexistent, since it is a singular resource — id). A plain module
 # included directly (not an ActiveSupport::Concern, and not under
 # app/**/concerns/ — this project's convention is explicit that we do not
-# use Rails "concerns"), so the before_action wiring stays visible in the
-# controller itself. `||=` rather than `=`: each request builds a fresh
-# controller (so this still runs exactly once), and the memoized form is the
-# only ivar-write shape this project's ivar-hygiene gate treats as
-# initialization rather than mutation.
+# use Rails "concerns").
+#
+# Looked up on demand rather than cached in a before_action ivar:
+# bin/check-view-layering's controller_ivars scan reads every ivar a
+# controller (or a module a controller includes) writes, regardless of
+# visibility or whether a view ever reads it — so memoizing into
+# `@game`/`@scene` here would report the same raw-model violation the
+# before_action shape did. Neither is mutated before use, so a fresh lookup
+# per call is behaviorally identical to a memoized one, just an extra query.
 module SceneParticipantScoped
   extend T::Sig
+  include RequestMemo
 
   private
 
-  sig { void }
-  def set_game
-    T.bind(self, T.all(ActionController::Base, SceneParticipantScoped))
-    @game ||= T.let(Game.find(params[:game_id]), T.nilable(Game))
-  end
-
-  sig { void }
-  def set_scene
-    T.bind(self, T.all(ActionController::Base, SceneParticipantScoped))
-    @scene ||= T.let(game.scenes.find(params[:scene_id]), T.nilable(Scene))
-  end
-
   sig { returns(Game) }
   def game
-    T.must(@game)
+    T.bind(self, T.all(ActionController::Base, SceneParticipantScoped))
+    memo(:game) { Game.find(params[:game_id]) }
   end
 
   sig { returns(Scene) }
   def scene
-    T.must(@scene)
+    T.bind(self, T.all(ActionController::Base, SceneParticipantScoped))
+    memo(:scene) { game.scenes.find(params[:scene_id]) }
   end
 end

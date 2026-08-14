@@ -80,6 +80,9 @@ class CharactersController < ApplicationController
     @character_presenter = T.let(
       presenter_builder.character_presenter(character, policy(character)), T.nilable(CharacterPresenter)
     )
+    @roster_options_presenter = T.let(
+      GameRosterOptionsPresenter.new(T.must(@game_presenter)), T.nilable(GameRosterOptionsPresenter)
+    )
   end
 
   sig { returns(CharacterPresenterBuilder) }

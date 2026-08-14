@@ -14,7 +14,7 @@ class NotebookEntriesController < ApplicationController
 
   after_action :verify_authorized
 
-  helper_method :game_presenter
+  helper_method :game_presenter, :game_routes
 
   sig { void }
   def index
@@ -124,6 +124,9 @@ class NotebookEntriesController < ApplicationController
   def game_presenter
     @game_presenter ||= T.let(GamePresenter.new(game, policy: policy(game), urls: self), T.nilable(GamePresenter))
   end
+
+  sig { returns(GameRoutesPresenter) }
+  def game_routes = GameRoutesPresenter.new(game_presenter, urls: self)
 
   sig { returns(ActionController::Parameters) }
   def notebook_entry_params

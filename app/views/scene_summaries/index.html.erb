@@ -12,7 +12,7 @@
     <%= render Shared::PageActionsComponent.new do |actions| %>
       <% if @game_presenter.can_manage? %>
         <% actions.with_cancel do %>
-          <%= render Ui::ButtonComponent.new(variant: :secondary, url: @game_presenter.edit_path) do %>Edit Game<% end %>
+          <%= render Ui::ButtonComponent.new(variant: :secondary, url: @game_routes.edit_path) do %>Edit Game<% end %>
         <% end %>
       <% end %>
     <% end %>

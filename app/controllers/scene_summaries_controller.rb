@@ -4,11 +4,9 @@ class SceneSummariesController < ApplicationController
   extend T::Sig
   include SceneSummaryScoped
 
-  before_action :set_game
   before_action :require_game_access!, only: %i[index new create edit update destroy]
-  before_action :set_scene, only: %i[new create edit update destroy]
   before_action :require_resolved_scene!, only: %i[new create]
-  before_action :set_summary, only: %i[edit update destroy]
+  before_action :require_summary!, only: %i[edit update destroy]
   after_action :verify_authorized, except: :index
 
   sig { void }
@@ -19,6 +17,7 @@ class SceneSummariesController < ApplicationController
       T.nilable(SceneSummaryCollectionPresenter)
     )
     @game_presenter = T.let(GamePresenter.new(game, policy: policy(game), urls: self), T.nilable(GamePresenter))
+    @game_routes = T.let(GameRoutesPresenter.new(T.must(@game_presenter), urls: self), T.nilable(GameRoutesPresenter))
   end
 
   sig { void }
@@ -82,12 +81,8 @@ class SceneSummariesController < ApplicationController
     )
   end
 
-  # Overrides SceneSummaryScoped#set_summary to add the not-found redirect
-  # this controller's #edit/#update/#destroy need — the lookup itself stays
-  # in the shared module.
   sig { void }
-  def set_summary
-    super
+  def require_summary!
     redirect_to game_scene_path(game, scene), alert: "No summary found." unless summary
   end
 

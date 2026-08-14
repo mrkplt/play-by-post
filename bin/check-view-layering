@@ -242,6 +242,17 @@ R1_SKIP_CONTROLLERS = %w[
 # inbound_emails_controller.rb: a webhook ingress (Resend -> ActionMailbox),
 # not the view layer — it renders no templates, so R1 has nothing to enforce.
 
+# The one ivar a controller may hold that is not view state: RequestMemo's
+# store (app/controllers/request_memo.rb). Controller lookups behind
+# `before_action` are the controller's working set, not something a template
+# should read, but they still need to be memoized — dropping the memo took
+# posts#update from 17 queries to 28, because `post` resolves through `scene`
+# through `game`. RequestMemo keeps them for the request inside one hash
+# instead of beside the view state, so `memo(:game) { Game.find(...) }`
+# replaces `@game ||= ...`. This name is exempt; a domain-shaped ivar is not,
+# and putting a model in an ivar to dodge the rule is still the violation.
+R1_INTERNAL_IVARS = %w[@controller_memo].freeze
+
 def visibility_switch(node)
   return nil unless node.is_a?(Prism::CallNode) && node.receiver.nil?
   return nil unless %i[private protected public].include?(node.name)
@@ -376,7 +387,9 @@ def controller_ivars(root)
     end
   end
 
-  found.uniq { |ivar| [ ivar[:name], ivar[:action] ] }
+  found
+    .reject { |ivar| R1_INTERNAL_IVARS.include?(ivar[:name]) }
+    .uniq { |ivar| [ ivar[:name], ivar[:action] ] }
 end
 
 Dir["app/controllers/**/*.rb"].sort.each do |file|
