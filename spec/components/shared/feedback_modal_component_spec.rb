@@ -54,4 +54,15 @@ RSpec.describe Shared::FeedbackModalComponent, type: :component do
       expect(page).to have_css("[data-feedback-target='error'][hidden]", visible: :all)
     end
   end
+
+  # The modal finds the Turnstile widget by controller name to tell it a submit
+  # finished, so the name is a contract between Ruby and JS. Nothing else fails
+  # fast if they drift: the widget is absent in the test env, and the system spec
+  # that would notice runs only in the heavy tier.
+  it "looks the widget up by the name the component actually renders" do
+    js = Rails.root.join("app/javascript/controllers/feedback_controller.js").read
+    declared = js[/const TURNSTILE_CONTROLLER = "([^"]+)"/, 1]
+
+    expect(declared).to eq(Ui::TurnstileWidgetComponent::STIMULUS_CONTROLLER)
+  end
 end

@@ -1,5 +1,8 @@
 import { Controller } from "@hotwired/stimulus"
 
+// Mirrors Ui::TurnstileWidgetComponent::STIMULUS_CONTROLLER.
+const TURNSTILE_CONTROLLER = "turnstile"
+
 // The feedback modal, opened from the nav drawer. On open it captures the path
 // (with any query parameters) of the page the user is on into a hidden field.
 // Submitting posts via fetch so
@@ -27,6 +30,12 @@ export default class extends Controller {
     const form = event.target
     this.errorTarget.hidden = true
 
+    // A previous submit spent the token and triggered a reset, and the
+    // replacement arrives asynchronously — so wait for it rather than posting an
+    // empty token the server would reject. Resolves immediately on the first
+    // submit, and whenever Turnstile is absent.
+    await this.turnstile(form)?.ready()
+
     try {
       const response = await fetch(form.action, {
         method: "POST",
@@ -40,7 +49,21 @@ export default class extends Controller {
       }
     } catch {
       this.errorTarget.hidden = false
+    } finally {
+      // The submit spent the token whether or not it succeeded, so start the
+      // replacement now; the next submit awaits it above.
+      this.turnstile(form)?.reset()
     }
+  }
+
+  // The widget's own controller, which owns the reset/ready lifecycle so this one
+  // never touches the Turnstile API. Null when Turnstile is disabled (the test
+  // env renders no widget) or before Stimulus has connected the controller.
+  turnstile(form) {
+    const element = form.querySelector(`[data-controller~="${TURNSTILE_CONTROLLER}"]`)
+    if (!element) return null
+
+    return this.application.getControllerForElementAndIdentifier(element, TURNSTILE_CONTROLLER)
   }
 
   closeOnBackdrop(event) {

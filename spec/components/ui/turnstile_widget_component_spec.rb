@@ -39,6 +39,31 @@ RSpec.describe Ui::TurnstileWidgetComponent, type: :component do
     expect { described_class.new(theme: :neon) }.to raise_error(ArgumentError, /Unknown theme: neon/)
   end
 
+  # Turnstile tokens are single-use, so a form that submits without navigating has
+  # to discard the spent one. The widget carries that behaviour itself rather than
+  # each form reimplementing it.
+  describe "token reset wiring" do
+    it "wraps the widget in the turnstile Stimulus controller" do
+      render_inline(described_class.new)
+      expect(page).to have_css("div[data-controller='#{described_class::STIMULUS_CONTROLLER}']")
+    end
+
+    it "keeps the widget inside the controller's element so it can be reset" do
+      render_inline(described_class.new)
+      expect(page).to have_css(
+        "div[data-controller='#{described_class::STIMULUS_CONTROLLER}'] div.cf-turnstile"
+      )
+    end
+
+    # data-action means one thing to Stimulus and another to Turnstile; keeping the
+    # controller on a wrapper is what stops the two from clobbering each other.
+    it "leaves the widget's own data-action free for Turnstile's challenge label" do
+      render_inline(described_class.new(action: "feedback"))
+      expect(page).to have_css("div.cf-turnstile[data-action='feedback']")
+      expect(page).to have_css("div[data-controller]:not(.cf-turnstile)")
+    end
+  end
+
   describe "all themes render without error" do
     Ui::TurnstileWidgetComponent::THEMES.each do |theme|
       it theme.to_s do
