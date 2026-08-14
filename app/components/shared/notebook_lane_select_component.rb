@@ -61,9 +61,12 @@ class Shared::NotebookLaneSelectComponent < ApplicationComponent
     NotebookEntry::STATUSES.map { |status| [ T.must(STATUS_LABELS[status]), status ] }
   end
 
+  # `lane-select` blurs the select before submitting. Without it the move
+  # response replaces this element while its dropdown is still open, stranding
+  # the popup on screen — see lane_select_controller.js.
   sig { returns(T::Hash[Symbol, T.untyped]) }
   def form_data
-    { turbo_stream: true }
+    { turbo_stream: true, controller: "lane-select" }
   end
 
   # Every row on a board renders this component, so the control needs an id of

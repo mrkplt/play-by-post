@@ -41,7 +41,16 @@ RSpec.describe Shared::NotebookLaneSelectComponent, type: :component do
 
     it "submits itself on change" do
       render_inline(build_component)
-      expect(page.find("select[name='notebook_entry[status]']")["onchange"]).to eq("this.form.requestSubmit()")
+      expect(page.find("select[name='notebook_entry[status]']")["data-action"])
+        .to eq("change->lane-select#submit")
+    end
+
+    # The controller blurs the select before submitting; without it the move
+    # response replaces the element while its dropdown is still open.
+    it "drives the change through the lane-select controller, not an inline handler" do
+      render_inline(build_component)
+      expect(page).to have_css("form[data-controller='lane-select']")
+      expect(page.find("select[name='notebook_entry[status]']")["onchange"]).to be_nil
     end
 
     it "keeps a submit button, without which requestSubmit() does nothing" do
@@ -52,6 +61,14 @@ RSpec.describe Shared::NotebookLaneSelectComponent, type: :component do
     it "drives the move over Turbo on the board" do
       render_inline(build_component)
       expect(page).to have_css("form[data-turbo-stream]")
+    end
+
+    # `data-turbo-stream="false"` is still an attribute, so presence alone does
+    # not prove the flag survived — assert the value Turbo actually reads.
+    it "sets the Turbo Stream flag true, not merely present" do
+      expect(build_component.form_data[:turbo_stream]).to be(true)
+      render_inline(build_component)
+      expect(page.find("form")["data-turbo-stream"]).to eq("true")
     end
 
     it "states where it was rendered so the controller can pick a response" do

@@ -35,24 +35,55 @@ RSpec.describe Shared::NotebookLaneUpdatesComponent, type: :component do
     end
   end
 
-  describe "#replacement_disclosure_for" do
-    it "re-renders a disclosure lane expanded, so a GM sees the move they just made" do
-      component = build_component(notebook_entry: moved_entry(from: "new", to: "discard"))
-      expect(component.replacement_disclosure_for("discard")).to eq(:expanded)
-    end
-
-    it "leaves an always-visible lane without a disclosure" do
-      component = build_component(notebook_entry: moved_entry(from: "new", to: "expand"))
-      expect(component.replacement_disclosure_for("expand")).to eq(:none)
-    end
-  end
-
   describe "#lanes" do
+    # Each lane must be filled from its OWN status: passing anything else here
+    # renders both lanes with the same entries.
+    it "fills each lane with the entries of that lane" do
+      entry = moved_entry(from: "new", to: "expand")
+      component = build_component(notebook_entry: entry)
+      board = instance_double(NotebookBoardPresenter)
+      allow(game_presenter).to receive(:notebook_board).and_return(board)
+      allow(board).to receive(:entries_for).with("new").and_return([])
+      allow(board).to receive(:entries_for).with("expand").and_return([ entry ])
+
+      expect(component.lanes.map { |lane| lane.entries.map(&:title) })
+        .to eq([ [], [ entry.title ] ])
+    end
+
     it "builds one lane component per affected status" do
       component = build_component(notebook_entry: moved_entry(from: "new", to: "expand"))
       allow(component).to receive(:entries_in).and_return([])
 
       expect(component.lanes.map(&:dom_id)).to eq(%w[notebook_column_new notebook_column_expand])
+    end
+
+    # Discarding something is a request to stop seeing it. A replaced discard
+    # lane comes back shut, the way it presents everywhere else.
+    it "leaves the discard lane collapsed when an entry is moved into it" do
+      component = build_component(notebook_entry: moved_entry(from: "new", to: "discard"))
+      allow(component).to receive(:entries_in).and_return([])
+
+      discard = component.lanes.find { |lane| lane.dom_id == "notebook_column_discard" }
+      expect(discard.disclosure).to eq(:collapsed)
+    end
+
+    it "leaves an always-visible lane without a disclosure" do
+      component = build_component(notebook_entry: moved_entry(from: "new", to: "expand"))
+      allow(component).to receive(:entries_in).and_return([])
+
+      expanded = component.lanes.find { |lane| lane.dom_id == "notebook_column_expand" }
+      expect(expanded.disclosure).to eq(:none)
+    end
+
+    # The lanes render inside <template> elements of a Turbo Stream, which
+    # Capybara does not treat as live DOM — assert on the markup itself.
+    it "renders the discard lane shut, so the bin does not spring open" do
+      component = build_component(notebook_entry: moved_entry(from: "new", to: "discard"))
+      allow(component).to receive(:entries_in).and_return([])
+      markup = render_inline(component).to_html
+
+      expect(markup).to include(%(<details id="notebook_column_discard" class="mt-1">))
+      expect(markup).not_to match(/<details[^>]*\bopen\b/)
     end
   end
 end
