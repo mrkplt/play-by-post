@@ -1,39 +1,41 @@
-# typed: true
+# typed: strict
 
 class GameExportsController < ApplicationController
   extend T::Sig
 
-  before_action :set_game
   before_action :require_export_access!
   after_action :verify_authorized
 
   sig { void }
   def create
-    authorize @game, :export?
-    receipt = GameExportRequest.valid_receipt_for(current_user, @game)
+    authorize game, :export?
+    receipt = GameExportRequest.valid_receipt_for(current_user, game)
 
     if receipt
       # A successful export already exists within the receipt window — resend its
       # download link instead of reprocessing.
       ExportDelivery.email_download_link(receipt)
     else
-      request = GameExportRequest.create!(user: current_user, game: @game)
+      request = GameExportRequest.create!(user: current_user, game: game)
       ExportJob.perform_later(request.id)
     end
 
-    redirect_to game_path(@game), notice: "Export requested — you'll receive an email shortly."
+    redirect_to game_path(game), notice: "Export requested — you'll receive an email shortly."
   end
 
   private
 
-  sig { void }
-  def set_game
-    @game = Game.find(params[:game_id])
+  # Looked up on demand rather than cached in a before_action ivar: this
+  # controller renders no templates, so nothing needs it to persist as
+  # request state.
+  sig { returns(Game) }
+  def game
+    Game.find(params[:game_id])
   end
 
   sig { void }
   def require_export_access!
-    return if policy(@game).export?
+    return if policy(game).export?
 
     redirect_to root_path, alert: "You do not have access to export this game."
   end

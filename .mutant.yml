@@ -81,6 +81,8 @@ matcher:
     - Ui::SecretFieldComponent
     - Shared::RssFeedsSectionComponent
     - Shared::AiSummariesToggleComponent
+    - Shared::ImagesToggleComponent
+    - Shared::SheetsToggleComponent
     - Shared::ProfileFormComponent
     - Shared::SceneSummaryComponent
     - Shared::SceneSummaryEntryComponent

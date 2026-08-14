@@ -1,12 +1,12 @@
-<% content_for :active_game_id, @game.id %>
+<% content_for :active_game_id, @game_presenter.id %>
 
 <div data-controller="game-tabs">
   <%= render Shared::MobileFrameComponent.new do |frame| %>
     <% frame.with_header do %>
       <%= render Shared::HeaderComponent.new(
-            title: @game.name,
+            title: @game_presenter.name,
             crown: @game_presenter.can_manage?,
-            gear: game_player_management_path(@game),
+            gear: game_player_management_path(@game_presenter),
             secondary_nav: Shared::GameNavComponent.new(game_presenter: @game_presenter, active_tab: :scenes, mode: :switch)) %>
     <% end %>
 
@@ -24,11 +24,11 @@
       <% end %>
 
       <% if @game_presenter.can_manage? %>
-        <%= link_to "New Scene", new_game_scene_path(@game),
+        <%= link_to "New Scene", new_game_scene_path(@game_presenter),
               class: "block w-full text-center bg-accent text-accent-ink rounded-control py-2.5 font-bold text-[13px] no-underline" %>
       <% end %>
 
-      <%= link_to "View all scenes", game_scenes_path(@game),
+      <%= link_to "View all scenes", game_scenes_path(@game_presenter),
             class: "block w-full text-center text-accent rounded-control py-2 font-bold text-[13px] no-underline" %>
 
       <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do %>In Active Scenes<% end %>
@@ -58,7 +58,7 @@
 
         <div class="flex items-center justify-between">
           <%= render Ui::SectionLabelComponent.new do %>Characters<% end %>
-          <%= link_to "New Character", new_game_character_path(@game), class: "text-[11px] font-bold text-accent no-underline" %>
+          <%= link_to "New Character", new_game_character_path(@game_presenter), class: "text-[11px] font-bold text-accent no-underline" %>
         </div>
         <% if @game_roster.roster_characters.empty? %>
           <p class="text-muted-2 text-sm">No characters yet.</p>
@@ -98,7 +98,7 @@
                     name_class: "text-tint-blue-strong",
                     subtitle_class: "text-tint-blue-soft",
                     last: i == @game_roster.banned_members.length - 1) do %>
-                <%= form_with url: game_player_management_game_member_path(@game, banned.member), method: :patch, class: "inline" do |f| %>
+                <%= form_with url: game_player_management_game_member_path(@game_presenter, banned.member), method: :patch, class: "inline" do |f| %>
                   <%= f.hidden_field :status, value: "active" %>
                   <%= f.submit "Unban", class: "text-[11px] font-bold text-danger-soft bg-transparent border-0 cursor-pointer p-0" %>
                 <% end %>

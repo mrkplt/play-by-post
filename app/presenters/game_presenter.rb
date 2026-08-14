@@ -71,6 +71,13 @@ class GamePresenter < BasePresenter
     @model.images_disabled? # mutant:disable
   end
 
+  # Whether character sheets are hidden from players — the Edit Game screen's
+  # sheet-visibility toggle.
+  sig { returns(T::Boolean) }
+  def sheets_hidden?
+    @model.sheets_hidden? # mutant:disable
+  end
+
   # The Export row's passive subtitle: when this viewer has a valid export
   # receipt for this game, how long ago it succeeded — otherwise no subtitle
   # at all. The viewer is supplied at construction (options[:current_user]).

@@ -1,4 +1,4 @@
-<% content_for :active_game_id, @game.id %>
+<% content_for :active_game_id, @game_presenter.id %>
 
 <%= render Shared::MobileFrameComponent.new do |frame| %>
   <% frame.with_header do %>
@@ -14,7 +14,7 @@
         <%= render Ui::ButtonComponent.new(html_options: { type: "submit", form: "new_game_link_form" }) do %>Create Link<% end %>
       <% end %>
       <% actions.with_cancel do %>
-        <%= render Ui::ButtonComponent.new(variant: :secondary, url: game_game_links_path(@game)) do %>Cancel<% end %>
+        <%= render Ui::ButtonComponent.new(variant: :secondary, url: game_game_links_path(@game_presenter)) do %>Cancel<% end %>
       <% end %>
     <% end %>
   <% end %>

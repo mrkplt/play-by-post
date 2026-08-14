@@ -3,7 +3,6 @@
 class GamesController < ApplicationController
   extend T::Sig
 
-  before_action :set_game, only: %i[show edit update destroy toggle_sheets_hidden toggle_images_disabled toggle_ai_summaries_enabled]
   before_action :require_game_access!, only: %i[show]
   after_action :verify_authorized, except: :index
 
@@ -44,14 +43,14 @@ class GamesController < ApplicationController
 
   sig { void }
   def toggle_sheets_hidden
-    authorize @game, :manage?
+    authorize game, :manage?
     game.update!(sheets_hidden: !game.sheets_hidden?)
     redirect_to game_path(game), notice: game.sheets_hidden? ? "Character sheets are now hidden." : "Character sheets are now visible."
   end
 
   sig { void }
   def toggle_images_disabled
-    authorize @game, :manage?
+    authorize game, :manage?
     game.update!(images_disabled: !game.images_disabled?)
     redirect_to edit_game_path(game), notice: game.images_disabled? ? "Image attachments are now disabled." : "Image attachments are now enabled."
   end
@@ -59,16 +58,16 @@ class GamesController < ApplicationController
   sig { void }
   # mutant:disable
   def toggle_ai_summaries_enabled
-    authorize @game, :manage?
+    authorize game, :manage?
     game.update!(ai_summaries_enabled: !game.ai_summaries_enabled?)
     redirect_to game_player_management_path(game), notice: game.ai_summaries_enabled? ? "AI scene summaries enabled." : "AI scene summaries disabled."
   end
 
   sig { void }
   def show
-    authorize @game
+    authorize game
     @game_presenter = T.let(
-      GamePresenter.new(game, policy: policy(@game), current_user: current_user, urls: self, helpers: helpers),
+      GamePresenter.new(game, policy: policy(game), current_user: current_user, urls: self, helpers: helpers),
       T.nilable(GamePresenter)
     )
     @game_show = T.let(
@@ -87,24 +86,24 @@ class GamesController < ApplicationController
 
   sig { void }
   def edit
-    authorize @game
-    @game_presenter = T.let(GamePresenter.new(game, policy: policy(@game)), T.nilable(GamePresenter))
+    authorize game
+    @game_presenter = T.let(GamePresenter.new(game, policy: policy(game)), T.nilable(GamePresenter))
   end
 
   sig { void }
   def update
-    authorize @game
+    authorize game
     if game.update(game_params)
       redirect_to game_player_management_path(game), notice: "Game updated."
     else
-      @game_presenter = T.let(GamePresenter.new(game, policy: policy(@game)), T.nilable(GamePresenter))
+      @game_presenter = T.let(GamePresenter.new(game, policy: policy(game)), T.nilable(GamePresenter))
       render :edit, status: :unprocessable_content
     end
   end
 
   sig { void }
   def destroy
-    authorize @game
+    authorize game
     game.soft_delete!
     redirect_to root_path, notice: "\"#{game.name}\" has been deleted."
   end
@@ -155,17 +154,12 @@ class GamesController < ApplicationController
       .pluck("scenes.game_id")
   end
 
-  sig { void }
-  def set_game
-    @game = T.let(Game.find(params[:id]), T.nilable(Game))
-  end
-
-  # @game is always populated by set_game for every action that reads it
-  # (declared T.nilable only because Sorbet strict requires ivars assigned
-  # outside `initialize` to admit nil).
+  # Looked up on demand rather than cached in a before_action ivar: no
+  # template reads it directly (only @game_presenter's output does), so
+  # nothing needs it to persist as request state.
   sig { returns(Game) }
   def game
-    T.must(@game)
+    Game.find(params[:id])
   end
 
   # Not redundant with `authorize`: this gates before the action runs and gives
@@ -173,7 +167,7 @@ class GamesController < ApplicationController
   # the specific thing being attempted.
   sig { void }
   def require_game_access!
-    return if policy(@game).view?
+    return if policy(game).view?
 
     redirect_to root_path, alert: "You do not have access to this game."
   end

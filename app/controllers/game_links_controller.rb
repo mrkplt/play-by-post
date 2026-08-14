@@ -3,9 +3,7 @@
 class GameLinksController < ApplicationController
   extend T::Sig
 
-  before_action :set_game
   before_action :require_game_access!
-  before_action :set_game_link, only: %i[edit update destroy]
   after_action :verify_authorized
 
   sig { void }
@@ -72,24 +70,20 @@ class GameLinksController < ApplicationController
     @game_link_presenter = T.let(game_link_presenter(link), T.nilable(GameLinkPresenter))
   end
 
-  sig { void }
-  def set_game
-    @game = T.let(Game.find(params[:game_id]), T.nilable(Game))
-  end
-
-  sig { void }
-  def set_game_link
-    @game_link = T.let(game.game_links.find(params[:id]), T.nilable(GameLink))
-  end
-
+  # Looked up on demand rather than cached in a before_action ivar: no
+  # template reads it directly (only @game_presenter's output does), so
+  # nothing needs it to persist as request state.
   sig { returns(Game) }
   def game
-    T.must(@game)
+    Game.find(params[:game_id])
   end
 
+  # Looked up on demand rather than cached in a before_action ivar: no
+  # template reads it directly (only game_link_presenter's output does), so
+  # there is nothing that needs it to persist across the request as state.
   sig { returns(GameLink) }
   def game_link
-    T.must(@game_link)
+    game.game_links.find(params[:id])
   end
 
   sig { void }
