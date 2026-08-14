@@ -246,6 +246,28 @@ def visibility_switch(node)
   node.name
 end
 
+# What an undeclared ivar's assignment says about the work it needs. Two very
+# different jobs hide behind "no declared type", and reporting them identically
+# makes a file look uniformly broken when half of it is already right:
+#   `GamePresenter.new(...)` is CORRECT and only wants the sigil.
+#   `Game.find(...)`         is a raw model and wants a presenter written.
+# The RHS is only a hint (a helper method could return either), so anything
+# unrecognised is reported as needing a look rather than guessed at.
+def undeclared_diagnosis(rhs)
+  case rhs
+  when /\A[A-Z][\w:]*Presenter\.new/, /\bmap\b.*[A-Z][\w:]*Presenter\.new/
+    "the assignment already looks like a presenter, so this one likely only needs " \
+      "the `# typed: strict` sigil and a T.let to become checkable"
+  when /\A([A-Z][\w:]*)\.(?:find|new|find_by|where|all|first|last)\b/,
+       /\A@?[\w.]*\.(?:find|new|find_by|where|order|includes|all)\b/
+    "this assigns a raw model or query result, so it needs a presenter — " \
+      "adding the sigil alone will not satisfy R1"
+  else
+    "check what this returns: a presenter needs only the sigil, a model or " \
+      "primitive needs a presenter written for it"
+  end
+end
+
 # Ivars assigned in public methods, with the T.let type when one is declared.
 def controller_ivars(root)
   klass = nil
@@ -282,8 +304,14 @@ Dir["app/controllers/**/*.rb"].sort.each do |file|
 
   controller_ivars(parse(file)).each do |ivar|
     unless strict
-      violations["R1"] << "#{file}: #{ivar[:name]} (in ##{ivar[:action]}) has no declared type — " \
-        "controller is `# typed: #{source[/# typed: (\w+)/, 1]}`; only `strict` forces the T.let this rule reads"
+      # Without a T.let there is no declared type to classify, but the
+      # assignment itself usually gives the answer away — and the two cases need
+      # completely different work. Saying which one this is turns "add a sigil"
+      # and "write a presenter that does not exist yet" into distinct tasks
+      # instead of one indistinguishable message repeated down the file.
+      violations["R1"] << "#{file}: #{ivar[:name]} (in ##{ivar[:action]}) = #{ivar[:rhs]} — " \
+        "#{undeclared_diagnosis(ivar[:rhs])} (controller is " \
+        "`# typed: #{source[/# typed: (\w+)/, 1]}`; only `strict` forces the T.let this rule reads)"
       next
     end
 
@@ -430,10 +458,11 @@ puts <<~GUIDANCE
   ============================================================================
 
   Each violation above says the same thing: a decision is being made in the
-  wrong layer. Move that decision to the layer that owns it. The fix is
-  usually smaller than the code it replaces — applying this to
+  wrong layer. Move that decision to the layer that owns it. The resulting code
+  is usually smaller than what it replaces — applying this to
   ScenePresenter#page_action took it from five parameters to three and dropped
-  the file's smell count.
+  the file's smell count — even though the diff is wide, because a signature
+  change touches every caller. Expect fewer lines across more files.
 
   You are probably here mid-task, wanting the smallest change that gets you
   moving again. The four shortcuts below all look like that change, and each
@@ -457,6 +486,30 @@ puts <<~GUIDANCE
   Believe a violation is wrong? Say so to the user — name the file, the type,
   and your reasoning — rather than working around it or editing this file.
 
+  A clean refactor touches every call site, and that is fine.
+  Fixing one of these usually changes a constructor signature, which means
+  visiting everywhere it is constructed — controllers, views, specs, previews.
+  A long list of touched files here is the shape of the work, not evidence you
+  chose the wrong approach.
+
+  The tempting alternative is to keep the old shape working: leave the old
+  parameter in place, give the new collaborator a default, migrate the happy
+  path and leave the error branch. Each of those leaves the object with two
+  valid ways to be constructed, and nothing marks which one is current. The
+  next person to read it has to reconstruct the intent from call sites that
+  disagree — a worse problem than the violation, and one no gate detects.
+  Prefer changing the signature, updating every caller, and deleting the old
+  path. If that is more than you can finish, fix fewer violations completely
+  rather than leaving a half-migration behind.
+
+  Expect R1 to rise when you fix R2 or R3.
+  Injecting a policy usually means a new presenter, and a new presenter means a
+  new controller instance variable. If that controller is not yet
+  `# typed: strict`, the new ivar is reported under R1 immediately — so the
+  total can go up while the codebase gets better. That is expected, and not a
+  regression to undo. Judge the work by the violations you actually resolved,
+  not by the headline number.
+
   ============================================================================
   THE ARCHITECTURE THIS GATE ENFORCES
   ============================================================================
@@ -474,7 +527,7 @@ puts <<~GUIDANCE
                Holds no logic of its own.
 
   The split that matters most, because most violations blur it:
-  PRESENTERS MANAGE DISPLAY LOGIC. COMPONENTS CHOOSE MARKUP. A presenter
+  presenters manage display logic; components choose markup. A presenter
   saying "this scene shows a Private badge, yellow" is display logic and
   belongs in the presenter. The component turning that into a
   Ui::BadgeComponent is markup and belongs in the component. If a component
@@ -491,7 +544,7 @@ puts <<~GUIDANCE
   boundary. The data being present is the problem. A presenter exposes a
   finished, named answer instead of an object to interrogate.
 
-  WHY NOT COMPONENTS EITHER: assigning a controller-built component would
+  Nor a component: assigning a controller-built component would
   satisfy "no raw model in the ERB" while moving the model into the controller.
   The controller hands the view ONE kind of thing; components are constructed
   in templates from presenter data.
@@ -515,10 +568,27 @@ puts <<~GUIDANCE
     collection — how many, whether it is empty, what order it is in — because
     those questions otherwise become logic in the template.
 
+  When you add a presenter, two other checks in this repo apply to it: register
+  the class in .mutant.yml under matcher.subjects (the mutant_registration job
+  fails otherwise), and give the file a `# typed: strict` sigil like its
+  neighbours in app/presenters.
+
   NOTE: this rule reads the `T.let` type Sorbet requires under `# typed:
   strict`. A controller reported as "no declared type" is not yet strict —
   make it strict (`srb tc -a` autocorrects most declarations) so its ivars
   become checkable.
+
+  Two different jobs hide behind "no declared type", and each message above
+  says which one it is. Do not treat a file as uniformly broken:
+    "already looks like a presenter" — the assignment is right; it only needs
+      the sigil and a T.let. Cheap. A controller can be mostly in this state.
+    "assigns a raw model or query result" — a presenter has to be written
+      first. Adding the sigil alone will NOT satisfy R1, it will just change
+      the message to a typed violation.
+    "check what this returns" — the assignment is a helper call, so read it.
+  A single controller usually contains both kinds. Doing the sigil-only ones
+  does not fix the model ones, and a `T.let(..., Game)` that makes the parser
+  happy while a raw model still reaches the view is the violation unchanged.
 
   ----------------------------------------------------------------------------
   R2 — POLICIES ARE INJECTED, NEVER LOOKED UP
@@ -527,13 +597,21 @@ puts <<~GUIDANCE
   `SomePolicy.new`. Policy instances are handed to the presenter at
   construction, in the options hash: `{ policy: <instance> }`.
 
-  WHY: authorization reached-for rather than supplied means a capability rename
+  A capability is what is being decided — "may this user administer this game",
+  "may this user resolve this scene" — named for the function, not the person.
+  A role is who the person is (`gm?`, `owner?`). The distinction matters because
+  a GM is the game owner today and will not always be: a game may have several
+  GMs, or none, or permissions may granularize. Writing the capability as the
+  role bakes "owner == GM == can do everything" into every call site, so the
+  rule can never change in one place.
+
+  Why: authorization reached-for rather than supplied means a capability rename
   has to be chased through templates instead of changed at one construction
   point. Ask a capability (`manage?`, `resolve?`), never a role (`gm?`) and
-  never a CRUD predicate borrowed for a different purpose (`update?` used to
-  mean "is GM").
+  never a CRUD predicate borrowed for a different purpose (`update?` means
+  "this row may be modified", not "is GM").
 
-  WHY IT PAYS FOR ITSELF IN SPECS: a presenter spec must never test a policy —
+  Why it pays for itself in specs: a presenter spec must never test a policy —
   policies are tested in spec/policies. Today a spec has to stub the constant
   AND know how the presenter builds it internally:
       allow(PostPolicy).to receive(:new).with(user, new_post)
@@ -543,15 +621,29 @@ puts <<~GUIDANCE
       described_class.new(scene, policy: instance_double(PostPolicy, create?: true))
 
   HOW TO FIX
-    Controller (where the user and record are already in hand):
+    Controller (where the user and record are already in hand). Use Pundit's
+    own `policy(...)` helper rather than constructing the policy class
+    directly — it is memoized and it is what the rest of the controller
+    already authorizes with, so the affordance and the authorization cannot
+    diverge. R2 forbids policy LOOKUP in views, presenters and components;
+    a controller is exactly where it belongs:
       @game_presenter = T.let(
-        GamePresenter.new(game, policy: GamePolicy.new(current_user, game)),
+        GamePresenter.new(game, policy: policy(game)),
         GamePresenter
       )
     Presenter:
       sig { returns(T::Boolean) }
       def can_manage? = @options.fetch(:policy).manage?
     View: `<% if @game_presenter.can_manage? %>` — no policy call anywhere.
+
+    Use `fetch` with no default. A missing collaborator should raise at the
+    call site that forgot it, not silently answer false and hide a broken
+    affordance.
+
+    Naming the option: a presenter needing one policy uses `policy:`. When it
+    needs more than one, name each for its subject — `game_policy:`,
+    `character_policy:`, `post_policy:` — so the call site says which record
+    is being authorized rather than leaving it to be inferred.
 
   ----------------------------------------------------------------------------
   R3 — PRESENTERS TAKE (subject, options)
@@ -567,7 +659,7 @@ puts <<~GUIDANCE
   hash so the contract lives in BasePresenter rather than being reinvented per
   subclass.
 
-  A PRESENTER SUBJECT IS LEGAL AND INTENDED. Presenters compose: a presenter
+  A presenter subject is legal and intended. Presenters compose: a presenter
   wrapping a presenter, or presenting an array of presenters, is how collection
   display logic ("how many", "empty state", ordering) gets out of the template.
 
@@ -590,25 +682,37 @@ puts <<~GUIDANCE
   WHY: a component holding a model computes what the presenter should have —
   that is where presenter/component split violations start.
 
-  WHAT THE CLASSIFIER DOES, so you can predict it:
+  What the classifier does, so you can predict it:
     * Classification is BY INHERITANCE, NOT BY NAME. Every class under app/ is
       indexed with its superclass and resolved by walking to ApplicationRecord
       (model) / BasePresenter (presenter) / ApplicationComponent (component).
       `SceneSummary` (model) and `SceneSummaryPresenter` (presenter) sort
       correctly, and a `class FooPresenter` that never inherits BasePresenter
       is NOT a presenter no matter what it is called.
-    * A HASH IS OPAQUE. The gate permits hashes and does not look inside. The
+    * A hash is opaque. The gate permits hashes and does not look inside. The
       hash is how a component takes the messy, irregular reality of a front end
       — html_options, data attributes, a form binding, a config bag — without
-      each case becoming a typed parameter. This LOCALIZES the mess rather than
-      blessing it (see the warning below). What is in the hash is the
-      component's own `sig` to declare and Sorbet's to enforce, not this gate's.
-    * ARRAYS, TUPLES AND TYPE ALIASES ARE TRANSPARENT — resolved through to
+      each case becoming a typed parameter. This localizes the mess rather than
+      blessing it. What is in the hash is the component's own `sig` to declare
+      and Sorbet's to enforce, not this gate's.
+
+      So `T::Hash[Symbol, SomeModel]` PASSES this check. That is a limit of what
+      the gate can see, not permission — it will fail review instead. Keep the
+      two apart: "the check is silent" and "this is right" are different claims,
+      and only one of them is mechanical. The test for whether a hash is honest:
+      would you have written it this way if the gate did look inside? A hash
+      that exists to carry options, attributes or configuration is what the rule
+      intends. A hash whose keys are model ids, or that pairs with an array of
+      the models it indexes, is a join a presenter should have done — you have
+      found a second violation, not a way around the first.
+    * Arrays, tuples and type aliases are transparent — resolved through to
       their contents. An array is a sequence of the thing itself, so
       `T::Array[Character]` is raw models entering the component however it is
       named. This is why `Badge = T.type_alias { { label: String, variant:
       Symbol } }` passes (a hash) and `PlayerRow = T.type_alias { [
       UserPresenter, T::Array[Character] ] }` fails (a tuple hiding models).
+      `T::Array[SomePresenter]` is fine — transparent, and presenters are legal.
+      So is an array of primitives; only models are rejected.
 
   CONTAINER SHAPES — which to reach for:
     T.type_alias  A NAMED INTERFACE for data written as a LITERAL at the call
@@ -635,15 +739,14 @@ puts <<~GUIDANCE
     form binding, it needs the value it would derive from it (a path, a name,
     an id), not the object. Derive it in the presenter and pass the result.
 
-  WARNING — A HASH IS NOT A LOOPHOLE
-    The gate does not look inside hashes, so a model CAN be smuggled through
-    one. Doing that deliberately defeats the point. The tell is a hash keyed by
-    a model id, paired with an array of those models: it is a join the
-    presenter should have done. `editor_names: T::Hash[Integer, String]`
-    alongside `versions: T::Array[CharacterVersion]` should be a
-    CharacterVersionPresenter exposing `editor_name`. If you find yourself
-    putting a model in a hash to pass this gate, you have found the violation,
-    not the fix.
+  A hash is not a loophole
+    Because the gate cannot see inside a hash, moving a model into one silences
+    the check without changing anything — the model still reaches the component.
+    A worked example of the smell: `editor_names: T::Hash[Integer, String]`
+    passed alongside `versions: T::Array[CharacterVersion]` is a lookup table
+    keyed by model id, which is a join a CharacterVersionPresenter should have
+    done by exposing `editor_name` per version. The array is the R4 violation;
+    the hash is the evidence a presenter is missing.
 
   ============================================================================
   HOW TO COMPOSE, END TO END
@@ -666,8 +769,17 @@ puts <<~GUIDANCE
     parameter, array, tuple, or hidden in a hash)? If yes, the violation moved
     instead of being fixed. The decision belongs one layer down, every time.
 
-  This gate has NO grandfather list and NO ratchet: every violation is
+    Then: is there exactly one way to construct what you changed, and does
+    every call site use it? A compatibility shim, a defaulted collaborator or
+    an un-migrated branch leaves the codebase with two shapes for one object,
+    which is worse than the violation you started with.
+
+  This gate has no grandfather list and no ratchet: every violation is
   reported. Adding an exemption to make it pass defeats its purpose.
+
+  To re-run after a fix:  bin/check-view-layering
+  It also runs in bin/pre-push and as its own CI job. A new presenter needs
+  registering in .mutant.yml, and `bundle exec srb tc` must stay clean.
 
   ----------------------------------------------------------------------------
   This file is the enforced statement of these rules — the rules and the code
