@@ -11,8 +11,8 @@
       <tbody>
         <% versions.each do |version| %>
           <tr class="border-t border-card-divider">
-            <td class="py-1.5 pr-4"><%= link_to game_character_character_version_path(game, character, version), class: "text-accent no-underline" do %><time data-local-time="<%= version.created_at.iso8601 %>"><%= version.created_at.strftime("%b %-d, %Y %-I:%M %p") %></time><% end %></td>
-            <td class="py-1.5"><%= editor_name(version) %></td>
+            <td class="py-1.5 pr-4"><%= link_to game_character_character_version_path(game, character, version), class: "text-accent no-underline" do %><time data-local-time="<%= version.created_at_iso8601 %>"><%= version.formatted_created_at %></time><% end %></td>
+            <td class="py-1.5"><%= version.editor_name %></td>
           </tr>
         <% end %>
       </tbody>
