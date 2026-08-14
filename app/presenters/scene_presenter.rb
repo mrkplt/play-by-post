@@ -8,6 +8,19 @@ class ScenePresenter < BasePresenter
     @model.resolved? ? "#{@model.title} (Resolved)" : @model.title
   end
 
+  # Whether the scene currently carries validation errors — the New Scene /
+  # Quick Scene form's re-render after a failed #create reads this instead of
+  # a component reaching into @model.errors directly.
+  sig { returns(T::Boolean) }
+  def errors?
+    @model.errors.any?
+  end
+
+  sig { returns(T::Array[String]) }
+  def error_messages
+    @model.errors.full_messages
+  end
+
   sig { returns(String) }
   def status_label
     @model.resolved? ? "Resolved" : "Active"

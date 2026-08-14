@@ -122,8 +122,8 @@ class ScenesController < ApplicationController
   sig { returns(Shared::SceneFormComponent) }
   def build_scene_form
     Shared::SceneFormComponent.new(
-      game: @game,
-      scene: @scene,
+      game: GamePresenter.new(@game, policy: policy(@game)),
+      scene: ScenePresenter.new(@scene),
       players_with_characters: active_players_with_characters,
       parent_options: parent_scene_select_options,
       quick: params[:quick].present?,

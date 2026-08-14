@@ -5,12 +5,14 @@ RSpec.describe Shared::SceneFormComponent, type: :component do
   let(:scene) { game.scenes.new }
   let(:user) { build_stubbed(:user, :with_profile) }
   let(:character) { build_stubbed(:character, name: "Seraphina Vex", user: user) }
+  let(:game_presenter) { GamePresenter.new(game, policy: nil) }
+  let(:scene_presenter) { ScenePresenter.new(scene) }
 
   def build_component(**overrides)
     described_class.new(
       **{
-        game: game,
-        scene: scene,
+        game: game_presenter,
+        scene: scene_presenter,
         players_with_characters: [],
         parent_options: [],
         quick: false,
