@@ -1,16 +1,15 @@
-<% children = @scene.child_scenes.select { |c| c.game_id == @game.id } %>
 <div class="attn-item bg-card border border-card-border rounded-card p-[12px_14px] mb-2.5 last:mb-0 flex flex-col gap-1 <%= "is-hot" if hot? %>">
-  <% if @scene.parent_scene.present? %>
-    <span class="text-[11px] text-muted-2">&#8617; from <%= link_to @scene.parent_scene.title, game_scene_path(@game, @scene.parent_scene), class: "text-accent" %></span>
+  <% if @scene.parent_scene? %>
+    <span class="text-[11px] text-muted-2">&#8617; from <%= link_to @scene.parent_scene_presenter.title, path_for(@scene.parent_scene_presenter), class: "text-accent" %></span>
   <% end %>
 
-  <%= link_to @scene.title, game_scene_path(@game, @scene), class: "font-bold text-sm text-ink no-underline" %>
+  <%= link_to @scene.title, scene_path, class: "font-bold text-sm text-ink no-underline" %>
   <span class="text-xs text-muted"><%= @scene.participant_summary %></span>
 
-  <% if children.any? %>
+  <% if child_scenes.any? %>
     <div class="flex flex-wrap gap-x-2 text-[11px] text-muted-2 mt-0.5">
-      <% children.each do |child| %>
-        <span>&#10549; <%= link_to child.title, game_scene_path(@game, child), class: "text-accent" %></span>
+      <% child_scenes.each do |child| %>
+        <span>&#10549; <%= link_to child.title, path_for(child), class: "text-accent" %></span>
       <% end %>
     </div>
   <% end %>

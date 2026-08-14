@@ -2,7 +2,7 @@
   <div class="flex flex-col gap-1.5">
     <%= render Ui::SectionLabelComponent.new do %>Edit Post<% end %>
     <%= render Ui::MarkdownEditorComponent.new(
-          form: f, field: :content,
+          binding: { form: f, field: :content },
           config: Ui::MarkdownEditorComponent::Config.with_preview(content_class: "post-content"),
           rows: 6) %>
   </div>

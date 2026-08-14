@@ -42,11 +42,15 @@ matcher:
     - CharacterPresenter
     - CharacterVersionPresenter
     - GameFilePresenter
+    - GameFeedRowPresenter
+    - GameLinkPresenter
     - GamePresenter
+    - InvitationPresenter
     - NotebookBoardPresenter
     - NotebookEntryPresenter
     - PagePresenter
     - PostPresenter
+    - ScenePlayerPresenter
     - SceneSummaryPresenter
     - SceneSummaryCollectionPresenter
     - ScenePresenter
@@ -55,6 +59,7 @@ matcher:
     - ScenePageAction::Resolved
     - ScenePageAction::RouteArgs
     - UserPresenter
+    - UserProfilePresenter
     # Components
     - Ui::SecretFieldComponent
     - Shared::RssFeedsSectionComponent

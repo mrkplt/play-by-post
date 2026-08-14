@@ -1,12 +1,16 @@
 require "rails_helper"
 
 RSpec.describe Shared::GameLinksListComponent, type: :component do
-  let(:game) { build_stubbed(:game) }
-  let(:links) do
+  let(:game_model) { build_stubbed(:game) }
+  let(:game) { GamePresenter.new(game_model, policy: instance_double(GamePolicy)) }
+  let(:link_models) do
     [
-      build_stubbed(:game_link, game: game, description: "Map", url: "https://example.com/map"),
-      build_stubbed(:game_link, game: game, description: "Wiki", url: "https://example.com/wiki")
+      build_stubbed(:game_link, game: game_model, description: "Map", url: "https://example.com/map"),
+      build_stubbed(:game_link, game: game_model, description: "Wiki", url: "https://example.com/wiki")
     ]
+  end
+  let(:links) do
+    link_models.map { |l| GameLinkPresenter.new(l, game: game_model, urls: Rails.application.routes.url_helpers) }
   end
 
   def build_component(**overrides)

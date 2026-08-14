@@ -4,7 +4,7 @@
   <% end %>
 
   <%= render Shared::GameFormComponent.new(
-        game: @game,
+        game: @game_presenter,
         submit_label: "Create game",
         cancel_href: root_path,
         note: "You will become the Game Master of this game.",

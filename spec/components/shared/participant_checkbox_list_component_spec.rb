@@ -5,6 +5,10 @@ RSpec.describe Shared::ParticipantCheckboxListComponent, type: :component do
   let(:user) { build_stubbed(:user, :with_profile) }
   let(:character) { build_stubbed(:character, game: game, user: user, name: "Thorin") }
 
+  def player_row(user, characters: [])
+    ScenePlayerPresenter.new(user, characters: characters)
+  end
+
   def build_component(players_with_characters:, selected_character_ids: [], variant: :card)
     described_class.new(
       players_with_characters: players_with_characters,
@@ -19,20 +23,20 @@ RSpec.describe Shared::ParticipantCheckboxListComponent, type: :component do
   end
 
   it "lists a player's active characters as checkboxes" do
-    render_inline(build_component(players_with_characters: [ [ UserPresenter.new(user), [ character ] ] ]))
+    render_inline(build_component(players_with_characters: [ player_row(user, characters: [ character ]) ]))
     expect(page).to have_field("character_ids[]", type: "checkbox")
     expect(page).to have_text("Thorin")
   end
 
   it "shows a no-active-characters note for a player with none" do
-    render_inline(build_component(players_with_characters: [ [ UserPresenter.new(user), [] ] ]))
+    render_inline(build_component(players_with_characters: [ player_row(user) ]))
     expect(page).to have_text("No active characters")
   end
 
   describe "checked state" do
     it "checks a character present in selected_character_ids" do
       render_inline(build_component(
-        players_with_characters: [ [ UserPresenter.new(user), [ character ] ] ],
+        players_with_characters: [ player_row(user, characters: [ character ]) ],
         selected_character_ids: [ character.id.to_s ]
       ))
       expect(page).to have_field("character_ids[]", checked: true)
@@ -40,7 +44,7 @@ RSpec.describe Shared::ParticipantCheckboxListComponent, type: :component do
 
     it "leaves an unselected character unchecked" do
       render_inline(build_component(
-        players_with_characters: [ [ UserPresenter.new(user), [ character ] ] ],
+        players_with_characters: [ player_row(user, characters: [ character ]) ],
         selected_character_ids: []
       ))
       expect(page).to have_field("character_ids[]", checked: false)

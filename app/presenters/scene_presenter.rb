@@ -4,6 +4,31 @@ class ScenePresenter < BasePresenter
   extend T::Sig
 
   sig { returns(String) }
+  def title
+    @model.title
+  end
+
+  # This scene's child scenes that belong to the given game, wrapped for
+  # display — the scene card's "continued in" links show only same-game
+  # children. Takes the game explicitly rather than reading @options[:game]
+  # so callers that never call #page_action are not forced to construct with
+  # a game they do not otherwise need.
+  sig { params(game: GamePresenter).returns(T::Array[ScenePresenter]) }
+  def child_scenes_in(game)
+    @model.child_scenes.select { |c| c.game_id == game.id }.map { |c| ScenePresenter.new(c) }
+  end
+
+  sig { returns(T::Boolean) }
+  def parent_scene?
+    @model.parent_scene.present?
+  end
+
+  sig { returns(ScenePresenter) }
+  def parent_scene_presenter
+    ScenePresenter.new(@model.parent_scene)
+  end
+
+  sig { returns(String) }
   def parent_option_label
     @model.resolved? ? "#{@model.title} (Resolved)" : @model.title
   end

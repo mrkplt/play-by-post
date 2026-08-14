@@ -1,7 +1,8 @@
 require "rails_helper"
 
 RSpec.describe Shared::FileUploadFormComponent, type: :component do
-  let(:game) { build_stubbed(:game) }
+  let(:game_model) { build_stubbed(:game) }
+  let(:game) { GamePresenter.new(game_model, policy: instance_double(GamePolicy)) }
 
   context "without a game_file" do
     subject(:component) { described_class.new(game: game) }
@@ -41,10 +42,10 @@ RSpec.describe Shared::FileUploadFormComponent, type: :component do
 
   context "with a game_file carrying a size error" do
     let(:game_file) do
-      gf = GameFile.new(game: game, filename: "big.pdf")
+      gf = GameFile.new(game: game_model, filename: "big.pdf")
       gf.file.attach(io: StringIO.new("x" * (GameFile::MAX_SIZE + 1)), filename: "big.pdf", content_type: "application/pdf")
       gf.valid?
-      gf
+      GameFilePresenter.new(gf)
     end
 
     subject(:component) { described_class.new(game: game, game_file: game_file) }
@@ -65,9 +66,9 @@ RSpec.describe Shared::FileUploadFormComponent, type: :component do
 
   context "with a game_file carrying only a base error" do
     let(:game_file) do
-      gf = GameFile.new(game: game, filename: "x.pdf")
+      gf = GameFile.new(game: game_model, filename: "x.pdf")
       gf.errors.add(:base, "something went wrong")
-      gf
+      GameFilePresenter.new(gf)
     end
 
     subject(:component) { described_class.new(game: game, game_file: game_file) }

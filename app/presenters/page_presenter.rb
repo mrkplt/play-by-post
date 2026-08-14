@@ -1,13 +1,17 @@
 # typed: strict
 
-# View model for a game page (detail, form, and list-row screens). Both
-# capabilities are asked of policies supplied at construction rather than
-# looked up in the view, so a capability rename is chased through one
-# construction point instead of every page template:
+# View model for a game page, across every screen it appears on: the detail
+# and form screens, and the row in the Pages list.
+#
+# Collaborators are supplied at construction rather than reached for, so a
+# capability rename or a route change is chased through one construction point
+# instead of every page template:
 #
 #   options[:game_policy] — may the viewer administer the game (the game-nav's
 #                           GM-only affordances, present on every page screen)
 #   options[:page_policy] — may the viewer edit/delete this page
+#   options[:game]/[:urls] — the game and the constructing controller, used to
+#                           resolve this page's own href for the list row
 class PagePresenter < BasePresenter
   extend T::Sig
 
@@ -33,6 +37,13 @@ class PagePresenter < BasePresenter
   sig { returns(String) }
   def title
     @model.title.to_s
+  end
+
+  # This page's own URL, resolved here so the Pages list renders a finished
+  # href rather than calling a route helper in the template.
+  sig { returns(String) }
+  def href
+    @options.fetch(:urls).game_page_path(@options.fetch(:game), @model)
   end
 
   sig { returns(String) }

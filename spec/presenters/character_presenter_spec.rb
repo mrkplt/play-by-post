@@ -151,4 +151,10 @@ RSpec.describe CharacterPresenter do
       expect(presenter.owner_options).to eq([ [ "Elrond", named.id ], [ "orc@example.com", nameless.id ] ])
     end
   end
+
+  describe "#checkbox_value" do
+    it "returns the character's id as a string" do
+      expect(presenter.checkbox_value).to eq(character.id.to_s)
+    end
+  end
 end

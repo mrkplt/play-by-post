@@ -23,23 +23,64 @@ class GamePresenter < BasePresenter
     @options.fetch(:policy).manage?
   end
 
+  # The viewer's display name — trivial delegation, but explicit so a
+  # component's template calling it on this presenter is Sorbet-checkable
+  # (SimpleDelegator passthrough is invisible to static analysis).
+  sig { returns(String) }
+  def name
+    @model.name
+  end
+
+  sig { returns(T.nilable(String)) }
+  def description
+    @model.description
+  end
+
+  sig { returns(Integer) }
+  def id
+    @model.id
+  end
+
+  sig { returns(T::Boolean) }
+  def ai_summaries_enabled?
+    @model.ai_summaries_enabled?
+  end
+
+  sig { returns(T::Boolean) }
+  def errors?
+    @model.errors.any?
+  end
+
+  sig { returns(T::Array[String]) }
+  def error_messages
+    @model.errors.full_messages
+  end
+
   # Outstanding (unaccepted) invitations for this game, newest first — the data
-  # behind the GM-only invite panel on the Roster tab.
-  sig { returns(T::Array[Invitation]) }
+  # behind the GM-only invite panel on the Roster tab. Each is paired with
+  # this game and the constructing controller's route helpers so the
+  # component never builds an invitation route of its own.
+  sig { returns(T::Array[InvitationPresenter]) }
   def pending_invitations
-    @model.invitations.pending.order(created_at: :desc).to_a
+    @model.invitations.pending.order(created_at: :desc).to_a.map do |invitation|
+      InvitationPresenter.new(invitation, game: @model, urls: @options.fetch(:urls))
+    end
   end
 
   # The game's pages, alphabetised by title — the data behind the Pages tab.
-  sig { returns(T::Array[Page]) }
+  sig { returns(T::Array[PagePresenter]) }
   def pages
-    @model.pages.order(:title).to_a
+    @model.pages.order(:title).to_a.map do |page|
+      PagePresenter.new(page, game: @model, urls: @options.fetch(:urls))
+    end
   end
 
   # The game's links, newest first — the data behind the Links tab.
-  sig { returns(T::Array[GameLink]) }
+  sig { returns(T::Array[GameLinkPresenter]) }
   def links
-    @model.game_links.order(created_at: :desc).to_a
+    @model.game_links.order(created_at: :desc).to_a.map do |game_link|
+      GameLinkPresenter.new(game_link, game: @model, urls: @options.fetch(:urls))
+    end
   end
 
   # The game's Campaign Notebook board — the data behind the GM-only Notebook

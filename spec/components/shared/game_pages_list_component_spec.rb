@@ -1,12 +1,16 @@
 require "rails_helper"
 
 RSpec.describe Shared::GamePagesListComponent, type: :component do
-  let(:game) { build_stubbed(:game) }
-  let(:pages) do
+  let(:game_model) { build_stubbed(:game) }
+  let(:game) { GamePresenter.new(game_model, policy: instance_double(GamePolicy)) }
+  let(:page_models) do
     [
-      build_stubbed(:page, game: game, title: "Alpha", slug: "alpha00000000000"),
-      build_stubbed(:page, game: game, title: "Beta", slug: "beta000000000000")
+      build_stubbed(:page, game: game_model, title: "Alpha", slug: "alpha00000000000"),
+      build_stubbed(:page, game: game_model, title: "Beta", slug: "beta000000000000")
     ]
+  end
+  let(:pages) do
+    page_models.map { |p| PagePresenter.new(p, game: game_model, urls: Rails.application.routes.url_helpers) }
   end
 
   def build_component(**overrides)
@@ -27,7 +31,7 @@ RSpec.describe Shared::GamePagesListComponent, type: :component do
   describe "rendering" do
     it "lists each page as a link to its show page" do
       render_inline(build_component)
-      expect(page).to have_link("Alpha", href: Rails.application.routes.url_helpers.game_page_path(game, pages.first))
+      expect(page).to have_link("Alpha", href: Rails.application.routes.url_helpers.game_page_path(game_model, page_models.first))
       expect(page).to have_link("Beta")
     end
 
@@ -38,7 +42,7 @@ RSpec.describe Shared::GamePagesListComponent, type: :component do
 
     it "shows an inline Edit link per row for the GM" do
       render_inline(build_component(can_manage: true))
-      expect(page).to have_link("Edit", href: Rails.application.routes.url_helpers.edit_game_page_path(game, pages.first))
+      expect(page).to have_link("Edit", href: Rails.application.routes.url_helpers.edit_game_page_path(game_model, page_models.first))
       expect(page.all("a", text: "Edit").size).to eq(pages.size)
     end
 
@@ -49,7 +53,7 @@ RSpec.describe Shared::GamePagesListComponent, type: :component do
 
     it "targets the page's destroy route from each Delete button" do
       render_inline(build_component(can_manage: true))
-      form = page.find("form[action='#{Rails.application.routes.url_helpers.game_page_path(game, pages.first)}']")
+      form = page.find("form[action='#{Rails.application.routes.url_helpers.game_page_path(game_model, page_models.first)}']")
       expect(form).to have_field("_method", type: :hidden, with: "delete")
     end
 

@@ -12,8 +12,9 @@ class GameLinksController < ApplicationController
   def index
     @game_link = @game.game_links.new
     authorize @game_link
-    @game_links = @game.game_links.order(created_at: :desc).to_a
     @game_presenter = GamePresenter.new(@game, policy: policy(@game))
+    @game_links = @game.game_links.order(created_at: :desc).to_a
+      .map { |gl| GameLinkPresenter.new(gl, game: @game, urls: self) }
   end
 
   sig { void }
@@ -21,6 +22,7 @@ class GameLinksController < ApplicationController
     @game_link = @game.game_links.new
     authorize @game_link
     @game_presenter = GamePresenter.new(@game, policy: policy(@game))
+    @game_link_presenter = GameLinkPresenter.new(@game_link, game: @game, urls: self)
   end
 
   sig { void }
@@ -32,6 +34,7 @@ class GameLinksController < ApplicationController
       redirect_to game_game_links_path(@game), notice: "Link added."
     else
       @game_presenter = GamePresenter.new(@game, policy: policy(@game))
+      @game_link_presenter = GameLinkPresenter.new(@game_link, game: @game, urls: self)
       render :new, status: :unprocessable_content
     end
   end
@@ -40,6 +43,7 @@ class GameLinksController < ApplicationController
   def edit
     authorize @game_link
     @game_presenter = GamePresenter.new(@game, policy: policy(@game))
+    @game_link_presenter = GameLinkPresenter.new(@game_link, game: @game, urls: self)
   end
 
   sig { void }
@@ -50,6 +54,7 @@ class GameLinksController < ApplicationController
       redirect_to game_game_links_path(@game), notice: "Link updated."
     else
       @game_presenter = GamePresenter.new(@game, policy: policy(@game))
+      @game_link_presenter = GameLinkPresenter.new(@game_link, game: @game, urls: self)
       render :edit, status: :unprocessable_content
     end
   end
