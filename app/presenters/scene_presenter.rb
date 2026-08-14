@@ -73,6 +73,22 @@ class ScenePresenter < BasePresenter
     @model.image.variant(resize_to_limit: [ 1200, nil ], format: :jpeg, quality: 85)
   end
 
+  # The GM-facing resolution text shown once a scene is resolved. Named for
+  # what it shows rather than delegated to raw `resolution`, so the presenter
+  # (not the component) owns reading it off the model.
+  sig { returns(T.nilable(String)) }
+  def resolution
+    @model.resolution
+  end
+
+  # The "End Scene" form's submit target, resolved from the game and
+  # url_helpers supplied at construction (options[:game] / options[:urls]) so
+  # the component never builds a route itself.
+  sig { returns(String) }
+  def resolve_path
+    @options.fetch(:urls).resolve_game_scene_path(@options.fetch(:game), @model)
+  end
+
   # Whether this viewer may post into the scene right now: the post policy allows
   # it and the scene is still open. Keeps the composer's visibility sourced from
   # the same policy PostsController authorizes with. The policy is supplied at

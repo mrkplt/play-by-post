@@ -54,8 +54,8 @@
       <%= render Ui::ButtonComponent.new(variant: :text, url: toggle_notification_preference_game_scene_path(@game, @scene), method: :post) do %><%= @scene_presenter.mute_toggle_label(@is_muted) %><% end %>
     <% end %>
 
-    <% if @scene.resolved? && @scene.resolution.present? %>
-      <%= render Shared::SceneResolutionComponent.new(scene: @scene) %>
+    <% if @scene.resolved? && @scene_presenter.resolution.present? %>
+      <%= render Shared::SceneResolutionComponent.new(resolution: @scene_presenter.resolution) %>
     <% end %>
 
     <%# GM scene actions %>
@@ -67,7 +67,7 @@
           <%= render Ui::ButtonComponent.new(variant: :text, url: edit_game_scene_participants_path(@game, @scene)) do %>Edit Participants<% end %>
           <%= render Ui::ButtonComponent.new(variant: :text, html_options: { class: "text-danger", data: { action: "click->resolve-toggle#toggle" } }) do %>End Scene<% end %>
         <% end %>
-        <%= render Shared::SceneResolveFormComponent.new(game: @game, scene: @scene) %>
+        <%= render Shared::SceneResolveFormComponent.new(resolve_path: @scene_presenter.resolve_path) %>
       </div>
     <% end %>
 
@@ -85,9 +85,8 @@
     </div>
 
     <%# Scene summary %>
-    <% if @scene.resolved? && @scene.scene_summary %>
-      <%= render Shared::SceneSummaryComponent.new(
-            summary: SceneSummaryPresenter.new(@scene.scene_summary), game: @game, scene: @scene, can_manage: @game_presenter.can_manage?) %>
+    <% if @scene.resolved? && @scene_summary_presenter %>
+      <%= render Shared::SceneSummaryComponent.new(summary: @scene_summary_presenter) %>
     <% end %>
 
     <%= render Shared::DraftRecoveryComponent.new(game: @game, scene: @scene, draft: @scene_presenter.recoverable_draft(@draft)) %>

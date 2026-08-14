@@ -3,12 +3,9 @@
 class Shared::SceneSummaryComponent < ApplicationComponent
   extend T::Sig
 
-  sig { params(summary: SceneSummaryPresenter, game: Game, scene: Scene, can_manage: T::Boolean).void }
-  def initialize(summary:, game:, scene:, can_manage:)
+  sig { params(summary: SceneSummaryPresenter).void }
+  def initialize(summary:)
     @summary = summary
-    @game = game
-    @scene = scene
-    @can_manage = can_manage
   end
 
   sig { returns(String) }
@@ -22,6 +19,6 @@ class Shared::SceneSummaryComponent < ApplicationComponent
 
   sig { returns(T::Boolean) }
   def can_manage?
-    @can_manage
+    @summary.can_manage?
   end
 end
