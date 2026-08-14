@@ -136,6 +136,7 @@ matcher:
     - MarkdownRenderer
     - NotebookEntryPromotion
     - NotebookLaneMove
+    - SceneReadState
     - SceneSummaryService
     - FizzySweepService
     # Controllers

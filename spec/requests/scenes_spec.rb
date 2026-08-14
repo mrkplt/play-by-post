@@ -315,6 +315,93 @@ RSpec.describe ScenesController, type: :request do
       expect(response.body).to include("Drax")
     end
 
+    it "orders posts oldest first" do
+      newest = create(:post, scene: scene, user: gm, content: "ZZZ-newest", created_at: 1.hour.ago)
+      oldest = create(:post, scene: scene, user: gm, content: "AAA-oldest", created_at: 3.hours.ago)
+      middle = create(:post, scene: scene, user: gm, content: "MMM-middle", created_at: 2.hours.ago)
+      sign_in(gm)
+
+      get game_scene_path(game, scene)
+
+      body = response.body
+      expect(body.index(oldest.content)).to be < body.index(middle.content)
+      expect(body.index(middle.content)).to be < body.index(newest.content)
+    end
+
+    it "orders child scenes oldest first" do
+      later = create(:scene, game: game, parent_scene: scene, title: "ZZZ-later", created_at: 1.hour.ago)
+      earlier = create(:scene, game: game, parent_scene: scene, title: "AAA-earlier", created_at: 3.hours.ago)
+      sign_in(gm)
+
+      get game_scene_path(game, scene)
+
+      expect(response.body.index(earlier.title)).to be < response.body.index(later.title)
+    end
+
+    # The read-tracking window: only posts newer than 72 hours are eligible to
+    # be marked unread, so a post either side of that cutoff must differ.
+    context "unread marking (the 72-hour eligibility window)" do
+      it "marks a recent unread post as unread" do
+        create(:post, scene: scene, user: player, created_at: 71.hours.ago, content: "recent-post")
+        sign_in(gm)
+
+        get game_scene_path(game, scene)
+
+        expect(response.body).to include('data-unread="true"')
+      end
+
+      it "does not mark a post older than the window as unread" do
+        create(:post, scene: scene, user: player, created_at: 73.hours.ago, content: "stale-post")
+        sign_in(gm)
+
+        get game_scene_path(game, scene)
+
+        expect(response.body).not_to include('data-unread="true"')
+      end
+
+      it "does not mark an already-read post as unread" do
+        post = create(:post, scene: scene, user: player, created_at: 1.hour.ago)
+        create(:post_read, post: post, user: gm)
+        sign_in(gm)
+
+        get game_scene_path(game, scene)
+
+        expect(response.body).not_to include('data-unread="true"')
+      end
+
+      it "marks nothing unread on a resolved scene" do
+        resolved = create(:scene, :resolved, game: game)
+        create(:scene_participant, scene: resolved, user: gm)
+        create(:post, scene: resolved, user: player, created_at: 1.hour.ago)
+        sign_in(gm)
+
+        get game_scene_path(game, resolved)
+
+        expect(response.body).not_to include('data-unread="true"')
+      end
+    end
+
+    context "hide_ooc preference" do
+      it "reflects the viewer's hide_ooc preference when set" do
+        gm.user_profile.update!(hide_ooc: true)
+        sign_in(gm)
+
+        get game_scene_path(game, scene)
+
+        expect(response.body).to include('data-ooc-filter-hide-ooc-value="true"')
+      end
+
+      it "falls back to false when the viewer has no profile" do
+        gm.user_profile&.destroy
+        gm.reload
+        sign_in(gm)
+
+        get game_scene_path(game, scene)
+
+        expect(response.body).to include('data-ooc-filter-hide-ooc-value="false"')
+      end
+    end
+
     it "renders post author names from post_presenters" do
       nameless = create(:user)
       create(:game_member, game: game, user: nameless)
