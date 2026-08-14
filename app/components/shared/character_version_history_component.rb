@@ -8,35 +8,28 @@ class Shared::CharacterVersionHistoryComponent < ApplicationComponent
 
   sig do
     params(
-      game: Game,
-      character: Character,
-      versions: T::Array[CharacterVersion],
-      editor_names: T::Hash[Integer, String]
+      game: GamePresenter,
+      character: CharacterPresenter,
+      versions: T::Array[CharacterVersionPresenter]
     ).void
   end
-  def initialize(game:, character:, versions:, editor_names:)
-    @game = T.let(game, Game)
-    @character = T.let(character, Character)
-    @versions = T.let(versions, T::Array[CharacterVersion])
-    @editor_names = T.let(editor_names, T::Hash[Integer, String])
+  def initialize(game:, character:, versions:)
+    @game = T.let(game, GamePresenter)
+    @character = T.let(character, CharacterPresenter)
+    @versions = T.let(versions, T::Array[CharacterVersionPresenter])
   end
 
-  sig { returns(Game) }
+  sig { returns(GamePresenter) }
   attr_reader :game
 
-  sig { returns(Character) }
+  sig { returns(CharacterPresenter) }
   attr_reader :character
 
-  sig { returns(T::Array[CharacterVersion]) }
+  sig { returns(T::Array[CharacterVersionPresenter]) }
   attr_reader :versions
 
   sig { returns(Integer) }
   def version_count
     @versions.size
-  end
-
-  sig { params(version: CharacterVersion).returns(T.nilable(String)) }
-  def editor_name(version)
-    @editor_names[version.id]
   end
 end

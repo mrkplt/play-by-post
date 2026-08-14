@@ -7,20 +7,20 @@
 class Shared::PageDetailComponent < ApplicationComponent
   extend T::Sig
 
-  sig { params(game: Game, page: Page, can_manage: T::Boolean).void }
+  sig { params(game: GamePresenter, page: PagePresenter, can_manage: T::Boolean).void }
   def initialize(game:, page:, can_manage:)
-    @game = T.let(game, Game)
-    @page = T.let(page, Page)
+    @game = T.let(game, GamePresenter)
+    @page = T.let(page, PagePresenter)
     @can_manage = T.let(can_manage, T::Boolean)
   end
 
-  sig { returns(Game) }
+  sig { returns(GamePresenter) }
   attr_reader :game
 
-  sig { returns(Page) }
+  sig { returns(PagePresenter) }
   attr_reader :page
 
-  sig { returns(String) }
+  sig { returns(T.nilable(String)) }
   def title
     @page.title
   end
@@ -32,6 +32,11 @@ class Shared::PageDetailComponent < ApplicationComponent
 
   sig { returns(T::Boolean) }
   def body?
-    @page.body.present?
+    @page.body?
+  end
+
+  sig { returns(String) }
+  def body
+    @page.body
   end
 end

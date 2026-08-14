@@ -5,7 +5,7 @@
     <%= render Shared::HeaderComponent.new(
           title: "New Page",
           breadcrumbs: Shared::BreadcrumbsComponent.new(game: @game),
-          secondary_nav: Shared::GameNavComponent.new(game: @game, active_tab: :pages, can_manage: policy(@game).manage?, mode: :link)) %>
+          secondary_nav: Shared::GameNavComponent.new(game: @game, active_tab: :pages, can_manage: @page_presenter.can_manage_game?, mode: :link)) %>
   <% end %>
 
   <% frame.with_footer do %>
@@ -19,5 +19,5 @@
     <% end %>
   <% end %>
 
-  <%= render Shared::PageFormComponent.new(game: @game, page: @page) %>
+  <%= render Shared::PageFormComponent.new(game: @game_presenter, page: @page_presenter) %>
 <% end %>

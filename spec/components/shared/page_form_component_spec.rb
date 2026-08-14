@@ -2,11 +2,16 @@ require "rails_helper"
 
 RSpec.describe Shared::PageFormComponent, type: :component do
   let(:game) { build_stubbed(:game) }
-  let(:new_page) { game.pages.new }
-  let(:existing_page) { build_stubbed(:page, game: game, title: "Lore", slug: "abc123def456ghij") }
+  let(:game_presenter) { GamePresenter.new(game, policy: instance_double(GamePolicy)) }
+  let(:new_page) { present(game.pages.new) }
+  let(:existing_page) { present(build_stubbed(:page, game: game, title: "Lore", slug: "abc123def456ghij")) }
+
+  def present(page)
+    PagePresenter.new(page, game_policy: instance_double(GamePolicy), page_policy: instance_double(PagePolicy))
+  end
 
   def build_component(page:)
-    described_class.new(game: game, page: page)
+    described_class.new(game: game_presenter, page: page)
   end
 
   def path(name, *args)
@@ -37,7 +42,7 @@ RSpec.describe Shared::PageFormComponent, type: :component do
     it "points an edit's back_href at the page itself" do
       component = build_component(page: existing_page)
       render_inline(component)
-      expect(component.back_href).to eq(path(:game_page_path, game, existing_page))
+      expect(component.back_href).to eq(path(:game_page_path, game, existing_page.to_model))
     end
   end
 

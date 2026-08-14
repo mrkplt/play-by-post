@@ -40,8 +40,11 @@ matcher:
     - NotebookEntry
     # Presenters
     - CharacterPresenter
+    - CharacterVersionPresenter
     - GameFilePresenter
+    - GameLinkPresenter
     - GamePresenter
+    - PagePresenter
     - PostPresenter
     - SceneSummaryPresenter
     - ScenePresenter

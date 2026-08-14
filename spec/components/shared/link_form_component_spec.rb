@@ -2,11 +2,16 @@ require "rails_helper"
 
 RSpec.describe Shared::LinkFormComponent, type: :component do
   let(:game) { build_stubbed(:game) }
-  let(:new_link) { game.game_links.new }
-  let(:existing_link) { build_stubbed(:game_link, game: game, description: "Map", url: "https://example.com/map") }
+  let(:game_presenter) { GamePresenter.new(game, policy: instance_double(GamePolicy)) }
+  let(:new_link) { present(game.game_links.new) }
+  let(:existing_link) { present(build_stubbed(:game_link, game: game, description: "Map", url: "https://example.com/map")) }
+
+  def present(game_link)
+    GameLinkPresenter.new(game_link, policy: instance_double(GameLinkPolicy), game_policy: instance_double(GamePolicy))
+  end
 
   def build_component(game_link:)
-    described_class.new(game: game, game_link: game_link)
+    described_class.new(game: game_presenter, game_link: game_link)
   end
 
   describe "mode derived from the link" do

@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 
 class CharacterVersionsController < ApplicationController
   extend T::Sig
@@ -11,30 +11,49 @@ class CharacterVersionsController < ApplicationController
 
   sig { void }
   def show
-    authorize @version
-    @editor = UserPresenter.new(@version.edited_by)
-    @character_presenter = CharacterPresenter.new(@character, game_policy: policy(@game))
+    authorize version
+    @editor = T.let(UserPresenter.new(version.edited_by), T.nilable(UserPresenter))
+    @character_presenter = T.let(
+      CharacterPresenter.new(character, game_policy: policy(game)),
+      T.nilable(CharacterPresenter)
+    )
+    @version_presenter = T.let(CharacterVersionPresenter.new(version), T.nilable(CharacterVersionPresenter))
   end
 
   private
 
   sig { void }
   def set_game
-    @game = Game.find(params[:game_id])
+    @game = T.let(Game.find(params[:game_id]), T.nilable(Game))
   end
 
   sig { void }
   def set_character
-    @character = @game.characters.find(params[:character_id])
+    @character = T.let(game.characters.find(params[:character_id]), T.nilable(Character))
   end
 
   sig { void }
   def set_version
-    @version = @character.character_versions.find(params[:id])
+    @version = T.let(character.character_versions.find(params[:id]), T.nilable(CharacterVersion))
+  end
+
+  sig { returns(Game) }
+  def game
+    T.must(@game)
+  end
+
+  sig { returns(Character) }
+  def character
+    T.must(@character)
+  end
+
+  sig { returns(CharacterVersion) }
+  def version
+    T.must(@version)
   end
 
   sig { void }
   def require_game_access!
-    redirect_to root_path, alert: "You do not have access to this game." unless policy(@game).view?
+    redirect_to root_path, alert: "You do not have access to this game." unless policy(game).view?
   end
 end

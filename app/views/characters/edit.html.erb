@@ -3,7 +3,7 @@
 <%= render Shared::MobileFrameComponent.new do |frame| %>
   <% frame.with_header do %>
     <%= render Shared::HeaderComponent.new(
-          title: "Edit — #{@character.name}",
+          title: "Edit — #{@character_presenter.name}",
           breadcrumbs: Shared::BreadcrumbsComponent.new(game: @game),
           secondary_nav: Shared::GameNavComponent.new(game: @game, active_tab: :roster, can_manage: @character_presenter.can_manage_game?, mode: :link)) %>
   <% end %>
@@ -11,7 +11,7 @@
   <% frame.with_footer do %>
     <%= render Shared::PageActionsComponent.new do |actions| %>
       <% actions.with_primary do %>
-        <%= render Ui::ButtonComponent.new(html_options: { type: "submit", form: "edit_character_#{@character.id}_form" }) do %>Save<% end %>
+        <%= render Ui::ButtonComponent.new(html_options: { type: "submit", form: "edit_character_#{@character_presenter.id}_form" }) do %>Save<% end %>
       <% end %>
       <% actions.with_cancel do %>
         <%= render Ui::ButtonComponent.new(variant: :secondary, url: game_character_path(@game, @character)) do %>Cancel<% end %>
@@ -20,6 +20,6 @@
   <% end %>
 
   <%= render Shared::CharacterFormComponent.new(
-        game: @game, character: @character,
+        game: @game_presenter, character: @character_presenter, users: [],
         can_assign_owner: @character_presenter.can_assign_owner?) %>
 <% end %>

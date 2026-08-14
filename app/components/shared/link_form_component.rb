@@ -8,16 +8,16 @@
 class Shared::LinkFormComponent < ApplicationComponent
   extend T::Sig
 
-  sig { params(game: Game, game_link: GameLink).void }
+  sig { params(game: GamePresenter, game_link: GameLinkPresenter).void }
   def initialize(game:, game_link:)
-    @game = T.let(game, Game)
-    @game_link = T.let(game_link, GameLink)
+    @game = T.let(game, GamePresenter)
+    @game_link = T.let(game_link, GameLinkPresenter)
   end
 
-  sig { returns(Game) }
+  sig { returns(GamePresenter) }
   attr_reader :game
 
-  sig { returns(GameLink) }
+  sig { returns(GameLinkPresenter) }
   attr_reader :game_link
 
   sig { returns(T::Boolean) }
@@ -42,11 +42,11 @@ class Shared::LinkFormComponent < ApplicationComponent
 
   sig { returns(T::Boolean) }
   def errors?
-    @game_link.errors.any?
+    @game_link.errors?
   end
 
   sig { returns(T::Array[String]) }
   def error_messages
-    @game_link.errors.full_messages
+    @game_link.error_messages
   end
 end

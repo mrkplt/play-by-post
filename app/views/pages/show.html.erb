@@ -3,10 +3,10 @@
 <%= render Shared::MobileFrameComponent.new do |frame| %>
   <% frame.with_header do %>
     <%= render Shared::HeaderComponent.new(
-          title: @page.title,
+          title: @page_presenter.title,
           breadcrumbs: Shared::BreadcrumbsComponent.new(game: @game),
-          secondary_nav: Shared::GameNavComponent.new(game: @game, active_tab: :pages, can_manage: policy(@game).manage?, mode: :link)) %>
+          secondary_nav: Shared::GameNavComponent.new(game: @game, active_tab: :pages, can_manage: @page_presenter.can_manage_game?, mode: :link)) %>
   <% end %>
 
-  <%= render Shared::PageDetailComponent.new(game: @game, page: @page, can_manage: policy(@page).manage?) %>
+  <%= render Shared::PageDetailComponent.new(game: @game_presenter, page: @page_presenter, can_manage: @page_presenter.can_manage?) %>
 <% end %>

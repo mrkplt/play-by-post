@@ -9,16 +9,16 @@
 class Shared::PageFormComponent < ApplicationComponent
   extend T::Sig
 
-  sig { params(game: Game, page: Page).void }
+  sig { params(game: GamePresenter, page: PagePresenter).void }
   def initialize(game:, page:)
-    @game = T.let(game, Game)
-    @page = T.let(page, Page)
+    @game = T.let(game, GamePresenter)
+    @page = T.let(page, PagePresenter)
   end
 
-  sig { returns(Game) }
+  sig { returns(GamePresenter) }
   attr_reader :game
 
-  sig { returns(Page) }
+  sig { returns(PagePresenter) }
   attr_reader :page
 
   sig { returns(T::Boolean) }
@@ -43,11 +43,11 @@ class Shared::PageFormComponent < ApplicationComponent
 
   sig { returns(T::Boolean) }
   def errors?
-    @page.errors.any?
+    @page.errors?
   end
 
   sig { returns(T::Array[String]) }
   def error_messages
-    @page.errors.full_messages
+    @page.error_messages
   end
 end

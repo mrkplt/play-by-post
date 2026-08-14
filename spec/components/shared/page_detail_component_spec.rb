@@ -2,10 +2,15 @@ require "rails_helper"
 
 RSpec.describe Shared::PageDetailComponent, type: :component do
   let(:game) { build_stubbed(:game) }
-  let(:page_record) { build_stubbed(:page, game: game, title: "Lore", slug: "abc123def456ghij", body: "# Heading\n\nBody text.") }
+  let(:game_presenter) { GamePresenter.new(game, policy: instance_double(GamePolicy)) }
+  let(:page_record) { present(build_stubbed(:page, game: game, title: "Lore", slug: "abc123def456ghij", body: "# Heading\n\nBody text.")) }
+
+  def present(page)
+    PagePresenter.new(page, game_policy: instance_double(GamePolicy), page_policy: instance_double(PagePolicy))
+  end
 
   def build_component(**overrides)
-    described_class.new(**{ game: game, page: page_record, can_manage: false }.merge(overrides))
+    described_class.new(**{ game: game_presenter, page: page_record, can_manage: false }.merge(overrides))
   end
 
   describe "GM affordances" do
@@ -31,7 +36,7 @@ RSpec.describe Shared::PageDetailComponent, type: :component do
 
   describe "empty state" do
     it "shows a placeholder when there is no body" do
-      render_inline(build_component(page: build_stubbed(:page, game: game, body: nil)))
+      render_inline(build_component(page: present(build_stubbed(:page, game: game, body: nil))))
       expect(page).to have_text("no content yet")
     end
   end

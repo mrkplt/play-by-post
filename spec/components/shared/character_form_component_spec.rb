@@ -2,13 +2,22 @@ require "rails_helper"
 
 RSpec.describe Shared::CharacterFormComponent, type: :component do
   let(:game) { build_stubbed(:game) }
-  let(:new_character) { game.characters.new }
-  let(:existing_character) { build_stubbed(:character, game: game, name: "Thornwall") }
-  let(:archived_character) { build_stubbed(:character, :archived, game: game, name: "Retired") }
+  let(:game_presenter) { GamePresenter.new(game, policy: instance_double(GamePolicy)) }
+  let(:new_character) { present(game.characters.new) }
+  let(:existing_character) { present(build_stubbed(:character, game: game, name: "Thornwall")) }
+  let(:archived_character) { present(build_stubbed(:character, :archived, game: game, name: "Retired")) }
+
+  def present(character)
+    CharacterPresenter.new(
+      character,
+      game_policy: instance_double(GamePolicy),
+      character_policy: instance_double(CharacterPolicy)
+    )
+  end
 
   def build_component(**overrides)
     described_class.new(
-      **{ game: game, character: new_character, can_assign_owner: false, users: [] }.merge(overrides)
+      **{ game: game_presenter, character: new_character, can_assign_owner: false, users: [] }.merge(overrides)
     )
   end
 
@@ -63,8 +72,8 @@ RSpec.describe Shared::CharacterFormComponent, type: :component do
       nameless = build_stubbed(:user, email: "orc@example.com")
       allow(nameless).to receive(:display_name).and_return(nil)
 
-      options = build_component(users: [ named, nameless ]).owner_options
-      expect(options).to eq([ [ "Elrond", named.id ], [ "orc@example.com", nameless.id ] ])
+      options = build_component(users: [ UserPresenter.new(named), UserPresenter.new(nameless) ]).owner_options
+      expect(options).to eq([ [ "Elrond", named.id ], [ "orc", nameless.id ] ])
     end
   end
 
@@ -102,7 +111,7 @@ RSpec.describe Shared::CharacterFormComponent, type: :component do
     it "renders the owner selector for a GM creating on someone's behalf" do
       user = build_stubbed(:user, email: "player@example.com")
       allow(user).to receive(:display_name).and_return("Aria")
-      render_inline(build_component(character: new_character, can_assign_owner: true, users: [ user ]))
+      render_inline(build_component(character: new_character, can_assign_owner: true, users: [ UserPresenter.new(user) ]))
       expect(page).to have_select("Player", with_options: [ "Aria" ])
     end
   end

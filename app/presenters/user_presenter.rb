@@ -8,6 +8,9 @@ class UserPresenter < BasePresenter
     @model.display_name || @model.email.split("@").first
   end
 
+  sig { returns(T.nilable(Integer)) }
+  def id = @model.id
+
   sig { params(limit: T.nilable(Integer)).returns(ActiveRecord::Relation) }
   def games_by_recent_activity(limit: nil)
     query = @model.games

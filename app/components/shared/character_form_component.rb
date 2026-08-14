@@ -14,23 +14,23 @@ class Shared::CharacterFormComponent < ApplicationComponent
 
   sig do
     params(
-      game: Game,
-      character: Character,
+      game: GamePresenter,
+      character: CharacterPresenter,
       can_assign_owner: T::Boolean,
-      users: T::Array[User]
+      users: T::Array[UserPresenter]
     ).void
   end
   def initialize(game:, character:, can_assign_owner:, users: [])
-    @game = T.let(game, Game)
-    @character = T.let(character, Character)
+    @game = T.let(game, GamePresenter)
+    @character = T.let(character, CharacterPresenter)
     @can_assign_owner = T.let(can_assign_owner, T::Boolean)
-    @users = T.let(users, T::Array[User])
+    @users = T.let(users, T::Array[UserPresenter])
   end
 
-  sig { returns(Game) }
+  sig { returns(GamePresenter) }
   attr_reader :game
 
-  sig { returns(Character) }
+  sig { returns(CharacterPresenter) }
   attr_reader :character
 
   sig { returns(T::Boolean) }
@@ -61,9 +61,9 @@ class Shared::CharacterFormComponent < ApplicationComponent
     !new_record? && @can_assign_owner
   end
 
-  sig { returns(T::Array[[ String, Integer ]]) }
+  sig { returns(T::Array[[ String, T.nilable(Integer) ]]) }
   def owner_options
-    @users.map { |user| [ user.display_name || user.email, user.id ] }
+    @users.map { |user| [ user.display_name_or_email, user.id ] }
   end
 
   sig { returns(String) }
@@ -88,11 +88,11 @@ class Shared::CharacterFormComponent < ApplicationComponent
 
   sig { returns(T::Boolean) }
   def errors?
-    @character.errors.any?
+    @character.errors?
   end
 
   sig { returns(T::Array[String]) }
   def error_messages
-    @character.errors.full_messages
+    @character.error_messages
   end
 end
