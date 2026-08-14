@@ -1,6 +1,6 @@
 <div class="attn-item bg-card border border-card-border rounded-card p-[12px_14px] mb-2.5 last:mb-0 flex flex-col gap-1 <%= "is-hot" if hot? %>">
-  <% if @scene.parent_scene? %>
-    <span class="text-[11px] text-muted-2">&#8617; from <%= link_to @scene.parent_scene_presenter.title, path_for(@scene.parent_scene_presenter), class: "text-accent" %></span>
+  <% if parent_scene? %>
+    <span class="text-[11px] text-muted-2">&#8617; from <%= link_to parent_scene_presenter.title, path_for(parent_scene_presenter), class: "text-accent" %></span>
   <% end %>
 
   <%= link_to @scene.title, scene_path, class: "font-bold text-sm text-ink no-underline" %>

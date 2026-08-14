@@ -1,23 +1,11 @@
 # typed: strict
 
 # The Campaign Notebook: a GM-only kanban of short entries (new / expand /
-# done / discard) that can be "promoted" into a full game Page. Unlike
-# PagesController, every action here is GM-only — there is no read path for
-# other members.
-#
-# Access control is NotebookEntryPolicy's alone: every action authorizes, so
-# there is no `require_gm!` guard restating the same rule here. Actions that
-# are not CRUD name the capability they need (`manage?`) rather than borrowing
-# `update?`, which asks whether the row may be modified — a different question
-# that merely has the same answer while GM and owner are the same person.
-#
-# `@notebook_entry` (set by a before_action, on edit/update/destroy/move/
-# promote) stays the raw AR record — Pundit's `authorize` and the
-# update/destroy calls need it — while `new`/`create` build their own local
-# record instead of an ivar (neither view reads it directly). `@entry_presenter`
-# is what every view actually renders, built fresh after every mutation so it
-# reflects the entry's current state (including validation errors on a failed
-# save).
+# done / discard) that can be "promoted" into a full game Page — every action
+# here is GM-only, authorized solely by NotebookEntryPolicy. `@notebook_entry`
+# stays the raw AR record (Pundit and update/destroy need it); the presenter
+# every view actually renders is `@entry_presenter`, rebuilt via
+# #assign_entry_presenter after every mutation so it reflects current state.
 class NotebookEntriesController < ApplicationController
   extend T::Sig
 
@@ -37,9 +25,7 @@ class NotebookEntriesController < ApplicationController
   def new
     notebook_entry = T.must(@game).notebook_entries.new
     authorize notebook_entry
-    @entry_presenter = T.let(
-      NotebookEntryPresenter.new(notebook_entry), T.nilable(NotebookEntryPresenter)
-    )
+    assign_entry_presenter(notebook_entry)
   end
 
   sig { void }
@@ -50,9 +36,7 @@ class NotebookEntriesController < ApplicationController
     if notebook_entry.save
       redirect_to game_notebook_entries_path(@game), notice: "Entry created."
     else
-      @entry_presenter = T.let(
-        NotebookEntryPresenter.new(notebook_entry), T.nilable(NotebookEntryPresenter)
-      )
+      assign_entry_presenter(notebook_entry)
       respond_to do |format|
         format.turbo_stream { render :create_failed }
         format.html { render :new, status: :unprocessable_content }
@@ -63,9 +47,7 @@ class NotebookEntriesController < ApplicationController
   sig { void }
   def edit
     authorize @notebook_entry
-    @entry_presenter = T.let(
-      NotebookEntryPresenter.new(T.must(@notebook_entry)), T.nilable(NotebookEntryPresenter)
-    )
+    assign_entry_presenter(T.must(@notebook_entry))
   end
 
   sig { void }
@@ -75,9 +57,7 @@ class NotebookEntriesController < ApplicationController
     if T.must(@notebook_entry).update(notebook_entry_params)
       redirect_to edit_game_notebook_entry_path(@game, @notebook_entry), notice: "Entry updated."
     else
-      @entry_presenter = T.let(
-        NotebookEntryPresenter.new(T.must(@notebook_entry)), T.nilable(NotebookEntryPresenter)
-      )
+      assign_entry_presenter(T.must(@notebook_entry))
       render :edit, status: :unprocessable_content
     end
   end
@@ -96,18 +76,12 @@ class NotebookEntriesController < ApplicationController
     lane_move = NotebookLaneMove.new(params)
     T.must(@notebook_entry).update!(lane_move.attributes)
 
-    # On the board the response swaps the affected lanes in place. Off the
-    # board there are no lanes to swap, so say what happened and come back.
-    #
-    # This branches on an explicit form field, not on the request format:
-    # Turbo advertises `text/vnd.turbo-stream.html` for *every* unsafe request,
-    # so a `respond_to` format.html branch would be unreachable here.
+    # Branches on an explicit form field, not request format: Turbo advertises
+    # turbo-stream for every unsafe request, so format.html would be dead code.
     if lane_move.standalone?
       redirect_to edit_game_notebook_entry_path(@game, @notebook_entry), notice: "Entry moved."
     else
-      @entry_presenter = T.let(
-        NotebookEntryPresenter.new(T.must(@notebook_entry)), T.nilable(NotebookEntryPresenter)
-      )
+      assign_entry_presenter(T.must(@notebook_entry))
       render :move, formats: :turbo_stream
     end
   end
@@ -122,6 +96,11 @@ class NotebookEntriesController < ApplicationController
 
   private
 
+  sig { params(notebook_entry: NotebookEntry).void }
+  def assign_entry_presenter(notebook_entry)
+    @entry_presenter = T.let(NotebookEntryPresenter.new(notebook_entry), T.nilable(NotebookEntryPresenter))
+  end
+
   sig { void }
   def set_game
     @game = T.let(Game.find(params[:game_id]), T.nilable(Game))
@@ -132,15 +111,8 @@ class NotebookEntriesController < ApplicationController
     @notebook_entry = T.let(T.must(@game).notebook_entries.find_by!(slug: params[:slug]), T.nilable(NotebookEntry))
   end
 
-  # The notebook's screens render the game nav, which asks whether the viewer
-  # may administer the game. Every action here is already GM-only, so the answer
-  # is always true today — but the view asks the policy for it rather than
-  # hard-coding a literal, so it stays correct when the rule granularizes.
-  #
-  # Memoized rather than set by a before_action: the actions that render it are
-  # not the ones named after it (create and update re-render :new and :edit on
-  # validation failure), and a lazily-built presenter cannot be missed off that
-  # list.
+  # Memoized rather than set by a before_action: the actions that render it
+  # (create/update on validation failure) are not named after it.
   sig { returns(GamePresenter) }
   def game_presenter
     @game_presenter ||= T.let(GamePresenter.new(T.must(@game), policy: policy(@game)), T.nilable(GamePresenter))
