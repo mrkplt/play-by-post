@@ -85,11 +85,34 @@ def css_statements_in_content(content)
   count
 end
 
+# Counts statements in a co-located component stylesheet. A `.css` file states
+# style two ways, and both are counted at the same granularity the ERB side
+# uses:
+#   `position: fixed;`        — one declaration, like one `style="..."` entry
+#   `@apply max-w-full ...;`  — each utility, like one `class="..."` token
+#
+# Comments are stripped first: a block comment can otherwise contain colons and
+# semicolons that read as declarations. Selectors, braces and other at-rules
+# are not statements.
+CSS_DECLARATION_RE = /^[^{}@]*?[\w-]+\s*:\s*[^;{}]+;/
+CSS_APPLY_RE = /@apply\s+([^;{}]+);/
+
+def css_declarations_in_content(content)
+  body = content.gsub(%r{/\*.*?\*/}m, "")
+  applied = body.scan(CSS_APPLY_RE).sum { |m| m[0].split.size }
+
+  body.scan(CSS_DECLARATION_RE).size + applied
+end
+
 def count_css_statements_in_files(files)
   count = 0
   files.each do |file|
     content = File.read(file, encoding: "utf-8")
-    count += css_statements_in_content(content)
+    count += if File.extname(file) == ".css"
+      css_declarations_in_content(content)
+    else
+      css_statements_in_content(content)
+    end
   rescue Encoding::InvalidByteSequenceError, Encoding::UndefinedConversionError
     # skip non-UTF-8 files
   end
@@ -97,8 +120,15 @@ def count_css_statements_in_files(files)
 end
 
 def collect_css_metrics
-  view_files      = Dir.glob(File.join(PROJECT_ROOT, "app/views/**/*.html.erb"))
-  component_files = Dir.glob(File.join(PROJECT_ROOT, "app/components/**/*.html.erb"))
+  view_files = Dir.glob(File.join(PROJECT_ROOT, "app/views/**/*.html.erb"))
+
+  # Co-located component stylesheets count toward the component side. Without
+  # them the ratio punishes exactly the pattern the style guide prescribes for
+  # a component with real CSS (sidebar_component.css, secret_field_component.css,
+  # markdown_editor_component.css, ...): moving rules out of an ERB's class
+  # attributes into a stylesheet used to read as a regression.
+  component_files = Dir.glob(File.join(PROJECT_ROOT, "app/components/**/*.html.erb")) +
+    Dir.glob(File.join(PROJECT_ROOT, "app/components/**/*.css"))
 
   view_css      = count_css_statements_in_files(view_files)
   component_css = count_css_statements_in_files(component_files)
