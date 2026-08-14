@@ -50,6 +50,7 @@ matcher:
     - RosterCharacterPresenter
     - SceneSummaryPresenter
     - ScenePresenter
+    - SceneShowPresenter
     - ScenePageAction
     - ScenePageAction::Viewer
     - ScenePageAction::Resolved
