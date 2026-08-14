@@ -105,6 +105,10 @@ class Shared::NotebookLaneComponent < ApplicationComponent
     self.class.empty_text_for(@status)
   end
 
+  # Sits on the lane's outermost element, not on its inner list. The move
+  # stream replaces this id with a whole re-rendered lane, so anchoring it to
+  # the list would nest a second copy of the heading inside the first on every
+  # move — the board grew a "NEW"/"EXPAND" heading per move.
   sig { returns(String) }
   def dom_id
     Shared::NotebookBoardComponent.column_id(@status)

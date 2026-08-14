@@ -81,6 +81,49 @@ RSpec.describe "Campaign Notebook", type: :feature do
       expect(page).to have_no_css("[data-markdown-preview-target='preview']")
     end
 
+    it "gives the entry actions >= 44px touch targets" do
+      entry = create(:notebook_entry, game: game, title: "Doomed Idea")
+      resize_window_to_viewport(*ViewportHelper::VIEWPORTS.fetch("mobile (375px)"))
+      sign_in_as(gm)
+      visit edit_game_notebook_entry_path(game, entry)
+
+      # Promote and Delete sit side by side and Delete is irreversible, so both
+      # need a real target — as bare text they were 16px tall and mis-tapped.
+      %w[Promote Delete].each do |label|
+        height = page.evaluate_script(<<~JS)
+          Array.from(document.querySelectorAll('button'))
+            .find(b => b.textContent.trim() === '#{label}')
+            .getBoundingClientRect().height
+        JS
+        expect(height).to be >= 44, "expected #{label} to have a >= 44px touch target, got #{height}px"
+      end
+    end
+
+    it "renders each lane heading once no matter how many moves the GM makes" do
+      create(:notebook_entry, game: game, title: "A wandering merchant", status: "new")
+      sign_in_as(gm)
+      visit game_notebook_entries_path(game)
+
+      3.times do |i|
+        destination = i.even? ? "Expand" : "New"
+        source_column = i.even? ? "#notebook_column_new" : "#notebook_column_expand"
+
+        within source_column do
+          select destination, from: "notebook_entry[status]"
+        end
+
+        expect(page).to have_css("#notebook_column_#{destination.downcase}", text: "A wandering merchant")
+      end
+
+      # A lane replaced by the move stream must not accumulate a heading each
+      # time. The headings nest, so this counts the heading elements themselves
+      # rather than asserting on text an ancestor also contains.
+      # Uppercased by CSS, so match what the GM actually reads on screen.
+      %w[NEW EXPAND DONE].each do |heading|
+        expect(page).to have_css("[data-section-label]", exact_text: heading, count: 1)
+      end
+    end
+
     it "moves an entry between lanes from its edit screen" do
       entry = create(:notebook_entry, game: game, title: "A wandering merchant", status: "new")
       sign_in_as(gm)
