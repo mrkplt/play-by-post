@@ -87,17 +87,14 @@ class ScenePresenter < BasePresenter
     @model.created_at.strftime("%b %-d, %Y %l:%M%P")
   end
 
-  sig { returns(ActiveStorage::VariantWithRecord) }
-  def banner_image
-    @model.image.variant(resize_to_limit: [ 1200, nil ], format: :jpeg, quality: 85)
-  end
-
-  # The GM-facing resolution text shown once a scene is resolved. Named for
-  # what it shows rather than delegated to raw `resolution`, so the presenter
-  # (not the component) owns reading it off the model.
+  # The GM-facing resolution text shown once a scene is resolved, or nil when
+  # there is none — named for what it shows rather than delegated to raw
+  # `resolution`, so the presenter (not the component) owns reading it off
+  # the model. `nil` (not blank-string) doubles as the template's presence
+  # gate, via `<% if (resolution = @scene_presenter.resolution) %>`.
   sig { returns(T.nilable(String)) }
   def resolution
-    @model.resolution
+    @model.resolution.presence
   end
 
   # The "End Scene" form's submit target, resolved from the game and
