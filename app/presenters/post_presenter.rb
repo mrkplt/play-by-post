@@ -57,6 +57,11 @@ class PostPresenter < BasePresenter
     @model.display_image # mutant:disable
   end
 
+  sig { returns(T::Boolean) }
+  def image_attached?
+    @model.image.attached? # mutant:disable
+  end
+
   sig { returns(User) }
   def user
     @model.user # mutant:disable
@@ -67,10 +72,55 @@ class PostPresenter < BasePresenter
     @model.scene # mutant:disable
   end
 
+  sig { returns(String) }
+  def content
+    @model.content.to_s # mutant:disable
+  end
+
+  # Whether this post's author is the game's GM — the post item's avatar-tone
+  # decision (dark for the GM, gold for players). Asks the game directly
+  # rather than a policy: this is a display fact about who wrote the post, not
+  # an authorization question. The game is supplied at construction
+  # (options[:game]) so the presenter never looks up its own collaborators.
+  sig { returns(T::Boolean) }
+  def author_is_gm?
+    @options.fetch(:game).game_master?(@model.user) # mutant:disable
+  end
+
+  # The "mark read" endpoint for this post — resolved here so the component
+  # never holds the game/scene models it would need to build the URL itself.
+  # `urls`/`game`/`scene` are supplied at construction (options[:urls],
+  # options[:game], options[:scene]).
+  sig { returns(String) }
+  def mark_read_url
+    url_helpers.mark_read_game_scene_post_path(post_game, post_scene, @model) # mutant:disable
+  end
+
+  # The edit-this-post URL, resolved the same way as mark_read_url.
+  sig { returns(String) }
+  def edit_url
+    url_helpers.edit_game_scene_post_path(post_game, post_scene, @model) # mutant:disable
+  end
+
   private
 
   sig { returns(T::Array[SceneParticipant]) }
   def scene_participants
     @options.fetch(:scene_participants, [])
+  end
+
+  sig { returns(T.untyped) }
+  def url_helpers
+    @options.fetch(:urls)
+  end
+
+  sig { returns(Game) }
+  def post_game
+    @options.fetch(:game)
+  end
+
+  sig { returns(Scene) }
+  def post_scene
+    @options.fetch(:scene, @model.scene)
   end
 end

@@ -7,25 +7,28 @@
 class Shared::DraftRecoveryComponent < ApplicationComponent
   extend T::Sig
 
-  sig { params(game: Game, scene: Scene, draft: T.nilable(Post)).void }
+  sig { params(game: GamePresenter, scene: ScenePresenter, draft: T.nilable(PostPresenter)).void }
   def initialize(game:, scene:, draft:)
-    @game = T.let(game, Game)
-    @scene = T.let(scene, Scene)
-    @draft = T.let(draft, T.nilable(Post))
+    @game = T.let(game, GamePresenter)
+    @scene = T.let(scene, ScenePresenter)
+    @draft = T.let(draft, T.nilable(PostPresenter))
   end
 
   sig { returns(T::Boolean) }
   def draft?
-    @draft.present?
+    case @draft
+    when nil then false
+    else true
+    end
   end
 
   sig { returns(String) }
   def draft_content
-    T.must(@draft).content.to_s
+    T.must(@draft).content
   end
 
   sig { returns(String) }
   def discard_path
-    helpers.discard_draft_game_scene_posts_path(@game, @scene)
+    @scene.discard_draft_url
   end
 end

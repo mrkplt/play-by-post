@@ -41,9 +41,11 @@ RSpec.describe ScenePresenter do
   describe "#recoverable_draft" do
     let(:draft) { build_stubbed(:post, :draft, scene: scene) }
 
-    it "is the draft when the scene is resolved" do
+    it "wraps the draft in a PostPresenter when the scene is resolved" do
       allow(scene).to receive(:resolved?).and_return(true)
-      expect(presenter.recoverable_draft(draft)).to eq(draft)
+      result = presenter.recoverable_draft(draft)
+      expect(result).to be_a(PostPresenter)
+      expect(result.__getobj__).to eq(draft)
     end
 
     it "is nil when the scene is not resolved, even with a draft present" do
@@ -99,6 +101,30 @@ RSpec.describe ScenePresenter do
 
       expect(page_action).to be_nil
       expect(urls).not_to have_received(:join_game_scene_participants_path)
+    end
+  end
+
+  describe "#save_draft_url" do
+    let(:game) { build_stubbed(:game) }
+    let(:urls) { double(save_draft_game_scene_posts_path: "/games/1/scenes/2/posts/save_draft") }
+
+    subject(:presenter) { described_class.new(scene, game: game, urls: urls) }
+
+    it "resolves the save-draft URL against its own game and scene" do
+      expect(presenter.save_draft_url).to eq("/games/1/scenes/2/posts/save_draft")
+      expect(urls).to have_received(:save_draft_game_scene_posts_path).with(game, scene)
+    end
+  end
+
+  describe "#discard_draft_url" do
+    let(:game) { build_stubbed(:game) }
+    let(:urls) { double(discard_draft_game_scene_posts_path: "/games/1/scenes/2/posts/discard_draft") }
+
+    subject(:presenter) { described_class.new(scene, game: game, urls: urls) }
+
+    it "resolves the discard-draft URL against its own game and scene" do
+      expect(presenter.discard_draft_url).to eq("/games/1/scenes/2/posts/discard_draft")
+      expect(urls).to have_received(:discard_draft_game_scene_posts_path).with(game, scene)
     end
   end
 

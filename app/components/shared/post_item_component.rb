@@ -6,16 +6,12 @@ class Shared::PostItemComponent < ApplicationComponent
   sig do
     params(
       post: PostPresenter,
-      game: Game,
-      current_user: User,
-      scene: T.nilable(Scene),
+      scene: T.nilable(ScenePresenter),
       read_post_ids: T.nilable(T::Set[Integer])
     ).void
   end
-  def initialize(post:, game:, current_user:, scene: nil, read_post_ids: nil)
+  def initialize(post:, scene: nil, read_post_ids: nil)
     @post = post
-    @game = game
-    @current_user = current_user
     @scene = scene
     @read_post_ids = read_post_ids
   end
@@ -47,6 +43,6 @@ class Shared::PostItemComponent < ApplicationComponent
   # Avatar tone: the GM's monogram is dark, players' are gold.
   sig { returns(Symbol) }
   def avatar_tone
-    @game.game_master?(@post.user) ? :dark : :gold
+    @post.author_is_gm? ? :dark : :gold
   end
 end

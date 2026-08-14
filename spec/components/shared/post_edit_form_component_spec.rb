@@ -1,12 +1,16 @@
 require "rails_helper"
 
 RSpec.describe Shared::PostEditFormComponent, type: :component do
-  let(:game) { build_stubbed(:game) }
-  let(:scene) { build_stubbed(:scene, game: game) }
-  let(:post_record) { build_stubbed(:post, scene: scene, content: "Original body") }
+  let(:raw_game) { build_stubbed(:game) }
+  let(:raw_scene) { build_stubbed(:scene, game: raw_game) }
+  let(:post_record) { build_stubbed(:post, scene: raw_scene, content: "Original body") }
+
+  let(:game_presenter) { GamePresenter.new(raw_game, policy: instance_double(GamePolicy, manage?: true)) }
+  let(:scene_presenter) { ScenePresenter.new(raw_scene) }
+  let(:post_presenter) { PostPresenter.new(post_record) }
 
   subject(:render_form) do
-    render_inline(described_class.new(game: game, scene: scene, post: post_record))
+    render_inline(described_class.new(game: game_presenter, scene: scene_presenter, post: post_presenter))
   end
 
   it "renders the markdown toolbar over the post body editor" do

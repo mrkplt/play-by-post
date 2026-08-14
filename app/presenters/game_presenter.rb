@@ -49,4 +49,11 @@ class GamePresenter < BasePresenter
   def notebook_board
     NotebookBoardPresenter.new(@model)
   end
+
+  # Whether image attachments are turned off for this game — the post
+  # composer's decision on whether to show its image field.
+  sig { returns(T::Boolean) }
+  def images_disabled?
+    @model.images_disabled? # mutant:disable
+  end
 end
