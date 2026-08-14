@@ -39,8 +39,11 @@ matcher:
     - GameLink
     - NotebookEntry
     # Presenters
+    - BannedMemberPresenter
     - CharacterPresenter
     - CharacterVersionPresenter
+    - GameDashboardItemPresenter
+    - GameDashboardPresenter
     - GameFilePresenter
     - GameMemberPresenter
     - GameFeedRowPresenter
@@ -51,6 +54,7 @@ matcher:
     - NotebookEntryPresenter
     - PagePresenter
     - PostPresenter
+    - RosterCharacterPresenter
     - ScenePlayerPresenter
     - SceneSummaryPresenter
     - SceneSummaryCollectionPresenter
@@ -61,6 +65,7 @@ matcher:
     - ScenePageAction::Viewer
     - ScenePageAction::Resolved
     - ScenePageAction::RouteArgs
+    - SceneTreePresenter
     - UserPresenter
     - UserProfilePresenter
     # Components

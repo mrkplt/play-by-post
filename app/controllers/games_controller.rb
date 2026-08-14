@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 
 class GamesController < ApplicationController
   extend T::Sig
@@ -9,64 +9,35 @@ class GamesController < ApplicationController
 
   sig { void }
   def index
-    @memberships = current_user.game_members
-      .where.not(status: "banned")
-      # Drop memberships whose game was soft-deleted — the default scope makes
-      # membership.game nil for those, so they must not reach the dashboard loop.
-      # Game.all carries the default scope, so this is IN (kept game ids).
-      .where(game_id: Game.all)
-      .includes(game: %i[scenes])
-      .order("games.name")
+    memberships = dashboard_memberships
 
-    last_login_at = current_user.user_profile&.last_login_at
-    game_ids = @memberships.filter_map(&:game_id)
-
-    games_with_new_activity = if last_login_at && game_ids.any?
-      Post.joins(:scene)
-        .where(scenes: { game_id: game_ids })
-        .where("posts.created_at > ?", last_login_at)
-        .distinct
-        .pluck("scenes.game_id")
-    else
-      []
-    end
-
-    @dashboard_items = @memberships.map do |membership|
-      game = T.must(membership.game)
-      active_scenes = game.scenes.where(resolved_at: nil).count
-      user_characters = game.characters.active.where(user: current_user).to_a
-      primary_character = user_characters.first
-      additional_character_count = [ user_characters.length - 1, 0 ].max
-      {
-        game: GamePresenter.new(game, policy: policy(game)),
-        membership: membership,
-        active_scene_count: active_scenes,
-        primary_character: primary_character,
-        additional_character_count: additional_character_count,
-        character_label: character_label_for(primary_character, additional_character_count),
-        can_manage: policy(game).manage?,
-        former: membership.removed?,
-        new_activity: games_with_new_activity.include?(game.id)
-      }
-    end
+    @dashboard_presenter = T.let(
+      GameDashboardPresenter.new(
+        memberships,
+        current_user: current_user,
+        policy_by_game_id: policy_by_game_id(memberships),
+        games_with_new_activity: games_with_new_activity(memberships)
+      ),
+      T.nilable(GameDashboardPresenter)
+    )
   end
 
   sig { void }
   def new
-    @game = Game.new
-    authorize @game
-    @game_presenter = GamePresenter.new(@game, policy: policy(@game))
+    game = Game.new
+    authorize game
+    @game_presenter = T.let(GamePresenter.new(game, policy: policy(game)), T.nilable(GamePresenter))
   end
 
   sig { void }
   def create
-    @game = Game.new(game_params)
-    authorize @game
-    if @game.save
-      @game.game_members.create!(user: current_user, role: "game_master", status: "active")
-      redirect_to @game, notice: "Game created."
+    game = Game.new(game_params)
+    authorize game
+    if game.save
+      game.game_members.create!(user: current_user, role: "game_master", status: "active")
+      redirect_to game, notice: "Game created."
     else
-      @game_presenter = GamePresenter.new(@game, policy: policy(@game))
+      @game_presenter = T.let(GamePresenter.new(game, policy: policy(game)), T.nilable(GamePresenter))
       render :new, status: :unprocessable_content
     end
   end
@@ -74,81 +45,47 @@ class GamesController < ApplicationController
   sig { void }
   def toggle_sheets_hidden
     authorize @game, :manage?
-    @game.update!(sheets_hidden: !@game.sheets_hidden?)
-    redirect_to game_path(@game), notice: @game.sheets_hidden? ? "Character sheets are now hidden." : "Character sheets are now visible."
+    game.update!(sheets_hidden: !game.sheets_hidden?)
+    redirect_to game_path(game), notice: game.sheets_hidden? ? "Character sheets are now hidden." : "Character sheets are now visible."
   end
 
   sig { void }
   def toggle_images_disabled
     authorize @game, :manage?
-    @game.update!(images_disabled: !@game.images_disabled?)
-    redirect_to edit_game_path(@game), notice: @game.images_disabled? ? "Image attachments are now disabled." : "Image attachments are now enabled."
+    game.update!(images_disabled: !game.images_disabled?)
+    redirect_to edit_game_path(game), notice: game.images_disabled? ? "Image attachments are now disabled." : "Image attachments are now enabled."
   end
 
   sig { void }
   # mutant:disable
   def toggle_ai_summaries_enabled
     authorize @game, :manage?
-    @game.update!(ai_summaries_enabled: !@game.ai_summaries_enabled?)
-    redirect_to game_player_management_path(@game), notice: @game.ai_summaries_enabled? ? "AI scene summaries enabled." : "AI scene summaries disabled."
+    game.update!(ai_summaries_enabled: !game.ai_summaries_enabled?)
+    redirect_to game_player_management_path(game), notice: game.ai_summaries_enabled? ? "AI scene summaries enabled." : "AI scene summaries disabled."
   end
 
   sig { void }
   def show
     authorize @game
-    @game_presenter = GamePresenter.new(@game, policy: policy(@game), urls: self)
-
-    raw_scenes = @game.scenes
-      .visible_to(current_user, @game)
-      .active
-      .includes(:parent_scene, :child_scenes, :posts, scene_participants: [ :character, :user ])
-      .to_a
-      .sort_by { |s| -s.last_activity_at.to_i }
-    @active_scenes = raw_scenes.map { |s| ScenePresenter.new(s) }
-
-    @gm_name = gm_display_name
-    @roster_preview = roster_preview_rows(raw_scenes)
-    @hot_scene_ids = hot_scene_ids(raw_scenes)
-
-    # Roster tab
-    characters = @game.characters.active.visible_to(current_user, @game).includes(:user).order(:name).to_a
-    removed_user_ids = @game.game_members.where(status: "removed").pluck(:user_id).to_set
-    @roster_characters = characters.map do |c|
-      owner_name = UserPresenter.new(c.user).display_name_or_email
-      removed = removed_user_ids.include?(c.user_id)
-      {
-        character: c,
-        owner_name: owner_name,
-        removed: removed,
-        avatar_tone: removed ? :muted : :gold,
-        filter_key: "#{c.name} #{owner_name}".downcase
-      }
-    end
-    @inactive_count = @game.characters.archived.visible_to(current_user, @game).count
-    @banned_members = policy(@game).manage? ? @game.game_members.where(status: "banned").includes(:user).to_a : []
-    @banned_names = @banned_members.each_with_object({}) do |m, h|
-      h[m.user_id] = UserPresenter.new(m.user).display_name_or_email
-    end
-
-    # Files tab
-    @game_files = @game.game_files.includes(file_attachment: :blob).order(created_at: :desc)
-      .map { |gf| GameFilePresenter.new(gf, game: @game, helpers: helpers, can_manage: @game_presenter.can_manage?) }
-    @game_file_presenter = GameFilePresenter.new(@game.game_files.new)
+    @game_presenter = T.let(
+      GamePresenter.new(game, policy: policy(@game), current_user: current_user, urls: self, helpers: helpers),
+      T.nilable(GamePresenter)
+    )
   end
 
   sig { void }
   def edit
     authorize @game
-    @game_presenter = GamePresenter.new(@game, policy: policy(@game))
+    @game_presenter = T.let(GamePresenter.new(game, policy: policy(@game)), T.nilable(GamePresenter))
   end
 
   sig { void }
   def update
     authorize @game
-    if @game.update(game_params)
-      redirect_to game_player_management_path(@game), notice: "Game updated."
+    if game.update(game_params)
+      redirect_to game_player_management_path(game), notice: "Game updated."
     else
-      @game_presenter = GamePresenter.new(@game, policy: policy(@game))
+      @game_presenter = T.let(GamePresenter.new(game, policy: policy(@game)), T.nilable(GamePresenter))
       render :edit, status: :unprocessable_content
     end
   end
@@ -156,54 +93,67 @@ class GamesController < ApplicationController
   sig { void }
   def destroy
     authorize @game
-    @game.soft_delete!
-    redirect_to root_path, notice: "\"#{@game.name}\" has been deleted."
+    game.soft_delete!
+    redirect_to root_path, notice: "\"#{game.name}\" has been deleted."
   end
 
   private
 
-  # "Vex Marrowgate +1" — primary character plus a count of the rest, or nil
-  # when the player has no character in the game.
-  sig { params(primary: T.nilable(Character), extra: Integer).returns(T.nilable(String)) }
-  def character_label_for(primary, extra)
-    return nil if primary.nil?
-
-    extra.positive? ? "#{primary.name} +#{extra}" : primary.name
+  # Active/former memberships for the dashboard, oldest-game-name first.
+  # Memberships whose game was soft-deleted are dropped: the default scope
+  # makes membership.game nil for those, so they must not reach the dashboard
+  # loop. Game.all carries the default scope, so this is IN (kept game ids).
+  sig { returns(T::Array[GameMember]) }
+  def dashboard_memberships
+    current_user.game_members
+      .where.not(status: "banned")
+      .where(game_id: Game.all)
+      .includes(game: %i[scenes])
+      .order("games.name")
+      .to_a
   end
 
-  sig { returns(String) }
-  def gm_display_name
-    gm = @game.game_members.game_masters.includes(:user).first&.user
-    gm ? UserPresenter.new(gm).display_name_or_email : "GM"
-  end
+  # Pundit's policy per game, built once in the controller (where policies
+  # belong) rather than looked up per-item in the presenter (R2). Each
+  # GameDashboardItemPresenter wraps its game in a GamePresenter carrying
+  # this same policy, so the card's crown and the "can_manage" flag can
+  # never disagree.
+  sig { params(memberships: T::Array[GameMember]).returns(T::Hash[Integer, GamePolicy]) }
+  def policy_by_game_id(memberships)
+    memberships.each_with_object({}) do |membership, hash|
+      game = membership.game
+      next if game.nil?
 
-  # The "In Active Scenes" roster preview: the GM, then each character
-  # participating in an active scene paired with that scene's title. Banned
-  # players are already excluded from scene participation.
-  sig { params(scenes: T::Array[Scene]).returns(T::Array[T::Hash[Symbol, String]]) }
-  def roster_preview_rows(scenes)
-    rows = scenes.flat_map do |scene|
-      scene.scene_participants.filter_map do |sp|
-        next unless sp.character
-
-        { name: T.must(sp.character).name, scene: scene.title }
-      end
+      hash[game.id] = policy(game)
     end
-    rows.uniq { |r| r[:name] }.first(5)
   end
 
-  # Scenes with activity since the viewer last logged in get the attention glow.
-  sig { params(scenes: T::Array[Scene]).returns(T::Set[Integer]) }
-  def hot_scene_ids(scenes)
-    last_login = current_user.user_profile&.last_login_at
-    return Set.new unless last_login
+  # Ids of games with a post newer than the viewer's last login — the dashboard
+  # card's "new activity" glow.
+  sig { params(memberships: T::Array[GameMember]).returns(T::Array[Integer]) }
+  def games_with_new_activity(memberships)
+    last_login_at = current_user.user_profile&.last_login_at
+    game_ids = memberships.filter_map(&:game_id)
+    return [] unless last_login_at && game_ids.any?
 
-    Set.new(scenes.select { |s| s.last_activity_at.to_i > last_login.to_i }.map(&:id))
+    Post.joins(:scene)
+      .where(scenes: { game_id: game_ids })
+      .where("posts.created_at > ?", last_login_at)
+      .distinct
+      .pluck("scenes.game_id")
   end
 
   sig { void }
   def set_game
-    @game = Game.find(params[:id])
+    @game = T.let(Game.find(params[:id]), T.nilable(Game))
+  end
+
+  # @game is always populated by set_game for every action that reads it
+  # (declared T.nilable only because Sorbet strict requires ivars assigned
+  # outside `initialize` to admit nil).
+  sig { returns(Game) }
+  def game
+    T.must(@game)
   end
 
   # Not redundant with `authorize`: this gates before the action runs and gives

@@ -3,6 +3,30 @@
 class ScenePresenter < BasePresenter
   extend T::Sig
 
+  sig { params(model: Scene, options: T.untyped).void }
+  def initialize(model, **options)
+    super
+  end
+
+  # The wrapped Scene, for the rare place that legitimately needs the raw
+  # model: ScenePageAction's sig requires one, and SceneShowPresenter wraps a
+  # ScenePresenter rather than a Scene. Everything else goes through a named
+  # presenter method instead.
+  sig { returns(Scene) }
+  def model
+    @model
+  end
+
+  # Whether this scene has activity since the viewer last logged in — the
+  # dashboard/game-view card's attention glow. `hot_scene_ids` is supplied at
+  # construction (options[:hot_scene_ids], defaulting to none) rather than
+  # computed here, since "last login" is a viewer fact the presenter is not
+  # constructed with by every caller.
+  sig { returns(T::Boolean) }
+  def hot?
+    @options.fetch(:hot_scene_ids, Set.new).include?(@model.id)
+  end
+
   sig { returns(String) }
   def title
     @model.title
@@ -149,31 +173,29 @@ class ScenePresenter < BasePresenter
     muted ? "Unmute notifications" : "Mute notifications"
   end
 
-  # The draft worth surfacing as a recovery notice, wrapped for
+  # The draft worth surfacing as a recovery notice for
   # Shared::DraftRecoveryComponent: the composer disappears once a scene
   # resolves, so a leftover draft is only worth recovering in that state.
-  # `draft` is whatever model the controller found (or nil).
-  sig { params(draft: T.nilable(Post)).returns(T.nilable(PostPresenter)) }
+  # `draft` is whatever #draft found (or nil), already wrapped.
+  sig { params(draft: T.nilable(PostPresenter)).returns(T.nilable(PostPresenter)) }
   def recoverable_draft(draft)
-    return nil unless @model.resolved? && draft
-
-    PostPresenter.new(draft)
+    @model.resolved? ? draft : nil
   end
 
   # The scene screen's footer page-action, resolved to a render-ready
   # label/href/method triple; ScenePageAction owns the rule and the shape.
   # The game and url_helpers come from construction, so the view reads a
   # finished href rather than handing the presenter a route helper.
-  sig do
-    params(can_manage: T::Boolean, is_participant: T::Boolean,
-           membership: T.nilable(GameMember))
-      .returns(T.nilable(ScenePageAction::Resolved))
-  end
-  def page_action(can_manage:, is_participant:, membership:)
+  # `can_manage` is the one viewer fact this presenter is not constructed
+  # with (it is GamePresenter's capability, asked of the injected GamePolicy),
+  # so it is the only remaining parameter; participation and membership are
+  # this presenter's own to derive.
+  sig { params(can_manage: T::Boolean).returns(T.nilable(ScenePageAction::Resolved)) }
+  def page_action(can_manage:)
     ScenePageAction.resolved_for(
       scene: @model,
       viewer: ScenePageAction::Viewer.new(
-        can_manage: can_manage, is_participant: is_participant, membership: membership
+        can_manage: can_manage, is_participant: participant?, membership: viewer_membership
       ),
       route_args: ScenePageAction::RouteArgs.new(
         urls: @options[:urls], game: @options[:game]
@@ -196,6 +218,89 @@ class ScenePresenter < BasePresenter
     url_helpers.discard_draft_game_scene_posts_path(scene_game, @model) # mutant:disable
   end
 
+  # Whether the viewer participates in this scene — the scene-screen footer
+  # action's viewer fact. `current_user` is supplied at construction
+  # (options[:current_user]).
+  sig { returns(T::Boolean) }
+  def participant?
+    @model.participant?(viewer)
+  end
+
+  # The viewer's membership in this scene's game, or nil — the other viewer
+  # fact ScenePageAction needs.
+  sig { returns(T.nilable(GameMember)) }
+  def viewer_membership
+    scene_game.member_for(viewer)
+  end
+
+  # Whether the viewer has muted notifications for this scene.
+  sig { returns(T::Boolean) }
+  def muted?
+    NotificationPreference.muted?(@model, viewer)
+  end
+
+  # Whether the viewer's OOC-post filter is on, from their profile — off by
+  # default when there is no profile yet.
+  sig { returns(T::Boolean) }
+  def hide_ooc?
+    viewer.user_profile&.hide_ooc? || false
+  end
+
+  # Child scenes visible to the viewer, oldest first, wrapped for
+  # Shared::ChildSceneListComponent — the scene screen's thread-continuation
+  # list. Named distinctly from #child_scenes_in (which filters by game only,
+  # for the card use case) because this one is additionally scoped to what
+  # the viewer may see.
+  sig { returns(T::Array[ScenePresenter]) }
+  def visible_child_scenes
+    @model.child_scenes.visible_to(viewer, scene_game).order(:created_at).to_a.map { |s| ScenePresenter.new(s) }
+  end
+
+  # Ids of this scene's posts the viewer has already read — the unread-aura
+  # data Shared::PostItemComponent needs per post.
+  sig { returns(T::Set[Integer]) }
+  def read_post_ids
+    SceneReadState.for(scene: @model, posts: published_posts, user: viewer)
+  end
+
+  # Published posts, oldest first, each wrapped for display — the scene
+  # screen's post list. Built and supplied by the controller
+  # (options[:post_presenters]) rather than built here: each post needs its
+  # own PostPolicy, and presenters never construct authorization (R2) — only
+  # the controller has Pundit's policy(post) to hand over already resolved.
+  sig { returns(T::Array[PostPresenter]) }
+  def post_presenters
+    @options.fetch(:post_presenters, [])
+  end
+
+  sig { returns(T::Boolean) }
+  def posts_empty?
+    post_presenters.empty?
+  end
+
+  # The viewer's own draft in this scene, if any, wrapped for the composer
+  # and the draft-recovery notice.
+  sig { returns(T.nilable(PostPresenter)) }
+  def draft
+    found = @model.posts.drafts.find_by(user: viewer)
+    return nil unless found
+
+    PostPresenter.new(found)
+  end
+
+  # A blank post for the composer form, wrapped the same way.
+  sig { returns(PostPresenter) }
+  def new_post
+    PostPresenter.new(Post.new)
+  end
+
+  # Marks the viewer's participation as visited now — called once per #show,
+  # not idempotent by design (it is the "last seen" timestamp).
+  sig { void }
+  def mark_visited!
+    @model.scene_participants.find_by(user: viewer)&.update(last_visited_at: Time.current)
+  end
+
   private
 
   sig { returns(T.untyped) }
@@ -206,5 +311,18 @@ class ScenePresenter < BasePresenter
   sig { returns(Game) }
   def scene_game
     @options.fetch(:game)
+  end
+
+  sig { returns(User) }
+  def viewer
+    @options.fetch(:current_user)
+  end
+
+  sig { returns(T::Array[Post]) }
+  def published_posts
+    @published_posts ||= T.let(
+      @model.posts.published.includes(:user).order(:created_at).to_a,
+      T.nilable(T::Array[Post])
+    )
   end
 end

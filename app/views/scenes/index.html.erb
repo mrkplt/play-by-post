@@ -18,11 +18,11 @@
     <% end %>
   <% end %>
 
-  <% if @trees.empty? %>
+  <% if @scene_tree_presenter.empty? %>
     <p class="text-muted-2 text-sm">No scenes yet.</p>
   <% else %>
     <div class="text-sm">
-      <% @trees.each do |tree| %>
+      <% @scene_tree_presenter.trees.each do |tree| %>
         <%= render Shared::TreeNodeComponent.new(node: tree, game_presenter: @game_presenter) %>
       <% end %>
     </div>
