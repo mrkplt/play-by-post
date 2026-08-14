@@ -1,0 +1,93 @@
+@layer components {
+  /*
+   * Ui::ToastComponent — transient confirmations overlaid on the screen.
+   *
+   * The whole point of this component is that it is OUT OF FLOW. Its
+   * predecessor (Ui::FlashComponent) rendered as a normal block above
+   * `yield` in the layout, which put it above each screen's dark header and
+   * pushed the entire app frame down by the height of the banner — measured
+   * at 64px. That shift is why a notice after a Turbo form submit read as
+   * "nothing happened": the message appeared in a band above the header, the
+   * chrome jumped, and the eye was on neither. `position: fixed` here is
+   * load-bearing, not cosmetic — never give this element flow layout.
+   */
+  .toast-layer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: var(--toast-z);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px 0;
+    /* The layer spans the viewport so toasts can centre on it, but it must
+       never intercept a click meant for the content underneath. Each toast
+       re-enables pointer events for itself. */
+    pointer-events: none;
+  }
+
+  .toast {
+    pointer-events: auto;
+    width: 100%;
+    max-width: 32rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 10px 12px;
+    border: 1px solid;
+    border-radius: var(--radius-control);
+    font-size: 14px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+
+  .toast--success {
+    background: var(--color-toast-success-bg);
+    color: var(--color-toast-success-text);
+    border-color: var(--color-toast-success-border);
+  }
+
+  .toast--error {
+    background: var(--color-toast-error-bg);
+    color: var(--color-toast-error-text);
+    border-color: var(--color-toast-error-border);
+  }
+
+  .toast__message {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .toast__dismiss {
+    flex: 0 0 auto;
+    background: transparent;
+    border: 0;
+    padding: 0 2px;
+    color: inherit;
+    cursor: pointer;
+    line-height: 1;
+    /* Touch target without letting the button set the toast's height. */
+    min-width: 44px;
+    min-height: 44px;
+    margin: -10px -12px -10px 0;
+  }
+
+  /* The fade the toast controller triggers before removing the node. */
+  .toast--leaving {
+    opacity: 0;
+    transition: opacity var(--toast-fade) ease;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .toast--leaving { transition: none; }
+  }
+
+  /* Desktop: clear the 270px docked nav rail so a centred toast is centred on
+     the content pane, matching `.nav-drawer ~ div { margin-left: 270px }` in
+     sidebar_component.css. Scoped to a signed-in page that actually has a
+     rail, same as that rule. */
+  @media (min-width: 1024px) {
+    .nav-drawer ~ .toast-layer { left: 270px; }
+  }
+}

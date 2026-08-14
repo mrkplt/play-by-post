@@ -222,6 +222,22 @@ RSpec.describe NotebookEntriesController, type: :request do
       expect(entry.reload.status).to eq("new")
     end
 
+    it "re-renders the edit screen on validation failure without saving" do
+      sign_in(gm)
+      patch game_notebook_entry_path(game, entry), params: { notebook_entry: { title: "" } }
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(entry.reload.title).to eq("Original")
+    end
+
+    it "keeps the submitted body in the re-rendered form so the edit is not lost" do
+      sign_in(gm)
+      patch game_notebook_entry_path(game, entry),
+        params: { notebook_entry: { title: "", body: "Work in progress" } }
+
+      expect(response.body).to include("Work in progress")
+    end
+
     it "denies a player" do
       sign_in(player)
       patch game_notebook_entry_path(game, entry), params: { notebook_entry: { title: "Hacked" } }

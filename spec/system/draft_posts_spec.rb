@@ -40,7 +40,12 @@ RSpec.describe "Draft posts", type: :feature do
 
     click_button "POST"
 
-    expect(page).to have_text("Ready to post")
+    # The composer is pre-filled with the draft, so `have_text` alone matches
+    # before the Turbo round-trip commits and the DB assertions below race it.
+    # Wait on the published post appearing in the feed instead.
+    expect(page).to have_css("#posts", text: "Ready to post")
+    expect(page).to have_field("post[content]", with: "")
+
     expect(Post.published.count).to eq(1)
     expect(Post.drafts.count).to eq(0)
   end

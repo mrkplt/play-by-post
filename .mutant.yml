@@ -46,6 +46,7 @@ matcher:
     - GameDashboardPresenter
     - DrawerMembershipPresenter
     - ExportDeliveryPresenter
+    - FlashPresenter
     - SceneNotificationPresenter
     - GameFilePresenter
     - GameMemberPresenter
@@ -159,7 +160,7 @@ matcher:
     - Ui::SettingsRowComponent
     - Ui::ProfileOocToggleComponent
     - Ui::PillTabsComponent
-    - Ui::FlashComponent
+    - Ui::ToastComponent
     - Ui::IconComponent
     - Ui::TurnstileWidgetComponent
     # Services
