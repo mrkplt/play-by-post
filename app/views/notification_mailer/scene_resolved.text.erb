@@ -1,9 +1,9 @@
-A scene in <%= @game.name %> has been resolved.
+A scene in <%= @game_presenter.name %> has been resolved.
 
-<%= @scene.title %>
-<% if @scene.resolution.present? %>
+<%= @scene_notification.title %>
+<% if (resolution = @scene_notification.resolution) %>
 
-Outcome: <%= @scene.resolution %>
+Outcome: <%= resolution %>
 <% end %>
 
-View scene: <%= @scene_url %>
+View scene: <%= @scene_notification.scene_url %>

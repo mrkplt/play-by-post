@@ -7,6 +7,11 @@
 # news up its own collaborators, and nothing fails until someone notices by eye.
 #
 #   R1  Views hold only presenters.
+#       Mailers count: ActionMailer::Base and ActionController::Base both
+#       descend from AbstractController::Base, a mailer assigns ivars and its
+#       template reads them, so a mailer view is a view. Mailers have no
+#       viewer and no Pundit, so no policy is injected — but they still hand
+#       the template presenters rather than models.
 #       Every instance variable a view touches must be a presenter. Not a model,
 #       not a component, not a primitive, not a collection of models. Assigning a
 #       controller-built component would satisfy "no raw model in the ERB" while
@@ -213,6 +218,17 @@ def sig_params(sig)
   body.scan(/(\w+):\s*(T\.nilable\([^)]*\)|T::Array\[[^\]]*\]|T::Hash\[[^\]]*\]|[A-Z][\w:]*)/).to_h
 end
 
+# Every `sig`-annotated method in the file, as method name => {param => type}.
+# R4 reads all of them: a component may not accept a model at construction OR
+# afterwards, and reading only `initialize` is how five raw-GameMember methods
+# hid behind a clean constructor.
+def sig_params_by_method(source)
+  source.scan(/sig (?:do(.*?)end|\{(.*?)\})#{SIG_GAP}def (\w+)/m).filter_map do |block, brace, method_name|
+    params = sig_params(block || brace)
+    [ method_name, params ] unless params.empty?
+  end
+end
+
 def find_initialize(root)
   found = nil
   each_node(root) { |n| found ||= n if n.is_a?(Prism::DefNode) && n.name == :initialize }
@@ -392,7 +408,7 @@ def controller_ivars(root)
     .uniq { |ivar| [ ivar[:name], ivar[:action] ] }
 end
 
-Dir["app/controllers/**/*.rb"].sort.each do |file|
+Dir["app/controllers/**/*.rb", "app/mailers/**/*.rb"].sort.each do |file|
   next if R1_SKIP_CONTROLLERS.include?(File.basename(file))
 
   source = File.read(file, encoding: "utf-8")
@@ -498,16 +514,20 @@ Dir["app/components/**/*.rb"].sort.each do |file|
   next if klass.nil?
   next unless classify(klass.constant_path.slice) == :component
 
-  sig = sig_before_initialize(source)
   init = find_initialize(root)
   next if init.nil?
 
-  if sig.nil?
+  if sig_before_initialize(source).nil?
     violations["R4"] << "#{file}: `initialize` has no sig — parameter types cannot be checked"
     next
   end
 
-  sig_params(sig).each do |name, type|
+  # EVERY method, not just initialize. Shared::NavDrawerComponent took a clean
+  # UserPresenter at the door and raw GameMember rows in five methods below it,
+  # and R4 never saw them because it read one signature. A component that
+  # accepts a model after construction is holding a model just the same.
+  sig_params_by_method(source).each do |method_name, params|
+    params.each do |name, type|
     consts = type_constants(type)
     next if consts.empty?
 
@@ -518,8 +538,10 @@ Dir["app/components/**/*.rb"].sort.each do |file|
     # PlayerRow case, and the reason containers are not simply whitelisted.
     next if (kinds - [ :presenter, :component, :struct, :primitive ]).empty?
 
-    violations["R4"] << "#{file}: `#{name}: #{type}` [#{kinds.join(', ')}] — " \
+    label = method_name == "initialize" ? "`#{name}: #{type}`" : "##{method_name}'s `#{name}: #{type}`"
+    violations["R4"] << "#{file}: #{label} [#{kinds.join(', ')}] — " \
       "components take presenters, components, arrays of components, hashes and structs"
+    end
   end
 end
 

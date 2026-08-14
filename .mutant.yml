@@ -45,6 +45,8 @@ matcher:
     - GameDashboardItemPresenter
     - GameDashboardPresenter
     - DrawerMembershipPresenter
+    - ExportDeliveryPresenter
+    - SceneNotificationPresenter
     - GameFilePresenter
     - GameMemberPresenter
     - GameFeedRowPresenter

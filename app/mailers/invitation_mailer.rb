@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 
 class InvitationMailer < ApplicationMailer
   extend T::Sig
@@ -10,13 +10,16 @@ class InvitationMailer < ApplicationMailer
   #
   sig { params(invitation: Invitation).returns(Mail::Message) }
   def invite(invitation)
-    @invitation = invitation
-    @game = T.must(invitation.game)
-    @accept_url = accept_invitation_url(token: invitation.token)
+    game = T.must(invitation.game)
+    @invitation_presenter = T.let(
+      InvitationPresenter.new(invitation, accept_url: accept_invitation_url(token: invitation.token)),
+      T.nilable(InvitationPresenter)
+    )
+    @game_presenter = T.let(GamePresenter.new(game), T.nilable(GamePresenter))
 
     mail(
       to: invitation.email,
-      subject: "You've been invited to join #{@game.name}"
+      subject: "You've been invited to join #{game.name}"
     )
   end
 end

@@ -1,15 +1,15 @@
-<p>A new scene has started in <strong><%= @game.name %></strong>.</p>
+<p>A new scene has started in <strong><%= @game_presenter.name %></strong>.</p>
 
-<h2><%= @scene.title %></h2>
+<h2><%= @scene_notification.title %></h2>
 
-<% if @scene.description.present? %>
-  <p><%= @scene.description %></p>
+<% if (description = @scene_notification.description) %>
+  <p><%= description %></p>
 <% end %>
 
-<p><%= link_to "View scene", @scene_url %></p>
+<p><%= link_to "View scene", @scene_notification.scene_url %></p>
 
 <hr>
 <p style="font-size:0.8em; color:#64748b;">
   Reply to this email to post in the scene. |
-  <%= link_to "Mute this scene", @mute_url %>
+  <%= link_to "Mute this scene", @scene_notification.mute_url %>
 </p>

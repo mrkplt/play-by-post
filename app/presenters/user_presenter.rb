@@ -9,6 +9,14 @@ class UserPresenter < BasePresenter
     @model.display_name || @model.email.split("@").first
   end
 
+  # The greeting name for an email: display name when set, otherwise the full
+  # email address. Distinct from #display_name_or_email, which falls back to
+  # the local part only — fine for a compact UI chip, wrong in prose.
+  sig { returns(String) }
+  def display_name_or_full_email
+    @model.display_name.presence || @model.email
+  end
+
   sig { returns(T.nilable(Integer)) }
   def id = @model.id
 

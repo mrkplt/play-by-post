@@ -18,6 +18,21 @@ class InvitationPresenter < BasePresenter
     @model.email
   end
 
+  # Who sent this invitation, for the invite email's sign-off. Their display
+  # name when set, otherwise their email — resolved here so the template does
+  # not reach through the invitation to its inviter, nor carry the fallback.
+  # The accept link for the invite email — supplied at construction because
+  # the token-signed URL is the mailer's to build.
+  sig { returns(String) }
+  def accept_url
+    @options.fetch(:accept_url)
+  end
+
+  sig { returns(String) }
+  def inviter_name
+    UserPresenter.new(@model.invited_by).display_name_or_full_email
+  end
+
   sig { returns(String) }
   def cancel_path
     @options.fetch(:urls).game_player_management_invitation_path(@options.fetch(:game), @model)
