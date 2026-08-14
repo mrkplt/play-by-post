@@ -333,7 +333,15 @@ def resolved_helper_diagnosis(rhs, controller_const)
   end
 end
 
-# Ivars assigned in public methods, with the T.let type when one is declared.
+# Every ivar the controller assigns, with the T.let type when one is declared.
+#
+# Private methods are included deliberately. Rails controllers set their
+# view-facing state from `before_action` callbacks, and those callbacks are
+# private — scanning only public actions missed `set_game`/`set_scene`/
+# `set_page` entirely, which is where `@game` and `@scene` are assigned in
+# nearly every controller. A template can reach a model through such an ivar
+# exactly as easily as through one written in the action, so R1 has to see
+# both or it reports clean while `@scene.parent_scene.title` sits in an ERB.
 def controller_ivars(root)
   klass = nil
   each_node(root) { |n| klass ||= n if n.is_a?(Prism::ClassNode) }
@@ -346,7 +354,7 @@ def controller_ivars(root)
   statements.each do |node|
     if (switch = visibility_switch(node))
       visibility = switch
-    elsif node.is_a?(Prism::DefNode) && visibility == :public
+    elsif node.is_a?(Prism::DefNode)
       each_node(node) do |inner|
         next unless inner.is_a?(Prism::InstanceVariableWriteNode) ||
           inner.is_a?(Prism::InstanceVariableOrWriteNode)
