@@ -1,5 +1,8 @@
 import { Controller } from "@hotwired/stimulus"
 
+// Mirrors Ui::TurnstileWidgetComponent::STIMULUS_CONTROLLER.
+const TURNSTILE_CONTROLLER = "turnstile"
+
 // The feedback modal, opened from the nav drawer. On open it captures the path
 // (with any query parameters) of the page the user is on into a hidden field.
 // Submitting posts via fetch so
@@ -40,7 +43,22 @@ export default class extends Controller {
       }
     } catch {
       this.errorTarget.hidden = false
+    } finally {
+      this.resetTurnstile(form)
     }
+  }
+
+  // The submit spent this form's Turnstile token, whether or not it succeeded, and
+  // the modal never navigates — so without a reset the next submit replays a dead
+  // token and is rejected. The widget owns the how (see turnstile_controller.js);
+  // this only announces that a submit finished.
+  //
+  // Dispatched onto the widget itself rather than the form: the widget is nested
+  // inside the form, so a bubbling event from the form would travel away from it.
+  // No widget is present when Turnstile is disabled (the test env), hence the guard.
+  resetTurnstile(form) {
+    const widget = form.querySelector(`[data-controller~="${TURNSTILE_CONTROLLER}"]`)
+    widget?.dispatchEvent(new CustomEvent("turnstile:reset"))
   }
 
   closeOnBackdrop(event) {
