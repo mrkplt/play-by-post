@@ -44,10 +44,6 @@ Visual design (tokens, palette, spacing) is `docs/STYLE_GUIDE.md`; this file is 
 - Compose classes from constants and parameters (like `BASE + variant`)
 - No raw hex — use design tokens from `@theme`
 
-**Documentation:**
-- Add Lookbook previews in `app/components/{namespace}/{name}_component_preview.rb`
-- Browse component gallery at `/lookbook` in dev
-
 **Migration patterns:**
 - Extract from views when HTML patterns repeat — replace partials, delete old partials once fully replaced
 - Refactor incrementally — don't rewrite entire views at once; extract one component at a time

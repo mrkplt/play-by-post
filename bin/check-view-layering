@@ -684,7 +684,7 @@ puts <<~GUIDANCE
 
   A clean refactor touches every call site, and that is fine.
   Fixing one of these usually changes a constructor signature, which means
-  visiting everywhere it is constructed — controllers, views, specs, previews.
+  visiting everywhere it is constructed — controllers, views, specs.
   A long list of touched files here is the shape of the work, not evidence you
   chose the wrong approach.
 

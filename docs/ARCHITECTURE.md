@@ -74,5 +74,5 @@ Run `rails routes` for the full list. Root → `games#index`. All routes require
 
 Key named helpers: `game_path`, `game_scene_path`, `game_scene_post_path`, `game_player_management_path`, `game_game_files_path`, `game_character_path`, `profile_path`, `accept_invitation_path`, `user_magic_link_path`.
 
-Dev only: `/letter_opener` (email preview) · Lookbook (component previews).
+Dev only: `/letter_opener` (email preview).
 

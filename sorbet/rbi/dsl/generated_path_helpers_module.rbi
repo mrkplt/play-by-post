@@ -142,9 +142,6 @@ module GeneratedPathHelpersModule
   def letter_opener_web_path(*args); end
 
   sig { params(args: T.untyped).returns(String) }
-  def lookbook_path(*args); end
-
-  sig { params(args: T.untyped).returns(String) }
   def mark_read_game_scene_post_path(*args); end
 
   sig { params(args: T.untyped).returns(String) }
