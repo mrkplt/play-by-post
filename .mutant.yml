@@ -169,11 +169,14 @@ matcher:
     - Ui::TurnstileWidgetComponent
     # Services
     - AttachmentUploader
+    - AttachmentUploader::Context
     - TurnstileVerifier
+    - TurnstileVerifier::SiteverifyUri
     - CharacterCreation
     - CharacterPresenterBuilder
     - ExportDelivery
     - EmailContentExtractor
+    - EmailContentExtraction::OpenrouterRequest
     - GameDashboardQuery
     - GameSettingToggle
     - SceneShowBuilder
@@ -203,6 +206,7 @@ matcher:
     - SceneParticipantSync
     - SceneReadState
     - SceneSummaryService
+    - SceneSummaryService::Result
     - FizzySweepService
     # Controllers
     - ActionMailbox::Ingresses::Resend::InboundEmailsController

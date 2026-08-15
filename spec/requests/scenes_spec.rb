@@ -728,10 +728,12 @@ RSpec.describe ScenesController, type: :request do
 
         expect(AttachmentUploader).to have_received(:attach).with(
           hash_including(
-            kind: "scene_image",
-            user: gm,
-            game: game,
-            original_filename: "test_image.png"
+            context: have_attributes(
+              kind: "scene_image",
+              user: gm,
+              game: game,
+              original_filename: "test_image.png"
+            )
           )
         )
       end

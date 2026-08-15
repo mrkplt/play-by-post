@@ -19,21 +19,20 @@ class GameExportService
   # Returns a binary string of the zip archive.
   sig { returns(String) }
   def call
-    buffer = Zip::OutputStream.write_buffer do |zip|
-      if @games.size == 1
-        single = T.must(@games.first)
-        build_game(zip, single, prefix: root_prefix(single))
-      else
-        @games.each do |game|
-          prefix = "all-games-export-#{export_date}/#{GameExport::Slug.call(game.name)}/"
-          build_game(zip, game, prefix: prefix)
-        end
-      end
-    end
-    buffer.string
+    Zip::OutputStream.write_buffer { |zip| write_games(zip) }.string
   end
 
   private
+
+  sig { params(zip: Zip::OutputStream).void }
+  def write_games(zip)
+    if @games.size == 1
+      single = T.must(@games.first)
+      build_game(zip, single, prefix: root_prefix(single))
+    else
+      @games.each { |game| build_game(zip, game, prefix: all_games_prefix(game)) }
+    end
+  end
 
   sig { returns(String) }
   def export_date
@@ -43,6 +42,11 @@ class GameExportService
   sig { params(game: Game).returns(String) }
   def root_prefix(game)
     "#{GameExport::Slug.call(game.name)}-export-#{export_date}/"
+  end
+
+  sig { params(game: Game).returns(String) }
+  def all_games_prefix(game)
+    "all-games-export-#{export_date}/#{GameExport::Slug.call(game.name)}/"
   end
 
   sig { params(zip: Zip::OutputStream, game: Game, prefix: String).void }

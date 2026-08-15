@@ -28,10 +28,9 @@ class TurnstileVerifier
   def verify
     return false if @token.blank?
 
-    response = post_siteverify
-    parse_success(response.body)
-  rescue StandardError => e
-    Rails.logger.warn("Turnstile siteverify unreachable, failing open: #{e.class}: #{e.message}")
+    parse_success(post_siteverify.body)
+  rescue StandardError => error
+    Rails.logger.warn("Turnstile siteverify unreachable, failing open: #{error.class}: #{error.message}")
     true
   end
 
@@ -41,17 +40,34 @@ class TurnstileVerifier
   # doubles against a concrete return type).
   sig { returns(T.untyped) }
   def post_siteverify
-    uri = URI.parse(Turnstile::SITEVERIFY_URL)
-    request = Net::HTTP::Post.new(uri)
-    request.set_form_data(form_data)
+    SiteverifyUri.new.post(form_data: form_data)
+  end
 
-    Net::HTTP.start(
-      uri.hostname,
-      uri.port,
-      use_ssl: uri.scheme == "https",
-      open_timeout: OPEN_TIMEOUT,
-      read_timeout: READ_TIMEOUT
-    ) { |http| http.request(request) }
+  # Owns everything about the siteverify URI — the parsed URI itself, and
+  # POSTing a form-encoded request to it over Net::HTTP.start with the
+  # configured timeouts — so #post_siteverify reads none of its attributes
+  # directly.
+  class SiteverifyUri
+    extend T::Sig
+
+    sig { void }
+    def initialize
+      @uri = T.let(URI.parse(Turnstile::SITEVERIFY_URL), URI::Generic)
+    end
+
+    sig { params(form_data: T::Hash[String, String]).returns(T.untyped) }
+    def post(form_data:)
+      request = Net::HTTP::Post.new(@uri)
+      request.set_form_data(form_data)
+
+      Net::HTTP.start(
+        @uri.hostname,
+        @uri.port,
+        use_ssl: @uri.scheme == "https",
+        open_timeout: OPEN_TIMEOUT,
+        read_timeout: READ_TIMEOUT
+      ) { |http| http.request(request) }
+    end
   end
 
   sig { returns(T::Hash[String, String]) }
