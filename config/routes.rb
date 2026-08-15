@@ -49,9 +49,12 @@ Rails.application.routes.draw do
           member do
             post :mark_read
           end
+          # Kept as save_draft/discard_draft_game_scene_posts_path — the
+          # composer autosaves to the same URLs; only the controller moved, so
+          # PostsController stays about published posts.
           collection do
-            patch :save_draft
-            delete :discard_draft
+            patch :save_draft, to: "posts/drafts#save"
+            delete :discard_draft, to: "posts/drafts#discard"
           end
         end
         resource :participants, only: %i[edit update], controller: "scene_participants" do

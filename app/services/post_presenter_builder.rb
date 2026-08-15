@@ -22,6 +22,12 @@ class PostPresenterBuilder
     )
   end
 
+  # The scene's participants, loaded so each post can name its speaker.
+  sig { returns(T::Array[SceneParticipant]) }
+  def scene_participants
+    T.must(@scene).scene_participants.includes(:character, :user).to_a
+  end
+
   # The game/scene presenter pair a page has already built for its own
   # chrome — bundled so #composer_component takes one argument for "where
   # this composer lives" instead of two.
