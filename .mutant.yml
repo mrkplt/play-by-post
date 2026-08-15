@@ -172,6 +172,11 @@ matcher:
     - CharacterPresenterBuilder
     - ExportDelivery
     - EmailContentExtractor
+    - SceneShowBuilder
+    - SceneTreeBuilder
+    - SceneNotifier
+    - SceneParticipantSeeder
+    - SceneResolution
     - GameExportService
     - GameExport::Archive
     - GameExport::Author
