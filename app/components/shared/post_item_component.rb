@@ -3,6 +3,8 @@
 class Shared::PostItemComponent < ApplicationComponent
   extend T::Sig
 
+  CARD_BASE = T.let("attn-item rounded-post p-4 mb-3.5 last:mb-0", String)
+
   sig do
     params(
       post: PostPresenter,
@@ -34,15 +36,24 @@ class Shared::PostItemComponent < ApplicationComponent
   # quiet blue tint (same family as former/retired). Unread posts glow.
   sig { returns(String) }
   def card_classes
-    base = "attn-item rounded-post p-4 mb-3.5 last:mb-0"
-    tint = ooc? ? "bg-tint-blue-bg border border-tint-blue-border" : "bg-card border border-card-border"
-    hot = unread? ? "is-hot" : ""
-    [ base, tint, hot ].reject(&:empty?).join(" ")
+    [ CARD_BASE, card_tint, card_glow ].reject(&:empty?).join(" ")
   end
 
   # Avatar tone: the GM's monogram is dark, players' are gold.
   sig { returns(Symbol) }
   def avatar_tone
     @post.author_is_gm? ? :dark : :gold
+  end
+
+  private
+
+  sig { returns(String) }
+  def card_tint
+    ooc? ? "bg-tint-blue-bg border border-tint-blue-border" : "bg-card border border-card-border"
+  end
+
+  sig { returns(String) }
+  def card_glow
+    unread? ? "is-hot" : ""
   end
 end

@@ -57,7 +57,7 @@ RSpec.describe Shared::GalleryComponent, type: :component do
   end
 
   context "when can_manage is true" do
-    subject(:component) { described_class.new(game_files: [ presenter(game_file: game_file, can_manage: true) ], can_manage: true) }
+    subject(:component) { described_class.new(game_files: [ presenter(game_file: game_file, can_manage: true) ]) }
 
     it "renders the delete button" do
       expect(rendered_component).to have_css("[data-lightbox-delete-btn]", visible: :hidden)

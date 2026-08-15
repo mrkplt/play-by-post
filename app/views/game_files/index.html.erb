@@ -16,6 +16,6 @@
     <p class="text-muted-2 text-sm">No files uploaded yet.</p>
   <% else %>
     <%= render Ui::SectionLabelComponent.new do %>Newest first<% end %>
-    <%= render Shared::GalleryComponent.new(game_files: @game_files, can_manage: @game_presenter.can_manage?) %>
+    <%= render Shared::GalleryComponent.new(game_files: @game_files) %>
   <% end %>
 <% end %>

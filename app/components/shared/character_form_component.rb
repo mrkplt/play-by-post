@@ -64,21 +64,31 @@ class Shared::CharacterFormComponent < ApplicationComponent
 
   sig { returns(String) }
   def content_label
-    new_record? ? "Sheet (optional, markdown supported)" : "Sheet (markdown supported)"
+    mode_value(new: "Sheet (optional, markdown supported)", edit: "Sheet (markdown supported)")
   end
 
   sig { returns(String) }
   def submit_label
-    new_record? ? "Create Character" : "Save"
+    mode_value(new: "Create Character", edit: "Save")
   end
 
   sig { returns(String) }
   def back_href
-    new_record? ? helpers.game_path(game) : helpers.game_character_path(game, character)
+    mode_value(new: -> { helpers.game_path(game) }, edit: -> { helpers.game_character_path(game, character) }).call
   end
 
   sig { returns(String) }
   def form_id
-    new_record? ? "new_character_form" : "edit_character_#{character.id}_form"
+    mode_value(new: "new_character_form", edit: "edit_character_#{character.id}_form")
+  end
+
+  private
+
+  # The single new_record?-keyed branch every mode-dependent value goes
+  # through, so the form's new/edit distinction is tested once per call
+  # rather than re-testing new_record? in each label/href/id method.
+  sig { type_parameters(:T).params(new: T.type_parameter(:T), edit: T.type_parameter(:T)).returns(T.type_parameter(:T)) }
+  def mode_value(new:, edit:)
+    new_record? ? new : edit
   end
 end

@@ -63,17 +63,17 @@ class Shared::SceneFormComponent < ApplicationComponent
 
   sig { returns(String) }
   def heading
-    @quick ? "Quick Scene" : "New Scene"
+    mode_value(quick: "Quick Scene", full: "New Scene")
   end
 
   sig { returns(String) }
   def submit_label
-    @quick ? "Create Quick Scene" : "Create Scene"
+    mode_value(quick: "Create Quick Scene", full: "Create Scene")
   end
 
   sig { returns(String) }
   def form_id
-    @quick ? "quick_scene_form" : "new_scene_form"
+    mode_value(quick: "quick_scene_form", full: "new_scene_form")
   end
 
   sig { returns(String) }
@@ -92,5 +92,15 @@ class Shared::SceneFormComponent < ApplicationComponent
   sig { returns(String) }
   def carried_parent_scene_id
     @selected_parent_scene_id.to_s
+  end
+
+  private
+
+  # The single @quick-keyed branch heading/submit_label/form_id go through,
+  # so the quick/full distinction is tested once per call rather than
+  # repeating the ternary in each label method.
+  sig { type_parameters(:T).params(quick: T.type_parameter(:T), full: T.type_parameter(:T)).returns(T.type_parameter(:T)) }
+  def mode_value(quick:, full:)
+    @quick ? quick : full
   end
 end

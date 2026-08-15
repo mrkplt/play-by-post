@@ -4,62 +4,78 @@
 # a "Played by {player}" sub-line, and a trailing slot for a badge or action.
 # Rows can be dimmed (removed / banned). Used for character rows and the GM-only
 # banned section alike.
+#
+# The row's display data (name/subtitle/tone/crown/dimmed/classes) travels as
+# one Row hash rather than eight positional parameters — callers build it from
+# whichever source they have (a presenter, a hardcoded GM row, a plain hash),
+# so the component takes derived, presentation-ready data rather than forcing
+# every caller shape through the same model. `last` stays a separate
+# parameter: it is the row's position in the list the caller is rendering, not
+# a fact about the row's own data.
 class Shared::RosterRowComponent < ApplicationComponent
   extend T::Sig
 
-  sig do
-    params(
+  Row = T.type_alias do
+    {
       name: String,
       subtitle: String,
       avatar_tone: Symbol,
       crown: T::Boolean,
       dimmed: T::Boolean,
-      last: T::Boolean,
       name_class: String,
       subtitle_class: String
-    ).void
+    }
   end
-  def initialize(name:, subtitle:, avatar_tone: :gold, crown: false, dimmed: false, last: false,
-                 name_class: "text-ink", subtitle_class: "text-muted-2")
-    @name = name
-    @subtitle = subtitle
-    @avatar_tone = avatar_tone
-    @crown = crown
-    @dimmed = dimmed
+
+  DEFAULT_ROW = T.let({
+    avatar_tone: :gold,
+    crown: false,
+    dimmed: false,
+    name_class: "text-ink",
+    subtitle_class: "text-muted-2"
+  }.freeze, T::Hash[Symbol, T.untyped])
+
+  sig { params(row: T::Hash[Symbol, T.untyped], last: T::Boolean).void }
+  def initialize(row:, last: false)
+    @row = T.let(T.cast(DEFAULT_ROW.merge(row), Row), Row)
     @last = last
-    @name_class = name_class
-    @subtitle_class = subtitle_class
   end
 
   sig { returns(String) }
-  attr_reader :name
+  def name
+    @row.fetch(:name)
+  end
 
   sig { returns(String) }
-  attr_reader :subtitle
+  def subtitle
+    @row.fetch(:subtitle)
+  end
 
   sig { returns(Symbol) }
-  attr_reader :avatar_tone
+  def avatar_tone
+    @row.fetch(:avatar_tone)
+  end
 
   sig { returns(T::Boolean) }
   def crown?
-    @crown
+    @row.fetch(:crown)
   end
 
   sig { returns(String) }
   def name_classes
-    "flex items-center gap-1.5 text-[13px] font-semibold #{@name_class}"
+    "flex items-center gap-1.5 text-[13px] font-semibold #{@row.fetch(:name_class)}"
   end
 
   sig { returns(String) }
   def subtitle_classes
-    "text-[11px] #{@subtitle_class}"
+    "text-[11px] #{@row.fetch(:subtitle_class)}"
   end
 
   sig { returns(String) }
   def row_classes
     base = "flex items-center gap-2.5 p-[10px_12px]"
     base += " border-b border-card-divider" unless @last
-    base += " opacity-70" if @dimmed
+    base += " opacity-70" if @row.fetch(:dimmed)
     base
   end
 end
