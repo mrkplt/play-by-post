@@ -5,14 +5,20 @@ RSpec.describe Ui::ToastComponent, type: :component do
     { message: message, variant: variant }
   end
 
-  it "renders nothing when there are no toasts" do
+  # The layer is always in the DOM so a Turbo Stream reply has a stable target
+  # to put a toast into; with nothing to show it renders empty.
+  it "renders an empty layer when there are no toasts" do
     render_inline(described_class.new)
-    expect(page).not_to have_css(".toast-layer")
+
+    expect(page).to have_css("#toast_layer.toast-layer")
+    expect(page).not_to have_css("[data-testid=toast]")
   end
 
-  it "renders nothing when handed an empty array" do
+  it "renders an empty layer when handed an empty array" do
     render_inline(described_class.new(toasts: []))
-    expect(page).not_to have_css(".toast-layer")
+
+    expect(page).to have_css("#toast_layer.toast-layer")
+    expect(page).not_to have_css("[data-testid=toast]")
   end
 
   describe "variants" do
@@ -70,16 +76,6 @@ RSpec.describe Ui::ToastComponent, type: :component do
       render_inline(described_class.new(toasts: [ toast(variant: :success) ]))
 
       expect(page).not_to have_css("button.toast__dismiss")
-    end
-  end
-
-  describe "#any?" do
-    it "is false with no toasts" do
-      expect(described_class.new.any?).to be false
-    end
-
-    it "is true with a toast" do
-      expect(described_class.new(toasts: [ toast ]).any?).to be true
     end
   end
 

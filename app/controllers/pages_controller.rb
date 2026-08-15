@@ -40,17 +40,15 @@ class PagesController < ApplicationController
     assign_page_presenters(subject)
   end
 
+  # Saving keeps the writer on the edit screen — a page is long-form markdown
+  # and being bounced to the show screen on every save loses their place.
   sig { void }
   def update
     subject = page
     authorize subject
-
-    if subject.update(page_params)
-      redirect_to game_page_path(game, subject), notice: "Page updated."
-    else
-      assign_page_presenters(subject)
-      render :edit, status: :unprocessable_content
-    end
+    outcome = SaveOutcome.for(subject.update(page_params), "page")
+    assign_page_presenters(subject)
+    InPlaceSave.new(self, outcome: outcome, forward_to: game_page_path(game, subject)).respond
   end
 
   sig { void }

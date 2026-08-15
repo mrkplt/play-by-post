@@ -1,0 +1,11 @@
+<%# Re-rendering the form around the saved record puts validation errors in
+    place and leaves the writer where they were. Targets the component's own
+    wrapper, not the inner <form>, which would nest a second wrapper. The toast
+    layer is separate: it lives in the layout, outside the form. %>
+<%= turbo_stream.replace "notebook_entry_form" do %>
+  <%= render Shared::NotebookFormComponent.new(game: game_presenter, notebook_entry: @entry_presenter) %>
+<% end %>
+
+<%= turbo_stream.replace "toast_layer" do %>
+  <%= render Ui::ToastComponent.new(toasts: FlashPresenter.new(flash).toasts) %>
+<% end %>

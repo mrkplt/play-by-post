@@ -194,7 +194,9 @@ matcher:
     - MarkdownRenderer
     - NotebookEntryPromotion
     - NotebookLaneMove
+    - InPlaceSave
     - PostDraft
+    - SaveOutcome
     - PostPresenterBuilder
     - PostPresenterBuilder::PageContext
     - SceneFormBuilder

@@ -151,6 +151,37 @@ RSpec.describe PagesController, type: :request do
       expect(page.reload.slug).to eq(original_slug)
     end
 
+    # A Turbo save keeps the writer on the edit screen: the reply is a stream
+    # that re-renders the form and the toast in place, not a redirect.
+    it "answers a Turbo-driven update with a stream, not a redirect" do
+      sign_in(gm)
+
+      patch game_page_path(game, page), params: { page: { title: "Streamed" } }, as: :turbo_stream
+
+      expect(response).to have_http_status(:ok)
+      expect(response.media_type).to eq(Mime[:turbo_stream].to_s)
+      expect(page.reload.title).to eq("Streamed")
+    end
+
+    it "streams the confirmation toast" do
+      sign_in(gm)
+
+      patch game_page_path(game, page), params: { page: { title: "Streamed" } }, as: :turbo_stream
+
+      expect(response.body).to include("Page updated.")
+      expect(response.body).to include("toast_layer")
+    end
+
+    it "streams the form back with its errors when the save fails" do
+      sign_in(gm)
+
+      patch game_page_path(game, page), params: { page: { title: "" } }, as: :turbo_stream
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.body).to include("Could not save the page.")
+      expect(page.reload.title).to eq("Original")
+    end
+
     it "denies a player" do
       sign_in(player)
       patch game_page_path(game, page), params: { page: { title: "Hacked" } }

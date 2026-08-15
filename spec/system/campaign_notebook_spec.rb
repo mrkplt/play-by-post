@@ -71,6 +71,53 @@ RSpec.describe "Campaign Notebook", type: :feature do
       expect(entry.reload.title).to eq("A wandering merchant (updated)")
     end
 
+    # Saving is a Turbo Stream, so the writer keeps their place in a long entry
+    # instead of being bounced to a fresh render on every save.
+    it "keeps the writer on the edit screen after saving" do
+      entry = create(:notebook_entry, game: game, title: "A wandering merchant")
+      sign_in_as(gm)
+      visit edit_game_notebook_entry_path(game, entry)
+
+      fill_in "notebook_entry[title]", with: "Still editing"
+      click_on "Save"
+
+      expect(page).to have_text("Entry updated.")
+      expect(page).to have_current_path(edit_game_notebook_entry_path(game, entry))
+      expect(page).to have_field("notebook_entry[title]", with: "Still editing")
+    end
+
+    it "saves repeatedly without leaving the editor" do
+      entry = create(:notebook_entry, game: game, title: "A wandering merchant")
+      sign_in_as(gm)
+      visit edit_game_notebook_entry_path(game, entry)
+
+      fill_in "notebook_entry[title]", with: "First save"
+      click_on "Save"
+      expect(page).to have_text("Entry updated.")
+
+      fill_in "notebook_entry[title]", with: "Second save"
+      click_on "Save"
+
+      # Wait on the re-rendered form before reading the record: click_on
+      # returns as soon as the request is issued, so asserting on the database
+      # first races the response.
+      expect(page).to have_field("notebook_entry[title]", with: "Second save")
+      expect(page).to have_current_path(edit_game_notebook_entry_path(game, entry))
+      expect(entry.reload.title).to eq("Second save")
+    end
+
+    it "shows validation errors in place, without leaving the editor" do
+      entry = create(:notebook_entry, game: game, title: "A wandering merchant")
+      sign_in_as(gm)
+      visit edit_game_notebook_entry_path(game, entry)
+
+      fill_in "notebook_entry[title]", with: ""
+      click_on "Save"
+
+      expect(page).to have_current_path(edit_game_notebook_entry_path(game, entry))
+      expect(entry.reload.title).to eq("A wandering merchant")
+    end
+
     it "writes into a large editor with no live preview" do
       entry = create(:notebook_entry, game: game, title: "A wandering merchant")
       sign_in_as(gm)

@@ -1,14 +1,16 @@
-<% if any? %>
-  <div class="toast-layer" data-testid="toast-layer">
-    <% toasts.each do |toast| %>
-      <div class="<%= classes_for(toast) %>" data-testid="toast" <%= helpers.tag.attributes(data_for(toast)) %>>
-        <span class="toast__message"><%= toast[:message] %></span>
-        <% if dismissible?(toast) %>
-          <button type="button" class="toast__dismiss" aria-label="Dismiss" data-action="click->toast#dismiss">
-            <%= render Ui::IconComponent.new(name: :cancel, size: :extra_small) %>
-          </button>
-        <% end %>
-      </div>
-    <% end %>
-  </div>
-<% end %>
+<%# The layer is always present, even with nothing in it: a Turbo Stream
+    reply needs a stable target to put a toast into, and an element that only
+    exists when a toast does cannot be one. It is fixed-position and empty
+    here, so it occupies no flow. %>
+<div id="toast_layer" class="toast-layer" data-testid="toast-layer">
+  <% toasts.each do |toast| %>
+    <div class="<%= classes_for(toast) %>" data-testid="toast" <%= helpers.tag.attributes(data_for(toast)) %>>
+      <span class="toast__message"><%= toast[:message] %></span>
+      <% if dismissible?(toast) %>
+        <button type="button" class="toast__dismiss" aria-label="Dismiss" data-action="click->toast#dismiss">
+          <%= render Ui::IconComponent.new(name: :cancel, size: :extra_small) %>
+        </button>
+      <% end %>
+    </div>
+  <% end %>
+</div>
