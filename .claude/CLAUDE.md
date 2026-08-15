@@ -202,7 +202,7 @@ The four rules that decide whether a change is even shaped right:
 explains the contract.
 
 ### CSS
-- New work: Tailwind only. Do not add to `app/assets/stylesheets/application.css` (legacy, migration in progress).
+- Tailwind only. Co-located component stylesheets live next to their component (`app/components/**/*.css`) and are imported from `app/assets/tailwind/application.css`; add new component CSS there, not in a global sheet.
 - Never edit `app/assets/builds/` (generated).
 - No raw hex in ERB class utilities — use an `@theme` token (`bin/check-design-tokens` enforces).
 
