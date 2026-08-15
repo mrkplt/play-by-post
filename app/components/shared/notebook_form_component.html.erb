@@ -1,4 +1,4 @@
-<div id="new_notebook_entry_form">
+<div id="notebook_entry_form">
   <%= form_with model: [ game, notebook_entry ], html: { id: form_id }, class: "flex flex-col gap-4" do |f| %>
     <%= render Ui::FormErrorsComponent.new(messages: error_messages) %>
 

@@ -36,11 +36,6 @@ class Ui::ToastComponent < ApplicationComponent
   sig { returns(T::Array[Toast]) }
   attr_reader :toasts
 
-  sig { returns(T::Boolean) }
-  def any?
-    toasts.any?
-  end
-
   sig { params(toast: Toast).returns(String) }
   def classes_for(toast)
     VARIANT_CLASSES.fetch(toast[:variant])

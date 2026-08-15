@@ -47,14 +47,14 @@ class NotebookEntriesController < ApplicationController
     assign_entry_presenter(authorized_entry)
   end
 
+  # Saving keeps the writer on the edit screen — an entry is long-form markdown
+  # and being re-rendered from scratch on every save loses their place.
   sig { void }
   def update
     entry = authorized_entry
-    return redirect_to edit_game_notebook_entry_path(game, entry), notice: "Entry updated." if
-      entry.update(notebook_entry_params)
-
+    outcome = SaveOutcome.for(entry.update(notebook_entry_params), "entry")
     assign_entry_presenter(entry)
-    render :edit, status: :unprocessable_content
+    InPlaceSave.new(self, outcome: outcome, forward_to: edit_game_notebook_entry_path(game, entry)).respond
   end
 
   sig { void }

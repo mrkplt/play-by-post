@@ -199,11 +199,48 @@ RSpec.describe NotebookEntriesController, type: :request do
       expect(entry.reload.slug).to eq(original_slug)
     end
 
-    it "returns to the edit screen after a Turbo-driven update" do
+    # A Turbo save keeps the writer on the edit screen: the reply is a stream
+    # that re-renders the form and the toast in place, not a redirect.
+    it "answers a Turbo-driven update with a stream, not a redirect" do
       sign_in(gm)
+
       patch game_notebook_entry_path(game, entry),
         params: { notebook_entry: { title: "Streamed Update" } },
         as: :turbo_stream
+
+      expect(response).to have_http_status(:ok)
+      expect(response.media_type).to eq(Mime[:turbo_stream].to_s)
+      expect(entry.reload.title).to eq("Streamed Update")
+    end
+
+    it "streams the confirmation toast" do
+      sign_in(gm)
+
+      patch game_notebook_entry_path(game, entry),
+        params: { notebook_entry: { title: "Streamed Update" } },
+        as: :turbo_stream
+
+      expect(response.body).to include("Entry updated.")
+      expect(response.body).to include("toast_layer")
+    end
+
+    it "streams the form back with its errors when the save fails" do
+      sign_in(gm)
+
+      patch game_notebook_entry_path(game, entry),
+        params: { notebook_entry: { title: "" } },
+        as: :turbo_stream
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.body).to include("Could not save the entry.")
+      expect(entry.reload.title).not_to eq("")
+    end
+
+    it "still redirects a non-Turbo update" do
+      sign_in(gm)
+
+      patch game_notebook_entry_path(game, entry), params: { notebook_entry: { title: "Plain Update" } }
+
       expect(response).to redirect_to(edit_game_notebook_entry_path(game, entry))
     end
 
