@@ -10,13 +10,7 @@ class SceneParticipantsController < ApplicationController
   sig { void }
   def edit
     authorize scene, :manage_participants?
-    @game_presenter = T.let(GamePresenter.new(game, policy: policy(game), urls: self), T.nilable(GamePresenter))
-    @scene_presenter = T.let(ScenePresenter.new(scene, game: game, urls: self), T.nilable(ScenePresenter))
-    @scene_navigation_presenter = T.let(
-      SceneNavigationPresenter.new(T.must(@scene_presenter), game: game, urls: self),
-      T.nilable(SceneNavigationPresenter)
-    )
-    @players_with_characters = T.let(players_with_characters, T.nilable(T::Array[ScenePlayerPresenter]))
+    assign_screen_presenters
     @current_character_ids = T.let(current_character_ids_presenter, T.nilable(SceneParticipantRosterPresenter))
   end
 
@@ -76,7 +70,17 @@ class SceneParticipantsController < ApplicationController
   sig { returns(SceneParticipantRosterPresenter) }
   def current_character_ids_presenter
     selected_ids = scene.scene_participants.where.not(character_id: nil).pluck(:character_id)
-    SceneParticipantRosterPresenter.new(selected_ids)
+    SceneParticipantRosterPresenter.new(selected_ids, players_with_characters: players_with_characters)
+  end
+
+  sig { void }
+  def assign_screen_presenters
+    @game_presenter = T.let(GamePresenter.new(game, policy: policy(game), urls: self), T.nilable(GamePresenter))
+    @scene_presenter = T.let(ScenePresenter.new(scene, game: game, urls: self), T.nilable(ScenePresenter))
+    @scene_navigation_presenter = T.let(
+      SceneNavigationPresenter.new(T.must(@scene_presenter), game: game, urls: self),
+      T.nilable(SceneNavigationPresenter)
+    )
   end
 
   sig { void }

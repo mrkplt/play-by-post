@@ -9,16 +9,7 @@ class GameExportsController < ApplicationController
   sig { void }
   def create
     authorize game, :export?
-    receipt = GameExportRequest.valid_receipt_for(current_user, game)
-
-    if receipt
-      # A successful export already exists within the receipt window — resend its
-      # download link instead of reprocessing.
-      ExportDelivery.email_download_link(receipt)
-    else
-      request = GameExportRequest.create!(user: current_user, game: game)
-      ExportJob.perform_later(request.id)
-    end
+    ExportDelivery.request!(user: current_user, game: game)
 
     redirect_to game_path(game), notice: "Export requested — you'll receive an email shortly."
   end

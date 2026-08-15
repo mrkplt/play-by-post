@@ -27,10 +27,4 @@ class CharacterPresenterBuilder
   def character_presenter(character, character_policy)
     CharacterPresenter.new(character, character_policy: character_policy, urls: @urls)
   end
-
-  sig { params(character: Character).returns(T::Array[CharacterVersionPresenter]) }
-  def versions(character)
-    character.character_versions.order(created_at: :desc).includes(:edited_by)
-      .map { |version| CharacterVersionPresenter.new(version) }
-  end
 end

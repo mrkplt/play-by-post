@@ -11,14 +11,7 @@ class GameMembersController < ApplicationController
     authorize member, :manage?
     return if require_manageable_member!(member)
 
-    new_status = params.dig(:game_member, :status) || params[:status]
-    unless GameMember::STATUSES.include?(new_status)
-      redirect_to game_player_management_path(game), alert: "Invalid status."
-      return
-    end
-
-    member.update!(status: new_status)
-    redirect_to game_player_management_path(game), notice: "Player status updated."
+    apply_status_change(member)
   end
 
   private
@@ -40,7 +33,21 @@ class GameMembersController < ApplicationController
   def require_manageable_member!(member)
     return false if policy(member).update?
 
-    redirect_to game_player_management_path(game), alert: "Cannot change GM status."
+    redirect_to_player_management(alert: "Cannot change GM status.")
     true
+  end
+
+  sig { params(member: GameMember).void }
+  def apply_status_change(member)
+    new_status = params.dig(:game_member, :status) || params[:status]
+    return redirect_to_player_management(alert: "Invalid status.") unless GameMember::STATUSES.include?(new_status)
+
+    member.update!(status: new_status)
+    redirect_to_player_management(notice: "Player status updated.")
+  end
+
+  sig { params(notice: T.nilable(String), alert: T.nilable(String)).void }
+  def redirect_to_player_management(notice: nil, alert: nil)
+    redirect_to game_player_management_path(game), notice: notice, alert: alert
   end
 end

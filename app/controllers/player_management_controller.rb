@@ -8,30 +8,24 @@ class PlayerManagementController < ApplicationController
 
   sig { void }
   def show
+    game_policy = policy(game)
     authorize game, :manage_players?
     @game_presenter = T.let(
-      GamePresenter.new(game, policy: policy(game), current_user: current_user),
+      GamePresenter.new(game, policy: game_policy, current_user: current_user),
       T.nilable(GamePresenter)
     )
-
-    if policy(game).manage?
-      characters_by_user = character_names_by_user
-      members = game.game_members.where.not(status: "banned").where(role: "player").includes(:user)
-      @roster = T.let(
-        members.map { |m| GameMemberPresenter.new(m, character_name: characters_by_user[m.user_id]) },
-        T.nilable(T::Array[GameMemberPresenter])
-      )
-    end
+    @roster = T.let(roster, T.nilable(T::Array[GameMemberPresenter])) if game_policy.manage?
   end
 
   private
 
-  # First active character name per user, for the Members list subtitle.
-  sig { returns(T::Hash[Integer, String]) }
-  def character_names_by_user
-    game.characters.active.each_with_object({}) do |c, h|
-      h[c.user_id] ||= c.name
-    end
+  # The Members list: each active player membership paired with that user's
+  # first active character name, for the list's subtitle.
+  sig { returns(T::Array[GameMemberPresenter]) }
+  def roster
+    characters_by_user = Character.first_active_name_by_user(game.characters.active)
+    members = game.game_members.where.not(status: "banned").where(role: "player").includes(:user)
+    members.map { |member| GameMemberPresenter.new(member, character_name: characters_by_user[member.user_id]) }
   end
 
   # Used only internally (authorize, presenter construction, associations) —

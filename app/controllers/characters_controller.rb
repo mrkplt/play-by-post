@@ -35,8 +35,9 @@ class CharactersController < ApplicationController
   sig { void }
   def show
     authorize character
-    @versions = T.let(presenter_builder.versions(character), T.nilable(T::Array[CharacterVersionPresenter]))
-    @character_owner = T.let(UserPresenter.new(character.user), T.nilable(UserPresenter))
+    @character_show_presenter = T.let(
+      CharacterShowPresenter.new(character), T.nilable(CharacterShowPresenter)
+    )
     assign_presenters(character)
   end
 
