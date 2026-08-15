@@ -30,10 +30,13 @@ Rails.application.routes.draw do
       resources :api_tokens, only: %i[create destroy], module: :profiles
     end
     resources :games, only: %i[index new create show edit update destroy] do
+      # Kept as toggle_*_game_path on the game itself — the setting switches
+      # read as part of the game, while the actions live in their own
+      # controller so GamesController stays about games.
       member do
-        patch :toggle_sheets_hidden
-        patch :toggle_images_disabled
-        patch :toggle_ai_summaries_enabled
+        patch :toggle_sheets_hidden, to: "games/settings#sheets_hidden"
+        patch :toggle_images_disabled, to: "games/settings#images_disabled"
+        patch :toggle_ai_summaries_enabled, to: "games/settings#ai_summaries_enabled"
       end
       resources :scenes, only: %i[index new create show] do
         member do
@@ -46,9 +49,12 @@ Rails.application.routes.draw do
           member do
             post :mark_read
           end
+          # Kept as save_draft/discard_draft_game_scene_posts_path — the
+          # composer autosaves to the same URLs; only the controller moved, so
+          # PostsController stays about published posts.
           collection do
-            patch :save_draft
-            delete :discard_draft
+            patch :save_draft, to: "posts/drafts#save"
+            delete :discard_draft, to: "posts/drafts#discard"
           end
         end
         resource :participants, only: %i[edit update], controller: "scene_participants" do
@@ -67,9 +73,12 @@ Rails.application.routes.draw do
       resources :pages, only: %i[new create show edit update destroy], param: :slug
       resources :game_links, only: %i[index new create edit update destroy]
       resources :notebook_entries, only: %i[index new create edit update destroy], param: :slug do
+        # Kept as move/promote_game_notebook_entry_path — the lane picker and
+        # the promote button post to the same URLs; only the controller moved,
+        # so NotebookEntriesController stays about editing entries.
         member do
-          patch :move
-          post :promote
+          patch :move, to: "notebook_entries/lanes#move"
+          post :promote, to: "notebook_entries/lanes#promote"
         end
       end
       resources :characters, only: %i[new create show edit update] do

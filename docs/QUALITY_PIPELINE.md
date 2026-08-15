@@ -79,6 +79,12 @@ Each is a self-contained executable that owns its pass/fail (`exit 1` on violati
 
 **Blast radius:** The gate checks every file touched by the branch vs `origin/master`, not just files you intended to change. Any edit to a file that lacks a sigil or has insufficient coverage will fail the gate. Fix both immediately when touching such a file.
 
+**File length is the one flat check, not a ratchet.** `bin/check-file-length` holds *every* Ruby file in `app/` and `lib/` to **120 code lines — 150 under `app/controllers/`** (blank and comment-only lines don't count), whether or not the branch touched it, so a file cannot sit over the ceiling just because nobody edited it. It was a 100-line per-file ratchet with 14 grandfathered files until #75 split the last of them.
+
+The controller carve-out and the higher general limit are both about Sorbet: a `sig` block plus a `T.let` ivar assignment costs 2–4 lines per method that plain Ruby never pays, and controllers pay it again for per-action sigs, the ivars templates read, and `before_action`/`authorize` scaffolding. The ceiling is meant to catch a file doing too many things, not to tax the type system.
+
+Going over is a prompt to split: pull a cohesive slice into its own class/module/component/presenter. Two things that are *not* the lever — reaching for a private helper to shuffle lines around usually makes the count **worse** (a new method brings its own `sig`), and comments are free, so deleting them never helps. Do keep comments lean anyway: Ruby rarely needs them, a good name beats a comment restating the code, and what earns its place is what the code can't say — a non-obvious constraint, a rejected alternative, a bug the shape defends against.
+
 **Mutation registration:** Every new component/presenter must be added to `.mutant.yml` under `matcher.subjects` using its exact Ruby constant (e.g. `Shared::PostItemComponent`, `PostPresenter`). The `mutant_registration` CI job fails the build if a `Ui::*`/`Shared::*`/presenter class is missing — no longer just silently unmeasured.
 
 **Updating the baseline:** After an intentional quality improvement run `bin/quality-metrics --save`.

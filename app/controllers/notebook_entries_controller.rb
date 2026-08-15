@@ -44,63 +44,31 @@ class NotebookEntriesController < ApplicationController
 
   sig { void }
   def edit
-    entry = notebook_entry
-    authorize entry
-    assign_entry_presenter(entry)
+    assign_entry_presenter(authorized_entry)
   end
 
   sig { void }
   def update
-    entry = notebook_entry
-    authorize entry
+    entry = authorized_entry
+    return redirect_to edit_game_notebook_entry_path(game, entry), notice: "Entry updated." if
+      entry.update(notebook_entry_params)
 
-    if entry.update(notebook_entry_params)
-      redirect_to edit_game_notebook_entry_path(game, entry), notice: "Entry updated."
-    else
-      assign_entry_presenter(entry)
-      render :edit, status: :unprocessable_content
-    end
+    assign_entry_presenter(entry)
+    render :edit, status: :unprocessable_content
   end
 
   sig { void }
   def destroy
-    entry = notebook_entry
-    authorize entry
-    entry.destroy
+    authorized_entry.destroy
     redirect_to game_notebook_entries_path(game), notice: "Entry deleted."
-  end
-
-  sig { void }
-  def move
-    entry = notebook_entry
-    authorize entry, :manage?
-
-    lane_move = NotebookLaneMove.new(params)
-    entry.update!(lane_move.attributes)
-    respond_to_move(entry, lane_move)
-  end
-
-  sig { void }
-  def promote
-    entry = notebook_entry
-    authorize entry, :manage?
-
-    page = NotebookEntryPromotion.new(entry).call
-    redirect_to game_page_path(game, page), notice: "Promoted to a page."
   end
 
   private
 
-  # Branches on an explicit form field, not request format: Turbo advertises
-  # turbo-stream for every unsafe request, so format.html would be dead code.
-  sig { params(entry: NotebookEntry, lane_move: NotebookLaneMove).void }
-  def respond_to_move(entry, lane_move)
-    if lane_move.standalone?
-      redirect_to edit_game_notebook_entry_path(game, entry), notice: "Entry moved."
-    else
-      assign_entry_presenter(entry)
-      render :move, formats: :turbo_stream
-    end
+  # A nil capability is Pundit's default: the predicate named for the action.
+  sig { params(capability: T.nilable(Symbol)).returns(NotebookEntry) }
+  def authorized_entry(capability = nil)
+    notebook_entry.tap { |entry| authorize entry, capability }
   end
 
   sig { params(notebook_entry: NotebookEntry).void }

@@ -58,6 +58,8 @@ matcher:
     - GameRoutesPresenter
     - GameScenesPanelPresenter
     - GameShowPresenter
+    - GameScreenPresenter
+    - SceneScreenPresenter
     - InvitationPresenter
     - NotebookBoardPresenter
     - NotebookEntryPresenter
@@ -172,10 +174,27 @@ matcher:
     - CharacterPresenterBuilder
     - ExportDelivery
     - EmailContentExtractor
+    - GameDashboardQuery
+    - GameSettingToggle
+    - SceneShowBuilder
+    - SceneTreeBuilder
+    - SceneNotifier
+    - SceneParticipantSeeder
+    - SceneResolution
     - GameExportService
+    - GameExport::Archive
+    - GameExport::Author
+    - GameExport::CharacterDocuments
+    - GameExport::ManifestDocuments
+    - GameExport::ProseDocuments
+    - GameExport::ReadmeDocument
+    - GameExport::Reads
+    - GameExport::SceneDocuments
+    - GameExport::Slug
     - MarkdownRenderer
     - NotebookEntryPromotion
     - NotebookLaneMove
+    - PostDraft
     - PostPresenterBuilder
     - PostPresenterBuilder::PageContext
     - SceneFormBuilder
@@ -193,12 +212,15 @@ matcher:
     - ScenesController
     - CharactersController
     - GamesController
+    - Games::SettingsController
     - SceneParticipantsController
     - PostsController
+    - Posts::DraftsController
     - GameFilesController
     - PagesController
     - GameLinksController
     - NotebookEntriesController
+    - NotebookEntries::LanesController
     - InvitationsController
     - GameMembersController
     - CharacterVersionsController

@@ -2,13 +2,18 @@
 
 require "zip"
 
+# Builds the downloadable zip for one or more games. This class owns only the
+# top-level shape — the policy gate, the export scope, and each game's root
+# prefix. Per-game layout lives in GameExport::Archive, document content in the
+# GameExport document modules, and every query in GameExport::Reads.
 class GameExportService
   extend T::Sig
 
-  sig { params(user: User, games: T::Array[Game]).void }
-  def initialize(user, games)
+  sig { params(user: User, games: T::Array[Game], reads: T.untyped).void }
+  def initialize(user, games, reads: GameExport::Reads.new(user))
     @user = user
     @games = games
+    @reads = reads
   end
 
   # Returns a binary string of the zip archive.
@@ -17,11 +22,11 @@ class GameExportService
     buffer = Zip::OutputStream.write_buffer do |zip|
       if @games.size == 1
         single = T.must(@games.first)
-        build_game(single, zip, prefix: root_prefix(single))
+        build_game(zip, single, prefix: root_prefix(single))
       else
         @games.each do |game|
-          slug = slugify(game.name)
-          build_game(game, zip, prefix: "all-games-export-#{export_date}/#{slug}/")
+          prefix = "all-games-export-#{export_date}/#{GameExport::Slug.call(game.name)}/"
+          build_game(zip, game, prefix: prefix)
         end
       end
     end
@@ -37,441 +42,21 @@ class GameExportService
 
   sig { params(game: Game).returns(String) }
   def root_prefix(game)
-    "#{slugify(game.name)}-export-#{export_date}/"
+    "#{GameExport::Slug.call(game.name)}-export-#{export_date}/"
   end
 
-  sig { params(game: Game, zip: Zip::OutputStream, prefix: String).void }
-  def build_game(game, zip, prefix:)
+  sig { params(zip: Zip::OutputStream, game: Game, prefix: String).void }
+  def build_game(zip, game, prefix:)
     policy = GamePolicy.new(@user, game)
     return unless policy.export?
 
-    scenes = export_scenes_for(game, policy.export_scene_selection)
+    archive = GameExport::Archive.new(zip, @reads, game: game, prefix: prefix)
+    archive.write_game(@reads.scenes_for(game, policy.export_scene_selection))
 
-    write_readme(zip, prefix, game, scenes)
-    write_files_manifest(zip, prefix, game)
-    write_links_manifest(zip, prefix, game)
-    write_scenes(zip, prefix, game, scenes)
-    write_characters(zip, prefix, game, scenes)
-    write_pages(zip, prefix, game)
     # Notebook content is GM-eyes-only regardless of general export
     # eligibility — gated on the GM check specifically (policy.update? is
-    # GamePolicy's GM predicate), not policy.export?, since a player
-    # exporting their own visible/participating slice must never receive it.
-    write_notebook_entries(zip, prefix, game) if policy.update?
-  end
-
-  # Applies the export scope the policy decided (:all / :participating / :visible).
-  sig { params(game: Game, selection: Symbol).returns(T::Array[Scene]) }
-  def export_scenes_for(game, selection)
-    case selection
-    when :all
-      game.scenes.includes(:parent_scene, scene_participants: %i[user character], posts: :user).to_a
-    when :participating
-      game.scenes
-          .joins(:scene_participants)
-          .where(scene_participants: { user_id: @user.id })
-          .includes(:parent_scene, scene_participants: %i[user character], posts: :user)
-          .to_a
-    else
-      Scene.visible_to(@user, game)
-           .where(game: game)
-           .includes(:parent_scene, scene_participants: %i[user character], posts: :user)
-           .to_a
-    end
-  end
-
-  # --- README.md ---
-
-  sig { params(zip: Zip::OutputStream, prefix: String, game: Game, scenes: T::Array[Scene]).void }
-  def write_readme(zip, prefix, game, scenes)
-    zip.put_next_entry("#{prefix}README.md")
-    zip.write(readme_content(game, scenes))
-  end
-
-  sig { params(game: Game, scenes: T::Array[Scene]).returns(String) }
-  def readme_content(game, scenes)
-    members = members_for(game)
-    active_count = scenes.count { |s| !s.resolved? }
-    resolved_count = scenes.count(&:resolved?)
-
-    lines = []
-    lines << "# #{game.name}"
-    lines << ""
-    lines << (game.description.presence || "_No description._")
-    lines << ""
-    lines << "**Exported:** #{Time.current.utc.strftime("%Y-%m-%d %H:%M UTC")}"
-    lines << ""
-    lines << "## Members"
-    lines << ""
-    lines << "| Display Name | Role | Status |"
-    lines << "|---|---|---|"
-    members.each do |m|
-      user = T.must(m.user)
-      display = user.display_name.presence || user.email
-      role = m.game_master? ? "GM" : "Player"
-      status = m.removed? ? "Former" : "Active"
-      lines << "| #{display} | #{role} | #{status} |"
-    end
-    lines << ""
-    lines << "## Scenes"
-    lines << ""
-    lines << "- Active: #{active_count}"
-    lines << "- Resolved: #{resolved_count}"
-    lines << ""
-    lines.join("\n")
-  end
-
-  # --- files_manifest.md ---
-
-  sig { params(zip: Zip::OutputStream, prefix: String, game: Game).void }
-  def write_files_manifest(zip, prefix, game)
-    zip.put_next_entry("#{prefix}files_manifest.md")
-    zip.write(files_manifest_content(game))
-  end
-
-  sig { params(game: Game).returns(String) }
-  def files_manifest_content(game)
-    files = files_for(game)
-
-    lines = []
-    lines << "# Game Files"
-    lines << ""
-
-    if files.empty?
-      lines << "_No files uploaded._"
-    else
-      lines << "| Filename | Type | Size | Uploaded |"
-      lines << "|---|---|---|---|"
-      files.each do |gf|
-        size = gf.file.attached? ? humanize_bytes(gf.byte_size || 0) : "unknown"
-        uploaded = gf.created_at.strftime("%Y-%m-%d")
-        lines << "| #{gf.filename} | #{gf.content_type} | #{size} | #{uploaded} |"
-      end
-      lines << ""
-      lines << "_Binary files are not included in this export. The game's GM can download them from the app._"
-    end
-
-    lines << ""
-    lines.join("\n")
-  end
-
-  sig { params(bytes: Integer).returns(String) }
-  def humanize_bytes(bytes)
-    if bytes >= 1_048_576
-      "#{(bytes / 1_048_576.0).round(1)} MB"
-    elsif bytes >= 1_024
-      "#{(bytes / 1_024.0).round(1)} KB"
-    else
-      "#{bytes} B"
-    end
-  end
-
-  # --- links_manifest.md ---
-
-  sig { params(zip: Zip::OutputStream, prefix: String, game: Game).void }
-  def write_links_manifest(zip, prefix, game)
-    zip.put_next_entry("#{prefix}links_manifest.md")
-    zip.write(links_manifest_content(game))
-  end
-
-  sig { params(game: Game).returns(String) }
-  def links_manifest_content(game)
-    links = links_for(game)
-
-    lines = []
-    lines << "# Game Links"
-    lines << ""
-
-    if links.empty?
-      lines << "_No links added._"
-    else
-      lines << "| Description | URL |"
-      lines << "|---|---|"
-      links.each do |link|
-        lines << "| #{link.description} | #{link.url} |"
-      end
-      lines << ""
-      lines << "_External links open in a new tab._"
-    end
-
-    lines << ""
-    lines.join("\n")
-  end
-
-  # --- Scenes ---
-
-  sig { params(zip: Zip::OutputStream, prefix: String, game: Game, scenes: T::Array[Scene]).void }
-  def write_scenes(zip, prefix, game, scenes)
-    slug_tracker = T.let({}, T::Hash[String, Integer])
-
-    scenes.sort_by(&:id).each_with_index do |scene, idx|
-      number = format("%03d", idx + 1)
-      slug = unique_slug(slugify(scene.title), slug_tracker)
-      dir = "#{prefix}scenes/#{number}-#{slug}/"
-
-      zip.put_next_entry("#{dir}scene_info.md")
-      zip.write(scene_info_content(scene))
-
-      zip.put_next_entry("#{dir}posts.md")
-      zip.write(posts_content(scene))
-    end
-  end
-
-  sig { params(scene: Scene).returns(String) }
-  def scene_info_content(scene)
-    lines = []
-    lines << "# #{scene.title}"
-    lines << ""
-    lines << (scene.description.presence || "_No description._")
-    lines << ""
-
-    status = scene.resolved? ? "Resolved" : "Active"
-    lines << "**Status:** #{status}"
-    lines << "**Created:** #{scene.created_at.strftime("%Y-%m-%d")}"
-    if scene.resolved?
-      lines << "**Resolved:** #{T.must(scene.resolved_at).strftime("%Y-%m-%d")}"
-    end
-    lines << ""
-
-    if scene.parent_scene
-      lines << "## Parent Scene"
-      lines << ""
-      lines << T.must(scene.parent_scene).title
-      lines << ""
-    end
-
-    participants = participants_for(scene)
-    unless participants.empty?
-      lines << "## Participants"
-      lines << ""
-      lines << "| Display Name | Character |"
-      lines << "|---|---|"
-      participants.each do |sp|
-        user = T.must(sp.user)
-        display = user.display_name.presence || user.email
-        character = sp.character&.name || "—"
-        lines << "| #{display} | #{character} |"
-      end
-      lines << ""
-    end
-
-    if scene.resolved? && scene.resolution.present?
-      lines << "## Resolution"
-      lines << ""
-      lines << scene.resolution.to_s
-      lines << ""
-    end
-
-    lines.join("\n")
-  end
-
-  sig { params(scene: Scene).returns(String) }
-  def posts_content(scene)
-    published = published_posts_for(scene)
-    return "_No posts yet._\n" if published.empty?
-
-    lines = T.let([], T::Array[String])
-    published.each do |post|
-      user = T.must(post.user)
-      author = user.display_name.presence || user.email
-      timestamp = post.created_at.strftime("%Y-%m-%d %H:%M UTC")
-      edited = post.last_edited_at.present? ? " (edited)" : ""
-
-      lines << "## #{author} — #{timestamp}#{edited}"
-      lines << "[Out of Character]" if post.is_ooc?
-      lines << ""
-      lines << post.content.to_s
-      lines << ""
-      lines << "---"
-      lines << ""
-    end
-    lines.join("\n")
-  end
-
-  # --- Characters ---
-
-  sig { params(zip: Zip::OutputStream, prefix: String, game: Game, scenes: T::Array[Scene]).void }
-  def write_characters(zip, prefix, game, scenes)
-    characters = characters_for(game, scenes)
-    slug_tracker = T.let({}, T::Hash[String, Integer])
-
-    characters.each do |character|
-      slug = unique_slug(slugify(character.name), slug_tracker)
-      dir = "#{prefix}characters/#{slug}/"
-
-      zip.put_next_entry("#{dir}current_sheet.md")
-      zip.write(character_sheet_content(character))
-
-      versions = versions_for(character)
-      versions.each_with_index do |version, idx|
-        date = version.created_at.strftime("%Y-%m-%d")
-        filename = "#{dir}version_history/#{format("v%03d", idx + 1)}-#{date}.md"
-        zip.put_next_entry(filename)
-        zip.write(character_version_content(version, idx + 1))
-      end
-    end
-  end
-
-  # --- Pages ---
-
-  sig { params(zip: Zip::OutputStream, prefix: String, game: Game).void }
-  def write_pages(zip, prefix, game)
-    slug_tracker = T.let({}, T::Hash[String, Integer])
-
-    pages_for(game).each do |page|
-      slug = unique_slug(slugify(page.title), slug_tracker)
-      zip.put_next_entry("#{prefix}pages/#{slug}.md")
-      zip.write(page_content(page))
-    end
-  end
-
-  sig { params(page: Page).returns(String) }
-  def page_content(page)
-    lines = []
-    lines << "# #{page.title}"
-    lines << ""
-    lines << (page.body.presence || "_No content._")
-    lines << ""
-    lines.join("\n")
-  end
-
-  # --- Notebook (GM only, see #build_game) ---
-
-  sig { params(zip: Zip::OutputStream, prefix: String, game: Game).void }
-  def write_notebook_entries(zip, prefix, game)
-    slug_tracker = T.let({}, T::Hash[String, Integer])
-
-    notebook_entries_for(game).each do |entry|
-      slug = unique_slug(slugify(entry.title), slug_tracker)
-      zip.put_next_entry("#{prefix}notebook/#{slug}.md")
-      zip.write(notebook_entry_content(entry))
-    end
-  end
-
-  sig { params(entry: NotebookEntry).returns(String) }
-  def notebook_entry_content(entry)
-    lines = []
-    lines << "# #{entry.title}"
-    lines << ""
-    lines << "**Status:** #{entry.status}"
-    lines << ""
-    lines << (entry.body.presence || "_No content._")
-    lines << ""
-    lines.join("\n")
-  end
-
-  # --- Reads -------------------------------------------------------------
-  # Every database read the export performs lives here, each returning a plain
-  # array. Specs covering the rendered output stub these and hand back built
-  # records, so only the reads themselves need a real connection.
-
-  sig { params(game: Game).returns(T::Array[GameMember]) }
-  def members_for(game)
-    game.game_members.includes(:user).order(:role, :status).to_a
-  end
-
-  sig { params(game: Game).returns(T::Array[GameFile]) }
-  def files_for(game)
-    game.game_files.includes(file_attachment: :blob).order(:filename).to_a
-  end
-
-  sig { params(game: Game).returns(T::Array[Page]) }
-  def pages_for(game)
-    game.pages.order(:title).to_a
-  end
-
-  sig { params(game: Game).returns(T::Array[NotebookEntry]) }
-  def notebook_entries_for(game)
-    game.notebook_entries.order(:title).to_a
-  end
-
-  sig { params(game: Game).returns(T::Array[GameLink]) }
-  def links_for(game)
-    game.game_links.order(:description).to_a
-  end
-
-  sig { params(scene: Scene).returns(T::Array[SceneParticipant]) }
-  def participants_for(scene)
-    scene.scene_participants.includes(:user, :character).to_a
-  end
-
-  sig { params(scene: Scene).returns(T::Array[Post]) }
-  def published_posts_for(scene)
-    scene.posts.published.includes(:user).order(:created_at).to_a
-  end
-
-  sig { params(character: Character).returns(T::Array[CharacterVersion]) }
-  def versions_for(character)
-    character.character_versions.includes(:edited_by).order(:created_at).to_a
-  end
-
-  sig { params(game: Game, scenes: T::Array[Scene]).returns(T::Array[Character]) }
-  def characters_for(game, scenes)
-    scene_ids = scenes.map(&:id)
-
-    participant_char_ids = SceneParticipant
-      .where(scene_id: scene_ids)
-      .where.not(character_id: nil)
-      .pluck(:character_id)
-
-    user_char_ids = game.characters.where(user: @user).pluck(:id)
-
-    all_ids = (participant_char_ids + user_char_ids).uniq
-    Character.where(id: all_ids).includes(:user, :character_versions).order(:name).to_a
-  end
-
-  sig { params(character: Character).returns(String) }
-  def character_sheet_content(character)
-    user = T.must(character.user)
-    owner = user.display_name.presence || user.email
-    lines = []
-    lines << "# #{character.name}"
-    lines << ""
-    lines << "**Owner:** #{owner}"
-    lines << "**Hidden:** #{character.hidden? ? "Yes" : "No"}"
-    lines << "**Archived:** #{character.archived? ? "Yes" : "No"}"
-    lines << ""
-    lines << "---"
-    lines << ""
-    lines << character.content.to_s
-    lines << ""
-    lines.join("\n")
-  end
-
-  sig { params(version: CharacterVersion, number: Integer).returns(String) }
-  def character_version_content(version, number)
-    date = version.created_at.strftime("%Y-%m-%d")
-    editor = T.must(version.edited_by)
-    editor_name = editor.display_name.presence || editor.email
-    lines = []
-    lines << "# Version #{number} — #{date}"
-    lines << ""
-    lines << "**Edited by:** #{editor_name}"
-    lines << ""
-    lines << "---"
-    lines << ""
-    lines << version.content.to_s
-    lines << ""
-    lines.join("\n")
-  end
-
-  # --- Slug helpers ---
-
-  sig { params(text: String).returns(String) }
-  def slugify(text)
-    text.downcase
-        .gsub(/[^a-z0-9\s-]/, "")
-        .gsub(/\s+/, "-")
-        .gsub(/-+/, "-")
-        .strip
-        .gsub(/\A-+|-+\z/, "")
-        .then { |s| s.empty? ? "untitled" : s }
-  end
-
-  sig { params(base: String, tracker: T::Hash[String, Integer]).returns(String) }
-  def unique_slug(base, tracker)
-    count = tracker[base].to_i
-    tracker[base] = count + 1
-    count.zero? ? base : "#{base}-#{count + 1}"
+    # GamePolicy's GM predicate), not policy.export?, since a player exporting
+    # their own visible/participating slice must never receive it.
+    archive.write_notebook if policy.update?
   end
 end

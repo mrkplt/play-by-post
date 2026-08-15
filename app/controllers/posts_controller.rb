@@ -6,9 +6,9 @@ class PostsController < ApplicationController
   include PostScoped
 
   before_action :require_participant!
-  before_action :require_active_member_for_write!, only: %i[create save_draft]
+  before_action :require_active_member_for_write!, only: %i[create]
   before_action :require_editable!, only: %i[edit update]
-  after_action :verify_authorized, except: %i[discard_draft save_draft]
+  after_action :verify_authorized
 
   sig { void }
   def mark_read
@@ -29,49 +29,14 @@ class PostsController < ApplicationController
   end
 
   sig { void }
-  def discard_draft
-    scene.posts.drafts.find_by(user: current_user)&.destroy
-    redirect_to game_scene_path(game, scene), notice: "Draft discarded."
-  end
-
-  sig { void }
-  def save_draft
-    draft = scene.posts.drafts.find_or_initialize_by(user: current_user)
-    draft.assign_attributes(content: params.dig(:post, :content), is_ooc: params.dig(:post, :is_ooc) || false, draft: true)
-
-    if draft.save
-      render json: { id: draft.id }, status: :ok
-    else
-      render json: { errors: draft.errors.full_messages }, status: :unprocessable_content
-    end
-  end
-
-  sig { void }
   def create
-    new_post = draft_or_new_post
+    new_post = post_draft.publish_target(post_params)
     post_policy = policy(new_post)
     authorize new_post, :create?
     attach_uploaded_image(new_post, game, param_key: :post)
     assign_game_and_scene_presenters
 
-    if new_post.save
-      participants = scene.scene_participants.includes(:character, :user).to_a
-      built = presenter_builder.post_presenter(new_post, post_policy, scene_participants: participants)
-      @post_presenter = T.let(built, T.nilable(PostPresenter))
-      respond_to do |format|
-        format.turbo_stream
-        format.html { redirect_to game_scene_path(game, scene) }
-      end
-    else
-      page = PostPresenterBuilder::PageContext.new(
-        game_presenter: T.must(@game_presenter), scene_presenter: T.must(@scene_presenter)
-      )
-      component = presenter_builder.composer_component(new_post, post_policy, page)
-      respond_to do |format|
-        format.turbo_stream { render turbo_stream: turbo_stream.replace("post_composer", component) }
-        format.html { redirect_to game_scene_path(game, scene), alert: "Could not create post." }
-      end
-    end
+    new_post.save ? render_created(new_post, post_policy) : render_composer_errors(new_post, post_policy)
   end
 
   sig { void }
@@ -89,22 +54,38 @@ class PostsController < ApplicationController
     PostPresenterBuilder.new(game, scene, self)
   end
 
-  sig { returns(Post) }
-  def draft_or_new_post
-    existing_draft = scene.posts.drafts.find_by(user: current_user)
-    return update_draft_attributes(existing_draft) if existing_draft
-
-    new_post_from_params
+  sig { returns(PostDraft) }
+  def post_draft
+    PostDraft.new(scene, current_user)
   end
 
-  sig { params(draft: Post).returns(Post) }
-  def update_draft_attributes(draft)
-    draft.tap { |draft_post| draft_post.assign_attributes(post_params.merge(draft: false, last_edited_at: nil)) }
+  sig { params(new_post: Post, post_policy: PostPolicy).void }
+  def render_created(new_post, post_policy)
+    builder = presenter_builder
+    built = builder.post_presenter(new_post, post_policy, scene_participants: builder.scene_participants)
+    @post_presenter = T.let(built, T.nilable(PostPresenter))
+
+    respond_to do |format|
+      format.turbo_stream
+      format.html { redirect_to game_scene_path(game, scene) }
+    end
   end
 
-  sig { returns(Post) }
-  def new_post_from_params
-    scene.posts.new(post_params).tap { |new_post| new_post.user = current_user }
+  sig { params(new_post: Post, post_policy: PostPolicy).void }
+  def render_composer_errors(new_post, post_policy)
+    component = presenter_builder.composer_component(new_post, post_policy, page_context)
+
+    respond_to do |format|
+      format.turbo_stream { render turbo_stream: turbo_stream.replace("post_composer", component) }
+      format.html { redirect_to game_scene_path(game, scene), alert: "Could not create post." }
+    end
+  end
+
+  sig { returns(PostPresenterBuilder::PageContext) }
+  def page_context
+    PostPresenterBuilder::PageContext.new(
+      game_presenter: T.must(@game_presenter), scene_presenter: T.must(@scene_presenter)
+    )
   end
 
   sig { void }
