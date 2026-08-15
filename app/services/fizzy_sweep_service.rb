@@ -28,6 +28,11 @@ module FizzySweepService
     Rails.logger.debug("Fizzy card created for feedback ##{feedback.id}: #{location}")
   end
 
+  # The card fields and Fizzy credentials needed to build the request, grouped
+  # so #build_card_request and #send_card_request take one object instead of
+  # threading config/title/description through separately.
+  CardRequest = Data.define(:config, :title, :description)
+
   # POSTs a single card to the board. Cards created through the API are
   # untriaged, so they land in Fizzy's "Maybe?" column. Returns the Location
   # header (the new card's URL); raises on a non-success response or missing
@@ -37,22 +42,36 @@ module FizzySweepService
     config = Rails.application.credentials.fizzy
     validate_config!(config)
 
-    uri = URI.parse(endpoint(config))
-    request = Net::HTTP::Post.new(uri)
-    request["Authorization"] = "Bearer #{config.access_token}"
-    request["Content-Type"] = "application/json"
-    request["Accept"] = "application/json"
-    request.body = JSON.generate(card: { title: title, description: description })
+    response = send_card_request(CardRequest.new(config: config, title: title, description: description))
+    validate_response!(response)
+    response["Location"]
+  end
 
-    response = Net::HTTP.start(uri.hostname, uri.port, use_ssl: uri.scheme == "https") do |http|
+  sig { params(card_request: FizzySweepService::CardRequest).returns(T.untyped) }
+  def self.send_card_request(card_request)
+    uri = URI.parse(endpoint(card_request.config))
+    request = build_card_request(uri, card_request)
+
+    Net::HTTP.start(uri.hostname, uri.port, use_ssl: uri.scheme == "https") do |http|
       http.request(request)
     end
+  end
 
-    unless response.is_a?(Net::HTTPSuccess)
-      raise "Fizzy card creation failed: #{response.code} #{response.message}"
+  sig { params(uri: URI::Generic, card_request: FizzySweepService::CardRequest).returns(Net::HTTP::Post) }
+  def self.build_card_request(uri, card_request)
+    Net::HTTP::Post.new(uri).tap do |request|
+      request["Authorization"] = "Bearer #{card_request.config.access_token}"
+      request["Content-Type"] = "application/json"
+      request["Accept"] = "application/json"
+      request.body = JSON.generate(card: { title: card_request.title, description: card_request.description })
     end
+  end
 
-    response["Location"]
+  sig { params(response: T.untyped).void }
+  def self.validate_response!(response)
+    return if response.is_a?(Net::HTTPSuccess)
+
+    raise "Fizzy card creation failed: #{response.code} #{response.message}"
   end
 
   sig { params(config: T.untyped).void }
@@ -76,16 +95,16 @@ module FizzySweepService
 
   sig { params(feedback: Feedback).returns(String) }
   def self.description_for(feedback)
-    lines = [ feedback.body ]
-    lines << "Submitted from: #{feedback.url}" if feedback.url.present?
-
+    url = feedback.url
     user = feedback.user
-    if user
-      lines << "Submitted by: #{user.email}"
-    end
 
-    lines.join("\n\n")
+    [
+      feedback.body,
+      (url.present? ? "Submitted from: #{url}" : nil),
+      (user ? "Submitted by: #{user.email}" : nil)
+    ].compact.join("\n\n")
   end
 
-  private_class_method :validate_config!, :endpoint, :title_for, :description_for
+  private_class_method :send_card_request, :build_card_request, :validate_response!,
+                        :validate_config!, :endpoint, :title_for, :description_for
 end

@@ -20,8 +20,11 @@ module ImageAttachable
     return unless image
 
     AttachmentUploader.attach(
-      attachment: record.image, attachable: image, kind: "#{param_key}_image",
-      user: current_user, game: game, original_filename: image.original_filename
+      attachment: record.image, attachable: image,
+      context: AttachmentUploader::Context.build(
+        kind: "#{param_key}_image",
+        user: current_user, game: game, original_filename: image.original_filename
+      )
     )
   end
 

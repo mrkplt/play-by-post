@@ -33,11 +33,13 @@ class ExportJob < ApplicationJob
     AttachmentUploader.attach(
       attachment: request.archive,
       attachable: { io: StringIO.new(zip_data), filename: filename, content_type: "application/zip" },
-      kind: "export",
-      user: user,
-      game: game,
-      original_filename: filename,
-      export_scope: export_scope(game)
+      context: AttachmentUploader::Context.build(
+        kind: "export",
+        user: user,
+        game: game,
+        original_filename: filename,
+        export_scope: export_scope(game)
+      )
     )
 
     # Record the receipt only after a successful attach: this is what gates

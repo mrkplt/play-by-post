@@ -22,41 +22,30 @@ class EmailContentExtractor
     api_key = Rails.application.credentials.openrouter_api_key
     return @raw_body if api_key.blank?
 
-    response = make_request(api_key)
-    content  = response.dig("choices", 0, "message", "content").presence
-
-    if content
-      record_usage(response)
-      content
-    else
-      @raw_body
-    end
+    extracted_content(make_request(api_key))
   rescue StandardError
     @raw_body
   end
 
   private
 
+  # Returns the extracted content, recording AI usage as a side effect, or
+  # falls back to the raw body when the response carries no content.
+  sig { params(response: T::Hash[String, T.untyped]).returns(String) }
+  def extracted_content(response)
+    content = response.dig("choices", 0, "message", "content").presence
+    return @raw_body unless content
+
+    record_usage(response)
+    content
+  end
+
   sig { params(api_key: String).returns(T::Hash[String, T.untyped]) }
   def make_request(api_key)
-    uri = URI(OPENROUTER_API_URL)
-    http = Net::HTTP.new(uri.host, uri.port)
-    http.use_ssl = true
-    http.open_timeout = 10
-    http.read_timeout = 15
-
-    request = Net::HTTP::Post.new(uri)
-    request["Authorization"] = "Bearer #{api_key}"
-    request["Content-Type"] = "application/json"
-    request.body = JSON.generate({
-      model: MODEL,
-      messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: @raw_body }
-      ]
-    })
-
-    JSON.parse(http.request(request).body)
+    prompt = EmailContentExtraction::OpenrouterRequest::Prompt.new(
+      api_key: api_key, model: MODEL, system_prompt: SYSTEM_PROMPT, raw_body: @raw_body
+    )
+    EmailContentExtraction::OpenrouterRequest.call(prompt)
   end
 
   sig { params(response: T::Hash[String, T.untyped]).void }
@@ -68,7 +57,7 @@ class EmailContentExtractor
       input_tokens:  usage["prompt_tokens"],
       output_tokens: usage["completion_tokens"]
     )
-  rescue StandardError => e
-    Rails.logger.error("AiUsage write failed: #{e.message}")
+  rescue StandardError => error
+    Rails.logger.error("AiUsage write failed: #{error.message}")
   end
 end
