@@ -4,7 +4,7 @@
   "sorbet_typed_pct": 39.25,
   "mutation_coverage": 98.5,
   "view_css_statements": 176,
-  "duplicated_component_class_strings": 19,
+  "duplicated_component_class_strings": 18,
   "presenter_method_violations": 0,
   "saved_at": "2026-08-14T16:51:20-04:00"
 }

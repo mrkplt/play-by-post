@@ -54,17 +54,19 @@ RSpec.describe Shared::SceneFormComponent, type: :component do
   end
 
   describe "errors" do
-    it "reports no errors on a clean scene" do
+    it "renders no error block on a clean scene" do
       component = build_component
-      expect(component.errors?).to be(false)
       expect(component.error_messages).to be_empty
+      render_inline(component)
+      expect(page).to have_no_css(".text-danger")
     end
 
     it "surfaces validation messages when the scene has errors" do
       scene.errors.add(:base, "Something went wrong")
       component = build_component
-      expect(component.errors?).to be(true)
       expect(component.error_messages).to include("Something went wrong")
+      render_inline(component)
+      expect(page).to have_css(".text-danger", text: "Something went wrong")
     end
   end
 

@@ -35,8 +35,9 @@ RSpec.describe Shared::SceneSummaryFormComponent, type: :component do
       expect(component.show_ai_notice?).to be(false)
     end
 
-    it "has_errors? returns false when no errors" do
-      expect(component.has_errors?).to be(false)
+    it "renders no error block when there are no errors" do
+      render_inline(component)
+      expect(page).to have_no_css(".text-danger")
     end
 
     it "renders a form with the new-form id" do
@@ -121,8 +122,9 @@ RSpec.describe Shared::SceneSummaryFormComponent, type: :component do
 
     subject(:component) { described_class.new(summary: presenter_for(summary)) }
 
-    it "has_errors? returns true" do
-      expect(component.has_errors?).to be(true)
+    it "renders the error block when there are errors" do
+      render_inline(component)
+      expect(page).to have_css(".text-danger", text: "Body can't be blank")
     end
 
     it "error_messages returns the messages" do

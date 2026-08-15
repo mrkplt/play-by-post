@@ -7,6 +7,7 @@
 # game and the link — no form-construction logic in the template.
 class Shared::LinkFormComponent < ApplicationComponent
   extend T::Sig
+  include Shared::RecordBackedForm
 
   sig { params(game: GamePresenter, game_link: GameLinkPresenter).void }
   def initialize(game:, game_link:)
@@ -20,9 +21,9 @@ class Shared::LinkFormComponent < ApplicationComponent
   sig { returns(GameLinkPresenter) }
   attr_reader :game_link
 
-  sig { returns(T::Boolean) }
-  def new_record?
-    @game_link.new_record?
+  sig { override.returns(GameLinkPresenter) }
+  def record
+    @game_link
   end
 
   sig { returns(String) }
@@ -38,15 +39,5 @@ class Shared::LinkFormComponent < ApplicationComponent
   sig { returns(String) }
   def form_id
     new_record? ? "new_game_link_form" : "edit_game_link_#{@game_link.id}_form"
-  end
-
-  sig { returns(T::Boolean) }
-  def errors?
-    @game_link.errors?
-  end
-
-  sig { returns(T::Array[String]) }
-  def error_messages
-    @game_link.error_messages
   end
 end

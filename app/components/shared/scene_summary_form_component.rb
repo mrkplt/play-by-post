@@ -37,10 +37,6 @@ class Shared::SceneSummaryFormComponent < ApplicationComponent
     editing? && summary.ai_generated?
   end
 
-  sig { returns(T::Boolean) }
-  def has_errors?
-    summary.errors.any?
-  end
 
   sig { returns(T::Array[String]) }
   def error_messages

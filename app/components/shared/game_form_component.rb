@@ -42,10 +42,6 @@ class Shared::GameFormComponent < ApplicationComponent
     @note.present?
   end
 
-  sig { returns(T::Boolean) }
-  def errors?
-    @game.errors?
-  end
 
   sig { returns(T::Array[String]) }
   def error_messages

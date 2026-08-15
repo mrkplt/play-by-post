@@ -1,11 +1,5 @@
 <%= form_with model: [ game, game_link ], html: { id: form_id }, class: "flex flex-col gap-4" do |f| %>
-  <% if errors? %>
-    <div class="bg-tint-blue-bg border border-tint-blue-border rounded-card p-3 text-sm text-danger">
-      <% error_messages.each do |msg| %>
-        <div><%= msg %></div>
-      <% end %>
-    </div>
-  <% end %>
+  <%= render Ui::FormErrorsComponent.new(messages: error_messages) %>
 
   <div class="flex flex-col gap-1.5">
     <%= f.label :description, class: "text-[11px] font-bold text-muted uppercase tracking-[0.05em]" %>
