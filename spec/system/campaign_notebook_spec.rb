@@ -192,7 +192,7 @@ RSpec.describe "Campaign Notebook", type: :feature do
 
       click_on "Promote"
 
-      expect(page).to have_current_path(%r{/games/\d+/pages/})
+      expect(page).to have_current_path(%r{#{Regexp.escape(game_path(game))}/pages/})
       expect(Page.find_by(title: "Standalone Idea")).to be_present
     end
 
