@@ -73,9 +73,12 @@ Rails.application.routes.draw do
       resources :pages, only: %i[new create show edit update destroy], param: :slug
       resources :game_links, only: %i[index new create edit update destroy]
       resources :notebook_entries, only: %i[index new create edit update destroy], param: :slug do
+        # Kept as move/promote_game_notebook_entry_path — the lane picker and
+        # the promote button post to the same URLs; only the controller moved,
+        # so NotebookEntriesController stays about editing entries.
         member do
-          patch :move
-          post :promote
+          patch :move, to: "notebook_entries/lanes#move"
+          post :promote, to: "notebook_entries/lanes#promote"
         end
       end
       resources :characters, only: %i[new create show edit update] do

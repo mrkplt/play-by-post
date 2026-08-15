@@ -220,6 +220,7 @@ matcher:
     - PagesController
     - GameLinksController
     - NotebookEntriesController
+    - NotebookEntries::LanesController
     - InvitationsController
     - GameMembersController
     - CharacterVersionsController
