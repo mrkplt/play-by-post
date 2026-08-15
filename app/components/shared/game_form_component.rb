@@ -8,21 +8,23 @@
 class Shared::GameFormComponent < ApplicationComponent
   extend T::Sig
 
+  OptionalString = T.type_alias { T.nilable(String) }
+
   sig do
     params(
       game: GamePresenter,
       submit_label: String,
       cancel_href: String,
-      note: T.nilable(String),
-      confirm: T.nilable(String)
+      note: OptionalString,
+      confirm: OptionalString
     ).void
   end
   def initialize(game:, submit_label:, cancel_href:, note: nil, confirm: nil)
     @game = T.let(game, GamePresenter)
     @submit_label = T.let(submit_label, String)
     @cancel_href = T.let(cancel_href, String)
-    @note = T.let(note, T.nilable(String))
-    @confirm = T.let(confirm, T.nilable(String))
+    @note = T.let(note, OptionalString)
+    @confirm = T.let(confirm, OptionalString)
   end
 
   sig { returns(GamePresenter) }
@@ -34,7 +36,7 @@ class Shared::GameFormComponent < ApplicationComponent
   sig { returns(String) }
   attr_reader :cancel_href
 
-  sig { returns(T.nilable(String)) }
+  sig { returns(OptionalString) }
   attr_reader :note
 
   sig { returns(T::Boolean) }

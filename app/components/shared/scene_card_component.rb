@@ -6,17 +6,18 @@
 class Shared::SceneCardComponent < ApplicationComponent
   extend T::Sig
 
-  sig { params(scene: ScenePresenter, game: GamePresenter, hot: T::Boolean).void }
-  def initialize(scene:, game:, hot: false)
+  sig { params(scene: ScenePresenter, game: GamePresenter).void }
+  def initialize(scene:, game:)
     @scene = scene
     @card = T.let(SceneCardPresenter.new(scene), SceneCardPresenter)
     @game = game
-    @hot = hot
   end
 
+  # Derived from the scene presenter it already holds, rather than a
+  # caller-supplied flag — ScenePresenter#hot? is exactly this fact.
   sig { returns(T::Boolean) }
   def hot?
-    @hot
+    @scene.hot?
   end
 
   sig { returns(String) }

@@ -66,9 +66,7 @@ class Ui::MarkdownEditorComponent < ApplicationComponent
 
   sig { returns(String) }
   def edit_classes
-    classes = [ "markdown-editor", "w-full", EDIT_BASE ]
-    classes << "overflow-y-auto" if @config.edit_scroll?
-    classes.join(" ")
+    [ "markdown-editor", "w-full", EDIT_BASE, @config.edit_scroll_class ].reject(&:empty?).join(" ")
   end
 
   sig { returns(T.nilable(String)) }
