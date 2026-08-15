@@ -46,15 +46,10 @@ class ScenesController < ApplicationController
   sig { void }
   def show
     authorize scene
-    builder = scene_show_builder
+    screen = scene_show_builder.screen(game_presenter)
 
-    @game_presenter = T.let(GamePresenter.new(game, policy: policy(game), urls: self), T.nilable(GamePresenter))
-    @scene_presenter = T.let(builder.scene_presenter, T.nilable(ScenePresenter))
-    @scene_navigation_presenter = T.let(builder.navigation_presenter, T.nilable(SceneNavigationPresenter))
-    @scene_show = T.let(builder.show_presenter, T.nilable(SceneShowPresenter))
-    @scene_posts = T.let(builder.posts_presenter, T.nilable(ScenePostsPresenter))
-    @scene_summary_presenter = T.let(builder.summary_presenter, T.nilable(SceneSummaryPresenter))
-    T.must(@scene_posts).mark_visited!
+    @scene_screen = T.let(screen, T.nilable(SceneScreenPresenter))
+    screen.posts.mark_visited!
   end
 
   sig { void }

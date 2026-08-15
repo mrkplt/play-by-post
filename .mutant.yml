@@ -172,6 +172,7 @@ matcher:
     - CharacterPresenterBuilder
     - ExportDelivery
     - EmailContentExtractor
+    - SceneScreenPresenter
     - SceneShowBuilder
     - SceneTreeBuilder
     - SceneNotifier

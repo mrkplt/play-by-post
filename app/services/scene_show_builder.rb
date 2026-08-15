@@ -24,6 +24,19 @@ class SceneShowBuilder
     @context = context
   end
 
+  # The whole screen in one object, so #show assigns a single ivar.
+  sig { params(game_presenter: GamePresenter).returns(SceneScreenPresenter) }
+  def screen(game_presenter)
+    SceneScreenPresenter.new(
+      scene_presenter,
+      game_presenter: game_presenter,
+      navigation: navigation_presenter,
+      show: show_presenter,
+      posts: posts_presenter,
+      summary: summary_presenter
+    )
+  end
+
   sig { returns(ScenePresenter) }
   def scene_presenter
     @scene_presenter ||= T.let(
