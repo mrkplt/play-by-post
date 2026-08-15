@@ -134,4 +134,23 @@ RSpec.describe GameFile, type: :model do
       )
     end
   end
+
+  describe "#error_message" do
+    it "returns nil when there are no errors" do
+      expect(build(:game_file).error_message).to be_nil
+    end
+
+    it "prefers the unprefixed :file-specific message" do
+      game_file = build(:game_file)
+      game_file.file.attach(io: StringIO.new("x" * (GameFile::MAX_SIZE + 1)), filename: "big.pdf", content_type: "application/pdf")
+      game_file.valid?
+      expect(game_file.error_message).to eq("must be less than 50MB")
+    end
+
+    it "falls back to the first full message when there is no :file error" do
+      game_file = build(:game_file, filename: nil)
+      game_file.valid?
+      expect(game_file.error_message).to eq("Filename can't be blank")
+    end
+  end
 end

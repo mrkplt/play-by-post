@@ -28,9 +28,14 @@ class ScenePresenter < BasePresenter
     @model.title
   end
 
+  # Reads status_label rather than testing resolved? directly, so the
+  # scene's resolved-state is decided in exactly one place (status_label)
+  # and every other display derives from that single canonical value.
   sig { returns(String) }
   def parent_option_label
-    @model.resolved? ? "#{@model.title} (Resolved)" : @model.title
+    return title if status_label == "Active"
+
+    "#{title} (#{status_label})"
   end
 
   # Whether the scene currently carries validation errors — the New Scene /
@@ -48,7 +53,7 @@ class ScenePresenter < BasePresenter
 
   sig { returns(String) }
   def status_label
-    @model.resolved? ? "Resolved" : "Active"
+    resolved? ? "Resolved" : "Active"
   end
 
   sig { returns(T::Boolean) }
@@ -63,7 +68,7 @@ class ScenePresenter < BasePresenter
   def status_badges
     badges = T.let([], T::Array[Shared::StatusBadgeRowComponent::Badge])
     badges << { label: "Private", variant: :yellow } if @model.private?
-    badges << { label: "Resolved", variant: :gray } if @model.resolved?
+    badges << { label: "Resolved", variant: :gray } if status_label == "Resolved"
     badges
   end
 

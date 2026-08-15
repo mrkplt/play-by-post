@@ -259,6 +259,8 @@ matcher:
     - FeedbackSweepJob
     # Mailers
     - NotificationMailer
+    - NotificationMailer::Delivery
+    - NotificationMailerDeliverySerializer
     - InvitationMailer
     - ExportMailer
     # Mailboxes

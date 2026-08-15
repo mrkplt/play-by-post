@@ -8,9 +8,8 @@ module ApplicationHelper
     svg = icon.svg
 
     # Replace or add class attribute if provided
-    if html_options[:class].present?
-      svg = svg.sub(/class="[^"]*"/, "class=\"#{html_options[:class]}\"")
-    end
+    css_class = html_options[:class]
+    svg = svg.sub(/class="[^"]*"/, "class=\"#{css_class}\"") if css_class.present?
 
     # icon.svg is trusted markup from the `icons` gem (no user input), so it is
     # marked html-safe. Built as a SafeBuffer rather than `svg.html_safe` so the

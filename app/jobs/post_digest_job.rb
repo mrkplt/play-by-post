@@ -25,7 +25,9 @@ class PostDigestJob < ApplicationJob
     posts = posts_since_visit(scene, user, participant.last_visited_at)
     return if posts.empty?
 
-    NotificationMailer.post_digest(scene, user, posts).deliver_later
+    NotificationMailer.post_digest(
+      NotificationMailer::Delivery.new(scene: scene, recipient: user), posts
+    ).deliver_later
   end
 
   # Whether this participant is owed a digest: not muted, and away for at least

@@ -35,4 +35,11 @@ class GameMember < ApplicationRecord
   def banned?
     status == "banned"
   end
+
+  # Game master, active player, or removed (former) player — everyone
+  # except a banned member.
+  sig { returns(T::Boolean) }
+  def viewable?
+    game_master? || active? || removed?
+  end
 end

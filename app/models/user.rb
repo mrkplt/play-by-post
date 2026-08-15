@@ -33,11 +33,7 @@ class User < ApplicationRecord
   sig { params(notification: Symbol, args: T.untyped).void }
   def send_devise_notification(notification, *args)
     message = T.unsafe(self).devise_mailer.send(notification, self, *args)
-    if message.respond_to?(:deliver_later)
-      message.deliver_later
-    else
-      message.deliver_now
-    end
+    deliver_off_request_cycle(message)
   end
 
   # Passwordless users have no encrypted_password, so Devise's default
@@ -63,5 +59,17 @@ class User < ApplicationRecord
   sig { void }
   def ensure_remember_token
     self.remember_token ||= Devise.friendly_token
+  end
+
+  # Devise's default delivery is deliver_now; queue it onto Active Job when the
+  # mailer supports deferred delivery (every mailer in the app except the raw
+  # Mail::Message some Devise notifications hand back), otherwise send inline.
+  sig { params(message: T.untyped).void }
+  def deliver_off_request_cycle(message)
+    if message.respond_to?(:deliver_later)
+      message.deliver_later
+    else
+      message.deliver_now
+    end
   end
 end

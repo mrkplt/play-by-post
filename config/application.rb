@@ -29,6 +29,11 @@ module PlayByPost
     config.autoload_lib(ignore: %w[assets tasks])
     config.autoload_paths << Rails.root.join("app/services")
 
+    # config.active_job.custom_serializers (config/initializers/custom_serializers.rb)
+    # references these classes during initialization, so they must not be
+    # reloadable — see the "Configuring Active Job" guide.
+    config.autoload_once_paths << "#{root}/app/serializers"
+
     config.action_mailbox.ingress = :resend
     config.active_storage.variant_processor = :mini_magick
 

@@ -4,9 +4,10 @@ RSpec.describe NotificationMailer, type: :mailer do
   let(:game) { create(:game) }
   let(:scene) { create(:scene, game: game, title: "The Dark Forest") }
   let(:recipient) { create(:user, :with_profile) }
+  let(:delivery) { NotificationMailer::Delivery.new(scene: scene, recipient: recipient) }
 
   describe "new_scene" do
-    let(:mail) { NotificationMailer.new_scene(scene, recipient) }
+    let(:mail) { NotificationMailer.new_scene(delivery) }
 
     it "renders the headers" do
       expect(mail.subject).to include(game.name)
@@ -20,7 +21,7 @@ RSpec.describe NotificationMailer, type: :mailer do
 
     it "uses resend_inbound_domain credential as the reply-to domain when configured" do
       allow(Rails.application.credentials).to receive(:resend_inbound_domain).and_return("reply.example.com")
-      expect(NotificationMailer.new_scene(scene, recipient).reply_to.first).to eq("scene-#{scene.id}@reply.example.com")
+      expect(NotificationMailer.new_scene(delivery).reply_to.first).to eq("scene-#{scene.id}@reply.example.com")
     end
 
     it "falls back to the mailer host when resend_inbound_domain is not set" do
@@ -34,7 +35,7 @@ RSpec.describe NotificationMailer, type: :mailer do
   end
 
   describe "scene_resolved" do
-    let(:mail) { NotificationMailer.scene_resolved(scene, recipient) }
+    let(:mail) { NotificationMailer.scene_resolved(delivery) }
 
     it "renders the headers" do
       expect(mail.subject).to include(game.name)
@@ -49,7 +50,7 @@ RSpec.describe NotificationMailer, type: :mailer do
 
   describe "post_digest" do
     let(:posts) { create_list(:post, 3, scene: scene) }
-    let(:mail) { NotificationMailer.post_digest(scene, recipient, posts) }
+    let(:mail) { NotificationMailer.post_digest(delivery, posts) }
 
     it "renders the headers" do
       expect(mail.subject).to include(game.name)
