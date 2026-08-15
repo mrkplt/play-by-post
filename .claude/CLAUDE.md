@@ -127,7 +127,7 @@ deleted in the same change, not left running beside the new one.
 | Coverage | SimpleCov (line + branch) |
 | Mutation | mutant-rspec |
 | Security | Brakeman · importmap audit |
-| Dev tools | Lookbook (component previews) · letter_opener_web |
+| Dev tools | letter_opener_web |
 | Deployment | Coolify (self-hosted) · Docker image built in GitHub Actions, pulled from GHCR |
 | Email / LLM / Storage | Resend · OpenRouter · Cloudflare R2 |
 

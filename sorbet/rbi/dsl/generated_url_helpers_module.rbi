@@ -142,9 +142,6 @@ module GeneratedUrlHelpersModule
   def letter_opener_web_url(*args); end
 
   sig { params(args: T.untyped).returns(String) }
-  def lookbook_url(*args); end
-
-  sig { params(args: T.untyped).returns(String) }
   def mark_read_game_scene_post_url(*args); end
 
   sig { params(args: T.untyped).returns(String) }

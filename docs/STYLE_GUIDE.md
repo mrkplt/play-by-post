@@ -4,10 +4,6 @@ The UI is **component-driven and mobile-first**. Colours, spacing, and radii com
 from a single token layer; screens are assembled by composing ViewComponents;
 and a set of automated gates enforce the pattern so it doesn't drift.
 
-**See it live:** run the app in development and open **`/lookbook`** — the
-browsable gallery of every `Ui::*` and `Shared::*` component (previews live in
-`spec/components/previews/`).
-
 ---
 
 ## 1. Design tokens — the single source of truth
@@ -112,6 +108,6 @@ The two static checks are **standalone executables** that own their pass/fail
 reserved for evaluating expensive-to-produce numbers (coverage, mutation). Run
 them locally any time: `bin/check-design-tokens`, `bin/check-mutant-coverage`.
 
-**When you add a component:** create it under `Ui::*`/`Shared::*`, add a spec, a
-Lookbook preview in `spec/components/previews/`, and register its constant in
-`.mutant.yml` (the `mutant_registration` job fails the build otherwise).
+**When you add a component:** create it under `Ui::*`/`Shared::*`, add a spec, and
+register its constant in `.mutant.yml` (the `mutant_registration` job fails the
+build otherwise).

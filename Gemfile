@@ -92,7 +92,6 @@ end
 group :development do
   gem "web-console"
   gem "letter_opener_web"
-  gem "lookbook"
   gem "sorbet", require: false
   gem "tapioca", require: false
 end

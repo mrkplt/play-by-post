@@ -11,8 +11,6 @@ Rails.application.routes.draw do
 
   if Rails.env.development?
     mount LetterOpenerWeb::Engine, at: "/letter_opener"
-    # Browsable design system / component gallery.
-    mount Lookbook::Engine, at: "/lookbook"
   end
 
   devise_for :users, controllers: {
