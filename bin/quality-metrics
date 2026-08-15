@@ -655,7 +655,15 @@ def check_baseline_integrity
     previous = master_baseline[key]
     next if current.nil? || previous.nil?
 
-    if CEILING_METRICS.include?(key)
+    # Floor metrics are a deliberately chosen minimum, not a high-water mark of
+    # what a run happened to achieve. Where the bar sits is a judgement call the
+    # owner makes; this check exists to catch a floor being quietly dropped to
+    # make a red branch pass, which the commit message and diff make visible.
+    if FLOOR_METRICS.include?(key)
+      delta = current.to_f - previous.to_f
+      direction = delta.zero? ? "" : " (#{delta >= 0 ? "+" : ""}#{delta.round(2)})"
+      puts "  [OK] #{key}: #{previous.to_f.round(2)}% -> #{current.to_f.round(2)}%#{direction} (floor, set deliberately)"
+    elsif CEILING_METRICS.include?(key)
       current_val = current.to_i
       previous_val = previous.to_i
       delta = current_val - previous_val
