@@ -30,10 +30,13 @@ Rails.application.routes.draw do
       resources :api_tokens, only: %i[create destroy], module: :profiles
     end
     resources :games, only: %i[index new create show edit update destroy] do
+      # Kept as toggle_*_game_path on the game itself — the setting switches
+      # read as part of the game, while the actions live in their own
+      # controller so GamesController stays about games.
       member do
-        patch :toggle_sheets_hidden
-        patch :toggle_images_disabled
-        patch :toggle_ai_summaries_enabled
+        patch :toggle_sheets_hidden, to: "games/settings#sheets_hidden"
+        patch :toggle_images_disabled, to: "games/settings#images_disabled"
+        patch :toggle_ai_summaries_enabled, to: "games/settings#ai_summaries_enabled"
       end
       resources :scenes, only: %i[index new create show] do
         member do

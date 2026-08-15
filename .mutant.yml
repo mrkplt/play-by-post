@@ -172,6 +172,9 @@ matcher:
     - CharacterPresenterBuilder
     - ExportDelivery
     - EmailContentExtractor
+    - GameScreenPresenter
+    - GameDashboardQuery
+    - GameSettingToggle
     - SceneScreenPresenter
     - SceneShowBuilder
     - SceneTreeBuilder
@@ -208,6 +211,7 @@ matcher:
     - ScenesController
     - CharactersController
     - GamesController
+    - Games::SettingsController
     - SceneParticipantsController
     - PostsController
     - GameFilesController
