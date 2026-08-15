@@ -88,7 +88,7 @@ class NotebookEntriesController < ApplicationController
 
   sig { returns(Game) }
   def game
-    Game.find(params[:game_id])
+    Game.find_by!(slug: params[:game_id])
   end
 
   sig { returns(NotebookEntry) }

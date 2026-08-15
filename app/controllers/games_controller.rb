@@ -87,7 +87,7 @@ class GamesController < ApplicationController
   # nothing needs it to persist as request state.
   sig { returns(Game) }
   def game
-    Game.find(params[:id])
+    Game.find_by!(slug: params[:id])
   end
 
   # Not redundant with `authorize`: this gates before the action runs and gives

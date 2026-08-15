@@ -25,7 +25,7 @@ module SceneParticipantScoped
   sig { returns(Game) }
   def game
     T.bind(self, T.all(ActionController::Base, SceneParticipantScoped))
-    memo(:game) { Game.find(params[:game_id]) }
+    memo(:game) { Game.find_by!(slug: params[:game_id]) }
   end
 
   sig { returns(Scene) }

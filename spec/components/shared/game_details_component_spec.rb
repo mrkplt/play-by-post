@@ -22,7 +22,7 @@ RSpec.describe Shared::GameDetailsComponent, type: :component do
   it "renders the game name and an edit link" do
     render_inline(component)
     expect(page).to have_text("Ashfall Reaches")
-    expect(page).to have_link("Edit", href: "/games/#{game_model.id}/edit")
+    expect(page).to have_link("Edit", href: "/games/#{game_model.to_param}/edit")
   end
 
   it "renders the description as markdown, not escaped source" do

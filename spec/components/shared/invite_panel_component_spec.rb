@@ -53,17 +53,17 @@ RSpec.describe Shared::InvitePanelComponent, type: :component do
 
     it "posts the invite form to the game's invitations collection" do
       render_inline(component)
-      expect(page).to have_css("form[action='/games/#{game.id}/player_management/invitations']")
+      expect(page).to have_css("form[action='/games/#{game.to_param}/player_management/invitations']")
     end
 
     it "targets the invitation member route for cancellation" do
       render_inline(component)
-      expect(page).to have_css("form[action='/games/#{game.id}/player_management/invitations/#{invitation.id}']")
+      expect(page).to have_css("form[action='/games/#{game.to_param}/player_management/invitations/#{invitation.id}']")
     end
 
     it "targets the invitation resend route for resending" do
       render_inline(component)
-      expect(page).to have_css("form[action='/games/#{game.id}/player_management/invitations/#{invitation.id}/resend']")
+      expect(page).to have_css("form[action='/games/#{game.to_param}/player_management/invitations/#{invitation.id}/resend']")
     end
   end
 end

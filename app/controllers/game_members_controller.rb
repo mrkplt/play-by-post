@@ -21,7 +21,7 @@ class GameMembersController < ApplicationController
   # request state.
   sig { returns(Game) }
   def game
-    Game.find(params[:game_id])
+    Game.find_by!(slug: params[:game_id])
   end
 
   # The GM's own membership is not modifiable — the rule lives in

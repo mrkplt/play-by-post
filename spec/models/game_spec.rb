@@ -83,6 +83,57 @@ RSpec.describe Game, type: :model do
     end
   end
 
+  # The slug is assigned in-band on save (create path), not in a callback.
+  describe "slug assignment on save", db: true do
+    it "assigns a name-derived slug with a random suffix and persists via save!" do
+      game = build(:game, name: "Dragons of Icespire Peak", slug: nil)
+      game.save!
+      expect(game).to be_persisted
+      expect(game.reload.slug).to match(/\Adragons-of-icespire-peak-[a-z0-9]{6}\z/)
+    end
+
+    it "assigns the slug and persists through the non-bang save path too" do
+      game = build(:game, name: "Dragons of Icespire Peak", slug: nil)
+      expect(game.save).to be(true)
+      expect(game.reload.slug).to match(/\Adragons-of-icespire-peak-[a-z0-9]{6}\z/)
+    end
+
+    it "does not overwrite a slug supplied at build time" do
+      game = build(:game, slug: "existing-slug-abc123")
+      game.save!
+      expect(game.slug).to eq("existing-slug-abc123")
+    end
+
+    it "leaves a renamed game's slug untouched, so its URL stays stable" do
+      game = create(:game, name: "Original Name", slug: nil)
+      original = game.slug
+      game.update!(name: "Renamed Game")
+      expect(game.reload.slug).to eq(original)
+    end
+
+    # Forwards save options to super: an over-length name fails the model's
+    # length validation but is DB-valid, so validate: false persists it — which
+    # only holds if **options reaches ActiveRecord#save rather than super().
+    it "forwards save options through to ActiveRecord (save)" do
+      game = build(:game, name: "a" * 201, slug: "long-name-slug-abc123")
+      expect(game.save(validate: false)).to be(true)
+      expect(game).to be_persisted
+    end
+
+    it "forwards save options through to ActiveRecord (save!)" do
+      game = build(:game, name: "a" * 201, slug: "long-name-slug-def456")
+      game.save!(validate: false)
+      expect(game).to be_persisted
+    end
+  end
+
+  describe "#to_param" do
+    it "routes by slug, not id" do
+      game = build(:game, slug: "a-game-abc123")
+      expect(game.to_param).to eq("a-game-abc123")
+    end
+  end
+
   describe "#edit_window_duration" do
     it "returns nil when post_edit_window_minutes is nil" do
       expect(build(:game, post_edit_window_minutes: nil).edit_window_duration).to be_nil

@@ -41,7 +41,7 @@ RSpec.describe Shared::DeleteGameComponent, type: :component do
     it "renders the destructive submit disabled, targeting the delete route" do
       submit = page.find("button[data-game-delete-target='submit']", visible: :all)
       expect(submit).to be_disabled
-      form = page.find("form[action='/games/#{game_model.id}']", visible: :all)
+      form = page.find("form[action='/games/#{game_model.to_param}']", visible: :all)
       expect(form).to have_css("input[name='_method'][value='delete']", visible: :all)
     end
   end

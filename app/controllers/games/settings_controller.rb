@@ -36,7 +36,7 @@ module Games
     # A member route on games, so the game arrives as :id.
     sig { returns(Game) }
     def game
-      Game.find(params[:id])
+      Game.find_by!(slug: params[:id])
     end
   end
 end
