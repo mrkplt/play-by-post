@@ -173,6 +173,15 @@ matcher:
     - ExportDelivery
     - EmailContentExtractor
     - GameExportService
+    - GameExport::Archive
+    - GameExport::Author
+    - GameExport::CharacterDocuments
+    - GameExport::ManifestDocuments
+    - GameExport::ProseDocuments
+    - GameExport::ReadmeDocument
+    - GameExport::Reads
+    - GameExport::SceneDocuments
+    - GameExport::Slug
     - MarkdownRenderer
     - NotebookEntryPromotion
     - NotebookLaneMove

@@ -44,8 +44,7 @@ RSpec.describe GameExportService do
     end
 
     def readme(members: [], scenes: [])
-      allow(service).to receive(:members_for).with(exported_game).and_return(members)
-      service.send(:readme_content, exported_game, scenes)
+      GameExport::ReadmeDocument.call(exported_game, scenes, members)
     end
 
     it "lists a game master as GM" do
@@ -136,8 +135,7 @@ RSpec.describe GameExportService do
     end
 
     def posts_md(posts)
-      allow(service).to receive(:published_posts_for).with(exported_scene).and_return(posts)
-      service.send(:posts_content, exported_scene)
+      GameExport::SceneDocuments.posts(posts)
     end
 
     it "renders the post body and author" do
@@ -209,8 +207,7 @@ RSpec.describe GameExportService do
     end
 
     def manifest(files)
-      allow(service).to receive(:files_for).with(exported_game).and_return(files)
-      service.send(:files_manifest_content, exported_game)
+      GameExport::ManifestDocuments.files(files)
     end
 
     it "reports when no files have been uploaded" do
@@ -276,8 +273,7 @@ RSpec.describe GameExportService do
     end
 
     def manifest(links)
-      allow(service).to receive(:links_for).with(exported_game).and_return(links)
-      service.send(:links_manifest_content, exported_game)
+      GameExport::ManifestDocuments.links(links)
     end
 
     it "reports when no links have been added" do
@@ -322,8 +318,7 @@ RSpec.describe GameExportService do
     let(:service) { described_class.new(build_stubbed(:user), []) }
 
     def info(scene, participants: [])
-      allow(service).to receive(:participants_for).with(scene).and_return(participants)
-      service.send(:scene_info_content, scene)
+      GameExport::SceneDocuments.info(scene, participants)
     end
 
     it "marks an unresolved scene active" do
@@ -448,7 +443,7 @@ RSpec.describe GameExportService do
     let(:service) { described_class.new(build_stubbed(:user), []) }
 
     def sheet(character)
-      service.send(:character_sheet_content, character)
+      GameExport::CharacterDocuments.sheet(character)
     end
 
     it "notes a hidden character" do
@@ -468,10 +463,8 @@ RSpec.describe GameExportService do
   end
 
   describe "#page_content" do
-    let(:service) { described_class.new(build_stubbed(:user), []) }
-
     def content(page)
-      service.send(:page_content, page)
+      GameExport::ProseDocuments.page(page)
     end
 
     it "titles the page as an h1" do
@@ -488,10 +481,8 @@ RSpec.describe GameExportService do
   end
 
   describe "#notebook_entry_content" do
-    let(:service) { described_class.new(build_stubbed(:user), []) }
-
     def content(entry)
-      service.send(:notebook_entry_content, entry)
+      GameExport::ProseDocuments.notebook_entry(entry)
     end
 
     it "titles the entry as an h1" do
@@ -512,9 +503,7 @@ RSpec.describe GameExportService do
   end
 
   describe "#slugify" do
-    let(:service) { described_class.new(build_stubbed(:user), []) }
-
-    def slug(text) = service.send(:slugify, text)
+    def slug(text) = GameExport::Slug.call(text)
 
     it "lowercases and hyphenates" do
       expect(slug("The Sunken Archive")).to eq("the-sunken-archive")
@@ -539,7 +528,7 @@ RSpec.describe GameExportService do
   # The reads are stubbed everywhere above, so nothing else executes their query
   # chains — cover them directly or every mutation of them survives.
   describe "reads" do
-    let(:service) { described_class.new(reader, []) }
+    let(:service) { GameExport::Reads.new(reader) }
     let(:reader) { build_stubbed(:user) }
 
     def chain
@@ -675,12 +664,12 @@ RSpec.describe GameExportService do
   # branch actually changes what comes back — a stubbed relation can't fail
   # this the way a real one does.
   describe "#export_scenes_for" do
-    let(:service) { described_class.new(player_user, [ game ]) }
+    let(:service) { GameExport::Reads.new(player_user) }
 
     it "gives the GM every scene in the game, including private ones" do
       secret = create(:scene, :private, game: game, title: "Secret Room")
 
-      result = described_class.new(gm_user, [ game ]).send(:export_scenes_for, game, :all)
+      result = GameExport::Reads.new(gm_user).send(:scenes_for, game, :all)
 
       expect(result).to contain_exactly(scene, secret)
     end
@@ -691,7 +680,7 @@ RSpec.describe GameExportService do
       create(:scene_participant, scene: scene, user: removed_user)
       elsewhere = create(:scene, game: game, title: "Elsewhere")
 
-      result = described_class.new(removed_user, [ game ]).send(:export_scenes_for, game, :participating)
+      result = GameExport::Reads.new(removed_user).send(:scenes_for, game, :participating)
 
       expect(result).to contain_exactly(scene)
       expect(result).not_to include(elsewhere)
@@ -700,7 +689,7 @@ RSpec.describe GameExportService do
     it "gives an active player the scenes visible to them, not private ones they're not in" do
       create(:scene, :private, game: game, title: "Secret Room")
 
-      result = service.send(:export_scenes_for, game, :visible)
+      result = service.send(:scenes_for, game, :visible)
 
       expect(result).to contain_exactly(scene)
     end
@@ -710,7 +699,7 @@ RSpec.describe GameExportService do
       create(:game_member, game: other_game, user: player_user, role: "player", status: "active")
       create(:scene, game: other_game, title: "Elsewhere Entirely")
 
-      result = service.send(:export_scenes_for, game, :visible)
+      result = service.send(:scenes_for, game, :visible)
 
       expect(result).to contain_exactly(scene)
     end
@@ -725,18 +714,14 @@ RSpec.describe GameExportService do
         allow(g).to receive(:member_for).with(export_user).and_return(gm_member)
         allow(g).to receive(:game_master?).with(export_user).and_return(gm)
       end
-      described_class.new(export_user, games).tap do |service|
-        allow(service).to receive(:export_scenes_for).and_return(scenes)
-        allow(service).to receive(:members_for).and_return([])
-        allow(service).to receive(:files_for).and_return([])
-        allow(service).to receive(:links_for).and_return([])
-        allow(service).to receive(:participants_for).and_return([])
-        allow(service).to receive(:published_posts_for).and_return([])
-        allow(service).to receive(:characters_for).and_return(characters)
-        allow(service).to receive(:versions_for).and_return(versions)
-        allow(service).to receive(:pages_for).and_return(pages)
-        allow(service).to receive(:notebook_entries_for).and_return(notebook_entries)
-      end
+      reads = instance_double(
+        GameExport::Reads,
+        scenes_for: scenes, members_for: [], files_for: [], links_for: [],
+        participants_for: [], published_posts_for: [], characters_for: characters,
+        versions_for: versions, pages_for: pages, notebook_entries_for: notebook_entries
+      )
+
+      described_class.new(export_user, games, reads: reads)
     end
 
     def entries_for(...) = zip_entries(build_service(...).call)
@@ -846,7 +831,7 @@ RSpec.describe GameExportService do
         zip_data = service.call
         name = zip_entries(zip_data).find { |e| e.end_with?("README.md") }
 
-        expect(zip_file_content(zip_data, name)).to eq(service.send(:readme_content, one_game.first, []))
+        expect(zip_file_content(zip_data, name)).to eq(GameExport::ReadmeDocument.call(one_game.first, [], []))
       end
 
       it "writes the files manifest's own content under files_manifest.md" do
@@ -854,7 +839,7 @@ RSpec.describe GameExportService do
         zip_data = service.call
         name = zip_entries(zip_data).find { |e| e.end_with?("files_manifest.md") }
 
-        expect(zip_file_content(zip_data, name)).to eq(service.send(:files_manifest_content, one_game.first))
+        expect(zip_file_content(zip_data, name)).to eq(GameExport::ManifestDocuments.files([]))
       end
 
       it "writes the links manifest's own content under links_manifest.md" do
@@ -862,7 +847,7 @@ RSpec.describe GameExportService do
         zip_data = service.call
         name = zip_entries(zip_data).find { |e| e.end_with?("links_manifest.md") }
 
-        expect(zip_file_content(zip_data, name)).to eq(service.send(:links_manifest_content, one_game.first))
+        expect(zip_file_content(zip_data, name)).to eq(GameExport::ManifestDocuments.links([]))
       end
 
       it "writes each scene's own info and posts content" do
@@ -871,8 +856,8 @@ RSpec.describe GameExportService do
         info_name = zip_entries(zip_data).find { |e| e.end_with?("scene_info.md") }
         posts_name = zip_entries(zip_data).find { |e| e.end_with?("posts.md") }
 
-        expect(zip_file_content(zip_data, info_name)).to eq(service.send(:scene_info_content, one_scene))
-        expect(zip_file_content(zip_data, posts_name)).to eq(service.send(:posts_content, one_scene))
+        expect(zip_file_content(zip_data, info_name)).to eq(GameExport::SceneDocuments.info(one_scene, []))
+        expect(zip_file_content(zip_data, posts_name)).to eq(GameExport::SceneDocuments.posts([]))
       end
 
       it "writes each character's own sheet and version content" do
@@ -881,8 +866,8 @@ RSpec.describe GameExportService do
         sheet_name = zip_entries(zip_data).find { |e| e.end_with?("current_sheet.md") }
         version_name = zip_entries(zip_data).find { |e| e.include?("version_history/") }
 
-        expect(zip_file_content(zip_data, sheet_name)).to eq(service.send(:character_sheet_content, one_character))
-        expect(zip_file_content(zip_data, version_name)).to eq(service.send(:character_version_content, one_version, 1))
+        expect(zip_file_content(zip_data, sheet_name)).to eq(GameExport::CharacterDocuments.sheet(one_character))
+        expect(zip_file_content(zip_data, version_name)).to eq(GameExport::CharacterDocuments.version(one_version, 1))
       end
 
       it "writes each page's own content under pages/{slug}.md" do
@@ -891,7 +876,7 @@ RSpec.describe GameExportService do
         zip_data = service.call
         name = zip_entries(zip_data).find { |e| e.end_with?("house-rules.md") }
 
-        expect(zip_file_content(zip_data, name)).to eq(service.send(:page_content, one_page))
+        expect(zip_file_content(zip_data, name)).to eq(GameExport::ProseDocuments.page(one_page))
       end
 
       it "writes each notebook entry's own content under notebook/{slug}.md" do
@@ -900,7 +885,7 @@ RSpec.describe GameExportService do
         zip_data = service.call
         name = zip_entries(zip_data).find { |e| e.end_with?("wandering-merchant.md") }
 
-        expect(zip_file_content(zip_data, name)).to eq(service.send(:notebook_entry_content, one_entry))
+        expect(zip_file_content(zip_data, name)).to eq(GameExport::ProseDocuments.notebook_entry(one_entry))
       end
     end
   end
