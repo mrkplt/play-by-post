@@ -14,9 +14,9 @@ class FeedbackSweepJob < ApplicationJob
   sig { void }
   def perform
     Feedback.unswept.find_each(&:sweep)
-  rescue FizzySweepService::ConfigurationError => e
+  rescue FizzySweepService::ConfigurationError => error
     # Missing credentials are not going to fix themselves mid-run; log once
     # and let the next hourly schedule attempt again.
-    Rails.logger.error("FeedbackSweepJob: #{e.message}")
+    Rails.logger.error("FeedbackSweepJob: #{error.message}")
   end
 end

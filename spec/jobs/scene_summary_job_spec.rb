@@ -59,6 +59,19 @@ RSpec.describe SceneSummaryJob, type: :job do
       end
     end
 
+    it "stamps created_at and updated_at, and limits updates to the mutable columns" do
+      Timecop.freeze do
+        described_class.new.perform(scene.id)
+
+        expect(SceneSummary).to have_received(:upsert).with(
+          hash_including(created_at: Time.current, updated_at: Time.current),
+          hash_including(
+            update_only: %i[body model_used generated_at input_tokens output_tokens edited_at edited_by_id updated_at]
+          )
+        )
+      end
+    end
+
     it "does nothing if scene does not exist" do
       allow(Scene).to receive(:find_by).with(id: 0).and_return(nil)
 

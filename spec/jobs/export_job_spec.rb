@@ -66,6 +66,22 @@ RSpec.describe ExportJob, type: :job do
       expect(export_request).to have_received(:mark_succeeded!)
     end
 
+    it "selects games for the request's own game, not another" do
+      job = ExportJob.new
+      allow(GameExportRequest).to receive(:find_by).with(id: export_request.id).and_return(export_request)
+      allow(job).to receive(:games_for).and_return([ game ])
+      allow(GameExportService).to receive(:new).and_return(instance_double(GameExportService, call: "zip"))
+      allow(export_request).to receive(:mark_succeeded!)
+      allow(AttachmentUploader).to receive(:attach)
+      archive_double = double(blob: double(url: "https://example.com/x.zip"))
+      allow(export_request).to receive(:archive).and_return(archive_double)
+      allow(ExportMailer).to receive(:export_ready).and_return(double(deliver_later: true))
+
+      job.perform(export_request.id)
+
+      expect(job).to have_received(:games_for).with(user, game)
+    end
+
     it "does not stamp the receipt when the export fails" do
       allow_any_instance_of(GameExportService).to receive(:call).and_raise(StandardError, "boom")
       allow(ExportMailer).to receive(:export_failed).and_return(double(deliver_later: true))
