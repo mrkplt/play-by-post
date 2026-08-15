@@ -31,6 +31,17 @@ class ApiToken < ApplicationRecord
     SecureRandom.hex(32)
   end
 
+  # Finds this user's existing token for the game/scope pair and rotates it,
+  # or mints a fresh one — the single "issue me a usable token" operation
+  # Profiles::ApiTokensController#create needs, so the controller does not
+  # have to know the find-or-regenerate-or-create shape itself.
+  sig { params(user: User, game: Game, scope: String).returns(ApiToken) }
+  def self.issue_for!(user:, game:, scope:)
+    token = user.api_tokens.find_or_initialize_by(game: game, scope: scope)
+    token.persisted? ? token.regenerate! : token.save!
+    token
+  end
+
   private
 
   sig { void }

@@ -25,18 +25,19 @@ class PostsController < ApplicationController
       SceneNavigationPresenter.new(T.must(@scene_presenter), game: game, urls: self),
       T.nilable(SceneNavigationPresenter)
     )
-    @post_presenter = T.let(presenter_builder.post_presenter(post, policy(post)), T.nilable(PostPresenter))
+    @post_presenter = T.let(
+      presenter_builder.post_presenter(PostPresenterBuilder::AuthorizedPost.new(post: post, policy: policy(post))),
+      T.nilable(PostPresenter)
+    )
   end
 
   sig { void }
   def create
-    new_post = post_draft.publish_target(post_params)
-    post_policy = policy(new_post)
+    new_post = build_new_post
     authorize new_post, :create?
-    attach_uploaded_image(new_post, game, param_key: :post)
-    assign_game_and_scene_presenters
+    authorized_post = PostPresenterBuilder::AuthorizedPost.new(post: new_post, policy: policy(new_post))
 
-    new_post.save ? render_created(new_post, post_policy) : render_composer_errors(new_post, post_policy)
+    new_post.save ? render_created(authorized_post) : render_composer_errors(authorized_post)
   end
 
   sig { void }
@@ -54,16 +55,19 @@ class PostsController < ApplicationController
     PostPresenterBuilder.new(game, scene, self)
   end
 
-  sig { returns(PostDraft) }
-  def post_draft
-    PostDraft.new(scene, current_user)
+  sig { returns(Post) }
+  def build_new_post
+    new_post = PostDraft.new(scene, current_user).publish_target(post_params)
+    attach_uploaded_image(new_post, game, param_key: :post)
+    assign_game_and_scene_presenters
+    new_post
   end
 
-  sig { params(new_post: Post, post_policy: PostPolicy).void }
-  def render_created(new_post, post_policy)
-    builder = presenter_builder
-    built = builder.post_presenter(new_post, post_policy, scene_participants: builder.scene_participants)
-    @post_presenter = T.let(built, T.nilable(PostPresenter))
+  sig { params(authorized_post: PostPresenterBuilder::AuthorizedPost).void }
+  def render_created(authorized_post)
+    @post_presenter = T.let(
+      presenter_builder.post_presenter_with_participants(authorized_post), T.nilable(PostPresenter)
+    )
 
     respond_to do |format|
       format.turbo_stream
@@ -71,10 +75,13 @@ class PostsController < ApplicationController
     end
   end
 
-  sig { params(new_post: Post, post_policy: PostPolicy).void }
-  def render_composer_errors(new_post, post_policy)
-    component = presenter_builder.composer_component(new_post, post_policy, page_context)
+  sig { params(authorized_post: PostPresenterBuilder::AuthorizedPost).void }
+  def render_composer_errors(authorized_post)
+    respond_with_composer_errors(presenter_builder.composer_component(authorized_post, page_context))
+  end
 
+  sig { params(component: Shared::PostComposerComponent).void }
+  def respond_with_composer_errors(component)
     respond_to do |format|
       format.turbo_stream { render turbo_stream: turbo_stream.replace("post_composer", component) }
       format.html { redirect_to game_scene_path(game, scene), alert: "Could not create post." }

@@ -12,6 +12,16 @@ class Character < ApplicationRecord
   scope :active, -> { where(archived_at: nil) }
   scope :archived, -> { where.not(archived_at: nil) }
 
+  # First active character name per user_id, for a game's Members list
+  # subtitle — a user with several active characters is represented by
+  # whichever one is enumerated first.
+  sig { params(characters: T::Enumerable[Character]).returns(T::Hash[Integer, String]) }
+  def self.first_active_name_by_user(characters)
+    characters.each_with_object({}) do |character, names|
+      names[character.user_id] ||= character.name
+    end
+  end
+
   sig { returns(T::Boolean) }
   def archived?
     archived_at.present?

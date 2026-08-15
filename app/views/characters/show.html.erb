@@ -9,7 +9,7 @@
   <% end %>
 
   <div class="flex items-center gap-2 flex-wrap">
-    <span class="text-[11px] text-muted-2">Player: <%= @character_owner.display_name_or_email %></span>
+    <span class="text-[11px] text-muted-2">Player: <%= @character_show_presenter.owner.display_name_or_email %></span>
     <% if @character_presenter.archived? %>
       <%= render(Ui::BadgeComponent.new(variant: :gray)) { "Archived" } %>
     <% end %>
@@ -30,5 +30,5 @@
   </div>
 
   <%= render Shared::CharacterVersionHistoryComponent.new(
-        character: @character_presenter, versions: @versions) %>
+        character: @character_presenter, versions: @character_show_presenter.versions) %>
 <% end %>

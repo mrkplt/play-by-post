@@ -28,4 +28,20 @@ RSpec.describe UserProfile, type: :model do
       expect(build(:user_profile, display_name: nil).display_name_set?).to be false
     end
   end
+
+  describe "#update_display_name" do
+    it "assigns and persists the new display name, returning true on success" do
+      profile = create(:user_profile, display_name: "Old Name")
+
+      expect(profile.update_display_name("New Name")).to be true
+      expect(profile.reload.display_name).to eq("New Name")
+    end
+
+    it "returns false and does not persist when the new name is invalid" do
+      profile = create(:user_profile, display_name: "Old Name")
+
+      expect(profile.update_display_name("a" * 101)).to be false
+      expect(profile.reload.display_name).to eq("Old Name")
+    end
+  end
 end

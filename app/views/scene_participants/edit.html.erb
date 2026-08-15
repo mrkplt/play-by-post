@@ -21,7 +21,7 @@
 
   <%= form_with url: @scene_navigation_presenter.participants_path, method: :patch, html: { id: "scene_participants_edit_form" } do %>
     <%= render Shared::ParticipantCheckboxListComponent.new(
-          players_with_characters: @players_with_characters,
+          players_with_characters: @current_character_ids.players_with_characters,
           selected_character_ids: @current_character_ids.selected_character_ids,
           variant: :simple) %>
   <% end %>

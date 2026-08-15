@@ -41,6 +41,7 @@ matcher:
     # Presenters
     - BannedMemberPresenter
     - CharacterPresenter
+    - CharacterShowPresenter
     - CharacterVersionPresenter
     - GameDashboardItemPresenter
     - GameDashboardPresenter
@@ -177,6 +178,7 @@ matcher:
     - ExportDelivery
     - EmailContentExtractor
     - EmailContentExtraction::OpenrouterRequest
+    - InboundMailBuilder
     - GameDashboardQuery
     - GameSettingToggle
     - SceneShowBuilder

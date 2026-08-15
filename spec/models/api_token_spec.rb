@@ -41,6 +41,39 @@ RSpec.describe ApiToken, type: :model do
     end
   end
 
+  describe ".issue_for!" do
+    it "creates a new token when none exists for the user/game/scope", :db do
+      user = create(:user)
+      game = create(:game)
+
+      expect {
+        described_class.issue_for!(user: user, game: game, scope: "rss")
+      }.to change(ApiToken, :count).by(1)
+    end
+
+    it "rotates the existing token when one already exists for the user/game/scope", :db do
+      existing = create(:api_token, scope: "rss")
+      original_value = existing.token
+
+      result = described_class.issue_for!(user: existing.user, game: existing.game, scope: "rss")
+
+      expect(result.id).to eq(existing.id)
+      expect(result.token).not_to eq(original_value)
+    end
+
+    it "returns the issued token" do
+      user = create(:user)
+      game = create(:game)
+
+      result = described_class.issue_for!(user: user, game: game, scope: "rss")
+
+      expect(result).to be_a(ApiToken)
+      expect(result.user).to eq(user)
+      expect(result.game).to eq(game)
+      expect(result.scope).to eq("rss")
+    end
+  end
+
   describe "validations" do
     it "requires a scope" do
       token = build(:api_token, scope: nil)
