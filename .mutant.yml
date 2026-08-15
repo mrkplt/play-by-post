@@ -181,6 +181,7 @@ matcher:
     - InboundMailBuilder
     - GameDashboardQuery
     - GameSettingToggle
+    - GamePurgeScope
     - SceneShowBuilder
     - SceneTreeBuilder
     - SceneNotifier
@@ -248,9 +249,11 @@ matcher:
     # Jobs
     - PostDigestJob
     - ExportJob
+    - ExportTarget
     - ExportCleanupJob
     - SceneSummaryJob
     - CoolifyDeployJob
+    - CoolifyDeployResponse
     - GamePurgeSweepJob
     - GamePurgeJob
     - FeedbackSweepJob

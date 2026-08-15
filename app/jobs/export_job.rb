@@ -1,5 +1,59 @@
 # typed: true
 
+# Names an export's target: the single requested game, or "all games" when
+# none was requested. Owns the game-or-not branching that used to be repeated
+# across the job's filename, scope-label, and mail steps.
+class ExportTarget
+  extend T::Sig
+
+  sig { params(game: T.nilable(Game)).void }
+  def initialize(game)
+    @game = game
+  end
+
+  # Attaches the freshly built zip to the request's archive, under this
+  # target's filename and scope label.
+  sig { params(request: GameExportRequest, zip_data: String, user: User).void }
+  def attach(request:, zip_data:, user:)
+    filename = archive_filename
+
+    AttachmentUploader.attach(
+      attachment: request.archive,
+      attachable: { io: StringIO.new(zip_data), filename: filename, content_type: "application/zip" },
+      context: AttachmentUploader::Context.build(
+        kind: "export",
+        user: user,
+        game: @game,
+        original_filename: filename,
+        export_scope: scope_label
+      )
+    )
+  end
+
+  private
+
+  sig { returns(String) }
+  def scope_label
+    @game ? @game.name : "all-games"
+  end
+
+  sig { returns(String) }
+  def archive_filename
+    "#{filename_prefix}-export-#{Time.current.utc.strftime('%Y-%m-%d')}.zip"
+  end
+
+  # By the time this runs, every run of whitespace has already become a single
+  # "-", so a trailing `.strip` here would never have anything to trim — the
+  # slug can still end up with leading/trailing dashes (e.g. " Foo " ->
+  # "-foo-"), which is accepted as a harmless filename character.
+  sig { returns(String) }
+  def filename_prefix
+    return "all-games" unless @game
+
+    @game.name.downcase.gsub(/[^a-z0-9\s-]/, "").gsub(/\s+/, "-").gsub(/-+/, "-")
+  end
+end
+
 class ExportJob < ApplicationJob
   extend T::Sig
 
@@ -21,56 +75,50 @@ class ExportJob < ApplicationJob
 
   sig { params(request_id: Integer).void }
   def perform(request_id)
-    request = GameExportRequest.find_by(id: request_id)
-    return unless request
-
-    user = T.must(request.user)
-    game = request.game
-
-    zip_data = GameExportService.new(user, games_for(user, game)).call
-    filename = archive_filename(game)
-
-    AttachmentUploader.attach(
-      attachment: request.archive,
-      attachable: { io: StringIO.new(zip_data), filename: filename, content_type: "application/zip" },
-      context: AttachmentUploader::Context.build(
-        kind: "export",
-        user: user,
-        game: game,
-        original_filename: filename,
-        export_scope: export_scope(game)
-      )
-    )
-
-    # Record the receipt only after a successful attach: this is what gates
-    # resend-vs-reprocess and drives the "last export" display. A failed export
-    # leaves succeeded_at nil, so it never blocks a retry.
-    request.mark_succeeded!
-
-    ExportDelivery.email_download_link(request)
-  rescue StandardError => e
-    Rails.logger.error("ExportJob failed for request #{request_id}: #{e.message}")
-    failed_request = GameExportRequest.find_by(id: request_id)
-    failed_user = failed_request&.user
-    T.unsafe(ExportMailer).export_failed(failed_user, game: failed_request.game).deliver_later if failed_user
+    process(find_request(request_id))
+  rescue StandardError => error
+    handle_failure(request_id, error)
     raise
   end
 
   private
 
-  sig { params(game: T.nilable(Game)).returns(String) }
-  def archive_filename(game)
-    date = Time.current.utc.strftime("%Y-%m-%d")
-    if game
-      slug = game.name.downcase.gsub(/[^a-z0-9\s-]/, "").gsub(/\s+/, "-").gsub(/-+/, "-").strip
-      "#{slug}-export-#{date}.zip"
-    else
-      "all-games-export-#{date}.zip"
-    end
+  sig { params(request_id: Integer).returns(T.nilable(GameExportRequest)) }
+  def find_request(request_id)
+    GameExportRequest.find_by(id: request_id)
   end
 
-  sig { params(game: T.nilable(Game)).returns(String) }
-  def export_scope(game)
-    game ? game.name : "all-games"
+  sig { params(request: T.nilable(GameExportRequest)).void }
+  def process(request)
+    return unless request
+
+    user = T.must(request.user)
+    build_archive(request, user, request.game)
+    finish!(request)
+  end
+
+  # Record the receipt only after a successful attach: this is what gates
+  # resend-vs-reprocess and drives the "last export" display. A failed export
+  # leaves succeeded_at nil, so it never blocks a retry.
+  sig { params(request: GameExportRequest).void }
+  def finish!(request)
+    request.mark_succeeded!
+    ExportDelivery.email_download_link(request)
+  end
+
+  sig { params(request: GameExportRequest, user: User, game: T.nilable(Game)).void }
+  def build_archive(request, user, game)
+    zip_data = GameExportService.new(user, games_for(user, game)).call
+    ExportTarget.new(game).attach(request:, zip_data:, user:)
+  end
+
+  sig { params(request_id: Integer, error: StandardError).void }
+  def handle_failure(request_id, error)
+    Rails.logger.error("ExportJob failed for request #{request_id}: #{error.message}")
+    failed_request = find_request(request_id)
+    failed_user = failed_request&.user
+    return unless failed_user
+
+    T.unsafe(ExportMailer).export_failed(failed_user, game: failed_request.game).deliver_later
   end
 end

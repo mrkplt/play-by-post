@@ -9,18 +9,23 @@ class PostDigestJob < ApplicationJob
 
   sig { void }
   def perform
-    active_scenes.each do |scene|
-      participants_for(scene).each do |participant|
-        user = participant.user
-        next unless user
-        next unless notify?(scene, user, participant)
+    active_scenes.each { |scene| digest_scene(scene) }
+  end
 
-        posts = posts_since_visit(scene, user, participant.last_visited_at)
-        next if posts.empty?
+  sig { params(scene: Scene).void }
+  def digest_scene(scene)
+    participants_for(scene).each { |participant| digest_participant(scene, participant) }
+  end
 
-        NotificationMailer.post_digest(scene, user, posts).deliver_later
-      end
-    end
+  sig { params(scene: Scene, participant: SceneParticipant).void }
+  def digest_participant(scene, participant)
+    user = participant.user
+    return unless user && notify?(scene, user, participant)
+
+    posts = posts_since_visit(scene, user, participant.last_visited_at)
+    return if posts.empty?
+
+    NotificationMailer.post_digest(scene, user, posts).deliver_later
   end
 
   # Whether this participant is owed a digest: not muted, and away for at least
@@ -50,9 +55,17 @@ class PostDigestJob < ApplicationJob
   sig { params(scene: Scene, user: User, last_visit: T.untyped).returns(T::Array[Post]) }
   def posts_since_visit(scene, user, last_visit)
     scene.posts
-      .where("created_at > ?", last_visit || WINDOW.ago)
+      .where("created_at > ?", cutoff(last_visit))
       .where.not(user: user)
       .order(:created_at)
       .to_a
+  end
+
+  # A participant who has never visited is treated as away for exactly the
+  # window, same as one whose last visit falls outside it. `.presence` (rather
+  # than `||`) reads as "fill in a default," not a branch on the parameter.
+  sig { params(last_visit: T.untyped).returns(T.untyped) }
+  def cutoff(last_visit)
+    last_visit.presence || WINDOW.ago
   end
 end

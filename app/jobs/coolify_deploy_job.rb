@@ -2,6 +2,30 @@
 
 require "net/http"
 
+# Wraps the raw Net::HTTP response from a Coolify deploy trigger so the
+# success/failure decision (and its error message) live with the data they
+# describe, rather than reaching into the response from the job.
+class CoolifyDeployResponse
+  extend T::Sig
+
+  sig { params(http_response: Net::HTTPResponse).void }
+  def initialize(http_response)
+    @http_response = http_response
+  end
+
+  sig { returns(String) }
+  def code
+    T.must(@http_response.code)
+  end
+
+  sig { void }
+  def verify_success!
+    return if @http_response.is_a?(Net::HTTPSuccess)
+
+    raise "Coolify deploy trigger failed: #{code} #{@http_response.message}"
+  end
+end
+
 # Forwards a deploy trigger to Coolify over the internal network.
 #
 # Coolify is not exposed to the internet, so this runs from inside the app
@@ -24,25 +48,46 @@ class CoolifyDeployJob < ApplicationJob
 
   sig { void }
   def perform
-    config = Rails.application.credentials.coolify
-    url    = config&.deploy_url
-    token  = config&.token
+    url = deploy_url
+    token = api_token
 
+    response = trigger_deploy(url, token)
+    response.verify_success!
+
+    Rails.logger.debug("Coolify deploy triggered: #{response.code}")
+  end
+
+  private
+
+  sig { returns(String) }
+  def deploy_url
+    url = Rails.application.credentials.coolify&.deploy_url
     raise ConfigurationError, "coolify.deploy_url is not configured" if url.blank?
+
+    url
+  end
+
+  sig { returns(String) }
+  def api_token
+    token = Rails.application.credentials.coolify&.token
     raise ConfigurationError, "coolify.token is not configured" if token.blank?
 
+    token
+  end
+
+  sig { params(url: String, token: String).returns(CoolifyDeployResponse) }
+  def trigger_deploy(url, token)
     uri = URI.parse(url)
     request = Net::HTTP::Post.new(uri)
     request["Authorization"] = "Bearer #{token}"
 
-    response = Net::HTTP.start(uri.hostname, uri.port, use_ssl: uri.scheme == "https") do |http|
+    CoolifyDeployResponse.new(send_request(uri, request))
+  end
+
+  sig { params(uri: URI::Generic, request: Net::HTTP::Post).returns(Net::HTTPResponse) }
+  def send_request(uri, request)
+    Net::HTTP.start(uri.hostname, uri.port, use_ssl: uri.scheme == "https") do |http|
       http.request(request)
     end
-
-    unless response.is_a?(Net::HTTPSuccess)
-      raise "Coolify deploy trigger failed: #{response.code} #{response.message}"
-    end
-
-    Rails.logger.debug("Coolify deploy triggered: #{response.code}")
   end
 end

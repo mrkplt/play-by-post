@@ -29,7 +29,7 @@ RSpec.describe CoolifyDeployJob, type: :job do
 
   describe "#perform" do
     it "sends an authorized POST to the Coolify deploy URL host" do
-      captured = stub_http_response(Net::HTTPSuccess.new("1.1", "200", "OK"))
+      captured = stub_http_response(Net::HTTPOK.new("1.1", "200", "OK"))
 
       described_class.new.perform
 
@@ -41,9 +41,16 @@ RSpec.describe CoolifyDeployJob, type: :job do
       expect(captured[:request].path).to eq("/api/v1/deploy?uuid=abc123")
     end
 
+    it "logs the response code on a successful trigger" do
+      stub_http_response(Net::HTTPOK.new("1.1", "200", "OK"))
+      expect(Rails.logger).to receive(:debug).with("Coolify deploy triggered: 200")
+
+      described_class.new.perform
+    end
+
     it "uses TLS for an https deploy URL" do
       allow(coolify_config).to receive(:deploy_url).and_return("https://coolify.example.com/api/v1/deploy?uuid=x")
-      captured = stub_http_response(Net::HTTPSuccess.new("1.1", "200", "OK"))
+      captured = stub_http_response(Net::HTTPOK.new("1.1", "200", "OK"))
 
       described_class.new.perform
 
