@@ -79,6 +79,8 @@ Each is a self-contained executable that owns its pass/fail (`exit 1` on violati
 
 **Blast radius:** The gate checks every file touched by the branch vs `origin/master`, not just files you intended to change. Any edit to a file that lacks a sigil or has insufficient coverage will fail the gate. Fix both immediately when touching such a file.
 
+**File length is the one flat check, not a ratchet.** `bin/check-file-length` holds *every* Ruby file in `app/` and `lib/` to 100 code lines (blank and comment-only lines don't count), whether or not the branch touched it — so a file cannot sit over the ceiling just because nobody edited it. It was a per-file ratchet with 14 grandfathered files until #75 split the last of them. Nothing is grandfathered now, and a file going over is a prompt to split it: pull a cohesive slice into its own class/module/component/presenter. Reaching for a private helper to shuffle lines around usually makes the count worse — the gate is asking for a smaller unit, not rearranged code.
+
 **Mutation registration:** Every new component/presenter must be added to `.mutant.yml` under `matcher.subjects` using its exact Ruby constant (e.g. `Shared::PostItemComponent`, `PostPresenter`). The `mutant_registration` CI job fails the build if a `Ui::*`/`Shared::*`/presenter class is missing — no longer just silently unmeasured.
 
 **Updating the baseline:** After an intentional quality improvement run `bin/quality-metrics --save`.

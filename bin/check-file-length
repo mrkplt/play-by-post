@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-# Ratchets Ruby file length toward a 100-line ceiling.
+# Enforces a flat 100-line ceiling on every Ruby file in app/ and lib/.
 #
 # A long file is doing too many things; the remedy is always to split it — pull
 # a cohesive slice into its own class/module/component/presenter and delegate.
@@ -9,16 +9,10 @@
 # count, so documentation and breathing room are free), matching the project's
 # preference for small, single-purpose units.
 #
-# Incremental by design, two rules against origin/master:
-#   1. A file NEW on this branch (absent from master) must be <= LIMIT outright.
-#   2. A file that already existed may not INCREASE its code-line count, even if
-#      it is already over LIMIT — pre-existing long files are grandfathered but
-#      frozen, so the number can only go down. (Same "must not increase" ratchet
-#      as the controller-ivar / CSS / ERB-logic gates.)
-#
-# Only files added or modified vs origin/master are inspected. The ratchet is
-# meant to be retired once the grandfathered files are split, enforcing the flat
-# 100-line ceiling everywhere.
+# One rule, applied to every file regardless of what the branch touched: a file
+# over LIMIT fails. This was a ratchet against origin/master until the last
+# grandfathered file was split (#75); it is now flat, so a file that has been
+# over the ceiling since before this branch is caught rather than ignored.
 
 require "prism"
 
@@ -70,53 +64,29 @@ def code_bearing_line_numbers(node, into = Set.new)
   into
 end
 
-def changed_ruby_files
-  tracked = `git -C #{ROOT} diff --name-only --diff-filter=AM origin/master`.lines.map(&:strip)
-  untracked = `git -C #{ROOT} ls-files --others --exclude-standard`.lines.map(&:strip)
-  (tracked + untracked)
-    .grep(%r{\A(?:app|lib)/.*\.rb\z})
-    .uniq
-    .map { |relative| File.join(ROOT, relative) }
-    .select { |path| File.exist?(path) }
+# Every Ruby file under app/ and lib/, not just the ones this branch touched:
+# the ceiling is a property of the tree, so a file nobody edited is still held
+# to it.
+def ruby_files
+  Dir.glob("#{ROOT}/{app,lib}/**/*.rb").sort
 end
 
 failures = []
-reported = false
+inspected = 0
 
-changed_ruby_files.each do |path|
+ruby_files.each do |path|
   relative = path.delete_prefix("#{ROOT}/")
-  new_count = code_line_count(File.read(path, encoding: "utf-8"))
+  count = code_line_count(File.read(path, encoding: "utf-8"))
+  inspected += 1
+  next unless count > LIMIT
 
-  old_source = `git -C #{ROOT} show origin/master:#{relative} 2>/dev/null`.force_encoding("utf-8")
-
-  if old_source.strip.empty?
-    # New file — must meet the ceiling outright.
-    reported = true
-    status = new_count > LIMIT ? "FAIL" : "OK"
-    puts "  [#{status}] #{relative}: #{new_count} code lines (new file, limit #{LIMIT})"
-    if new_count > LIMIT
-      failures << "#{relative}: new file has #{new_count} code lines (limit #{LIMIT}); " \
-                  "split it into smaller single-purpose units"
-    end
-  else
-    # Existing file — grandfathered, but must not grow.
-    old_count = code_line_count(old_source)
-    delta = new_count - old_count
-    reported = true
-    status = delta > 0 && new_count > LIMIT ? "FAIL" : "OK"
-    puts "  [#{status}] #{relative}: #{old_count} -> #{new_count} code lines (#{delta >= 0 ? '+' : ''}#{delta})"
-    if delta > 0 && new_count > LIMIT
-      failures << "#{relative}: grew to #{new_count} code lines (was #{old_count}, limit #{LIMIT}); " \
-                  "this file is over the ceiling and may not grow — extract the new code into its own unit"
-    end
-  end
+  puts "  [FAIL] #{relative}: #{count} code lines (limit #{LIMIT})"
+  failures << "#{relative}: #{count} code lines (limit #{LIMIT}); " \
+              "split it into smaller single-purpose units"
 end
 
-if !reported
-  puts "File-length check: OK (no changed Ruby files to ratchet)"
-  exit 0
-elsif failures.empty?
-  puts "\nFile-length check: OK (no file exceeded the ceiling or grew past it)"
+if failures.empty?
+  puts "File-length check: OK (#{inspected} Ruby files, none over #{LIMIT} code lines)"
   exit 0
 else
   puts "\nFile-length check: FAIL\n\n"
@@ -131,7 +101,8 @@ else
         pull the extra concern into its own component/presenter.
       - A model too long usually means a cohesive cluster of methods wants to be
         a plainly-included module (not a concern) or a service.
-    Grandfathered files already over #{LIMIT} may shrink freely but must not grow.
+    The ceiling is flat: every file in app/ and lib/ is held to it, whether or
+    not this branch touched it. There is no grandfathering to fall back on.
   REMEDY
   exit 1
 end
