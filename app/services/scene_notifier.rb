@@ -15,14 +15,14 @@ class SceneNotifier
   sig { params(actor: User).void }
   def created(actor)
     deliver_to(@scene.users.where.not(id: actor.id)) do |recipient|
-      NotificationMailer.new_scene(@scene, recipient)
+      NotificationMailer.new_scene(NotificationMailer::Delivery.new(scene: @scene, recipient: recipient))
     end
   end
 
   sig { void }
   def resolved
     deliver_to(@scene.users) do |recipient|
-      NotificationMailer.scene_resolved(@scene, recipient)
+      NotificationMailer.scene_resolved(NotificationMailer::Delivery.new(scene: @scene, recipient: recipient))
     end
   end
 

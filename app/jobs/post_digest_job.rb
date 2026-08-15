@@ -18,7 +18,8 @@ class PostDigestJob < ApplicationJob
         posts = posts_since_visit(scene, user, participant.last_visited_at)
         next if posts.empty?
 
-        NotificationMailer.post_digest(scene, user, posts).deliver_later
+        delivery = NotificationMailer::Delivery.new(scene: scene, recipient: user)
+        NotificationMailer.post_digest(delivery, posts).deliver_later
       end
     end
   end

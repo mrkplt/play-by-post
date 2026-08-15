@@ -28,16 +28,12 @@ class GameFile < ApplicationRecord
 
   sig { returns(T::Boolean) }
   def image?
-    return false unless file.attached?
-
-    IMAGE_TYPES.include?(file.content_type)
+    IMAGE_TYPES.include?(attached_content_type)
   end
 
   sig { returns(T::Boolean) }
   def pdf?
-    return false unless file.attached?
-
-    file.content_type == "application/pdf"
+    attached_content_type == "application/pdf"
   end
 
   sig { returns(T::Boolean) }
@@ -47,22 +43,38 @@ class GameFile < ApplicationRecord
 
   sig { returns(T.nilable(ActiveStorage::VariantWithRecord)) }
   def display_image
-    return unless file.attached? && image?
+    return unless image?
 
     file.variant(resize_to_limit: [ 800, nil ], format: :jpeg, quality: 85)
   end
 
+  # The most relevant validation message to surface in the upload form: the
+  # unprefixed :file-specific message when there is one (an invalid/oversized
+  # file), otherwise the first full message (e.g. a blank filename).
+  sig { returns(T.nilable(String)) }
+  def error_message
+    errors[:file].first || errors.full_messages.first
+  end
+
   private
+
+  # The attached file's content type, or nil when nothing is attached — the
+  # single place that guards on attachment presence so image?/pdf?/
+  # acceptable_file don't each repeat the `attached?` check.
+  sig { returns(T.nilable(String)) }
+  def attached_content_type
+    file.content_type if file.attached?
+  end
 
   sig { void }
   def acceptable_file
-    return unless file.attached?
+    return unless (content_type = attached_content_type)
 
     unless T.must(file.byte_size) <= MAX_SIZE
       errors.add(:file, "must be less than #{MAX_SIZE / 1.megabyte}MB")
     end
 
-    unless ALLOWED_TYPES.include?(file.content_type)
+    unless ALLOWED_TYPES.include?(content_type)
       errors.add(:file, "must be a PDF, Word doc, text, markdown, or image file")
     end
   end

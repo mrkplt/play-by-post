@@ -24,12 +24,25 @@ class GameLink < ApplicationRecord
   sig { void }
   def http_url
     return if url.blank?
-
-    parsed = URI.parse(url)
-    return if %w[http https].include?(parsed.scheme) && parsed.host.present?
+    return if valid_http_url?
 
     errors.add(:url, "must be a valid http(s) URL")
+  end
+
+  sig { returns(T::Boolean) }
+  def valid_http_url?
+    %w[http https].include?(url_scheme) && url_host.present?
   rescue URI::InvalidURIError
-    errors.add(:url, "must be a valid http(s) URL")
+    false
+  end
+
+  sig { returns(T.nilable(String)) }
+  def url_scheme
+    URI.parse(url).scheme
+  end
+
+  sig { returns(T.nilable(String)) }
+  def url_host
+    URI.parse(url).host
   end
 end
