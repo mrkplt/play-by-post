@@ -1,23 +1,32 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-# Enforces a flat 100-line ceiling on every Ruby file in app/ and lib/.
+# Enforces a flat line ceiling on every Ruby file in app/ and lib/.
 #
 # A long file is doing too many things; the remedy is always to split it — pull
 # a cohesive slice into its own class/module/component/presenter and delegate.
-# The limit here is 100 *code* lines (blank lines and comment-only lines do not
-# count, so documentation and breathing room are free), matching the project's
-# preference for small, single-purpose units.
+# The limit counts *code* lines: blank lines and comment-only lines do not count.
+#
+# Two limits, because Sorbet makes this codebase more verbose than plain Ruby.
+# A `sig` block plus a `T.let` ivar assignment costs 2-4 lines per method that
+# traditional Ruby never pays, so the same ceiling is a tighter ceiling here.
+# Controllers get more room again: they carry a per-action `sig`, the ivar
+# assignments a template reads, and the before_action/authorize scaffolding.
 #
 # One rule, applied to every file regardless of what the branch touched: a file
-# over LIMIT fails. This was a ratchet against origin/master until the last
+# over its limit fails. This was a ratchet against origin/master until the last
 # grandfathered file was split (#75); it is now flat, so a file that has been
 # over the ceiling since before this branch is caught rather than ignored.
 
 require "prism"
 
 ROOT = File.expand_path("..", __dir__)
-LIMIT = 100
+LIMIT = 120
+CONTROLLER_LIMIT = 150
+
+def limit_for(relative)
+  relative.start_with?("app/controllers/") ? CONTROLLER_LIMIT : LIMIT
+end
 
 # Code lines = lines that are not blank and not comment-only. Prism gives us the
 # exact set of lines occupied by comments (including the inner lines of a
@@ -76,24 +85,28 @@ inspected = 0
 
 ruby_files.each do |path|
   relative = path.delete_prefix("#{ROOT}/")
+  limit = limit_for(relative)
   count = code_line_count(File.read(path, encoding: "utf-8"))
   inspected += 1
-  next unless count > LIMIT
+  next unless count > limit
 
-  puts "  [FAIL] #{relative}: #{count} code lines (limit #{LIMIT})"
-  failures << "#{relative}: #{count} code lines (limit #{LIMIT}); " \
+  puts "  [FAIL] #{relative}: #{count} code lines (limit #{limit})"
+  failures << "#{relative}: #{count} code lines (limit #{limit}); " \
               "split it into smaller single-purpose units"
 end
 
 if failures.empty?
-  puts "File-length check: OK (#{inspected} Ruby files, none over #{LIMIT} code lines)"
+  puts "File-length check: OK (#{inspected} Ruby files, " \
+       "none over #{LIMIT} code lines / #{CONTROLLER_LIMIT} for controllers)"
   exit 0
 else
   puts "\nFile-length check: FAIL\n\n"
   failures.each { |line| puts "  #{line}" }
   puts <<~REMEDY
 
-    Files must be <= #{LIMIT} code lines (blank + comment-only lines don't count).
+    Files must be <= #{LIMIT} code lines (#{CONTROLLER_LIMIT} for app/controllers).
+    Blank and comment-only lines don't count, so this is real code.
+
     To resolve, split the file — do not just move code out of sight:
       - A controller too long usually means an action's work belongs in a
         service/model; extract it and call it.
@@ -101,6 +114,17 @@ else
         pull the extra concern into its own component/presenter.
       - A model too long usually means a cohesive cluster of methods wants to be
         a plainly-included module (not a concern) or a service.
+
+    Do NOT reach for a private helper just to move lines around. Wrapping a
+    block in a new method with its own `sig` usually makes the count WORSE —
+    the gate is asking for a smaller unit, not rearranged code.
+
+    Comments are not the lever either: they are free here, and Ruby rarely
+    needs them. Prefer a name that says it over a comment that explains it, and
+    delete commentary that only restates the code. Keep the comments that carry
+    what the code cannot — a non-obvious constraint, a rejected alternative and
+    why, a bug the shape is defending against.
+
     The ceiling is flat: every file in app/ and lib/ is held to it, whether or
     not this branch touched it. There is no grandfathering to fall back on.
   REMEDY

@@ -59,8 +59,6 @@ class PostsController < ApplicationController
     PostDraft.new(scene, current_user)
   end
 
-  # The new post appended to the thread; the turbo_stream template renders
-  # @post_presenter.
   sig { params(new_post: Post, post_policy: PostPolicy).void }
   def render_created(new_post, post_policy)
     builder = presenter_builder
@@ -73,7 +71,6 @@ class PostsController < ApplicationController
     end
   end
 
-  # A failed save re-renders the composer in place, holding what was typed.
   sig { params(new_post: Post, post_policy: PostPolicy).void }
   def render_composer_errors(new_post, post_policy)
     component = presenter_builder.composer_component(new_post, post_policy, page_context)

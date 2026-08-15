@@ -1,9 +1,8 @@
 # typed: strict
 # frozen_string_literal: true
 
-# Turns a game's flat scene list into the nested node structure the scene index
-# renders. A scene whose parent is missing from the list (private, or outside
-# the viewer's scope) is treated as a root, so no branch is orphaned.
+# A scene whose parent is missing from the list (private, or outside the
+# viewer's scope) roots its own branch, so nothing is orphaned.
 class SceneTreeBuilder
   extend T::Sig
 
@@ -12,8 +11,6 @@ class SceneTreeBuilder
     @scenes = scenes
   end
 
-  # The scenes a viewer may see in a game, oldest first, preloaded for the
-  # whole tree render.
   sig { params(user: User, game: Game).returns(SceneTreeBuilder) }
   def self.for(user, game)
     scenes = ScenePolicy::Scope.new(user, game).resolve
@@ -36,8 +33,6 @@ class SceneTreeBuilder
     @scenes.select { |scene| root?(scene.parent_scene_id) }
   end
 
-  # A scene roots the tree when it has no parent, or when its parent is not in
-  # the visible set — otherwise that branch would never be rendered.
   sig { params(parent_id: T.nilable(Integer)).returns(T::Boolean) }
   def root?(parent_id)
     parent_id.nil? || by_id[parent_id].nil?

@@ -1,12 +1,7 @@
 # typed: strict
 
-# The whole scene screen (ScenesController#show) as one object: the game and
-# scene chrome, navigation, the viewer-scoped show state, the post list and the
-# summary. Each part is still its own presenter — this only bundles them, so
-# the controller assigns one ivar instead of six and the template reaches each
-# part by name. Wraps ScenePresenter as its subject (composition, per the
-# layering rule that a presenter's subject may be another presenter); the
-# sibling presenters come in as options.
+# Bundles the scene screen's presenters so the controller assigns one ivar
+# instead of six. Wraps ScenePresenter as its subject; the siblings are options.
 class SceneScreenPresenter < BasePresenter
   extend T::Sig
 

@@ -74,16 +74,13 @@ class ScenesController < ApplicationController
 
   private
 
-  # Memoized rather than set by a before_action: #new/#create render the New
-  # Scene form (not named after either action) via the scene_form helper
-  # method, so there is no single action to hang the assignment on.
+  # Memoized, not a before_action: #new/#create render a form not named after
+  # either action, so there is no single action to hang the assignment on.
   sig { returns(GamePresenter) }
   def game_presenter
     @game_presenter ||= T.let(GamePresenter.new(game, policy: policy(game), urls: self), T.nilable(GamePresenter))
   end
 
-  # Pundit's `policy` is passed as a callable so the builder can resolve a
-  # policy per post without reaching for authorization itself.
   sig { returns(SceneShowBuilder) }
   def scene_show_builder
     context = SceneShowBuilder::Context.new(
@@ -103,12 +100,8 @@ class ScenesController < ApplicationController
     redirect_to root_path, alert: "You do not have access to this game." unless policy(game).view?
   end
 
-  # Assembles the New Scene / Quick Scene form component for a given scene
-  # build. Passed to the template as a `render locals:` value from #new and
-  # #create's error re-render, rather than a helper_method memoizing the
-  # scene in an ivar — #create needs the SAME (now-invalid) record the save
-  # was attempted on, not a fresh `game.scenes.new`, so each action builds it
-  # once as a local and threads it through explicitly.
+  # Threaded as a `render locals:` value rather than memoized in an ivar:
+  # #create must re-render the SAME invalid record the save was attempted on.
   sig { params(new_scene: Scene).returns(Shared::SceneFormComponent) }
   def build_scene_form(new_scene)
     SceneFormBuilder.new(game, new_scene, params, self).form_component(game_presenter)

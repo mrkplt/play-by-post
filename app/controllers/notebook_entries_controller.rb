@@ -65,9 +65,7 @@ class NotebookEntriesController < ApplicationController
 
   private
 
-  # Lookup and authorization travel together for the actions working on one
-  # existing entry. A nil capability is Pundit's own default: the predicate
-  # named after the current action.
+  # A nil capability is Pundit's default: the predicate named for the action.
   sig { params(capability: T.nilable(Symbol)).returns(NotebookEntry) }
   def authorized_entry(capability = nil)
     notebook_entry.tap { |entry| authorize entry, capability }

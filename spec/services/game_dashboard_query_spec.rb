@@ -55,6 +55,19 @@ RSpec.describe GameDashboardQuery, :db do
 
       expect(query.policy_by_game_id[game.id]).to be_a(GamePolicy)
     end
+
+    # A soft-deleted game reads as nil through the default scope. #memberships
+    # already filters those out, so this only fires if a game is deleted
+    # between the two reads — but it is the guard that stops a nil reaching
+    # the presenter.
+    it "skips a membership whose game has gone" do
+      game = create(:game)
+      create(:game_member, game: game, user: viewer, status: "active")
+      built = query
+      built.memberships.each { |membership| allow(membership).to receive(:game).and_return(nil) }
+
+      expect(built.policy_by_game_id).to be_empty
+    end
   end
 
   describe "#games_with_new_activity" do
@@ -62,6 +75,15 @@ RSpec.describe GameDashboardQuery, :db do
       game = create(:game)
       create(:game_member, game: game, user: viewer, status: "active")
       viewer.user_profile.update!(last_login_at: nil)
+
+      expect(query.games_with_new_activity).to be_empty
+    end
+
+    it "is empty when the viewer has no profile at all" do
+      game = create(:game)
+      create(:game_member, game: game, user: viewer, status: "active")
+      viewer.user_profile.destroy
+      viewer.reload
 
       expect(query.games_with_new_activity).to be_empty
     end

@@ -1,9 +1,8 @@
 # typed: strict
 
 module Games
-  # The GM-only setting switches on a game. Each action authorizes, flips one
-  # flag, and returns to the screen that switch lives on; the flip and its
-  # wording belong to GameSettingToggle.
+  # The GM-only setting switches; the flip and its wording live in
+  # GameSettingToggle.
   class SettingsController < ApplicationController
     extend T::Sig
 

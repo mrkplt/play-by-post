@@ -3,10 +3,8 @@
 require "zip"
 
 module GameExport
-  # Lays one game out inside the zip: which files exist, where they sit, and in
-  # what order. Content comes from the document modules; rows come from Reads.
-  # One instance per exported game, so the game and its path prefix are state
-  # rather than arguments threaded through every write.
+  # The zip layout for one game: which entries exist and where. One instance
+  # per game, so the game and prefix are state rather than threaded arguments.
   class Archive
     extend T::Sig
 
@@ -50,9 +48,8 @@ module GameExport
       @zip.write(content)
     end
 
-    # Slugs a collection against one tracker, so repeated titles within it get
-    # -2, -3 suffixes rather than colliding on the same path. `name` names the
-    # attribute each record slugs from.
+    # One tracker per collection, so repeated titles get -2/-3 rather than
+    # colliding on the same path.
     sig do
       params(
         records: T::Array[T.untyped],
@@ -67,8 +64,6 @@ module GameExport
       end
     end
 
-    # Scenes are numbered by export order, so they carry a positional prefix on
-    # top of the shared slugging.
     sig { params(scenes: T::Array[Scene]).void }
     def write_scenes(scenes)
       tracker = T.let({}, T::Hash[String, Integer])

@@ -1,16 +1,13 @@
 # typed: strict
 # frozen_string_literal: true
 
-# Builds the presenter set ScenesController#show renders: the scene itself, its
-# navigation, its posts and the summary. Only the controller has Pundit's
-# `policy(...)`, so it hands each resolved policy over rather than letting a
+# The controller hands each resolved policy over rather than letting a
 # presenter construct authorization (R2).
 class SceneShowBuilder
   extend T::Sig
 
-  # Everything about the current request the presenters need: who is looking,
-  # the url helpers to build links with, and Pundit's `policy` as a callable so
-  # a policy can be resolved per post without reaching for authorization here.
+  # Pundit's `policy` travels as a callable so a policy can be resolved per
+  # post without reaching for authorization here.
   class Context < T::Struct
     const :urls, T.untyped
     const :current_user, User
@@ -24,7 +21,6 @@ class SceneShowBuilder
     @context = context
   end
 
-  # The whole screen in one object, so #show assigns a single ivar.
   sig { params(game_presenter: GamePresenter).returns(SceneScreenPresenter) }
   def screen(game_presenter)
     SceneScreenPresenter.new(
@@ -68,9 +64,8 @@ class SceneShowBuilder
     )
   end
 
-  # nil when the scene has no summary yet — the view's own condition (scene
-  # resolved? && summary present?) reads the presenter directly rather than
-  # having this build the policy speculatively.
+  # nil until the scene has a summary — building the policy speculatively
+  # would authorize a record that does not exist yet.
   sig { returns(T.nilable(SceneSummaryPresenter)) }
   def summary_presenter
     summary = @scene.scene_summary
@@ -84,8 +79,6 @@ class SceneShowBuilder
 
   private
 
-  # Published posts wrapped for display, each with its own Pundit-resolved
-  # policy (R2: presenters never construct authorization).
   sig { returns(T::Array[PostPresenter]) }
   def post_presenters
     participants = @scene.scene_participants.includes(:character, :user).to_a

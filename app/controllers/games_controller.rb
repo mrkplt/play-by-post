@@ -60,15 +60,12 @@ class GamesController < ApplicationController
 
   private
 
-  # The form screens (#new, #edit and each one's failed-save re-render) all
-  # show the same game chrome, so they share one assignment.
   sig { params(record: Game).void }
   def assign_game_presenter(record)
     @game_presenter = T.let(GamePresenter.new(record, policy: policy(record)), T.nilable(GamePresenter))
   end
 
-  # A failed save returns to the form holding the invalid record, not a fresh
-  # one, so the user sees what they typed alongside the errors.
+  # Holds the invalid record, not a fresh one, so the user sees what they typed.
   sig { params(record: Game, template: Symbol).void }
   def render_form(record, template)
     assign_game_presenter(record)
