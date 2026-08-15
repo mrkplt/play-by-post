@@ -1,16 +1,240 @@
 # Omakase Ruby styling for Rails
 inherit_gem: { rubocop-rails-omakase: rubocop.yml }
 
-# rubocop-erb lints the Ruby fragments inside .html.erb templates (string style,
-# predicate methods, output safety, whitespace) — Ruby style the plain rubocop
-# run never saw, since .erb is not in its default target set. This is distinct
-# from and complementary to the ERB-logic gate in bin/quality-metrics, which
-# enforces the architectural rule that view templates carry no logic at all
-# (ternaries/||/control-flow in output tags); rubocop-erb styles the Ruby that
-# legitimately remains. The plugin pulls every app/**/*.erb into scope
-# automatically.
+# rubocop-erb lints the Ruby fragments inside .html.erb templates — Ruby style
+# the plain rubocop run never saw, since .erb is not in its default target set.
+# This is distinct from and complementary to the ERB-logic gate in
+# bin/quality-metrics, which enforces the architectural rule that view templates
+# carry no logic at all (ternaries/||/control-flow in output tags); rubocop-erb
+# styles the Ruby that legitimately remains. The plugin pulls every app/**/*.erb
+# into scope automatically. By default it Excludes ~54 cops from .erb; the block
+# below re-enables all of them that can be reconfigured (all but Lint/Syntax), so
+# the full inherited Ruby ruleset applies to embedded Ruby.
 plugins:
   - rubocop-erb
+
+# --- rubocop-erb: re-enable cops the plugin excludes from .erb by default ---
+#
+# rubocop-erb 0.7.1 ships a default config that Excludes ~54 cops from **/*.erb.
+# Enabling them here applies the full inherited Ruby ruleset to the Ruby embedded
+# in templates. Verified against the whole app/**/*.erb tree: zero offenses today,
+# and the Layout/indentation cops are inert on ERB (the extractor normalizes
+# whitespace) rather than false-positive, so re-enabling them is safe. The
+# meaningful ones (nested/multiline ternary, if/unless-modifier, rescue-modifier,
+# parallel-assignment, useless-assignment, identical-branches) now guard templates.
+# Lint/Syntax is deliberately left excluded: rubocop forbids reconfiguring it.
+Layout/ArgumentAlignment:
+  Exclude: []
+  Include:
+    - '**/*.erb'
+Layout/ArrayAlignment:
+  Exclude: []
+  Include:
+    - '**/*.erb'
+Layout/BlockAlignment:
+  Exclude: []
+  Include:
+    - '**/*.erb'
+Layout/ClosingParenthesisIndentation:
+  Exclude: []
+  Include:
+    - '**/*.erb'
+Layout/CommentIndentation:
+  Exclude: []
+  Include:
+    - '**/*.erb'
+Layout/EmptyLineAfterGuardClause:
+  Exclude: []
+  Include:
+    - '**/*.erb'
+Layout/EndAlignment:
+  Exclude: []
+  Include:
+    - '**/*.erb'
+Layout/FirstArgumentIndentation:
+  Exclude: []
+  Include:
+    - '**/*.erb'
+Layout/FirstArrayElementIndentation:
+  Exclude: []
+  Include:
+    - '**/*.erb'
+Layout/FirstArrayElementLineBreak:
+  Exclude: []
+  Include:
+    - '**/*.erb'
+Layout/FirstHashElementIndentation:
+  Exclude: []
+  Include:
+    - '**/*.erb'
+Layout/FirstHashElementLineBreak:
+  Exclude: []
+  Include:
+    - '**/*.erb'
+Layout/FirstMethodArgumentLineBreak:
+  Exclude: []
+  Include:
+    - '**/*.erb'
+Layout/FirstParameterIndentation:
+  Exclude: []
+  Include:
+    - '**/*.erb'
+Layout/HashAlignment:
+  Exclude: []
+  Include:
+    - '**/*.erb'
+Layout/IndentationConsistency:
+  Exclude: []
+  Include:
+    - '**/*.erb'
+Layout/IndentationWidth:
+  Exclude: []
+  Include:
+    - '**/*.erb'
+Layout/InitialIndentation:
+  Exclude: []
+  Include:
+    - '**/*.erb'
+Layout/LeadingEmptyLine:
+  Exclude: []
+  Include:
+    - '**/*.erb'
+Layout/LeadingEmptyLines:
+  Exclude: []
+  Include:
+    - '**/*.erb'
+Layout/LineEndStringConcatenationIndentation:
+  Exclude: []
+  Include:
+    - '**/*.erb'
+Layout/LineLength:
+  Exclude: []
+  Include:
+    - '**/*.erb'
+Layout/MultilineArrayBraceLayout:
+  Exclude: []
+  Include:
+    - '**/*.erb'
+Layout/MultilineAssignmentLayout:
+  Exclude: []
+  Include:
+    - '**/*.erb'
+Layout/MultilineHashBraceLayout:
+  Exclude: []
+  Include:
+    - '**/*.erb'
+Layout/MultilineMethodCallBraceLayout:
+  Exclude: []
+  Include:
+    - '**/*.erb'
+Layout/MultilineMethodCallIndentation:
+  Exclude: []
+  Include:
+    - '**/*.erb'
+Layout/MultilineMethodDefinitionBraceLayout:
+  Exclude: []
+  Include:
+    - '**/*.erb'
+Layout/MultilineOperationIndentation:
+  Exclude: []
+  Include:
+    - '**/*.erb'
+Layout/ParameterAlignment:
+  Exclude: []
+  Include:
+    - '**/*.erb'
+Layout/TrailingEmptyLines:
+  Exclude: []
+  Include:
+    - '**/*.erb'
+Layout/TrailingWhitespace:
+  Exclude: []
+  Include:
+    - '**/*.erb'
+Lint/EmptyFile:
+  Exclude: []
+  Include:
+    - '**/*.erb'
+Lint/OutOfRangeRegexpRef:
+  Exclude: []
+  Include:
+    - '**/*.erb'
+Lint/UselessAssignment:
+  Exclude: []
+  Include:
+    - '**/*.erb'
+Lint/Void:
+  Exclude: []
+  Include:
+    - '**/*.erb'
+Metrics/BlockLength:
+  Exclude: []
+  Include:
+    - '**/*.erb'
+Metrics/BlockNesting:
+  Exclude: []
+  Include:
+    - '**/*.erb'
+Naming/FileName:
+  Exclude: []
+  Include:
+    - '**/*.erb'
+Style/FrozenStringLiteralComment:
+  Exclude: []
+  Include:
+    - '**/*.erb'
+Style/IdenticalConditionalBranches:
+  Exclude: []
+  Include:
+    - '**/*.erb'
+Style/IfUnlessModifier:
+  Exclude: []
+  Include:
+    - '**/*.erb'
+Style/MultilineTernaryOperator:
+  Exclude: []
+  Include:
+    - '**/*.erb'
+Style/NestedTernaryOperator:
+  Exclude: []
+  Include:
+    - '**/*.erb'
+Style/Next:
+  Exclude: []
+  Include:
+    - '**/*.erb'
+Style/ParallelAssignment:
+  Exclude: []
+  Include:
+    - '**/*.erb'
+Style/RescueModifier:
+  Exclude: []
+  Include:
+    - '**/*.erb'
+Style/Semicolon:
+  Exclude: []
+  Include:
+    - '**/*.erb'
+Style/TrailingCommaInArguments:
+  Exclude: []
+  Include:
+    - '**/*.erb'
+Style/TrailingCommaInArrayLiteral:
+  Exclude: []
+  Include:
+    - '**/*.erb'
+Style/TrailingCommaInHashLiteral:
+  Exclude: []
+  Include:
+    - '**/*.erb'
+Style/WhileUntilDo:
+  Exclude: []
+  Include:
+    - '**/*.erb'
+Style/WhileUntilModifier:
+  Exclude: []
+  Include:
+    - '**/*.erb'
 
 # Overwrite or add rules to create your own house style
 #
