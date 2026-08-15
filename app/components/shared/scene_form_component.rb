@@ -81,10 +81,6 @@ class Shared::SceneFormComponent < ApplicationComponent
     @back_href
   end
 
-  sig { returns(T::Boolean) }
-  def errors?
-    @scene.errors?
-  end
 
   sig { returns(T::Array[String]) }
   def error_messages

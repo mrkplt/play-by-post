@@ -84,6 +84,8 @@ matcher:
     - UserPresenter
     - UserProfilePresenter
     # Components
+    - Shared::RecordBackedForm
+    - Ui::FormErrorsComponent
     - Ui::SecretFieldComponent
     - Shared::RssFeedsSectionComponent
     - Shared::AiSummariesToggleComponent

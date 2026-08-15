@@ -15,6 +15,7 @@
 # never receives a raw model or a raw array of users either way.
 class Shared::CharacterFormComponent < ApplicationComponent
   extend T::Sig
+  include Shared::RecordBackedForm
 
   sig { params(character: CharacterPresenter, owner_options: T::Array[[ String, Integer ]]).void }
   def initialize(character:, owner_options: [])
@@ -30,9 +31,9 @@ class Shared::CharacterFormComponent < ApplicationComponent
   sig { returns(CharacterPresenter) }
   attr_reader :character
 
-  sig { returns(T::Boolean) }
-  def new_record?
-    character.new_record?
+  sig { override.returns(CharacterPresenter) }
+  def record
+    character
   end
 
   sig { returns(T::Boolean) }
@@ -79,15 +80,5 @@ class Shared::CharacterFormComponent < ApplicationComponent
   sig { returns(String) }
   def form_id
     new_record? ? "new_character_form" : "edit_character_#{character.id}_form"
-  end
-
-  sig { returns(T::Boolean) }
-  def errors?
-    character.errors?
-  end
-
-  sig { returns(T::Array[String]) }
-  def error_messages
-    character.error_messages
   end
 end

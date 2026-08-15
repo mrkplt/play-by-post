@@ -8,6 +8,7 @@
 # template. The slug is generated server-side and never shown or edited here.
 class Shared::PageFormComponent < ApplicationComponent
   extend T::Sig
+  include Shared::RecordBackedForm
 
   sig { params(page: PagePresenter).void }
   def initialize(page:)
@@ -22,9 +23,9 @@ class Shared::PageFormComponent < ApplicationComponent
   sig { returns(PagePresenter) }
   attr_reader :page
 
-  sig { returns(T::Boolean) }
-  def new_record?
-    @page.new_record?
+  sig { override.returns(PagePresenter) }
+  def record
+    @page
   end
 
   sig { returns(String) }
@@ -40,15 +41,5 @@ class Shared::PageFormComponent < ApplicationComponent
   sig { returns(String) }
   def form_id
     new_record? ? "new_page_form" : "edit_page_#{@page.id}_form"
-  end
-
-  sig { returns(T::Boolean) }
-  def errors?
-    @page.errors?
-  end
-
-  sig { returns(T::Array[String]) }
-  def error_messages
-    @page.error_messages
   end
 end

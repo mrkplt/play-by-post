@@ -34,18 +34,20 @@ RSpec.describe Shared::GameFormComponent, type: :component do
     end
   end
 
-  describe "#errors?" do
-    it "is false on a clean game" do
+  describe "errors" do
+    it "renders no error block on a clean game" do
       component = build_component
-      expect(component.errors?).to be(false)
       expect(component.error_messages).to be_empty
+      render_inline(component)
+      expect(page).to have_no_css(".text-danger")
     end
 
     it "surfaces validation messages when the game has errors" do
       game_model.errors.add(:name, "can't be blank")
       component = build_component
-      expect(component.errors?).to be(true)
       expect(component.error_messages).to include("Name can't be blank")
+      render_inline(component)
+      expect(page).to have_css(".text-danger", text: "Name can't be blank")
     end
   end
 

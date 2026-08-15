@@ -5,13 +5,7 @@
 <% end %>
 
 <%= form_with model: @summary, url: @summary.submit_path, html: { id: form_id }, class: "flex flex-col gap-4" do |f| %>
-  <% if has_errors? %>
-    <div class="bg-tint-blue-bg border border-tint-blue-border rounded-card p-3 text-sm text-danger">
-      <% error_messages.each do |message| %>
-        <div><%= message %></div>
-      <% end %>
-    </div>
-  <% end %>
+  <%= render Ui::FormErrorsComponent.new(messages: error_messages) %>
 
   <div class="flex flex-col gap-1.5">
     <%= f.label :body, "Summary", class: "text-[11px] font-bold text-muted uppercase tracking-[0.05em]" %>

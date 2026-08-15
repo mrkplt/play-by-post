@@ -6,6 +6,7 @@
 # mode (new vs edit), labels, and back-href from the entry it is handed.
 class Shared::NotebookFormComponent < ApplicationComponent
   extend T::Sig
+  include Shared::RecordBackedForm
 
   sig { params(game: GamePresenter, notebook_entry: NotebookEntryPresenter).void }
   def initialize(game:, notebook_entry:)
@@ -19,9 +20,9 @@ class Shared::NotebookFormComponent < ApplicationComponent
   sig { returns(NotebookEntryPresenter) }
   attr_reader :notebook_entry
 
-  sig { returns(T::Boolean) }
-  def new_record?
-    @notebook_entry.new_record?
+  sig { override.returns(NotebookEntryPresenter) }
+  def record
+    @notebook_entry
   end
 
   sig { returns(String) }
@@ -39,15 +40,5 @@ class Shared::NotebookFormComponent < ApplicationComponent
   sig { returns(String) }
   def form_id
     new_record? ? "notebook_entry_new_form_element" : "notebook_entry_#{@notebook_entry.id}_edit_form_element"
-  end
-
-  sig { returns(T::Boolean) }
-  def errors?
-    @notebook_entry.errors?
-  end
-
-  sig { returns(T::Array[String]) }
-  def error_messages
-    @notebook_entry.error_messages
   end
 end
