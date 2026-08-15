@@ -18,6 +18,7 @@
 #   bin/quality-metrics --save               # save current metrics as the new baseline
 #   bin/quality-metrics --check              # compare against baseline, fail on regression
 #   bin/quality-metrics --record-mutant FILE # extract mutation score from mutant output file
+#   bin/quality-metrics --css-detail         # show where the two CSS ceilings' counts live
 
 ENV["BUNDLE_GEMFILE"] ||= File.expand_path("../Gemfile", __dir__)
 require "rubygems"
@@ -37,10 +38,10 @@ CHANGED_FILE_LINE_THRESHOLD = 80.0 # minimum line coverage for changed files
 CHANGED_FILE_BRANCH_THRESHOLD = 70.0 # minimum branch coverage for changed files
 REQUIRED_SORBET_SIGILS = %w[true strict strong].freeze
 
-METRIC_KEYS = %w[line_coverage branch_coverage sorbet_typed_pct mutation_coverage css_in_components_pct presenter_method_violations].freeze
-FLOOR_METRICS = %w[mutation_coverage css_in_components_pct].freeze
+METRIC_KEYS = %w[line_coverage branch_coverage sorbet_typed_pct mutation_coverage view_css_statements duplicated_component_class_strings presenter_method_violations].freeze
+FLOOR_METRICS = %w[mutation_coverage].freeze
 # Ceiling metrics track counts where lower is better; the baseline is a maximum.
-CEILING_METRICS = %w[presenter_method_violations].freeze
+CEILING_METRICS = %w[view_css_statements duplicated_component_class_strings presenter_method_violations].freeze
 EXCLUDED_MODEL_BASENAMES = %w[application_record.rb current.rb].freeze
 
 # Indicators of logic in ERB templates that belongs in presenters or component Ruby classes.
@@ -119,26 +120,110 @@ def count_css_statements_in_files(files)
   count
 end
 
+# Class strings shorter than this are ordinary layout shorthand ("flex gap-2"),
+# not a styling decision worth naming. Counting them as duplication would drown
+# the signal in noise.
+MIN_CLASS_STRING_TOKENS = 3
+
+# Mailer templates are excluded from the inline-CSS ceiling. Inline `style="…"`
+# is the *correct* technique for HTML email — clients strip <style> blocks and
+# do not fetch stylesheets — so those statements can never legitimately reach
+# zero, and counting them would make the target unreachable and the gate
+# permanent. This ceiling is about screen markup that belongs in a
+# ViewComponent.
+MAILER_VIEW_RE = %r{/app/views/\w*_mailer/}
+
+def screen_view_files
+  Dir.glob(File.join(PROJECT_ROOT, "app/views/**/*.html.erb"))
+     .reject { |path| path.match?(MAILER_VIEW_RE) }
+end
+
+# A whole class attribute value, normalised: tokens sorted so the same styling
+# decision written in a different order is recognised as the same decision.
+def class_strings_in_content(content)
+  content.scan(CSS_CLASS_ATTR_RE).filter_map do |match|
+    tokens = match[0].split
+    tokens.sort.join(" ") if tokens.size >= MIN_CLASS_STRING_TOKENS
+  end
+end
+
+# Two CSS metrics, both ceilings — the number goes down, never up.
+#
+# view_css_statements: inline styling left in app/views. Every one of these is
+#   markup that should live in a ViewComponent ("never hand-write bespoke screen
+#   markup"), so this is a countdown on a finite worklist, not a ratio to
+#   optimise. It reaches 0 when the migration is done, and the metric can then
+#   be retired. A plain count means extracting markup into a component OR into a
+#   co-located stylesheet lowers it either way, with no denominator to game.
+#
+# duplicated_component_class_strings: whole class strings appearing in more than
+#   one component — the same styling decision respelled instead of shared. This
+#   is what finds an unextracted component: three components spelling out
+#   "fixed inset-0 flex items-center justify-center p-4 z-[1000]" is a
+#   Ui::ModalComponent nobody has written yet. Individual utility tokens are
+#   deliberately NOT the unit; a component legitimately uses `max-w-md` once,
+#   and `flex` appearing everywhere is not a defect.
+# What to do about each ceiling metric when it rises. A count on its own does
+# not tell you what to change.
+CEILING_REMEDIES = {
+  "view_css_statements" =>
+    "styling belongs in a ViewComponent, not a view — move the markup into a " \
+    "component (or its co-located stylesheet). Run `bin/quality-metrics --css-detail`.",
+  "duplicated_component_class_strings" =>
+    "the same class string is now spelled out in more than one component — " \
+    "extract or reuse a component instead. Run `bin/quality-metrics --css-detail`.",
+  "presenter_method_violations" =>
+    "new model methods only called from views/mailers must be moved to a presenter"
+}.freeze
+
+def ceiling_remedy(key)
+  CEILING_REMEDIES.fetch(key, "lower the count back to the ceiling")
+end
+
+# Prints where each CSS metric's count actually lives, so a gate failure names
+# files rather than just a number.
+def report_css_detail
+  view_rows = screen_view_files.filter_map do |file|
+    count = count_css_statements_in_files([ file ])
+    [ count, file.sub("#{PROJECT_ROOT}/", "") ] if count.positive?
+  end.sort.reverse
+
+  puts "=== Inline CSS in views (ceiling — target 0) ==="
+  puts "  total: #{view_rows.sum(&:first)} statements in #{view_rows.size} files"
+  view_rows.each { |count, file| puts format("  %4d  %s", count, file) }
+
+  occurrences = Hash.new { |hash, key| hash[key] = [] }
+  Dir.glob(File.join(PROJECT_ROOT, "app/components/**/*.html.erb")).each do |file|
+    class_strings_in_content(File.read(file, encoding: "utf-8")).each do |string|
+      occurrences[string] << file.sub("#{PROJECT_ROOT}/app/components/", "")
+    end
+  rescue Encoding::InvalidByteSequenceError, Encoding::UndefinedConversionError
+    next
+  end
+
+  duplicated = occurrences.select { |_, files| files.size > 1 }.sort_by { |_, files| -files.size }
+  puts
+  puts "=== Duplicated component class strings (ceiling — target 0) ==="
+  puts "  total: #{duplicated.size} strings appearing in more than one place"
+  duplicated.each do |string, files|
+    puts format("  %2dx  %s", files.size, string)
+    files.tally.each { |file, n| puts "         #{file}#{n > 1 ? " (x#{n})" : ""}" }
+  end
+end
+
 def collect_css_metrics
-  view_files = Dir.glob(File.join(PROJECT_ROOT, "app/views/**/*.html.erb"))
+  component_erb = Dir.glob(File.join(PROJECT_ROOT, "app/components/**/*.html.erb"))
 
-  # Co-located component stylesheets count toward the component side. Without
-  # them the ratio punishes exactly the pattern the style guide prescribes for
-  # a component with real CSS (sidebar_component.css, secret_field_component.css,
-  # markdown_editor_component.css, ...): moving rules out of an ERB's class
-  # attributes into a stylesheet used to read as a regression.
-  component_files = Dir.glob(File.join(PROJECT_ROOT, "app/components/**/*.html.erb")) +
-    Dir.glob(File.join(PROJECT_ROOT, "app/components/**/*.css"))
-
-  view_css      = count_css_statements_in_files(view_files)
-  component_css = count_css_statements_in_files(component_files)
-  total = view_css + component_css
-  pct   = total > 0 ? (component_css.to_f / total * 100).round(2) : 0.0
+  occurrences = Hash.new(0)
+  component_erb.each do |file|
+    class_strings_in_content(File.read(file, encoding: "utf-8")).each { |s| occurrences[s] += 1 }
+  rescue Encoding::InvalidByteSequenceError, Encoding::UndefinedConversionError
+    next
+  end
 
   {
-    "view_css_statements"       => view_css,
-    "component_css_statements"  => component_css,
-    "css_in_components_pct"     => pct
+    "view_css_statements"               => count_css_statements_in_files(screen_view_files),
+    "duplicated_component_class_strings" => occurrences.count { |_, n| n > 1 }
   }
 end
 
@@ -338,9 +423,11 @@ def display_metrics(metrics)
   puts "  Branch coverage:      #{fmt(metrics['branch_coverage'])}" if metrics["branch_coverage"]
   puts "  Sorbet typed files:   #{fmt(metrics['sorbet_typed_pct'])}" if metrics["sorbet_typed_pct"]
   puts "  Mutation coverage:    #{fmt(metrics['mutation_coverage'])}" if metrics["mutation_coverage"]
-  if metrics["css_in_components_pct"]
-    puts "  CSS in components:    #{fmt(metrics['css_in_components_pct'])}" \
-         " (#{metrics['component_css_statements']} component / #{metrics['view_css_statements']} view statements)"
+  if metrics["view_css_statements"]
+    puts "  Inline CSS in views:  #{metrics['view_css_statements']} statements (ceiling — target 0)"
+  end
+  if metrics["duplicated_component_class_strings"]
+    puts "  Duplicated class strings: #{metrics['duplicated_component_class_strings']} (ceiling — target 0)"
   end
   if metrics["presenter_method_violations"]
     total = metrics["_presenter_method_total"] || "?"
@@ -540,7 +627,7 @@ def check_sorbet_tc
     error_count = output[/Errors:\s*(\d+)/, 1] || "unknown"
     puts "  [FAIL] srb tc found #{error_count} error(s)"
     output.each_line { |line| puts "    #{line}" unless line.strip.empty? }
-    ["srb tc failed with #{error_count} error(s)"]
+    [ "srb tc failed with #{error_count} error(s)" ]
   end
 end
 
@@ -558,7 +645,7 @@ def check_baseline_integrity
     current_baseline = JSON.parse(File.read(BASELINE_PATH))
   rescue JSON::ParserError => e
     warn "Could not parse baseline for integrity check: #{e.message}"
-    return ["baseline integrity: could not parse baseline JSON"]
+    return [ "baseline integrity: could not parse baseline JSON" ]
   end
 
   failures = []
@@ -609,10 +696,7 @@ def check_against_baseline(metrics, baseline)
       direction = delta.zero? ? "" : delta.positive? ? " (+#{delta})" : " (#{delta})"
       puts "  [#{status}] #{key}: #{current_int}#{direction} (ceiling: #{previous_int})"
 
-      if failed
-        failures << "#{key}: #{current_int} violations exceeds ceiling of #{previous_int}; " \
-                    "new model methods only called from views/mailers must be moved to a presenter"
-      end
+      failures << "#{key}: #{current_int} exceeds ceiling of #{previous_int}; #{ceiling_remedy(key)}" if failed
     elsif FLOOR_METRICS.include?(key)
       # Floor metrics use the baseline value as a minimum.  The current value
       # must meet or exceed it; improvement is always welcome.
@@ -716,6 +800,8 @@ when "--record-mutant"
     exit 1
   end
   record_mutant(file)
+when "--css-detail"
+  report_css_detail
 else
   metrics = collect_metrics
   display_metrics(metrics)
@@ -723,4 +809,5 @@ else
   puts "  bin/quality-metrics --save               # save current metrics as baseline"
   puts "  bin/quality-metrics --check              # check against baseline (fails on >#{THRESHOLD}% regression)"
   puts "  bin/quality-metrics --record-mutant FILE # record mutant output for metrics"
+  puts "  bin/quality-metrics --css-detail         # show where the two CSS ceilings' counts live"
 end

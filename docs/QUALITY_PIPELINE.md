@@ -41,8 +41,33 @@ Enforced by `bin/quality-metrics --check` against `quality_baseline.json`:
 | Each changed `app/` or `lib/` file — line coverage | ≥ 80% |
 | Each changed `app/` or `lib/` file — branch coverage | ≥ 70% |
 | Each changed file — Sorbet sigil | `true`, `strict`, or `strong` |
-| View CSS statements (`app/views/*.erb`) | must not increase (push markup into components) |
+| View CSS statements (`app/views/*.erb`, per changed file) | must not increase (push markup into components) |
+| `view_css_statements` — inline CSS left in screen views, total | ceiling; must not increase. **Target 0** |
+| `duplicated_component_class_strings` — class strings spelled out in >1 component | ceiling; must not increase. **Target 0** |
 | ERB logic (ternary / `\|\|` / local-assign, views + component templates) | must not increase (extract to presenter/component method) |
+
+**The two CSS metrics are ceilings with a real win condition, not ratios to optimise.**
+
+- `view_css_statements` counts styling still sitting in `app/views`. Every one of
+  those statements is markup that belongs in a ViewComponent, so this is a countdown
+  on a finite worklist — when it reaches 0 the migration is done and *the metric should
+  be deleted*, not maintained. Mailer templates are excluded: inline `style="…"` is the
+  correct technique for HTML email (clients strip `<style>` blocks), so those can never
+  legitimately reach zero.
+- `duplicated_component_class_strings` counts whole class strings (≥3 tokens, order-normalised)
+  appearing in more than one component — the same styling decision respelled rather than
+  shared. This is what finds an unextracted component: three components spelling out
+  `fixed inset-0 flex items-center justify-center p-4 z-[1000]` is a `Ui::ModalComponent`
+  nobody has written yet. Individual utility tokens are deliberately not the unit — a
+  component legitimately uses `max-w-md` once, and `flex` recurring everywhere is not a defect.
+
+`bin/quality-metrics --css-detail` prints where both counts live, file by file.
+
+*Historical note:* these replaced `css_in_components_pct`, a floor on the ratio of component
+CSS to total CSS. That metric punished the thing it existed to encourage — deleting seven
+duplicated error blocks in favour of one component shrank the numerator and read as a
+regression, failing the gate for deduplicating. A ratio also can't express a finish line.
+Two plain counts, both heading to zero, can.
 
 **Two static checks are their own CI jobs** (not part of `quality_gate`), so a failure is identifiable directly from the status list:
 - **`design_tokens`** (`bin/check-design-tokens`) — no raw hex in ERB class utilities (`bg-[#…]`); use a `@theme` token. Fails itself on any violation.
