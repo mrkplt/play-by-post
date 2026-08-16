@@ -1,26 +1,10 @@
 <div class="flex flex-col gap-3">
   <div class="flex items-center justify-between">
-    <p class="text-sm text-muted-2 m-0">New page, note, and character records start from these templates.</p>
+    <p class="text-sm text-muted-2 m-0"><%= INTRO %></p>
     <% if can_add? %>
       <%= link_to "New Template", new_game_content_template_path(game), class: "text-xs font-semibold text-accent no-underline" %>
     <% end %>
   </div>
 
-  <% if any_templates? %>
-    <div class="bg-card border border-card-border rounded-card divide-y divide-card-divider">
-      <% templates.each do |template| %>
-        <div class="flex items-center justify-between px-4 py-3">
-          <span class="text-sm font-semibold text-ink"><%= template.content_type_label %></span>
-          <div class="flex items-center gap-3">
-            <%= link_to "Edit", template.edit_path, class: "text-xs font-semibold text-accent no-underline" %>
-            <%= button_to "Delete", template.delete_path, method: :delete,
-                  form: { data: { turbo_confirm: "Delete this template?" } },
-                  class: "text-xs font-semibold text-danger bg-transparent border-0 cursor-pointer p-0" %>
-          </div>
-        </div>
-      <% end %>
-    </div>
-  <% else %>
-    <p class="text-muted-2 text-sm m-0">No templates yet.</p>
-  <% end %>
+  <%= render Shared::ListEntryComponent.new(rows: rows, empty_text: EMPTY) %>
 </div>

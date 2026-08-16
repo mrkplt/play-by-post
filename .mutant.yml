@@ -117,13 +117,18 @@ matcher:
     - Shared::NavShellComponent
     - Shared::PostComposerComponent
     - Shared::DraftRecoveryComponent
+    - Shared::TitledCardComponent
+    - Shared::SaveAsDraftToggleComponent
     - Shared::ChildSceneListComponent
     - Shared::ControlRowComponent
     - Shared::PostItemComponent
     - Shared::CharacterFormComponent
     - Shared::MarkdownToolbarComponent
     - Shared::CharacterVersionHistoryComponent
+    - Shared::VersionHistoryComponent
+    - Shared::VersionHistoryComponent::Row
     - Shared::PageVersionHistoryComponent
+    - Shared::PageVersionDetailComponent
     - Shared::PostEditFormComponent
     - Shared::SceneCardComponent
     - Shared::SceneResolutionComponent
@@ -157,6 +162,7 @@ matcher:
     - Shared::NotebookLaneSelectComponent
     - Shared::NotebookLaneUpdatesComponent
     - Shared::PageRowActionsComponent
+    - Shared::TemplateRowActionsComponent
     - Shared::GameLinksListComponent
     - Shared::LinkFormComponent
     - Shared::TemplateFormComponent

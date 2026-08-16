@@ -5,6 +5,7 @@
 @import "../../components/ui/markdown_editor_component.css";
 @import "../../components/ui/secret_field_component.css";
 @import "../../components/ui/toast_component.css";
+@import "../../components/shared/titled_card_component.css";
 
 @theme {
   /* Ink & canvas */

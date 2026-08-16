@@ -33,8 +33,17 @@ class Shared::CharacterVersionHistoryComponent < ApplicationComponent
   sig { returns(T::Array[CharacterVersionPresenter]) }
   attr_reader :versions
 
-  sig { returns(Integer) }
-  def version_count
-    versions.size
+  # The rows for the shared Shared::VersionHistoryComponent — each version's own
+  # URL plus the table values.
+  sig { returns(T::Array[Shared::VersionHistoryComponent::Row]) }
+  def rows
+    versions.map do |version|
+      Shared::VersionHistoryComponent::Row.new(
+        path: helpers.game_character_character_version_path(game, character, version),
+        timestamp: version.created_at_timestamp,
+        formatted: version.formatted_created_at,
+        editor: version.editor_name
+      )
+    end
   end
 end

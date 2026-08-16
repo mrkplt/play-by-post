@@ -1,0 +1,9 @@
+<label class="flex items-center gap-2 text-[13px] font-semibold text-row-ink cursor-pointer">
+  <% if field_mode? %>
+    <input type="hidden" name="<%= field_name %>" value="0">
+    <input type="checkbox" name="<%= field_name %>" value="1" class="<%= CHECKBOX_CLASS %>" <%= "checked" if checked? %>>
+  <% else %>
+    <input type="checkbox" class="<%= CHECKBOX_CLASS %>" data-draft-target="saveAsDraftToggle" data-action="change->draft#toggleSaveAsDraft" <%= "checked" if checked? %>>
+  <% end %>
+  <%= LABEL %>
+</label>

@@ -1,11 +1,15 @@
 # typed: strict
 
-# The Content Templates management screen body: the game's per-type templates
-# (one row each, with Edit and Delete) and a New Template action when types are
-# still available. GM-only — the controller gates access; this component only
-# lays the management surface out.
+# The Content Templates management screen body: a New Template action (shown
+# only while some content type is still untemplated) and the game's templates as
+# a Shared::ListEntryComponent card — each row's title is the content type, its
+# href edits the template, and its controls are Edit/Delete. GM-only; the
+# controller gates access.
 class Shared::ContentTemplatesListComponent < ApplicationComponent
   extend T::Sig
+
+  INTRO = "New page, note, and character records start from these templates."
+  EMPTY = "No templates yet."
 
   sig do
     params(
@@ -21,17 +25,18 @@ class Shared::ContentTemplatesListComponent < ApplicationComponent
   sig { returns(GamePresenter) }
   attr_reader :game
 
-  sig { returns(T::Array[ContentTemplatePresenter]) }
-  attr_reader :templates
-
-  sig { returns(T::Boolean) }
-  def any_templates?
-    templates.any?
-  end
-
   # New templates can be added only while some content type has no template yet.
   sig { returns(T::Boolean) }
   def can_add?
-    templates.size < ContentTemplate::CONTENT_TYPES.size
+    @templates.size < ContentTemplate::CONTENT_TYPES.size
+  end
+
+  # The templates as Shared::ListEntryComponent rows — the type label linking to
+  # its edit screen, with Edit/Delete controls.
+  sig { returns(T::Array[Shared::ListEntryComponent::Row]) }
+  def rows
+    @templates.map do |template|
+      template.list_row_attributes.merge(controls: Shared::TemplateRowActionsComponent.new(template: template))
+    end
   end
 end

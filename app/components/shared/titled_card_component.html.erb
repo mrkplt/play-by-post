@@ -1,0 +1,8 @@
+<div class="bg-card border border-card-border rounded-card p-4">
+  <h1 class="text-lg font-bold text-ink m-0 mb-3"><%= title %></h1>
+  <% if body? %>
+    <%= render Ui::MarkdownRenderComponent.new(text: body) %>
+  <% else %>
+    <p class="titled-card-empty"><%= empty_notice %></p>
+  <% end %>
+</div>

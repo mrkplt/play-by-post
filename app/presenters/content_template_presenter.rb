@@ -50,6 +50,14 @@ class ContentTemplatePresenter < BasePresenter
     ContentTemplate::CONTENT_TYPES - taken
   end
 
+  # This template's own title/href pair for a Shared::ListEntryComponent row —
+  # the values the templates list needs about the template, packaged here so the
+  # list does not reach into the presenter for each.
+  sig { returns({ title: String, href: String }) }
+  def list_row_attributes
+    { title: content_type_label, href: edit_path }
+  end
+
   sig { returns(String) }
   def edit_path
     @options.fetch(:urls).edit_game_content_template_path(@options.fetch(:game), @model)

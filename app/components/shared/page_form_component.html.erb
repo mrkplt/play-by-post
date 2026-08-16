@@ -17,13 +17,10 @@
             data: autosave? ? { draft_target: "content", action: "input->draft#scheduleSave" } : {})) %>
   </div>
 
-  <label class="flex items-center gap-2 text-[13px] font-semibold text-row-ink cursor-pointer">
-    <% if autosave? %>
-      <input type="checkbox" class="w-[18px] h-[18px] accent-accent" data-draft-target="saveAsDraftToggle" data-action="change->draft#toggleSaveAsDraft" <%= "checked" if draft? %>>
-    <% else %>
-      <%= f.check_box :draft, class: "w-[18px] h-[18px] accent-accent" %>
-    <% end %>
-    Save as draft (only you can see it until you publish)
-  </label>
+  <% if autosave? %>
+    <%= render Shared::SaveAsDraftToggleComponent.new(checked: draft?) %>
+  <% else %>
+    <%= render Shared::SaveAsDraftToggleComponent.new(checked: draft?, param: "page") %>
+  <% end %>
 
 <% end %>

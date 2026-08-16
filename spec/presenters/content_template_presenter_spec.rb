@@ -77,6 +77,13 @@ RSpec.describe ContentTemplatePresenter do
     end
   end
 
+  describe "#list_row_attributes" do
+    it "pairs the content-type label with the edit href for a list row" do
+      allow(urls).to receive(:edit_game_content_template_path).with(game, template).and_return("/edit")
+      expect(presenter.list_row_attributes).to eq(title: "Page", href: "/edit")
+    end
+  end
+
   describe "#delete_path" do
     it "resolves the resource route" do
       allow(urls).to receive(:game_content_template_path).with(game, template).and_return("/template")

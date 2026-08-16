@@ -74,6 +74,16 @@ RSpec.describe ContentTemplatesController, type: :request do
       expect(template.reload.body).to eq("new")
       expect(response).to redirect_to(game_content_templates_path(game))
     end
+
+    it "re-renders on a validation failure" do
+      sign_in(gm)
+
+      patch game_content_template_path(game, template),
+            params: { content_template: { content_type: "page", body: "" } }
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(template.reload.body).to eq("old")
+    end
   end
 
   describe "DELETE destroy" do

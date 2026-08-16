@@ -19,13 +19,6 @@ RSpec.describe Shared::CharacterVersionHistoryComponent, type: :component do
     )
   end
 
-  describe "#version_count" do
-    it "counts the supplied versions" do
-      expect(build_component.version_count).to eq(1)
-      expect(build_component(versions: []).version_count).to eq(0)
-    end
-  end
-
   describe "rendering" do
     it "renders a disclosure titled with the version count and a row per version" do
       render_inline(build_component)
@@ -33,6 +26,11 @@ RSpec.describe Shared::CharacterVersionHistoryComponent, type: :component do
       expect(page).to have_css("summary", text: "Version History (1)")
       expect(page).to have_css("a[href='#{version_path}']", visible: :all)
       expect(page).to have_css("td", text: "Gandalf the Grey", visible: :all)
+    end
+
+    it "renders an empty history" do
+      render_inline(build_component(versions: []))
+      expect(page).to have_css("summary", text: "Version History (0)")
     end
   end
 end

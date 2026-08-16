@@ -18,9 +18,6 @@
   </div>
 
   <% if autosave? %>
-    <label class="flex items-center gap-2 text-[13px] font-semibold text-row-ink cursor-pointer">
-      <input type="checkbox" class="w-[18px] h-[18px] accent-accent" data-draft-target="saveAsDraftToggle" data-action="change->draft#toggleSaveAsDraft" <%= "checked" if draft? %>>
-      Save as draft (only you can see it until you publish)
-    </label>
+    <%= render Shared::SaveAsDraftToggleComponent.new(checked: draft?) %>
   <% end %>
 <% end %>
