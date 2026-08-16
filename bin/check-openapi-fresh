@@ -1,0 +1,57 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# OpenAPI freshness gate (self-contained; owns its own pass/fail).
+#
+# openapi/v1/openapi.yaml is generated from the /api rswag request specs
+# (rake rswag:specs:swaggerize) and is the single source of truth: it documents
+# the API (Swagger UI) AND is what Api::SchemaValidation validates live requests
+# against. So the committed document must always match what the specs produce — a
+# drift means the docs, the live validation, and the actual endpoints disagree.
+#
+# This gate regenerates the document and fails if it differs from the committed
+# copy. Fix a failure by running the swaggerize task and committing the result:
+#   RAILS_ENV=test bundle exec rake rswag:specs:swaggerize
+#
+# Exits 0 when the committed document is current, 1 when it is stale or missing.
+
+require "open3"
+
+PROJECT_ROOT = File.expand_path("..", __dir__)
+DOC = File.join(PROJECT_ROOT, "openapi", "v1", "openapi.yaml")
+RELATIVE = "openapi/v1/openapi.yaml"
+
+unless File.exist?(DOC)
+  warn "OpenAPI freshness check: FAIL"
+  warn "  #{RELATIVE} is missing. Generate it with:"
+  warn "    RAILS_ENV=test bundle exec rake rswag:specs:swaggerize"
+  exit 1
+end
+
+before = File.read(DOC)
+
+# Regenerate; swaggerize rewrites the document in place.
+_out, status = Open3.capture2e(
+  { "RAILS_ENV" => "test" },
+  "bundle", "exec", "rake", "rswag:specs:swaggerize",
+  chdir: PROJECT_ROOT
+)
+
+unless status.success?
+  warn "OpenAPI freshness check: FAIL (swaggerize errored)"
+  warn _out.lines.last(20).join
+  exit 1
+end
+
+after = File.read(DOC)
+
+if before == after
+  puts "OpenAPI freshness check: OK (#{RELATIVE} matches the /api request specs)"
+  exit 0
+end
+
+warn "OpenAPI freshness check: FAIL"
+warn "  #{RELATIVE} is stale — regenerating it produced a different document."
+warn "  The generated OpenAPI doc has drifted from the /api request specs."
+warn "  Commit the regenerated #{RELATIVE} (already rewritten in your working tree)."
+exit 1

@@ -31,11 +31,12 @@ gem "stimulus-rails"
 gem "jbuilder"
 
 # OpenAPI: the /api surface's schema is generated from rswag request specs and
-# served as Swagger UI; committee validates incoming /api requests live against
-# that generated document (single source of truth for docs + runtime validation).
+# served as Swagger UI. Api::SchemaValidation (a Rack middleware in lib/) validates
+# incoming /api request bodies against that same document via json-schema, so the
+# one document is the single source of truth for docs and live request validation.
 gem "rswag-api"
 gem "rswag-ui"
-gem "committee"
+gem "json-schema"
 
 # Use Active Model has_secure_password [https://guides.rubyonrails.org/active_model_basics.html#securepassword]
 # gem "bcrypt", "~> 3.1.7"

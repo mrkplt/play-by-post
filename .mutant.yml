@@ -247,6 +247,7 @@ matcher:
     - SceneSummaryService
     - SceneSummaryService::Result
     - FizzySweepService
+    - Api::SchemaValidation
     # Controllers
     - ActionMailbox::Ingresses::Resend::InboundEmailsController
     - Webhooks::DeployController

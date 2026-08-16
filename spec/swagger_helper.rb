@@ -6,7 +6,7 @@ require "rails_helper"
 # request specs under spec/requests/api by `rake rswag:specs:swaggerize`, written
 # to openapi/v1/openapi.yaml. That one document is the single source of truth: it
 # is served as Swagger UI at /api-docs, read by API clients, and validated against
-# live requests by the committee middleware (config/initializers/committee.rb).
+# live requests by Api::SchemaValidation (config/initializers/api_schema_validation.rb).
 RSpec.configure do |config|
   config.openapi_root = Rails.root.join("openapi").to_s
 
