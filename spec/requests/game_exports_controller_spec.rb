@@ -17,6 +17,11 @@ RSpec.describe GameExportsController, type: :request do
     create(:game_member, game: game, user: player)
   end
 
+  it_behaves_like "a slug-addressed game action" do
+    let(:signed_in_user) { gm }
+    def perform_request(game_id) = post game_export_path(game_id)
+  end
+
   describe "POST /games/:game_id/export" do
     context "as active player" do
       before { sign_in(player) }

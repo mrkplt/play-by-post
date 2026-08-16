@@ -15,6 +15,11 @@ RSpec.describe PostsController, type: :request do
     create(:scene_participant, scene: scene, user: player)
   end
 
+  it_behaves_like "a slug-addressed game action" do
+    let(:signed_in_user) { gm }
+    def perform_request(game_id) = post game_scene_posts_path(game_id, "x")
+  end
+
   describe "POST /games/:game_id/scenes/:scene_id/posts (create)" do
     context "when participant has no existing draft" do
       it "creates a published post and redirects" do

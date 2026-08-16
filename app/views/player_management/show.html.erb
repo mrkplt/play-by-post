@@ -23,10 +23,10 @@
                 sub: member.character_name,
                 position: i == @roster.length - 1 ? :last : :middle) do %>
             <% if member.active? %>
-              <%= render Ui::ButtonComponent.new(style: Ui::ButtonComponent::Style.new(variant: :text), link: Ui::ButtonComponent::Link.new(url: game_player_management_game_member_path(@game_presenter.id, member, status: "removed"), method: :patch, confirm: "Remove this player? They keep read-only access."), html_options: { class: "text-row-ink" }) do %>Remove<% end %>
-              <%= render Ui::ButtonComponent.new(style: Ui::ButtonComponent::Style.new(variant: :text), link: Ui::ButtonComponent::Link.new(url: game_player_management_game_member_path(@game_presenter.id, member, status: "banned"), method: :patch, confirm: "Ban this player? This permanently revokes all access and cannot be undone easily."), html_options: { class: "text-danger" }) do %>Ban<% end %>
+              <%= render Ui::ButtonComponent.new(style: Ui::ButtonComponent::Style.new(variant: :text), link: Ui::ButtonComponent::Link.new(url: game_player_management_game_member_path(@game_presenter, member, status: "removed"), method: :patch, confirm: "Remove this player? They keep read-only access."), html_options: { class: "text-row-ink" }) do %>Remove<% end %>
+              <%= render Ui::ButtonComponent.new(style: Ui::ButtonComponent::Style.new(variant: :text), link: Ui::ButtonComponent::Link.new(url: game_player_management_game_member_path(@game_presenter, member, status: "banned"), method: :patch, confirm: "Ban this player? This permanently revokes all access and cannot be undone easily."), html_options: { class: "text-danger" }) do %>Ban<% end %>
             <% elsif member.removed? %>
-              <%= render Ui::ButtonComponent.new(style: Ui::ButtonComponent::Style.new(variant: :text), link: Ui::ButtonComponent::Link.new(url: game_player_management_game_member_path(@game_presenter.id, member, status: "active"), method: :patch)) do %>Reinstate<% end %>
+              <%= render Ui::ButtonComponent.new(style: Ui::ButtonComponent::Style.new(variant: :text), link: Ui::ButtonComponent::Link.new(url: game_player_management_game_member_path(@game_presenter, member, status: "active"), method: :patch)) do %>Reinstate<% end %>
             <% end %>
           <% end %>
         <% end %>
@@ -37,7 +37,7 @@
     <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do %>Game Preferences<% end %>
     <div class="bg-card border border-card-border rounded-card px-3.5">
       <%= render Ui::SettingsRowComponent.new(label: "AI Scene Summaries", sub: "Auto-summarize when scenes resolve", position: :last) do %>
-        <%= button_to toggle_ai_summaries_enabled_game_path(@game_presenter.id), method: :patch, class: "bg-transparent border-0 p-0 cursor-pointer",
+        <%= button_to toggle_ai_summaries_enabled_game_path(@game_presenter), method: :patch, class: "bg-transparent border-0 p-0 cursor-pointer",
               "aria-label": @game_presenter.ai_summaries_toggle_aria_label do %>
           <%= render Ui::ToggleSwitchComponent.new(state: @game_presenter.ai_summaries_enabled? ? :on : :off) %>
         <% end %>
@@ -49,7 +49,7 @@
   <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do %>Export<% end %>
   <%= render Ui::CardComponent.new do %>
     <%= render Ui::SettingsRowComponent.new(label: "This game", sub: @game_presenter.export_notice, position: :last) do %>
-      <%= render Ui::ButtonComponent.new(style: Ui::ButtonComponent::Style.new(variant: :text), link: Ui::ButtonComponent::Link.new(url: game_export_path(@game_presenter.id), method: :post)) do %>Export Game<% end %>
+      <%= render Ui::ButtonComponent.new(style: Ui::ButtonComponent::Style.new(variant: :text), link: Ui::ButtonComponent::Link.new(url: game_export_path(@game_presenter), method: :post)) do %>Export Game<% end %>
     <% end %>
   <% end %>
 

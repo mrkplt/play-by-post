@@ -4,36 +4,34 @@
 # The game/scene/summary lookup SceneSummariesController's every action
 # shares: a plain module included directly (not an ActiveSupport::Concern,
 # and not under app/**/concerns/ — this project's convention is explicit that
-# we do not use Rails "concerns").
+# we do not use Rails "concerns"). `requires_ancestor ApplicationController`
+# lets Sorbet resolve the controller methods (params, and RequestMemo#memo)
+# without a per-method T.bind.
 #
-# Looked up on demand rather than cached in a before_action ivar:
-# bin/check-view-layering's controller_ivars scan reads every ivar a
-# controller (or a module a controller includes) writes, regardless of
-# visibility or whether a view ever reads it — so memoizing into
-# `@game`/`@scene`/`@summary` here would report the same raw-model violation
-# the before_action shape did. None is mutated before use, so a fresh lookup
-# per call is behaviorally identical to a memoized one, just an extra query.
+# Looked up on demand and memoized through RequestMemo rather than a
+# `@game`/`@scene`/`@summary` ivar, which Rails would copy into the view and
+# the controller_ivars scan would reject.
 module SceneSummaryScoped
   extend T::Sig
+  extend T::Helpers
   include RequestMemo
+
+  requires_ancestor { ApplicationController }
 
   private
 
   sig { returns(Game) }
   def game
-    T.bind(self, T.all(ActionController::Base, SceneSummaryScoped))
-    memo(:game) { Game.find(params[:game_id]) }
+    memo(:game) { Game.find_by!(slug: params[:game_id]) }
   end
 
   sig { returns(Scene) }
   def scene
-    T.bind(self, T.all(ActionController::Base, SceneSummaryScoped))
     memo(:scene) { game.scenes.find(params[:scene_id]) }
   end
 
   sig { returns(T.nilable(SceneSummary)) }
   def summary
-    T.bind(self, T.all(ActionController::Base, SceneSummaryScoped))
     scene.scene_summary
   end
 end

@@ -26,7 +26,7 @@ RSpec.describe Shared::GameCardComponent, type: :component do
   end
 
   it "renders the game name linking to the game" do
-    expect(rendered).to have_css("a[href='#{"/games/#{game_model.id}"}']", text: "The Sunken Archive")
+    expect(rendered).to have_css("a[href='#{"/games/#{game_model.to_param}"}']", text: "The Sunken Archive")
   end
 
   it "shows the active scene count" do

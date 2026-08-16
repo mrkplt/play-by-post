@@ -32,6 +32,7 @@ class Game < ApplicationRecord
   has_many :game_export_requests, dependent: :destroy
 
   validates :name, presence: true, length: { maximum: 200 }
+  validates :slug, presence: true, uniqueness: true
 
   # Soft-deleted games are hidden everywhere by this default scope: every
   # controller lookup, through-association, and export enumeration is filtered
@@ -41,6 +42,29 @@ class Game < ApplicationRecord
   # window GamePurgeSweepJob enqueues GamePurgeJob to destroy the record and all
   # its artifacts.
   default_scope { where(deleted_at: nil) }
+
+  # Route helpers address a game by its slug, not its numeric id.
+  sig { returns(T.nilable(String)) }
+  def to_param
+    slug
+  end
+
+  # The slug is assigned in-band on the create path rather than in a
+  # before_validation callback: this project is migrating off ActiveRecord
+  # callbacks (card #24), so the behaviour is made visible at save. It must run
+  # before super so the presence/uniqueness validations see it, and only for a
+  # new record so a rename never rewrites an existing game's URL.
+  sig { params(options: T.untyped).returns(T.untyped) }
+  def save(**options)
+    assign_slug
+    super
+  end
+
+  sig { params(options: T.untyped).returns(T.untyped) }
+  def save!(**options)
+    assign_slug
+    super
+  end
 
   sig { returns(T.nilable(User)) }
   def game_master
@@ -89,5 +113,15 @@ class Game < ApplicationRecord
   sig { returns(T.nilable(ActiveSupport::Duration)) }
   def edit_window_duration
     post_edit_window_minutes&.minutes
+  end
+
+  private
+
+  sig { void }
+  def assign_slug
+    # A persisted game always has a slug (the column is NOT NULL and it is set
+    # here on the create path), so `slug.blank?` is true only for a new record —
+    # an update never regenerates, keeping the URL stable across a rename.
+    self.slug = GameSlug.build(name) if slug.blank?
   end
 end

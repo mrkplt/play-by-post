@@ -10,6 +10,11 @@ RSpec.describe GameFilesController, type: :request do
     create(:game_member, game: game, user: player)
   end
 
+  it_behaves_like "a slug-addressed game action" do
+    let(:signed_in_user) { gm }
+    def perform_request(game_id) = get game_game_files_path(game_id)
+  end
+
   describe "GET /games/:game_id/game_files" do
     it "GM can access the file index" do
       sign_in(gm)

@@ -11,6 +11,6 @@ RSpec.describe Shared::BreadcrumbsComponent, type: :component do
 
   it "links to the game's path" do
     render_inline(described_class.new(game_presenter: game_presenter))
-    expect(page).to have_css("a[href='/games/#{game.id}']")
+    expect(page).to have_css("a[href='/games/#{game.to_param}']")
   end
 end

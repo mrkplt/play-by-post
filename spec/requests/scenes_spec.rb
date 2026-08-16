@@ -10,6 +10,11 @@ RSpec.describe ScenesController, type: :request do
     create(:game_member, game: game, user: player)
   end
 
+  it_behaves_like "a slug-addressed game action" do
+    let(:signed_in_user) { gm }
+    def perform_request(game_id) = get game_scenes_path(game_id)
+  end
+
   describe "PATCH /games/:game_id/scenes/:id/toggle_notification_preference" do
     let(:scene) { create(:scene, game: game) }
 

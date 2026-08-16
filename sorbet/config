@@ -6,3 +6,10 @@
 # this, srb parses every class and RBI twice and reports thousands of
 # duplicate-definition errors that say nothing about the working tree.
 --ignore=.claude/worktrees/
+
+# Lets a controller mixin declare `requires_ancestor { ApplicationController }`
+# so Sorbet resolves the controller methods it calls (params, RequestMemo#memo)
+# without a per-method `T.bind(self, T.all(ActionController::Base, Mixin))`. The
+# scoped-lookup modules (SceneScoped, PostScoped, …) use it; TurnstileVerification
+# cannot (Devise's incomplete RBI breaks its ancestry) and keeps its T.bind.
+--enable-experimental-requires-ancestor

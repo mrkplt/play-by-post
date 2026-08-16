@@ -194,6 +194,7 @@ matcher:
     - GameDashboardQuery
     - GameSettingToggle
     - GamePurgeScope
+    - GameSlug
     - SceneShowBuilder
     - SceneTreeBuilder
     - SceneNotifier

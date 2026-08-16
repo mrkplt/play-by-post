@@ -4,7 +4,9 @@
 # The game/scene/post lookup PostsController's every action shares. A plain
 # module included directly (not an ActiveSupport::Concern, and not under
 # app/**/concerns/ — this project's convention is explicit that we do not use
-# Rails "concerns").
+# Rails "concerns"). `requires_ancestor ApplicationController` lets Sorbet
+# resolve the controller methods (params, and RequestMemo#memo) without a
+# per-method T.bind.
 #
 # Memoized through RequestMemo rather than a `@game`/`@scene`/`@post` ivar.
 # Rails copies controller ivars into the view, so those would be view-facing
@@ -16,25 +18,25 @@
 # `discard_draft`) have no `:id` param and build/find their own post.
 module PostScoped
   extend T::Sig
+  extend T::Helpers
   include RequestMemo
+
+  requires_ancestor { ApplicationController }
 
   private
 
   sig { returns(Game) }
   def game
-    T.bind(self, T.all(ActionController::Base, PostScoped))
-    memo(:game) { Game.find(params[:game_id]) }
+    memo(:game) { Game.find_by!(slug: params[:game_id]) }
   end
 
   sig { returns(Scene) }
   def scene
-    T.bind(self, T.all(ActionController::Base, PostScoped))
     memo(:scene) { game.scenes.find(params[:scene_id]) }
   end
 
   sig { returns(Post) }
   def post
-    T.bind(self, T.all(ActionController::Base, PostScoped))
     memo(:post) { scene.posts.find(params[:id]) }
   end
 end

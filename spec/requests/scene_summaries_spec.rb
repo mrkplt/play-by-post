@@ -14,6 +14,11 @@ RSpec.describe SceneSummariesController, type: :request do
 
   # ── index (HTML) ──────────────────────────────────────────────────────────
 
+  it_behaves_like "a slug-addressed game action" do
+    let(:signed_in_user) { gm }
+    def perform_request(game_id) = get game_scene_summaries_path(game_id)
+  end
+
   describe "GET /games/:game_id/scene_summaries" do
     it "returns 200 for a GM" do
       sign_in(gm)

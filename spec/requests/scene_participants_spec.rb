@@ -13,6 +13,11 @@ RSpec.describe SceneParticipantsController, type: :request do
     create(:scene_participant, scene: scene, user: player)
   end
 
+  it_behaves_like "a slug-addressed game action" do
+    let(:signed_in_user) { gm }
+    def perform_request(game_id) = get edit_game_scene_participants_path(game_id, "x")
+  end
+
   describe "GET /games/:game_id/scenes/:scene_id/participants/edit" do
     it "GM can access edit participants" do
       sign_in(gm)
