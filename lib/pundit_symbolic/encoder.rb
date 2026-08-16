@@ -56,11 +56,14 @@ module PunditSymbolic
       statements = body_statements(def_node)
       local_facts = {}
 
-      # All but the last statement may only be fact-binding assignments; the
-      # last statement is the returned boolean expression.
+      # All but the last statement are setup: either a fact-binding assignment
+      # (`membership = record.member_for(user)`) or a `return false unless COND`
+      # guard, which contributes `COND &&` to the result. The last statement is
+      # the returned boolean expression.
       *setup, result = statements
-      setup.each { |node| bind_local(node, local_facts) }
-      expression(result, local_facts)
+      guards = setup.filter_map { |node| setup_statement(node, local_facts) }
+      formula = expression(result, local_facts)
+      guards.reduce(formula) { |acc, guard| Formula.conj(guard, acc) }
     end
 
     # True if `def_node` is a pure navigation path helper (single-statement body
@@ -88,17 +91,53 @@ module PunditSymbolic
       body.is_a?(Prism::StatementsNode) ? body.body : [ body ]
     end
 
-    # Handle `membership = <path>.member_for(user)` — bind the local to the
-    # canonical membership path (e.g. "record.game.member_for"), so a later
-    # `membership&.active?` maps to "record.game.member_for.active?".
-    def bind_local(node, local_facts)
-      call = node.is_a?(Prism::LocalVariableWriteNode) ? node.value : nil
+    # A setup statement is either a membership binding (mutates local_facts,
+    # returns nil) or a `return false unless COND` guard (returns COND as a
+    # formula to AND onto the result). Anything else is unencodable.
+    def setup_statement(node, local_facts)
+      return bind_membership(node, local_facts) if node.is_a?(Prism::LocalVariableWriteNode)
+      return guard_condition(node, local_facts) if guard_clause?(node)
+
+      kind = node.class.name.split("::").last.sub(/Node$/, "")
+      raise unencodable("non-boolean body (returns via #{kind}) — not a boolean predicate")
+    end
+
+    # `membership = <path>.member_for(user)` — bind the local to the canonical
+    # membership path, so a later `membership&.active?` maps to
+    # "<path>.member_for.active?".
+    def bind_membership(node, local_facts)
+      call = node.value
       unless call.is_a?(Prism::CallNode) && call.name == :member_for
-        kind = node.class.name.split("::").last.sub(/Node$/, "")
-        raise unencodable("non-boolean body (returns via #{kind}) — not a boolean predicate")
+        raise unencodable("non-boolean body (returns via assignment) — not a boolean predicate")
       end
 
       local_facts[node.name] = "#{receiver_path(call.receiver)}member_for"
+      nil
+    end
+
+    # `return false unless COND` — a Prism UnlessNode whose body is a single
+    # `return false` and with no else. The method continues only when COND is
+    # true, so the encoded guard is COND (AND-ed onto the result).
+    def guard_clause?(node)
+      return false unless node.is_a?(Prism::UnlessNode) && node.else_clause.nil?
+
+      body = node.statements&.body
+      return false if body.nil? || body.length != 1
+
+      returns_false?(body.first)
+    end
+
+    def returns_false?(node)
+      return false unless node.is_a?(Prism::ReturnNode)
+
+      args = node.arguments&.arguments
+      return false if args.nil? || args.length != 1
+
+      args.first.is_a?(Prism::FalseNode)
+    end
+
+    def guard_condition(node, local_facts)
+      expression(node.predicate, local_facts)
     end
 
     # The core translation: a Prism expression node -> Formula.
@@ -125,12 +164,55 @@ module PunditSymbolic
       statements.body.first
     end
 
+    # Recognize `TargetPolicy.new(user, <expr>).pred?`. Returns a deferred marker
+    # var `xpolicy:TargetPolicy#pred?@<rebase>.` (rebase = <expr>'s path with a
+    # trailing dot), or nil if `node` isn't that shape. The registry resolves it.
+    def cross_policy_delegation(node)
+      receiver = node.receiver
+      return nil unless receiver.is_a?(Prism::CallNode) && receiver.name == :new
+
+      constant = receiver.receiver
+      return nil unless constant.is_a?(Prism::ConstantReadNode)
+
+      args = receiver.arguments&.arguments
+      return nil if args.nil? || args.length != 2 # (user, record_expr)
+
+      rebase = receiver_path(args[1]) # e.g. "record.character.game."
+      Formula.var("xpolicy:#{constant.name}##{node.name}@#{rebase}")
+    end
+
+    # `X == Y` -> leaf var "X==Y" ; `X != Y` -> ¬"X==Y". Operands are a navigation
+    # path (`record.user`) or a string literal (`"rss"`).
+    def comparison_leaf(node, local_facts)
+      argument = node.arguments&.arguments
+      raise unencodable("comparison with unexpected arity") if argument.nil? || argument.length != 1
+
+      leaf = "#{operand_name(node.receiver, local_facts)}==#{operand_name(argument.first, local_facts)}"
+      var = Formula.var(leaf)
+      node.name == :!= ? Formula.negate(var) : var
+    end
+
+    # Canonical name for one side of a comparison: a string literal keeps its
+    # quoted value; a navigation is its receiver path without the trailing dot.
+    def operand_name(node, _local_facts)
+      return node.unescaped.inspect if node.is_a?(Prism::StringNode)
+      return "user" if node.is_a?(Prism::CallNode) && node.name == :user && node.receiver.nil?
+
+      receiver_path(node).chomp(".")
+    end
+
     def call_expression(node, local_facts)
       # `!x` / `x.!` — unary negation.
       return Formula.negate(expression(node.receiver, local_facts)) if node.name == :! && node.receiver
 
       # T.must(x) is a Sorbet nil-unwrap: transparent to the value.
       return expression(t_must_argument(node), local_facts) if t_must?(node)
+
+      # A comparison `X == Y` / `X != Y` is boolean-valued but its truth is a
+      # free fact about the (user, record) pair (identity or a value match) — the
+      # tool cannot reason about *which* user/value, only whether they match. So
+      # it is a leaf, named canonically by both operands. `!=` is the negation.
+      return comparison_leaf(node, local_facts) if %i[== !=].include?(node.name)
 
       # A bare call to another predicate in this policy: inline it as a leaf var
       # named after that predicate, so delegation composes. (Faithfulness holds
@@ -139,6 +221,12 @@ module PunditSymbolic
       if node.receiver.nil? && @predicate_names.include?(node.name.to_s)
         return Formula.var("call:#{node.name}")
       end
+
+      # Cross-policy delegation `OtherPolicy.new(user, <expr>).pred?`: emit a
+      # deferred marker the registry resolves by inlining OtherPolicy#pred?'s
+      # formula with its `record.` leaves rebased onto <expr>'s path.
+      cross = cross_policy_delegation(node)
+      return cross if cross
 
       Formula.var(leaf_for(node, local_facts))
     end

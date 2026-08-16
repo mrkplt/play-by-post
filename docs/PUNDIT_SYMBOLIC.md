@@ -108,14 +108,25 @@ GM-role-trusts-without-status pattern recurs across the write-access surface —
 `PostPolicy#create?`, `ScenePolicy#join?` (all via the shared `write_member?`
 helper). One shared fix, six sites.
 
-### Known limitations (refused, not silently mis-encoded)
+### Encodable shapes
 
-- **Cross-policy delegation.** `CharacterVersionPolicy#show?` and
-  `ApiTokenPolicy#feed?` delegate to `GamePolicy.new(user, other_record).view?`.
-  The tool refuses these rather than model a second policy over a rebased record.
-- **Identity comparison.** `UserProfilePolicy#owner?` is `record.user == user`.
-  `==` relates two entities and isn't a free boolean of the (user, record) pair,
-  so it's out of theory and refused (and its delegators refuse in turn).
+Beyond boolean predicates and delegation, the encoder handles:
 
-These are the honest boundary: a refused *public* predicate is reported, never
-skipped, so the coverage gap is always visible.
+- **Comparisons** — `record.user == user`, `record.scope == "rss"`. A comparison
+  is boolean-valued but its truth is a free fact about the (user, record) pair
+  (the tool can't reason about *which* user/value), so it's a leaf named by both
+  operands; `!=` is its negation.
+- **Guard clauses** — `return false unless COND` contributes `COND &&` to the
+  result.
+- **Cross-policy delegation** — `OtherPolicy.new(user, record.x).pred?` is
+  resolved by `PolicyRegistry`: it inlines `OtherPolicy#pred?`'s formula with its
+  `record.` leaves rebased onto `record.x.` So `CharacterVersionPolicy#show?`
+  (which routes through `GamePolicy#view?`) becomes `record.character.game.viewable_by?`
+  and is checked as one formula. Requires loading via `PolicyRegistry.load_dir`
+  (the target policy must be present); `bin/verify-policies` and the proof do.
+
+### Remaining refusal (the one that should stay)
+
+`GamePolicy#export_scene_selection` returns a Symbol — a public non-boolean
+method, the genuine convention violation. It's reported, not skipped. A refused
+*public* predicate is always a finding to look at, never a silent gap.

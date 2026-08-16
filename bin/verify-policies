@@ -22,6 +22,7 @@ $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 
 require "sorbet-runtime"
 require "pundit_symbolic/verifier"
+require "pundit_symbolic/policy_registry"
 
 # Documented equivalences per policy: predicates the source says ask "the same
 # question". Extend as policies are added.
@@ -30,15 +31,22 @@ EQUIVALENCES = {
   "UserProfilePolicy" => [ %w[show? update?], %w[show? manage?] ]
 }.freeze
 
-paths = ARGV.empty? ? Dir[File.expand_path("../app/policies/*_policy.rb", __dir__)] : ARGV
-paths.reject! { |p| p.end_with?("application_policy.rb") }
+# Load the whole policy dir through the registry so cross-policy delegation
+# resolves. When given explicit ARGV paths, still load the full dir for context
+# (a target policy must be present to resolve a marker) but report only the
+# requested files.
+policies_dir = File.expand_path("../app/policies", __dir__)
+registry = PunditSymbolic::PolicyRegistry.load_dir(policies_dir)
+requested = ARGV.empty? ? nil : ARGV.map { |p| File.basename(p) }
 
 total_findings = 0
-paths.sort.each do |path|
-  source = PunditSymbolic::PolicySource.load(path)
+registry.sources.each do |source|
+  basename = "#{source.policy_name.gsub(/([a-z])([A-Z])/, '\1_\2').downcase}.rb"
+  next if requested && !requested.include?(basename)
+
   result = PunditSymbolic::Verifier.new(source, equivalences: EQUIVALENCES.fetch(source.policy_name, [])).verify
 
-  puts "\n=== #{result[:policy]} (#{File.basename(path)}) ==="
+  puts "\n=== #{result[:policy]} (#{basename}) ==="
   if result[:findings].any?
     total_findings += result[:findings].size
     result[:findings].each do |finding|
@@ -56,4 +64,4 @@ paths.sort.each do |path|
   end
 end
 
-puts "\n#{total_findings} finding(s) across #{paths.size} policy file(s)."
+puts "\n#{total_findings} finding(s) across #{registry.sources.size} policy file(s)."

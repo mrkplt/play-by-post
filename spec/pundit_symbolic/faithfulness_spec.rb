@@ -3,6 +3,7 @@
 
 require_relative "spec_helper"
 require "pundit_symbolic/policy_source"
+require "pundit_symbolic/policy_registry"
 require "pundit_symbolic/solver"
 
 # The proof that the tool is trustworthy.
@@ -79,15 +80,34 @@ RSpec.describe "PunditSymbolic encoder faithfulness", type: :model do
     end
 
     def blank? = !present?
+
+    # `record.user == user` / `record.scope == "rss"`: the encoder names this leaf
+    # by both operands. Reconstruct that name and consult the assignment, so the
+    # comparison is exercised as a free boolean rather than object identity.
+    def ==(other)
+      lhs = @path.chomp(".")
+      # is_a? is overridden to always be true, so identify a proxy by its
+      # instance var instead. A String operand (e.g. "rss") keeps its quoted form.
+      rhs = if other.instance_variables.include?(:@path)
+              other.instance_variable_get(:@path).chomp(".")
+      else
+              other.inspect
+      end
+      leaf = "#{lhs}==#{rhs}"
+      @reads << leaf
+      @assignment.fetch(leaf, false)
+    end
   end
 
-  ALL_POLICIES = Dir[File.expand_path("../../app/policies/*_policy.rb", __dir__)]
-    .reject { |p| p.end_with?("application_policy.rb") }
-    .sort
+  # Load through the registry so cross-policy delegations are resolved to leaf
+  # formulas — the proof then validates the FULLY resolved formula against the
+  # real method (which itself calls into the other policy).
+  POLICIES_DIR = File.expand_path("../../app/policies", __dir__)
+  REGISTRY = PunditSymbolic::PolicyRegistry.load_dir(POLICIES_DIR)
 
-  ALL_POLICIES.each do |path|
-    context File.basename(path) do
-      let(:source) { PunditSymbolic::PolicySource.load(path) }
+  REGISTRY.sources.each do |registry_source|
+    context registry_source.policy_name do
+      let(:source) { registry_source }
       let(:policy_class) { Object.const_get(source.policy_name) }
 
       it "accounts for every public method (encoded or explicitly refused)" do
