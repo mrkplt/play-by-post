@@ -90,16 +90,29 @@ class GamePurgeScope
     delete_game_membership_records
   end
 
+  # NotebookEntryVersion has a not-null FK to NotebookEntry, so its rows are
+  # deleted before their entries (mirroring CharacterVersion → Character).
   # NotebookEntry may reference a Page via promoted_page_id, so it is deleted
   # before Page. PageVersion has a not-null FK to Page, so its rows are deleted
-  # before their pages (mirroring CharacterVersion → Character above).
+  # before their pages.
   sig { void }
   def delete_game_content_records
     GameFile.where(game_id: game_id).in_batches.delete_all
-    NotebookEntry.where(game_id: game_id).in_batches.delete_all
+    delete_notebook_entries_and_versions
     delete_pages_and_versions
     GameLink.where(game_id: game_id).in_batches.delete_all
     ContentTemplate.where(game_id: game_id).in_batches.delete_all
+  end
+
+  # NotebookEntryVersion has a not-null FK to NotebookEntry, so its rows go
+  # before their entries (mirroring CharacterVersion → Character). Entry ids are
+  # plucked once into a local so both deletes target the same set without a
+  # duplicate query.
+  sig { void }
+  def delete_notebook_entries_and_versions
+    ids = NotebookEntry.where(game_id: game_id).pluck(:id)
+    NotebookEntryVersion.where(notebook_entry_id: ids).in_batches.delete_all
+    NotebookEntry.where(id: ids).in_batches.delete_all
   end
 
   # PageVersion has a not-null FK to Page, so its rows go before their pages

@@ -40,16 +40,18 @@ class NotebookEntriesController < ApplicationController
 
   sig { void }
   def edit
-    assign_entry_presenter(authorized_entry)
+    assign_edit_presenters(authorized_entry)
   end
 
   # Saving keeps the writer on the edit screen — an entry is long-form markdown
-  # and being re-rendered from scratch on every save loses their place.
+  # and being re-rendered from scratch on every save loses their place. The edit
+  # screen shows version history, so the re-render assigns the version presenters
+  # too (the just-written snapshot is included).
   sig { void }
   def update
     entry = authorized_entry
     outcome = SaveOutcome.for(entry.update(notebook_entry_params), "entry")
-    assign_entry_presenter(entry)
+    assign_edit_presenters(entry)
     InPlaceSave.new(self, outcome: outcome, forward_to: edit_game_notebook_entry_path(game, entry)).respond
   end
 
@@ -70,6 +72,22 @@ class NotebookEntriesController < ApplicationController
   sig { params(notebook_entry: NotebookEntry).void }
   def assign_entry_presenter(notebook_entry)
     @entry_presenter = T.let(NotebookEntryPresenter.new(notebook_entry), T.nilable(NotebookEntryPresenter))
+  end
+
+  # The edit screen shows the entry's version history alongside the form, so it
+  # assigns both the entry presenter and the version presenters.
+  sig { params(entry: NotebookEntry).void }
+  def assign_edit_presenters(entry)
+    assign_entry_presenter(entry)
+    @version_presenters = T.let(version_presenters(entry), T.nilable(T::Array[NotebookEntryVersionPresenter]))
+  end
+
+  # The entry's version history, newest first, wrapped for the history component.
+  sig { params(entry: NotebookEntry).returns(T::Array[NotebookEntryVersionPresenter]) }
+  def version_presenters(entry)
+    entry.notebook_entry_versions.order(created_at: :desc).map do |version|
+      NotebookEntryVersionPresenter.new(version)
+    end
   end
 
   sig { params(new_entry: NotebookEntry).void }

@@ -94,6 +94,7 @@ Rails.application.routes.draw do
           patch :move, to: "notebook_entries/lanes#move"
           post :promote, to: "notebook_entries/lanes#promote"
         end
+        resources :notebook_entry_versions, only: %i[show], path: "versions"
       end
       resources :characters, only: %i[new create show edit update] do
         member do

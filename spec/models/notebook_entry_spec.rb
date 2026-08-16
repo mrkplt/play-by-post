@@ -53,6 +53,64 @@ RSpec.describe NotebookEntry do
     end
   end
 
+  describe "versioning" do
+    it "has many notebook entry versions destroyed with the entry" do
+      association = described_class.reflect_on_association(:notebook_entry_versions)
+      expect(association.macro).to eq(:has_many)
+      expect(association.options[:dependent]).to eq(:destroy)
+    end
+
+    it "snapshots title, body, and editor on save", db: true do
+      editor = create(:user)
+      entry = create(:notebook_entry, title: "Lore", body: "the tale", editor: editor)
+
+      version = entry.notebook_entry_versions.last
+      expect(version.title).to eq("Lore")
+      expect(version.body).to eq("the tale")
+      expect(version.edited_by).to eq(editor)
+    end
+
+    it "attributes a version to the acting Current.user on update", db: true do
+      entry = create(:notebook_entry)
+      editor = create(:user)
+      Current.user = editor
+
+      expect { entry.update!(title: "Revised") }.to change { entry.notebook_entry_versions.count }.by(1)
+      expect(entry.notebook_entry_versions.last.edited_by).to eq(editor)
+    ensure
+      Current.user = nil
+    end
+
+    describe "#version_attributes" do
+      it "captures only title and body — not status or promotion" do
+        entry = build(:notebook_entry, title: "T", body: "B", status: "done", promoted_page_id: 7)
+        expect(entry.version_attributes.keys).to contain_exactly(:title, :body, :edited_by_id)
+      end
+
+      it "reads attribution from Current.user" do
+        user = build_stubbed(:user)
+        Current.user = user
+        entry = build(:notebook_entry)
+        expect(entry.version_attributes[:edited_by_id]).to eq(user.id)
+      ensure
+        Current.user = nil
+      end
+
+      it "falls back to nil attribution when there is no current user" do
+        Current.user = nil
+        entry = build(:notebook_entry)
+        expect(entry.version_attributes[:edited_by_id]).to be_nil
+      end
+    end
+
+    describe "#versions" do
+      it "is the notebook_entry_versions association" do
+        entry = build(:notebook_entry)
+        expect(entry.versions).to eq(entry.notebook_entry_versions)
+      end
+    end
+  end
+
   describe "slug generation" do
     it "assigns a 16-character alphanumeric slug on create" do
       entry = build(:notebook_entry, slug: nil)
@@ -69,8 +127,11 @@ RSpec.describe NotebookEntry do
     it "only generates on create, leaving an edited record's slug untouched", db: true do
       entry = create(:notebook_entry)
       original = entry.slug
+      Current.user = create(:user) # an entry save snapshots a version attributed to the editor
       entry.update!(title: "Renamed")
       expect(entry.reload.slug).to eq(original)
+    ensure
+      Current.user = nil
     end
 
     it "generates a fresh slug each call" do
