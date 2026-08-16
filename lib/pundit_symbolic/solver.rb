@@ -24,15 +24,15 @@ module PunditSymbolic
     # True iff at least one assignment satisfies the formula.
     def sat?(formula) = models_for(formula).any?
 
-    # The 2^n assignments over `vars` (sorted names -> bool).
+    # The 2^n assignments over `vars` (sorted names -> bool). Eager: n is single
+    # digits, and callers treat the result as an array.
     def assignments(vars)
-      Enumerator.new do |yielder|
-        (0...(1 << vars.length)).each do |bits|
-          assignment = {}
-          vars.each_with_index { |name, index| assignment[name] = bits.anybits?(1 << index) }
-          yielder << assignment
-        end
-      end
+      (0...(1 << vars.length)).map { |bits| assignment_for(vars, bits) }
+    end
+
+    # One assignment: bit `i` of `bits` gives the value of `vars[i]`.
+    def assignment_for(vars, bits)
+      vars.each_with_index.to_h { |name, index| [ name, bits.anybits?(1 << index) ] }
     end
   end
 end

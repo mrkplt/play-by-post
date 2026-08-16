@@ -48,5 +48,18 @@ module PunditSymbolic
     def negate(node) = Not.new(node)
     def conj(left, right) = And.new(left, right)
     def disj(left, right) = Or.new(left, right)
+
+    # Rebuild `node`, replacing each Var with the block's result (any Formula) and
+    # preserving the And/Or/Not/Const structure. The one tree-transform primitive
+    # every walker (delegation resolution, cross-policy rewrite, leaf rebasing)
+    # is built on, so none re-implements the recursion.
+    def map_vars(node, &block)
+      case node
+      when Var then block.call(node)
+      when Not then Not.new(map_vars(node.operand, &block))
+      when And, Or then node.class.new(map_vars(node.left, &block), map_vars(node.right, &block))
+      else node
+      end
+    end
   end
 end

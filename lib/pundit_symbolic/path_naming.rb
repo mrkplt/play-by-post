@@ -24,15 +24,18 @@ module PunditSymbolic
     # local bound to `<path>.member_for(user)` to that membership path, so a
     # `membership&.active?` read resolves to "<path>.member_for.active?".
     def leaf_for(node, local_facts)
-      unless node.name.to_s.end_with?("?")
-        @refuse.call("non-predicate in boolean position: `#{node.name}` (comparisons/operators are out of theory)")
-      end
+      name = node.name
+      @refuse.call("non-predicate in boolean position: `#{name}` (comparisons/operators are out of theory)") unless name.to_s.end_with?("?")
 
-      if node.safe_navigation? && (base = membership_base(node.receiver, local_facts))
-        return "#{base}.#{node.name}"
-      end
+      "#{prefix_for(node, local_facts)}#{name}"
+    end
 
-      "#{receiver_path(node.receiver)}#{node.name}"
+    # The leaf's path prefix: a `membership&.x?` read on a bound membership local
+    # resolves to that membership path; otherwise it's the receiver's path.
+    def prefix_for(node, local_facts)
+      receiver = node.receiver
+      base = node.safe_navigation? && membership_base(receiver, local_facts)
+      base ? "#{base}." : receiver_path(receiver)
     end
 
     # One side of a comparison: a string literal keeps its quoted value, bare
@@ -40,7 +43,7 @@ module PunditSymbolic
     # dot).
     def operand_name(node)
       return node.unescaped.inspect if node.is_a?(Prism::StringNode)
-      return "user" if node.is_a?(Prism::CallNode) && node.name == :user && node.receiver.nil?
+      return "user" if bare_user?(node)
 
       receiver_path(node).chomp(".")
     end
@@ -50,32 +53,34 @@ module PunditSymbolic
     def receiver_path(receiver)
       return "" if receiver.nil?
       return receiver_path(t_must_argument(receiver)) if t_must?(receiver)
+      @refuse.call("unrecognized receiver #{unparse(receiver)}") unless receiver.is_a?(Prism::CallNode) && no_args?(receiver)
 
-      unless receiver.is_a?(Prism::CallNode) && no_args?(receiver)
-        @refuse.call("unrecognized receiver #{unparse(receiver)}")
-      end
+      call_path(receiver)
+    end
 
-      if receiver.receiver.nil? && (helper = @path_helpers[receiver.name])
-        return helper_path(receiver.name, helper)
-      end
-
-      "#{receiver_path(receiver.receiver)}#{receiver.name}."
+    # The path for a no-arg call node: a path helper inlines its own path, else
+    # the receiver's path plus this call's name and a trailing dot.
+    def call_path(call)
+      name = call.name
+      inner = call.receiver
+      helper = @path_helpers[name] if inner.nil?
+      helper ? helper_path(name, helper) : "#{receiver_path(inner)}#{name}."
     end
 
     # True if `def_node` is a pure navigation path helper (single-statement body
     # that is a chain of no-arg reads, possibly T.must-wrapped) — inlinable into a
     # receiver path rather than treated as a predicate.
     def path_helper?(def_node)
-      statements = MethodBody.statements(def_node)
-      return false unless statements&.length == 1
-
-      body = statements.first
+      body = MethodBody.single_statement(def_node.body)
       return false unless body.is_a?(Prism::CallNode) || t_must?(body)
 
-      receiver_path(body)
-      true
+      receiver_path(body) && true
     rescue Unencodable
       false
+    end
+
+    def bare_user?(node)
+      node.is_a?(Prism::CallNode) && node.name == :user && node.receiver.nil?
     end
 
     # T.must(x) — a Sorbet nil-unwrap CallNode (receiver `T`, name `must`).
@@ -87,24 +92,20 @@ module PunditSymbolic
     end
 
     def t_must_argument(node)
-      args = node.arguments&.arguments
-      @refuse.call("T.must with unexpected arity") if args.nil? || args.length != 1
-
-      args.first
+      case node.arguments&.arguments
+      in [ argument ] then argument
+      else @refuse.call("T.must with unexpected arity")
+      end
     end
 
     private
 
     # The navigation path a path-helper's body produces, as a trailing-dot prefix.
     def helper_path(name, def_node)
-      body = def_node.body
-      statements = body.is_a?(Prism::StatementsNode) ? body.body : [ body ]
-      @refuse.call("path helper `#{name}` has a multi-statement body") unless statements.length == 1
+      body = MethodBody.single_statement(def_node.body)
+      @refuse.call("path helper `#{name}` is not a pure single-statement navigation path") unless body.is_a?(Prism::CallNode) || t_must?(body)
 
-      first = statements.first
-      @refuse.call("path helper `#{name}` is not a pure navigation path") unless first.is_a?(Prism::CallNode) || t_must?(first)
-
-      receiver_path(first)
+      receiver_path(body)
     end
 
     def membership_base(receiver, local_facts)
@@ -117,8 +118,10 @@ module PunditSymbolic
       call_node.arguments.nil? && call_node.block.nil?
     end
 
+    # A short label for a node in a refusal message: its method name if it has
+    # one, else its node type.
     def unparse(node)
-      node.respond_to?(:name) ? node.name.to_s : node.class.name
+      node.is_a?(Prism::CallNode) ? node.name.to_s : node.class.name.split("::").last
     end
   end
 end

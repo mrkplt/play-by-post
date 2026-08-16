@@ -20,7 +20,7 @@ module PunditSymbolic
     attr_reader :sources
 
     def self.load_dir(dir)
-      paths = Dir[File.join(dir, "*_policy.rb")].reject { |p| p.end_with?("application_policy.rb") }
+      paths = Dir[File.join(dir, "*_policy.rb")].reject { |path| path.end_with?("application_policy.rb") }
       new(paths.sort.map { |path| PolicySource.load(path) })
     end
 
@@ -38,71 +38,63 @@ module PunditSymbolic
     # referring predicate unresolvable — recorded as a refusal, dropped from the
     # source's predicate list.
     def resolve_cross_policy!
-      sources.each do |source|
-        kept = source.predicates.filter_map do |predicate|
-          rewritten = rewrite(predicate.formula)
-          if rewritten
-            PolicySource::Predicate.new(name: predicate.name, formula: rewritten, public: predicate.public?)
-          else
-            source.refusals << { name: predicate.name, public: predicate.public?, reason: "delegates to an unresolvable cross-policy predicate" }
-            nil
-          end
-        end
-        source.predicates.replace(kept)
+      sources.each { |source| source.predicates.replace(resolved_predicates(source)) }
+    end
+
+    UNRESOLVABLE_REASON = "delegates to an unresolvable cross-policy predicate"
+
+    def resolved_predicates(source)
+      source.predicates.filter_map do |predicate|
+        rewritten = rewrite(predicate.formula)
+        rewritten ? predicate.with_formula(rewritten) : refuse(predicate, source)
       end
     end
+
+    def refuse(predicate, source)
+      source.refusals << predicate.refusal(UNRESOLVABLE_REASON)
+      nil
+    end
+
+    # Sentinel unwinding a formula whose xpolicy marker can't be resolved.
+    Unresolvable = Class.new(StandardError)
 
     # Returns the formula with xpolicy markers resolved, or nil if any marker
     # can't be resolved.
     def rewrite(node)
-      case node
-      when Formula::Var
-        match = XPOLICY.match(node.name)
-        return node unless match
+      Formula.map_vars(node) { |var| resolve_var(var) }
+    rescue Unresolvable
+      nil
+    end
 
-        resolve_marker(match)
-      when Formula::Not
-        inner = rewrite(node.operand)
-        inner && Formula::Not.new(inner)
-      when Formula::And
-        left = rewrite(node.left)
-        right = rewrite(node.right)
-        left && right && Formula::And.new(left, right)
-      when Formula::Or
-        left = rewrite(node.left)
-        right = rewrite(node.right)
-        left && right && Formula::Or.new(left, right)
-      else
-        node
+    # A parsed xpolicy marker. Finds its own target predicate given the policy
+    # index, keeping that field access off the registry (no FeatureEnvy).
+    Marker = Struct.new(:target, :pred, :rebase) do
+      def self.parse(name)
+        match = XPOLICY.match(name)
+        match && new(match[:target], match[:pred], match[:rebase])
+      end
+
+      def predicate_in(by_policy)
+        by_policy[target]&.predicates&.find { |candidate| candidate.name == pred }
       end
     end
 
-    def resolve_marker(match)
-      target = @by_policy[match[:target]]
-      return nil unless target
+    def resolve_var(var)
+      marker = Marker.parse(var.name)
+      return var unless marker
 
-      predicate = target.predicates.find { |p| p.name == match[:pred] }
-      return nil unless predicate
+      resolve_marker(marker) || raise(Unresolvable)
+    end
 
+    def resolve_marker(marker)
+      predicate = marker.predicate_in(@by_policy)
       # The target's formula is already leaf-only; rebase its record.-rooted
       # leaves onto the delegation path (e.g. "record." -> "record.character.game.").
-      rebase_leaves(predicate.formula, match[:rebase])
+      predicate && rebased(predicate.formula, marker.rebase)
     end
 
-    # Replace the leading "record." of every leaf var with `rebase`.
-    def rebase_leaves(node, rebase)
-      case node
-      when Formula::Var
-        Formula::Var.new(node.name.sub(/\Arecord\./, rebase))
-      when Formula::Not
-        Formula::Not.new(rebase_leaves(node.operand, rebase))
-      when Formula::And
-        Formula::And.new(rebase_leaves(node.left, rebase), rebase_leaves(node.right, rebase))
-      when Formula::Or
-        Formula::Or.new(rebase_leaves(node.left, rebase), rebase_leaves(node.right, rebase))
-      else
-        node
-      end
+    def rebased(formula, rebase)
+      Formula.map_vars(formula) { |var| Formula.var(var.name.sub(/\Arecord\./, rebase)) }
     end
   end
 end

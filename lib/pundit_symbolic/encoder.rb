@@ -7,6 +7,7 @@ require_relative "unencodable"
 require_relative "path_naming"
 require_relative "method_body"
 require_relative "call_shapes"
+require_relative "expression_encoder"
 
 module PunditSymbolic
   # Translates a single Pundit policy method body (real Ruby source, parsed with
@@ -48,17 +49,15 @@ module PunditSymbolic
     # bound to a fact (the `membership = record.member_for(user)` line) so later
     # `membership&.active?` reads resolve to the right leaf var.
     def encode(def_node)
-      statements = MethodBody.statements(def_node) || raise(unencodable("empty body"))
-      local_facts = {}
+      *setup, result = MethodBody.statements(def_node) || raise(unencodable("empty body"))
+      walk = ExpressionEncoder.new(@naming, @call_shapes, @predicate_names)
+      # Each setup statement is a membership binding or a `return false unless
+      # COND` guard; guards AND onto the result (the last statement's expression).
+      guarded(setup.filter_map { |node| setup_statement(node, walk) }, walk.expression(result))
+    end
 
-      # All but the last statement are setup: either a fact-binding assignment
-      # (`membership = record.member_for(user)`) or a `return false unless COND`
-      # guard, which contributes `COND &&` to the result. The last statement is
-      # the returned boolean expression.
-      *setup, result = statements
-      guards = setup.filter_map { |node| setup_statement(node, local_facts) }
-      formula = expression(result, local_facts)
-      guards.reduce(formula) { |acc, guard| Formula.conj(guard, acc) }
+    def guarded(guards, result)
+      guards.reduce(result) { |acc, guard| Formula.conj(guard, acc) }
     end
 
     # True if `def_node` is a pure navigation path helper (see PathNaming).
@@ -68,61 +67,15 @@ module PunditSymbolic
 
     # A setup statement is a membership binding (records the local, returns nil)
     # or a `return false unless COND` guard (returns COND to AND onto the result).
-    def setup_statement(node, local_facts)
-      if (call = MethodBody.membership_binding(node))
-        local_facts[node.name] = "#{@naming.receiver_path(call.receiver)}member_for"
-        return nil
-      end
-      return expression(node.predicate, local_facts) if MethodBody.guard_clause?(node)
+    def setup_statement(node, walk)
+      binding = MethodBody.membership_binding(node)
+      return walk.bind(node.name, binding) && nil if binding
+      return walk.expression(node.predicate) if MethodBody.guard_clause?(node)
 
-      kind = node.class.name.split("::").last.sub(/Node$/, "")
-      raise unencodable("non-boolean body (returns via #{kind}) — not a boolean predicate")
+      raise unencodable("non-boolean body (returns via #{node_kind(node)}) — not a boolean predicate")
     end
 
-    # The core translation: a Prism expression node -> Formula.
-    def expression(node, local_facts)
-      case node
-      when Prism::TrueNode then Formula.const(true)
-      when Prism::FalseNode then Formula.const(false)
-      when Prism::AndNode
-        Formula.conj(expression(node.left, local_facts), expression(node.right, local_facts))
-      when Prism::OrNode
-        Formula.disj(expression(node.left, local_facts), expression(node.right, local_facts))
-      when Prism::ParenthesesNode
-        expression(single_child(node.body), local_facts)
-      when Prism::CallNode
-        call_expression(node, local_facts)
-      else
-        raise unencodable("unsupported expression node #{node.class.name.split('::').last}")
-      end
-    end
-
-    def single_child(statements)
-      raise unencodable("expected single expression") unless statements.is_a?(Prism::StatementsNode) && statements.body.length == 1
-
-      statements.body.first
-    end
-
-    def call_expression(node, local_facts)
-      # `!x` / `x.!` — unary negation.
-      return Formula.negate(expression(node.receiver, local_facts)) if node.name == :! && node.receiver
-
-      # T.must(x) is a Sorbet nil-unwrap: transparent to the value.
-      return expression(@naming.t_must_argument(node), local_facts) if @naming.t_must?(node)
-
-      # A comparison is a leaf named by its operands (CallShapes).
-      return @call_shapes.comparison_leaf(node) if %i[== !=].include?(node.name)
-
-      # A bare call to another predicate in this policy: inline it as a `call:`
-      # marker so delegation composes on shared vars (resolved in PolicySource).
-      if node.receiver.nil? && @predicate_names.include?(node.name.to_s)
-        return Formula.var("call:#{node.name}")
-      end
-
-      # Cross-policy delegation -> a deferred xpolicy marker (CallShapes), or a
-      # plain leaf read named by its path.
-      @call_shapes.cross_policy_delegation(node) || Formula.var(@naming.leaf_for(node, local_facts))
-    end
+    def node_kind(node) = node.class.name.split("::").last.sub(/Node$/, "")
 
     def unencodable(reason) = Unencodable.new(reason)
   end

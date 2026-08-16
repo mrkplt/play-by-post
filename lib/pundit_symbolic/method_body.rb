@@ -19,6 +19,13 @@ module PunditSymbolic
       body.is_a?(Prism::StatementsNode) ? body.body : [ body ]
     end
 
+    # The single statement inside a StatementsNode, or nil if it isn't exactly one
+    # (e.g. a parenthesized expression's contents).
+    def single_statement(nodes)
+      contents = nodes.is_a?(Prism::StatementsNode) ? nodes.body : []
+      contents.first if contents.one?
+    end
+
     # `return false unless COND` — an UnlessNode whose only body statement is
     # `return false`, no else. (The caller reads node.predicate for COND.)
     def guard_clause?(node)
