@@ -1,0 +1,124 @@
+# Central invariant contract for the Pundit policy layer.
+#
+# This is the whole authorization contract in one reviewable place. The
+# pundit-symbolic tool (bin/check-policy-consistency) checks EXACTLY what is
+# declared here — it does not invent invariants. A policy with no entry fails
+# the build (a human must author its contract; consult the owner). Every public
+# predicate of every policy MUST be accounted for — named by an invariant, or
+# listed under `unconstrained` — and no entry may name a predicate that does not
+# exist. That bijection is enforced, so declaration and code cannot drift apart.
+#
+# Invariant types (see lib/pundit_symbolic/invariants.rb):
+#   equivalent:            [a, b]   a and b agree on every input
+#   implies:               [a, b]   a grants ⇒ b grants
+#   mutually_exclusive:    [a, b]   never both true
+#   always:                pred     pred is true for all inputs
+#   never:                 pred     pred is false for all inputs
+#   no_status_blind_grant: pred     pred must not grant via a GM role while
+#                                   ignoring that membership's status
+#                                   (the multi-game-master leak)
+
+GamePolicy:
+  invariants:
+    - equivalent: [show?, view?]
+    - equivalent: [manage_players?, view?]
+    - equivalent: [export?, view?]
+    - equivalent: [update?, manage?]
+    - equivalent: [destroy?, manage?]
+    - equivalent: [feed?, write_access?]
+    - no_status_blind_grant: write_access?
+    - no_status_blind_grant: feed?
+  unconstrained: [create?] # any authenticated user may create a game
+
+CharacterPolicy:
+  invariants:
+    - equivalent: [archive?, manage_roster?]
+    - equivalent: [restore?, manage_roster?]
+    - equivalent: [assign_owner?, manage_roster?] # both are "is GM" today
+    - implies: [update?, create?]                 # update = create-gate AND editable
+    - no_status_blind_grant: create?
+    - no_status_blind_grant: update?
+  unconstrained: [show?, visible?]
+
+CharacterVersionPolicy:
+  invariants: []
+  unconstrained: [show?] # game access, delegated to GamePolicy#view?
+
+ApiTokenPolicy:
+  invariants:
+    - no_status_blind_grant: feed?
+  unconstrained: []
+
+FeedbackPolicy:
+  invariants: []
+  unconstrained: [create?] # any signed-in user
+
+GameFilePolicy:
+  invariants:
+    - equivalent: [create?, manage?]
+    - equivalent: [destroy?, manage?]
+  unconstrained: []
+
+GameLinkPolicy:
+  invariants:
+    - equivalent: [create?, manage?]
+    - equivalent: [update?, manage?]
+    - equivalent: [destroy?, manage?]
+  unconstrained: [index?] # game-viewable; the viewable? gate is private
+
+GameMemberPolicy:
+  invariants:
+    - implies: [update?, manage?] # update = manage AND target_eligible
+  unconstrained: []
+
+InvitationPolicy:
+  invariants:
+    - equivalent: [create?, manage?]
+    - equivalent: [destroy?, manage?]
+    - equivalent: [resend?, manage?]
+  unconstrained: []
+
+NotebookEntryPolicy:
+  invariants:
+    - equivalent: [index?, manage?]
+    - equivalent: [show?, manage?]
+    - equivalent: [create?, manage?]
+    - equivalent: [update?, manage?]
+    - equivalent: [destroy?, manage?]
+  unconstrained: []
+
+PagePolicy:
+  invariants:
+    - equivalent: [create?, manage?]
+    - equivalent: [update?, manage?]
+    - equivalent: [destroy?, manage?]
+  unconstrained: [show?]
+
+PostPolicy:
+  invariants:
+    - equivalent: [mark_read?, participate?]
+    - implies: [create?, participate?] # create = participate AND write_member
+    - no_status_blind_grant: create?
+  unconstrained: [update?]
+
+ScenePolicy:
+  invariants:
+    - equivalent: [create?, manage?]
+    - equivalent: [resolve?, manage?]
+    - equivalent: [manage_participants?, manage?]
+    - implies: [show?, visible?]
+    - no_status_blind_grant: join?
+  unconstrained: [reply_by_email?]
+
+SceneSummaryPolicy:
+  invariants:
+    - equivalent: [create?, manage?]
+    - equivalent: [update?, manage?]
+    - equivalent: [destroy?, manage?]
+  unconstrained: []
+
+UserProfilePolicy:
+  invariants:
+    - equivalent: [show?, update?]
+    - equivalent: [show?, manage?]
+  unconstrained: []

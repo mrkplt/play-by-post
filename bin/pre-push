@@ -41,7 +41,7 @@ bin/check-service-modules || exit 1
 echo "==> Policy coverage (every authorizable model has a policy)"
 bin/check-policy-coverage || exit 1
 
-echo "==> Policy consistency (symbolic verifier: findings + convention refusals)"
+echo "==> Policy consistency (declared invariants: coverage + no-drift + verification)"
 bin/check-policy-consistency || exit 1
 
 echo "==> Authorization net (every controller installs verify_authorized)"

@@ -2,158 +2,157 @@
 # typed: false
 # frozen_string_literal: true
 
-# Symbolic consistency gate for the Pundit policy layer.
+# Declaration-driven consistency gate for the Pundit policy layer.
 #
-# Runs the pundit-symbolic verifier (lib/pundit_symbolic) over every policy and
-# fails the build on:
-#   * any FINDING — a reachable authorization state worth a human's judgement
-#     (e.g. a grant that relies on an unstated invariant, or two predicates
-#     documented as equivalent that disagree); and
-#   * any PUBLIC REFUSAL not in ACCEPTED_REFUSALS — a public policy method that
-#     isn't a boolean predicate (a convention violation), or one the encoder
-#     can't yet model.
+# The authorization contract lives in config/policy_invariants.yml. This gate:
+#
+#   1. DECLARATION COVERAGE — every policy must have a declaration. A policy
+#      with none fails the build: authorization intent is a human decision, so
+#      the gate tells the agent to consult the user and writes a scaffold to
+#      fill in. Nothing proceeds until the contract is authored.
+#
+#   2. DRIFT (bijection) — every public predicate must be accounted for in its
+#      declaration (named by an invariant, or listed `unconstrained`), and no
+#      declaration may name a predicate that doesn't exist. A mismatch fails the
+#      build, so declaration and code cannot drift apart for even one commit.
+#
+#   3. VERIFICATION — the tool checks EXACTLY the invariants each policy
+#      declares (nothing more, nothing it wasn't told to), proving each against
+#      the encoded formulas. A violated invariant fails the build with a
+#      counterexample.
 #
 # The verifier is trustworthy because spec/pundit_symbolic/faithfulness_spec.rb
-# proves each formula matches the real Ruby method on every input. This gate is
-# pure Ruby + Prism (no Rails boot), so it belongs in the fast tier.
-#
-# WHY / HOW-TO-FIX guidance is printed with every failure — see explain_* below.
+# proves each formula matches the real Ruby method on every input. Pure Ruby +
+# Prism, no Rails boot — fast tier.
 
 lib = File.expand_path("../lib", __dir__)
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 
 require "sorbet-runtime"
-require "pundit_symbolic/verifier"
 require "pundit_symbolic/policy_registry"
+require "pundit_symbolic/declarations"
 
-# Documented equivalences per policy (predicates the source says ask "the same
-# question"); the verifier proves each pair agrees on every input.
-EQUIVALENCES = {
-  "GamePolicy" => [ %w[show? view?], %w[manage_players? view?], %w[export? view?] ],
-  "UserProfilePolicy" => [ %w[show? update?], %w[show? manage?] ]
-}.freeze
+POLICIES_DIR = File.expand_path("../app/policies", __dir__)
+CONTRACT = File.expand_path("../config/policy_invariants.yml", __dir__)
 
-# Public refusals we have SEEN and ACCEPTED. Each entry is "Policy#method" and a
-# note. A refusal here does not fail the build; a public refusal NOT here does.
-# This is the ratchet: accept a known one deliberately (with a reason), or fix
-# it. Keep this list shrinking.
+# Public refusals accepted as reviewed exceptions (a public non-boolean method
+# the tool can't verify). "Policy#method" => reason. A public refusal not here
+# fails the build.
 ACCEPTED_REFUSALS = {
   "GamePolicy#export_scene_selection" =>
     "Returns a Symbol (:all/:participating/:visible), not a boolean predicate. " \
-    "Tracked as a convention violation to move off the public policy surface (Fizzy #104)."
+    "Tracked to move off the public policy surface (Fizzy #104)."
 }.freeze
 
-POLICIES_DIR = File.expand_path("../app/policies", __dir__)
+def scaffold_for(policy_name, formulas)
+  lines = [ "#{policy_name}:", "  invariants: []", "  unconstrained: [#{formulas.keys.sort.join(', ')}]" ]
+  lines.join("\n")
+end
 
-def explain_finding(policy, finding)
-  puts "  FINDING  #{policy}##{finding_subject(finding)}  [#{finding.kind}]"
-  puts "    What:  #{finding.description}"
-  witness = finding.model.select { |_, value| value }.keys.sort
-  puts "    Where: reachable when #{witness.empty? ? '(no leaf true)' : witness.join(' ∧ ')}"
-  puts "    Fix:   #{finding_fix(finding.kind)}"
+def report_missing(policy_name, formulas)
+  puts "== #{policy_name} =="
+  puts "  MISSING DECLARATION — this policy has no entry in config/policy_invariants.yml."
+  puts "  Authorization intent is a human decision. CONSULT THE USER on what must"
+  puts "  be true of this policy, then declare it. Scaffold to start from:"
+  puts
+  scaffold_for(policy_name, formulas).each_line { |l| puts "    #{l.chomp}" }
+  puts
+  puts "  (Replace `unconstrained` entries with real invariants where a property"
+  puts "  must hold — equivalent / implies / mutually_exclusive / always / never /"
+  puts "  no_status_blind_grant. Leave a predicate `unconstrained` only when it"
+  puts "  deliberately has no declared property.)"
   puts
 end
 
-def finding_subject(finding)
-  finding.description[/\A(\S+?)[\s]/, 1] || "?"
+def report_drift(policy_name, errors)
+  puts "== #{policy_name} =="
+  puts "  DECLARATION DRIFT — the declaration and the code disagree on which"
+  puts "  predicates exist. Fix config/policy_invariants.yml so it accounts for"
+  puts "  exactly the policy's public predicates:"
+  errors.each { |e| puts "    - #{e}" }
+  puts
 end
 
-def finding_fix(kind)
-  case kind
-  when :role_grant_ignores_status
-    "Gate on active membership (record[.game].active_member?(user)), not the " \
-      "game_master role — so a removed/banned member can't act even if they " \
-      "hold the GM role. Then update the policy's spec + keep mutation at 100%."
-  when :broken_equivalence
-    "Two predicates documented as the same question disagree. Either make their " \
-      "bodies delegate to one shared predicate, or correct the doc comment/the " \
-      "EQUIVALENCES entry in this script if they are NOT meant to be equal."
-  else
-    "See docs/PUNDIT_SYMBOLIC.md for this finding kind."
+def report_violations(policy_name, violations)
+  puts "== #{policy_name} =="
+  violations.each do |violation|
+    puts "  VIOLATED [#{violation.type}]  #{violation.description}"
+    witness = violation.model.select { |_, v| v }.keys.sort
+    puts "    Where: #{witness.empty? ? '(no leaf true)' : witness.join(' ∧ ')}"
+    puts "    Fix:   make the code satisfy the declared invariant, or — if the"
+    puts "           declaration is wrong — correct it in config/policy_invariants.yml."
+    puts "           (If code changes, update the policy spec + keep mutation 100%.)"
+    puts
   end
 end
 
-def explain_refusal(policy, refusal)
-  subject = "#{policy}##{refusal[:name]}"
-  puts "  REFUSED  #{subject}  (public method the tool could not verify)"
-  puts "    Why:   #{refusal[:reason]}"
-  puts "    Fix:   #{refusal_fix(refusal[:reason])}"
-  puts "    Or:    if this is a deliberate, reviewed exception, add"
-  puts "           \"#{subject}\" to ACCEPTED_REFUSALS in bin/check-policy-consistency"
-  puts "           with a one-line reason."
-  puts
-end
-
-def refusal_fix(reason)
-  case reason
-  when /non-boolean|returns via/
-    "A public policy method must be a boolean predicate. Move this off the " \
-      "public surface (make it private, or relocate it to a service/presenter)."
-  when /out of theory|comparisons|operators/
-    "The encoder can't model this construct yet. Extend lib/pundit_symbolic/" \
-      "encoder.rb to handle it AND add its faithfulness case, or accept it below. " \
-      "Note: encoding it only makes it CHECKABLE by the tool's existing invariants " \
-      "— it does not add new checks. If this predicate needs a property the tool " \
-      "doesn't have (see the OK-message note), that's a separate, human decision."
-  when /cross-policy/
-    "The delegated-to policy predicate is itself unresolvable. Fix that target " \
-      "predicate first (its refusal will be listed too)."
-  else
-    "Extend the encoder (with a faithfulness case) or accept it below."
+def report_refusals(policy_name, refusals)
+  refusals.each do |refusal|
+    subject = "#{policy_name}##{refusal[:name]}"
+    puts "== #{policy_name} =="
+    puts "  REFUSED  #{subject}  (public method the tool could not verify)"
+    puts "    Why:   #{refusal[:reason]}"
+    puts "    Fix:   a public policy method must be a boolean predicate; move it"
+    puts "           off the public surface, or accept it in ACCEPTED_REFUSALS."
+    puts
   end
 end
 
 registry = PunditSymbolic::PolicyRegistry.load_dir(POLICIES_DIR)
+declarations = PunditSymbolic::Declarations.load(CONTRACT)
 
-findings_count = 0
-unexpected_refusals = 0
+missing = 0
+drift = 0
+violations = 0
+bad_refusals = 0
 
-registry.sources.each do |source|
-  result = PunditSymbolic::Verifier.new(
-    source, equivalences: EQUIVALENCES.fetch(source.policy_name, [])
-  ).verify
+begin
+  registry.sources.each do |source|
+    formulas = source.public_predicates.to_h { |p| [ p.name, p.formula ] }
+    result = declarations.verify(source.policy_name, formulas)
 
-  offending_refusals = result[:refusals].select do |refusal|
-    refusal[:public] && !ACCEPTED_REFUSALS.key?("#{source.policy_name}##{refusal[:name]}")
+    if result.undeclared?
+      missing += 1
+      report_missing(source.policy_name, formulas)
+    elsif result.drift_errors.any?
+      drift += result.drift_errors.size
+      report_drift(source.policy_name, result.drift_errors)
+    elsif result.violations.any?
+      violations += result.violations.size
+      report_violations(source.policy_name, result.violations)
+    end
+
+    offending = source.refusals.select do |r|
+      r[:public] && !ACCEPTED_REFUSALS.key?("#{source.policy_name}##{r[:name]}")
+    end
+    next if offending.empty?
+
+    bad_refusals += offending.size
+    report_refusals(source.policy_name, offending)
   end
-
-  next if result[:findings].empty? && offending_refusals.empty?
-
-  puts "== #{source.policy_name} =="
-  result[:findings].each do |finding|
-    findings_count += 1
-    explain_finding(source.policy_name, finding)
-  end
-  offending_refusals.each do |refusal|
-    unexpected_refusals += 1
-    explain_refusal(source.policy_name, refusal)
-  end
+rescue PunditSymbolic::Invariants::BadDeclaration => error
+  puts "Policy consistency check: FAIL (broken declaration)"
+  puts "  #{error.message}"
+  puts "  Fix config/policy_invariants.yml."
+  exit 1
 end
 
-if findings_count.zero? && unexpected_refusals.zero?
-  accepted = ACCEPTED_REFUSALS.size
-  puts "Policy consistency check: OK " \
-       "(#{registry.sources.size} policies, 0 findings, #{accepted} accepted refusal(s))"
-  # Scope the claim. "OK" means the invariants THIS TOOL KNOWS hold — not that
-  # the policies are fully verified. The tool checks a FIXED set of properties:
-  #   * role_grant_ignores_status (a grant that leans on an unstated invariant)
-  #   * broken_equivalence (predicates documented as equal that disagree)
-  # It does NOT discover new kinds of invariant. If a policy has a NEW property
-  # worth proving (e.g. "these two predicates must be mutually exclusive",
-  # "this capability must imply that one"), a human adds it: write the check in
-  # PunditSymbolic::Verifier (and, for equivalences, list the pair in
-  # EQUIVALENCES). The tool will never prompt you to do this — deciding what
-  # must be true of a policy is domain knowledge, not something it can derive.
-  puts "  Checked: role-grant-ignores-status, documented equivalences. This is"
-  puts "  the fixed set the tool knows — it does not invent new invariants. A"
-  puts "  new property worth proving is added by hand in PunditSymbolic::Verifier."
+total = missing + drift + violations + bad_refusals
+if total.zero?
+  declared = registry.sources.count { |s| declarations.declared?(s.policy_name) }
+  puts "Policy consistency check: OK"
+  puts "  #{registry.sources.size} policies, all declared (#{declared}/#{registry.sources.size}), " \
+       "#{ACCEPTED_REFUSALS.size} accepted refusal(s)."
+  puts "  Verified EXACTLY the invariants declared in config/policy_invariants.yml —"
+  puts "  the tool checks the authored contract, it does not invent invariants. It"
+  puts "  also enforces that every predicate is declared (no drift) and that every"
+  puts "  policy has a declaration (no silent gaps)."
   exit 0
 end
 
 puts "Policy consistency check: FAIL"
-puts "  #{findings_count} finding(s), #{unexpected_refusals} unexpected refusal(s)."
-puts "  Each is explained above with a concrete fix. The faithfulness proof"
-puts "  (spec/pundit_symbolic/faithfulness_spec.rb) guarantees these reflect the"
-puts "  real policy behavior. Fix them, or (for a reviewed exception) accept the"
-puts "  refusal in ACCEPTED_REFUSALS."
+puts "  #{missing} undeclared policy(ies), #{drift} drift error(s), " \
+     "#{violations} violated invariant(s), #{bad_refusals} unexpected refusal(s)."
+puts "  Each is explained above. The faithfulness proof"
+puts "  (spec/pundit_symbolic/faithfulness_spec.rb) backs these verdicts."
 exit 1

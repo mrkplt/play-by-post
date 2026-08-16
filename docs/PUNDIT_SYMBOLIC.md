@@ -1,15 +1,31 @@
 # Pundit Symbolic Verifier
 
-A repo-local symbolic verifier scoped **explicitly and only** to this app's
-Pundit pattern. It reads real policy source, translates each public boolean
-predicate into a propositional formula over leaf facts, and answers
-consistency questions over *all* inputs — reporting concrete counterexamples.
+A repo-local, **declaration-driven** symbolic verifier scoped explicitly to this
+app's Pundit pattern. Each policy's intended authorization invariants are
+declared in a central contract (`config/policy_invariants.yml`); the tool reads
+real policy source, translates each public predicate into a propositional
+formula over leaf facts, and **proves the declared invariants hold** over all
+inputs — reporting concrete counterexamples.
+
+The tool does **not invent invariants**. It checks exactly what the contract
+declares. What makes that trustworthy rather than a silent gap is three enforced
+properties:
+
+1. **Declaration coverage** — every policy MUST have a contract entry. A policy
+   with none fails the build; the gate prints a scaffold and tells the agent to
+   **consult the user** (authorization intent is a human decision, not something
+   the tool derives).
+2. **No drift (bijection)** — every public predicate must be accounted for in
+   its declaration (named by an invariant, or listed `unconstrained`), and no
+   declaration may name a predicate that doesn't exist. Enforced both
+   directions, so declaration and code cannot drift apart for even one commit.
+3. **Verification** — each declared invariant is proved against the encoded
+   formulas; a violation fails the build with a counterexample.
 
 Run it:
 
 ```
-bin/verify-policies                       # every policy in app/policies
-bin/verify-policies app/policies/game_policy.rb
+bin/check-policy-consistency              # the gate: coverage + no-drift + verify
 ```
 
 ## What it is (and isn't)
@@ -39,21 +55,35 @@ returns a Symbol — arguably it should not be public surface). `Scope#resolve`
 returns a relation and is out of theory by design; modeling it would require a
 theory of the database.
 
-## What it reports (no domain axioms)
+## The declaration contract
 
-The verifier assumes **nothing** about which states are reachable — it explores
-the full boolean space and surfaces latent assumptions rather than baking them
-in:
+`config/policy_invariants.yml` is the whole authorization contract in one
+reviewable place. Per policy:
 
-- **`role_grant_ignores_status`** — a grant that is load-bearing on the
-  game_master *role* leaf reaching access alongside a removed/banned *status*.
-  This is safe only under an unstated invariant. GamePolicy's own comment
-  (`game_policy.rb:82`) states exactly this invariant for `write_access?` /
-  `feed?`; the tool derived the same fact from structure alone.
-- **`broken_equivalence`** — two predicates the source documents as "the same
-  question" (e.g. `show?`/`view?`) that disagree on some input.
+```yaml
+GamePolicy:
+  invariants:
+    - equivalent: [show?, view?]
+    - no_status_blind_grant: write_access?
+  unconstrained: [create?]   # deliberately has no declared property
+```
 
-Triage each finding as *real bug* vs *intended-but-unstated invariant*.
+Invariant types (`lib/pundit_symbolic/invariants.rb`), each compiled to a SAT
+query over the encoded formulas:
+
+| Type | Meaning |
+|---|---|
+| `equivalent: [a, b]` | a and b agree on every input |
+| `implies: [a, b]` | a grants ⇒ b grants |
+| `mutually_exclusive: [a, b]` | never both true |
+| `always: pred` / `never: pred` | pred is constant true / false |
+| `no_status_blind_grant: pred` | pred must not grant via a GM role while ignoring that membership's status (the multi-game-master leak) |
+
+`unconstrained` is a first-class, reviewed "this predicate has no declared
+property" — it satisfies the bijection *visibly*, so a free predicate is a
+deliberate line in the contract, never a silent gap. Adding a new invariant
+*type* (a new kind of property) is a human change to the invariant library; the
+tool never invents one.
 
 ## Why you can trust it: the faithfulness proof
 
@@ -93,25 +123,23 @@ dimension a bug would live in. Two ways it could be fooled, both closed:
 
 ## Operationalization
 
-`bin/check-policy-consistency` runs the verifier over every policy and **fails
-the build** on any finding, or any *public* refusal not in its `ACCEPTED_REFUSALS`
-allowlist. It's wired into `bin/pre-push` (fast tier, ~0.2s, no Rails boot) so it
-runs on every push and in CI. Every failure prints **what**, **where** (the
-reachable leaf state), and **how to fix** — plus the escape hatch of accepting a
-reviewed refusal in the allowlist. Today: 0 findings, 1 accepted refusal
-(`export_scene_selection`, Fizzy #104).
+`bin/check-policy-consistency` is the gate, wired into `bin/pre-push` (fast tier,
+~0.2s, no Rails boot) and CI. It fails the build on:
+
+- an **undeclared policy** — prints a scaffold and tells the agent to consult the
+  user;
+- **drift** — a public predicate not accounted for, or a stale declaration entry;
+- a **violated invariant** — with a counterexample;
+- an unaccepted **public refusal** — a public non-boolean method (`ACCEPTED_REFUSALS`
+  holds reviewed exceptions; today just `export_scene_selection`, Fizzy #104).
+
+Every failure prints **what**, **where** (the reachable leaf state), and **how to
+fix**. On success it states plainly that it verified *exactly the declared
+contract* — so an agent can't mistake "OK" for "fully proven": it means the
+authored invariants hold, coverage is complete, and nothing drifted.
 
 The faithfulness proof (`spec/pundit_symbolic/faithfulness_spec.rb`) runs in the
 normal RSpec suite, so the gate's verdicts stay backed by the proof.
-
-**The gate scopes its own claim.** "OK" means the invariants the tool KNOWS
-(role-grant-ignores-status, documented equivalences) hold — not that the policies
-are fully verified. The tool checks a *fixed* set of properties and does not
-discover new ones; a new invariant worth proving (e.g. "these two capabilities
-are mutually exclusive") is added by hand in `PunditSymbolic::Verifier`. Both the
-OK message and the refusal guidance say this, so an agent reading the output
-can't mistake "0 findings" for "fully proven," and can't mistake extending the
-encoder (which makes a predicate *checkable*) for adding a new *check*.
 
 ### The tool's own code is exempt from mutation testing — deliberately
 
