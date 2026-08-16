@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_15_120000) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_16_120000) do
   create_table "action_mailbox_inbound_emails", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "message_checksum", null: false
@@ -202,6 +202,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_15_120000) do
   create_table "pages", force: :cascade do |t|
     t.text "body"
     t.datetime "created_at", null: false
+    t.boolean "draft", default: false, null: false
     t.integer "game_id", null: false
     t.string "slug", null: false
     t.string "title", null: false
@@ -250,6 +251,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_15_120000) do
   create_table "scene_summaries", force: :cascade do |t|
     t.text "body", null: false
     t.datetime "created_at", null: false
+    t.boolean "draft", default: false, null: false
     t.datetime "edited_at"
     t.integer "edited_by_id"
     t.datetime "generated_at"
