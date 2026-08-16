@@ -43,12 +43,14 @@ RSpec.describe Shared::SceneCardComponent, type: :component do
   end
 
   it "glows when hot" do
-    render_inline(described_class.new(scene: presenter, game: game_presenter, hot: true))
+    hot_presenter = ScenePresenter.new(scene, hot_scene_ids: Set[scene.id])
+    render_inline(described_class.new(scene: hot_presenter, game: game_presenter))
     expect(page).to have_css("div.attn-item.is-hot")
   end
 
   it "reports hot? state" do
-    expect(described_class.new(scene: presenter, game: game_presenter, hot: true).hot?).to be true
+    hot_presenter = ScenePresenter.new(scene, hot_scene_ids: Set[scene.id])
+    expect(described_class.new(scene: hot_presenter, game: game_presenter).hot?).to be true
     expect(described_class.new(scene: presenter, game: game_presenter).hot?).to be false
   end
 

@@ -3,45 +3,40 @@
 # The shared Game name/description form, used by both New Game (games#new) and
 # Edit Game (games#edit). Rails routes a new record to POST /games and a
 # persisted one to PATCH /games/:id, so the same form_with drives create and
-# update. An optional note (the "you become the GM" line on creation) and an
-# optional submit confirmation are supplied by the caller.
+# update. Submit-side configuration (label, cancel target, optional note and
+# confirm prompt) travels as one Submission (see
+# game_form_component/submission.rb).
 class Shared::GameFormComponent < ApplicationComponent
   extend T::Sig
 
-  sig do
-    params(
-      game: GamePresenter,
-      submit_label: String,
-      cancel_href: String,
-      note: T.nilable(String),
-      confirm: T.nilable(String)
-    ).void
-  end
-  def initialize(game:, submit_label:, cancel_href:, note: nil, confirm: nil)
+  sig { params(game: GamePresenter, submission: Submission).void }
+  def initialize(game:, submission:)
     @game = T.let(game, GamePresenter)
-    @submit_label = T.let(submit_label, String)
-    @cancel_href = T.let(cancel_href, String)
-    @note = T.let(note, T.nilable(String))
-    @confirm = T.let(confirm, T.nilable(String))
+    @submission = T.let(submission, Submission)
   end
 
   sig { returns(GamePresenter) }
   attr_reader :game
 
   sig { returns(String) }
-  attr_reader :submit_label
+  def submit_label
+    @submission.label
+  end
 
   sig { returns(String) }
-  attr_reader :cancel_href
+  def cancel_href
+    @submission.cancel_href
+  end
 
   sig { returns(T.nilable(String)) }
-  attr_reader :note
+  def note
+    @submission.note
+  end
 
   sig { returns(T::Boolean) }
   def note?
-    @note.present?
+    note.present?
   end
-
 
   sig { returns(T::Array[String]) }
   def error_messages
@@ -52,6 +47,7 @@ class Shared::GameFormComponent < ApplicationComponent
   # when the caller asked for one, keeping the template free of inline logic.
   sig { returns(T::Hash[Symbol, String]) }
   def submit_data
-    @confirm ? { confirm: @confirm } : {}
+    confirm = @submission.confirm
+    confirm ? { confirm: confirm } : {}
   end
 end

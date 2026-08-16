@@ -38,19 +38,4 @@ RSpec.describe CharacterPresenterBuilder do
         .with(character, character_policy: character_policy, urls: urls)
     end
   end
-
-  describe "#versions" do
-    it "returns each character version, newest first, wrapped as presenters" do
-      version = build_stubbed(:character_version)
-      versions_rel = double("versions rel")
-      ordered_rel = double("ordered rel")
-      allow(character).to receive(:character_versions).and_return(versions_rel)
-      allow(versions_rel).to receive(:order).with(created_at: :desc).and_return(ordered_rel)
-      allow(ordered_rel).to receive(:includes).with(:edited_by).and_return([ version ])
-
-      result = builder.versions(character)
-      expect(result).to all(be_a(CharacterVersionPresenter))
-      expect(result.map(&:__getobj__)).to eq([ version ])
-    end
-  end
 end

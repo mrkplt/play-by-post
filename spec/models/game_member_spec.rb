@@ -34,4 +34,28 @@ RSpec.describe GameMember, type: :model do
       expect(build(:game_member, :banned).banned?).to be true
     end
   end
+
+  describe "#viewable?" do
+    # Each predicate is isolated so a mutation dropping one term from the
+    # game_master? || active? || removed? chain flips the result.
+    it "returns true for the game master, by role and independent of status" do
+      member = build(:game_member, :game_master, :banned)
+      expect(member.viewable?).to be true
+    end
+
+    it "returns true for an active member" do
+      member = build(:game_member)
+      expect(member.viewable?).to be true
+    end
+
+    it "returns true for a removed member" do
+      member = build(:game_member, :removed)
+      expect(member.viewable?).to be true
+    end
+
+    it "returns false for a member who is neither GM, active, nor removed (banned)" do
+      member = build(:game_member, :banned)
+      expect(member.viewable?).to be false
+    end
+  end
 end

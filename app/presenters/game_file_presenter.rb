@@ -1,23 +1,14 @@
 # typed: strict
 
-# View model for a game file: display metadata (size, extension, thumbnail)
-# plus, when constructed with `game:`/`helpers:` (the gallery needs both a
-# route and view-helper access to build download/delete links and inline
-# markup), the gallery's per-card download/delete URLs and lightbox/thumbnail
-# HTML. Those two options are supplied at construction so the presenter never
-# reaches for a route or view helper of its own; a caller that only needs the
-# display metadata (file_extension, human_file_size, ...) can omit them.
+# View model for a game file: the gallery's download/delete URLs and
+# lightbox/thumbnail HTML, built with `game:`/`helpers:` (the gallery needs
+# both a route and view-helper access). Display metadata that needs only the
+# GameFile model (size, extension, image derivation) lives on
+# GameFileMediaPresenter, reached via #media — split out to keep this class
+# under the project's method ceiling. A caller that only needs display
+# metadata can build GameFileMediaPresenter directly.
 class GameFilePresenter < BasePresenter
   extend T::Sig
-  include ActionView::Helpers::NumberHelper
-
-  CONTENT_TYPE_EXTENSIONS = T.let({
-    "application/pdf" => "PDF",
-    "application/msword" => "DOC",
-    "application/vnd.openxmlformats-officedocument.wordprocessingml.document" => "DOCX",
-    "text/plain" => "TXT",
-    "text/markdown" => "MD"
-  }.freeze, T::Hash[String, String])
 
   sig { params(model: GameFile, options: T.untyped).void }
   def initialize(model, **options)
@@ -26,10 +17,10 @@ class GameFilePresenter < BasePresenter
 
   sig { returns(String) }
   def download_url
-    attached = file
-    return "#" unless attached.attached?
+    downloadable = media.file
+    return "#" unless downloadable.attached?
 
-    T.cast(@options.fetch(:helpers).rails_blob_path(attached, disposition: "attachment"), String)
+    T.cast(@options.fetch(:helpers).rails_blob_path(downloadable, disposition: "attachment"), String)
   end
 
   sig { returns(T.nilable(String)) }
@@ -39,66 +30,41 @@ class GameFilePresenter < BasePresenter
     T.cast(@options.fetch(:helpers).game_game_file_path(@options.fetch(:game), @model), String)
   end
 
+  # The gallery card's lazy-loaded thumbnail.
   sig { returns(T.nilable(String)) }
   def thumb_html
-    thumb = thumbnail
+    thumb = media.thumbnail
     return nil unless thumb
 
-    helpers = @options.fetch(:helpers)
-    helpers.image_tag(helpers.url_for(thumb), alt: filename, loading: "lazy").to_s
+    attachment_image_html(thumb, css_class: nil, loading: "lazy")
   end
 
+  # The lightbox's best available visual: the full display image when this is
+  # an image file, else the thumbnail (e.g. a PDF preview), else a
+  # filename/size placeholder card.
   sig { returns(String) }
   def lightbox_html
-    helpers = @options.fetch(:helpers)
-    tag = helpers.tag
-
-    if image? && (display = display_image)
-      tag.img(src: helpers.url_for(display), alt: filename).to_s
-    elsif (thumb = thumbnail)
-      tag.img(src: helpers.url_for(thumb), alt: filename, class: "max-w-full").to_s
+    if media.image? && (display = media.display_image)
+      attachment_image_html(display, css_class: nil, loading: nil)
+    elsif (thumb = media.thumbnail)
+      attachment_image_html(thumb, css_class: "max-w-full", loading: nil)
     else
+      tag = @options.fetch(:helpers).tag
       tag.div(class: "flex flex-col items-center justify-center gap-3 p-8 text-slate-500", data: { testid: "lightbox-placeholder" }) do
         tag.div(file_extension, class: "text-5xl font-bold text-slate-400", data: { testid: "lightbox-placeholder-ext" }) +
-        tag.div(human_file_size, class: "text-sm text-slate-400")
+        tag.div(media.human_file_size, class: "text-sm text-slate-400")
       end.to_s
     end
   end
 
   sig { returns(T::Boolean) }
   def error?
-    @model.errors.any?
+    error_message.present?
   end
 
   sig { returns(T.nilable(String)) }
   def error_message
-    errors = @model.errors
-    errors[:file].first || errors.full_messages.first
-  end
-
-  sig { returns(String) }
-  def human_file_size
-    attached = file
-    return "" unless attached.attached?
-
-    T.must(number_to_human_size(attached.byte_size))
-  end
-
-  sig { returns(T::Boolean) }
-  def image?
-    @model.image? # mutant:disable
-  end
-
-  sig { returns(T.nilable(T.any(ActiveStorage::VariantWithRecord, ActiveStorage::Preview))) }
-  def thumbnail
-    attached = file
-    return unless attached.attached?
-
-    if @model.image?
-      attached.variant(resize_to_limit: [ 240, 240 ], format: :jpeg, quality: 80)
-    elsif @model.pdf? && attached.previewable?
-      attached.preview(resize_to_limit: [ 240, 240 ], format: :jpeg, quality: 80)
-    end
+    @model.error_message # mutant:disable
   end
 
   sig { returns(String) }
@@ -106,28 +72,30 @@ class GameFilePresenter < BasePresenter
     @model.filename # mutant:disable
   end
 
-  sig { returns(T.nilable(ActiveStorage::VariantWithRecord)) }
-  def display_image
-    @model.display_image # mutant:disable
-  end
-
-  sig { returns(T.untyped) }
-  def file
-    @model.file # mutant:disable
-  end
-
   sig { returns(String) }
   def file_extension
-    File.extname(@model.filename.to_s).delete(".").upcase.presence || content_type_extension
+    media.file_extension
   end
 
   private
 
-  sig { returns(String) }
-  def content_type_extension
-    attached = file
-    return "" unless attached.attached?
+  sig { returns(GameFileMediaPresenter) }
+  def media
+    GameFileMediaPresenter.new(@model)
+  end
 
-    CONTENT_TYPE_EXTENSIONS.fetch(attached.content_type, "FILE")
+  # Shared by lightbox_html's image/thumbnail branches and thumb_html's
+  # gallery-card thumbnail — one attachment rendered as an <img>, differing
+  # only in the CSS class and lazy-load hint applied.
+  sig do
+    params(
+      attachment: T.untyped,
+      css_class: T.nilable(String),
+      loading: T.nilable(String)
+    ).returns(String)
+  end
+  def attachment_image_html(attachment, css_class:, loading:)
+    helpers = @options.fetch(:helpers)
+    helpers.tag.img(src: helpers.url_for(attachment), alt: filename, class: css_class, loading: loading).to_s
   end
 end

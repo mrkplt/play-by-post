@@ -6,6 +6,8 @@
 class Shared::InvitePanelComponent < ApplicationComponent
   extend T::Sig
 
+  POSITIONS = T.let({ true => :last, false => :middle }.freeze, T::Hash[T::Boolean, Symbol])
+
   sig { params(game: GamePresenter, pending_invitations: T::Array[InvitationPresenter]).void }
   # mutant:disable
   def initialize(game:, pending_invitations:)
@@ -26,8 +28,8 @@ class Shared::InvitePanelComponent < ApplicationComponent
     helpers.game_player_management_invitations_path(@game)
   end
 
-  sig { params(index: Integer).returns(T::Boolean) }
-  def last?(index)
-    index == @pending_invitations.length - 1
+  sig { params(index: Integer).returns(Symbol) }
+  def row_position(index)
+    POSITIONS.fetch(index == @pending_invitations.length - 1)
   end
 end

@@ -12,8 +12,7 @@
     <%= render Ui::MarkdownEditorComponent.new(
           binding: { form: f, field: :description },
           config: Ui::MarkdownEditorComponent::Config.with_preview(edit_height: :lg),
-          rows: 4,
-          placeholder: "Describe this game in markdown…") %>
+          field: Ui::MarkdownEditorComponent::Field.new(rows: 4, placeholder: "Describe this game in markdown…")) %>
   </div>
 
   <% if note? %>

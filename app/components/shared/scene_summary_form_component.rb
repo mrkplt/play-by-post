@@ -19,17 +19,17 @@ class Shared::SceneSummaryFormComponent < ApplicationComponent
 
   sig { returns(String) }
   def heading
-    editing? ? "Edit Scene Summary" : "Write Scene Summary"
+    mode_value(editing: "Edit Scene Summary", new: "Write Scene Summary")
   end
 
   sig { returns(String) }
   def submit_label
-    editing? ? "Update Summary" : "Save Summary"
+    mode_value(editing: "Update Summary", new: "Save Summary")
   end
 
   sig { returns(String) }
   def form_id
-    editing? ? "scene_summary_edit_form" : "scene_summary_new_form"
+    mode_value(editing: "scene_summary_edit_form", new: "scene_summary_new_form")
   end
 
   sig { returns(T::Boolean) }
@@ -41,5 +41,15 @@ class Shared::SceneSummaryFormComponent < ApplicationComponent
   sig { returns(T::Array[String]) }
   def error_messages
     summary.errors.full_messages
+  end
+
+  private
+
+  # The single editing?-keyed branch heading/submit_label/form_id go
+  # through, so the new/edit distinction is tested once per call rather
+  # than repeating the ternary in each label method.
+  sig { type_parameters(:T).params(editing: T.type_parameter(:T), new: T.type_parameter(:T)).returns(T.type_parameter(:T)) }
+  def mode_value(editing:, new:)
+    editing? ? editing : new
   end
 end

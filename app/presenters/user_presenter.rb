@@ -64,7 +64,7 @@ class UserPresenter < BasePresenter
       .where.not(status: "banned")
       .where(game_id: Game.all)
       .includes(:game)
-      .sort_by { |m| m.game&.name.to_s }
+      .sort_by { |member| member.game&.name.to_s }
   end
 
   # The profile's RSS Feeds section, one row per non-banned game membership

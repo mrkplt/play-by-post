@@ -12,33 +12,35 @@ class Profiles::ApiTokensController < ApplicationController
 
   sig { void }
   def create
-    profile = current_user.user_profile || current_user.build_user_profile
-    authorize profile, :manage?
+    authorize current_profile, :manage?
 
     game = member_game(params[:game_id])
     scope = token_scope
+    return redirect_to profile_path, alert: "Could not create a feed token for that game." unless game && scope
 
-    unless game && scope
-      redirect_to profile_path, alert: "Could not create a feed token for that game."
-      return
-    end
-
-    token = current_user.api_tokens.find_or_initialize_by(game: game, scope: scope)
-    token.persisted? ? token.regenerate! : token.save!
-    redirect_to profile_path, notice: "Feed token created."
+    issue_token(game, scope)
   end
 
   sig { void }
   def destroy
-    profile = current_user.user_profile || current_user.build_user_profile
-    authorize profile, :manage?
+    authorize current_profile, :manage?
 
-    token = current_user.api_tokens.find_by(id: params[:id])
-    token&.destroy
+    current_user.api_tokens.find_by(id: params[:id])&.destroy
     redirect_to profile_path, notice: "Feed token revoked."
   end
 
   private
+
+  sig { returns(UserProfile) }
+  def current_profile
+    current_user.user_profile || current_user.build_user_profile
+  end
+
+  sig { params(game: Game, scope: String).void }
+  def issue_token(game, scope)
+    ApiToken.issue_for!(user: current_user, game: game, scope: scope)
+    redirect_to profile_path, notice: "Feed token created."
+  end
 
   # The requested game, but only if the current user is a non-banned member of
   # it — a token must never be mintable for a game the user cannot access.

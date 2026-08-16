@@ -25,7 +25,7 @@ class Feedback < ApplicationRecord
     update!(swept_at: Time.current)
   rescue FizzySweepService::ConfigurationError
     raise
-  rescue StandardError => e
-    Rails.logger.error("Feedback ##{id} failed to sweep into Fizzy: #{e.message}")
+  rescue StandardError => error
+    Rails.logger.error("Feedback ##{id} failed to sweep into Fizzy: #{error.message}")
   end
 end

@@ -5,34 +5,16 @@
 # scene it was launched from, so it collapses to just a title field with the
 # inherited context carried in hidden fields; the full form additionally offers
 # participant selection, a parent scene, a private flag, and a banner image.
+# Everything but the two domain subjects (game, scene) travels as one
+# Selection (see scene_form_component/selection.rb).
 class Shared::SceneFormComponent < ApplicationComponent
   extend T::Sig
 
-  sig do
-    params(
-      game: GamePresenter,
-      scene: ScenePresenter,
-      players_with_characters: T::Array[ScenePlayerPresenter],
-      parent_options: T::Array[[ String, Integer ]],
-      quick: T::Boolean,
-      selected_character_ids: T::Array[String],
-      selected_parent_scene_id: T.nilable(String),
-      back_href: String
-    ).void
-  end
-  # mutant:disable
-  def initialize(
-    game:, scene:, players_with_characters:, parent_options:, quick:,
-    selected_character_ids:, selected_parent_scene_id:, back_href:
-  )
+  sig { params(game: GamePresenter, scene: ScenePresenter, selection: Selection).void }
+  def initialize(game:, scene:, selection:)
     @game = T.let(game, GamePresenter)
     @scene = T.let(scene, ScenePresenter)
-    @players_with_characters = T.let(players_with_characters, T::Array[ScenePlayerPresenter])
-    @parent_options = T.let(parent_options, T::Array[[ String, Integer ]])
-    @quick = T.let(quick, T::Boolean)
-    @selected_character_ids = T.let(selected_character_ids, T::Array[String])
-    @selected_parent_scene_id = T.let(selected_parent_scene_id, T.nilable(String))
-    @back_href = T.let(back_href, String)
+    @selection = T.let(selection, Selection)
   end
 
   sig { returns(GamePresenter) }
@@ -42,45 +24,54 @@ class Shared::SceneFormComponent < ApplicationComponent
   attr_reader :scene
 
   sig { returns(T::Array[ScenePlayerPresenter]) }
-  attr_reader :players_with_characters
+  def players_with_characters
+    @selection.players_with_characters
+  end
 
   sig { returns(T::Array[[ String, Integer ]]) }
-  attr_reader :parent_options
+  def parent_options
+    @selection.parent_options
+  end
 
   sig { returns(T::Array[String]) }
-  attr_reader :selected_character_ids
+  def selected_character_ids
+    @selection.selected_character_ids
+  end
 
   sig { returns(T.nilable(String)) }
-  attr_reader :selected_parent_scene_id
+  def selected_parent_scene_id
+    @selection.selected_parent_scene_id
+  end
 
   sig { returns(String) }
-  attr_reader :back_href
+  def back_href
+    @selection.back_href
+  end
 
   sig { returns(T::Boolean) }
   def quick?
-    @quick
+    @selection.quick
   end
 
   sig { returns(String) }
   def heading
-    @quick ? "Quick Scene" : "New Scene"
+    mode_value(quick: "Quick Scene", full: "New Scene")
   end
 
   sig { returns(String) }
   def submit_label
-    @quick ? "Create Quick Scene" : "Create Scene"
+    mode_value(quick: "Create Quick Scene", full: "Create Scene")
   end
 
   sig { returns(String) }
   def form_id
-    @quick ? "quick_scene_form" : "new_scene_form"
+    mode_value(quick: "quick_scene_form", full: "new_scene_form")
   end
 
   sig { returns(String) }
   def cancel_href
-    @back_href
+    back_href
   end
-
 
   sig { returns(T::Array[String]) }
   def error_messages
@@ -91,6 +82,16 @@ class Shared::SceneFormComponent < ApplicationComponent
   # hidden field without any output-tag logic in the template.
   sig { returns(String) }
   def carried_parent_scene_id
-    @selected_parent_scene_id.to_s
+    selected_parent_scene_id.to_s
+  end
+
+  private
+
+  # The single @selection.quick-keyed branch heading/submit_label/form_id go
+  # through, so the quick/full distinction is tested once per call rather
+  # than repeating the ternary in each label method.
+  sig { type_parameters(:T).params(quick: T.type_parameter(:T), full: T.type_parameter(:T)).returns(T.type_parameter(:T)) }
+  def mode_value(quick:, full:)
+    quick? ? quick : full
   end
 end

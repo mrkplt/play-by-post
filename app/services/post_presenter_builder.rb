@@ -15,11 +15,28 @@ class PostPresenterBuilder
     @urls = urls
   end
 
-  sig { params(post: Post, policy: PostPolicy, scene_participants: T::Array[SceneParticipant]).returns(PostPresenter) }
-  def post_presenter(post, policy, scene_participants: [])
+  # A post paired with the policy PostsController already resolved for it —
+  # the combination every presenter/component this builder produces needs,
+  # bundled so callers pass one argument instead of the same pair repeatedly.
+  class AuthorizedPost < T::Struct
+    const :post, Post
+    const :policy, PostPolicy
+  end
+
+  sig { params(authorized_post: AuthorizedPost, scene_participants: T::Array[SceneParticipant]).returns(PostPresenter) }
+  def post_presenter(authorized_post, scene_participants: [])
     PostPresenter.new(
-      post, scene_participants: scene_participants, game: @game, scene: @scene, urls: @urls, policy: policy
+      authorized_post.post, scene_participants: scene_participants, game: @game, scene: @scene, urls: @urls,
+      policy: authorized_post.policy
     )
+  end
+
+  # #post_presenter with this scene's participants already loaded — the
+  # combination PostsController#create needs to present a just-created post,
+  # rather than making the controller fetch scene_participants itself.
+  sig { params(authorized_post: AuthorizedPost).returns(PostPresenter) }
+  def post_presenter_with_participants(authorized_post)
+    post_presenter(authorized_post, scene_participants: scene_participants)
   end
 
   # The scene's participants, loaded so each post can name its speaker.
@@ -43,8 +60,8 @@ class PostPresenterBuilder
     end
   end
 
-  sig { params(post: Post, policy: PostPolicy, page: PageContext).returns(Shared::PostComposerComponent) }
-  def composer_component(post, policy, page)
-    page.composer_for(post_presenter(post, policy))
+  sig { params(authorized_post: AuthorizedPost, page: PageContext).returns(Shared::PostComposerComponent) }
+  def composer_component(authorized_post, page)
+    page.composer_for(post_presenter(authorized_post))
   end
 end

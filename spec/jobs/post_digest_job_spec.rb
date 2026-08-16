@@ -192,7 +192,8 @@ RSpec.describe PostDigestJob, type: :job do
     it "mails each owed participant their unseen posts" do
       job.perform
 
-      expect(NotificationMailer).to have_received(:post_digest).with(scene, recipient, [ post ])
+      expect(NotificationMailer).to have_received(:post_digest)
+        .with(have_attributes(scene: scene, recipient: recipient), [ post ])
       expect(mail).to have_received(:deliver_later)
     end
 
@@ -226,13 +227,22 @@ RSpec.describe PostDigestJob, type: :job do
 
       job.perform
 
-      expect(NotificationMailer).to have_received(:post_digest).with(scene, recipient, [ post ])
+      expect(NotificationMailer).to have_received(:post_digest)
+        .with(have_attributes(scene: scene, recipient: recipient), [ post ])
     end
 
     it "asks the rule about that scene, user and participant" do
       job.perform
 
       expect(job).to have_received(:notify?).with(scene, recipient, participant)
+    end
+
+    it "looks up unseen posts for that scene, user and last visit" do
+      allow(participant).to receive(:last_visited_at).and_return(2.days.ago)
+
+      job.perform
+
+      expect(job).to have_received(:posts_since_visit).with(scene, recipient, participant.last_visited_at)
     end
   end
 end

@@ -53,11 +53,10 @@ class Scene < ApplicationRecord
   def acceptable_image
     return unless image.attached?
 
-    unless image.blob.byte_size <= IMAGE_MAX_SIZE
-      errors.add(:image, "must be less than 10MB")
-    end
+    blob = image.blob
+    errors.add(:image, "must be less than 10MB") unless blob.byte_size <= IMAGE_MAX_SIZE
 
-    unless IMAGE_TYPES.include?(image.blob.content_type)
+    unless IMAGE_TYPES.include?(blob.content_type)
       errors.add(:image, "must be a JPEG, PNG, GIF, or WebP image")
     end
   end

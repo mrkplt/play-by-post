@@ -13,7 +13,7 @@
         <%= render Ui::ButtonComponent.new(html_options: { type: "submit", form: "edit_post_#{@post_presenter.id}_form" }) do %>Save<% end %>
       <% end %>
       <% actions.with_cancel do %>
-        <%= render Ui::ButtonComponent.new(variant: :secondary, url: @scene_navigation_presenter.show_path) do %>Cancel<% end %>
+        <%= render Ui::ButtonComponent.new(style: Ui::ButtonComponent::Style.new(variant: :secondary), link: Ui::ButtonComponent::Link.new(url: @scene_navigation_presenter.show_path)) do %>Cancel<% end %>
       <% end %>
     <% end %>
   <% end %>

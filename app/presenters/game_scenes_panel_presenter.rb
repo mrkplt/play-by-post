@@ -8,6 +8,8 @@
 class GameScenesPanelPresenter < BasePresenter
   extend T::Sig
 
+  POSITIONS = T.let({ true => :last, false => :middle }.freeze, T::Hash[T::Boolean, Symbol])
+
   sig { params(model: GamePresenter, options: T.untyped).void }
   def initialize(model, **options)
     super
@@ -46,16 +48,16 @@ class GameScenesPanelPresenter < BasePresenter
   end
 
   # Whether the GM row is the only row in the preview — the crowned GM row's
-  # "last" flag (no divider under it) when no players have joined an active
+  # position (no divider under it) when no players have joined an active
   # scene yet.
-  sig { returns(T::Boolean) }
-  def gm_row_last?
-    roster_preview_empty?
+  sig { returns(Symbol) }
+  def gm_row_position
+    POSITIONS.fetch(roster_preview_empty?)
   end
 
-  sig { params(index: Integer).returns(T::Boolean) }
-  def roster_preview_last?(index)
-    index == roster_preview.length - 1
+  sig { params(index: Integer).returns(Symbol) }
+  def roster_preview_position(index)
+    POSITIONS.fetch(index == roster_preview.length - 1)
   end
 
   private

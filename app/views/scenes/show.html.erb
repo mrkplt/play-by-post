@@ -12,7 +12,7 @@
     <% frame.with_footer do %>
       <%= render Shared::PageActionsComponent.new do |actions| %>
         <% actions.with_primary do %>
-          <%= render Ui::ButtonComponent.new(url: page_action.href, method: page_action.http_method) do %><%= page_action.label %><% end %>
+          <%= render Ui::ButtonComponent.new(link: Ui::ButtonComponent::Link.new(url: page_action.href, method: page_action.http_method)) do %><%= page_action.label %><% end %>
         <% end %>
       <% end %>
     <% end %>
@@ -28,7 +28,7 @@
               aria-label="Toggle out-of-character posts">
         <span class="text-[11px] text-muted-2 font-semibold">Hide OOC</span>
         <span data-ooc-filter-target="switch">
-          <%= render Ui::ToggleSwitchComponent.new(on: @scene_screen.show.hide_ooc?) %>
+          <%= render Ui::ToggleSwitchComponent.new(state: @scene_screen.show.hide_ooc? ? :on : :off) %>
         </span>
       </button>
     <% end %>
@@ -51,7 +51,7 @@
     <%= render Shared::ChildSceneListComponent.new(game: @scene_screen.game, child_scenes: @scene_screen.show.visible_child_scenes) %>
 
     <%= render Shared::ControlRowComponent.new(label: "Participants: #{@scene_screen.scene.participant_names}") do %>
-      <%= render Ui::ButtonComponent.new(variant: :text, url: @scene_screen.navigation.toggle_notification_preference_path, method: :post) do %><%= @scene_screen.show.mute_toggle_label %><% end %>
+      <%= render Ui::ButtonComponent.new(style: Ui::ButtonComponent::Style.new(variant: :text), link: Ui::ButtonComponent::Link.new(url: @scene_screen.navigation.toggle_notification_preference_path, method: :post)) do %><%= @scene_screen.show.mute_toggle_label %><% end %>
     <% end %>
 
     <% if @scene_screen.scene.resolved? && (resolution = @scene_screen.scene.resolution) %>
@@ -62,12 +62,12 @@
     <% if @scene_screen.gm_actions? %>
       <div data-controller="resolve-toggle">
         <%= render Shared::ControlRowComponent.new do %>
-          <%= render Ui::ButtonComponent.new(variant: :text, url: @scene_screen.navigation.quick_child_scene_path) do %>Quick Scene<% end %>
-          <%= render Ui::ButtonComponent.new(variant: :text, url: @scene_screen.navigation.new_child_scene_path) do %>New Scene<% end %>
-          <%= render Ui::ButtonComponent.new(variant: :text, url: @scene_screen.navigation.edit_participants_path) do %>Edit Participants<% end %>
-          <%= render Ui::ButtonComponent.new(variant: :text, html_options: { class: "text-danger", data: { action: "click->resolve-toggle#toggle" } }) do %>End Scene<% end %>
+          <%= render Ui::ButtonComponent.new(style: Ui::ButtonComponent::Style.new(variant: :text), link: Ui::ButtonComponent::Link.new(url: @scene_screen.navigation.quick_child_scene_path)) do %>Quick Scene<% end %>
+          <%= render Ui::ButtonComponent.new(style: Ui::ButtonComponent::Style.new(variant: :text), link: Ui::ButtonComponent::Link.new(url: @scene_screen.navigation.new_child_scene_path)) do %>New Scene<% end %>
+          <%= render Ui::ButtonComponent.new(style: Ui::ButtonComponent::Style.new(variant: :text), link: Ui::ButtonComponent::Link.new(url: @scene_screen.navigation.edit_participants_path)) do %>Edit Participants<% end %>
+          <%= render Ui::ButtonComponent.new(style: Ui::ButtonComponent::Style.new(variant: :text), html_options: { class: "text-danger", data: { action: "click->resolve-toggle#toggle" } }) do %>End Scene<% end %>
         <% end %>
-        <%= render Shared::SceneResolveFormComponent.new(resolve_path: @scene_screen.scene.resolve_path) %>
+        <%= render Shared::SceneResolveFormComponent.new(resolve_path: @scene_screen.scene.routes.resolve_path) %>
       </div>
     <% end %>
 

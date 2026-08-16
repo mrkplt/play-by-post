@@ -52,7 +52,7 @@ RSpec.describe Ui::MarkdownRenderComponent, type: :component do
     end
 
     it "caps the height and scrolls when enabled" do
-      render_component(config: described_class::Config.new(scroll: true, height: 200))
+      render_component(config: described_class::Config.new(mode: :scroll, height: 200))
       region = page.find("div.markdown-base")
       expect(region["style"]).to eq("max-height: 200px")
       expect(region["class"]).to eq("markdown-base overflow-y-auto")
@@ -64,6 +64,10 @@ RSpec.describe Ui::MarkdownRenderComponent, type: :component do
       config = described_class.new
       expect(config.scroll).to be(false)
       expect(config.height).to eq(480)
+    end
+
+    it "rejects an unknown mode" do
+      expect { described_class.new(mode: :unknown) }.to raise_error(ArgumentError, /Unknown mode/)
     end
   end
 end

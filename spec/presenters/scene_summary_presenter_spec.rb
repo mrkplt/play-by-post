@@ -112,47 +112,6 @@ RSpec.describe SceneSummaryPresenter do
     end
   end
 
-  describe "#scene_path" do
-    it "builds the scene's show path from the injected game and url_helpers" do
-      game = build_stubbed(:game, id: 7)
-      scene = build_stubbed(:scene, id: 42)
-      allow(summary).to receive(:scene).and_return(scene)
-      urls = double("urls")
-      allow(urls).to receive(:game_scene_path).with(game, scene).and_return("/games/7/scenes/42")
-
-      presenter = described_class.new(summary, game: game, urls: urls)
-      expect(presenter.scene_path).to eq("/games/7/scenes/42")
-    end
-  end
-
-  describe "#edit_path" do
-    it "builds the summary's edit path from the injected game and url_helpers" do
-      game = build_stubbed(:game, id: 7)
-      scene = build_stubbed(:scene, id: 42)
-      allow(summary).to receive(:scene).and_return(scene)
-      urls = double("urls")
-      allow(urls).to receive(:edit_game_scene_scene_summary_path).with(game, scene)
-        .and_return("/games/7/scenes/42/scene_summary/edit")
-
-      presenter = described_class.new(summary, game: game, urls: urls)
-      expect(presenter.edit_path).to eq("/games/7/scenes/42/scene_summary/edit")
-    end
-  end
-
-  describe "#submit_path" do
-    it "builds the summary's resource path from the injected game and url_helpers" do
-      game = build_stubbed(:game, id: 7)
-      scene = build_stubbed(:scene, id: 42)
-      allow(summary).to receive(:scene).and_return(scene)
-      urls = double("urls")
-      allow(urls).to receive(:game_scene_scene_summary_path).with(game, scene)
-        .and_return("/games/7/scenes/42/scene_summary")
-
-      presenter = described_class.new(summary, game: game, urls: urls)
-      expect(presenter.submit_path).to eq("/games/7/scenes/42/scene_summary")
-    end
-  end
-
   describe "#status_label" do
     it "requires both ai_generated? and edited? to return 'Edited'" do
       ai_only = build_stubbed(:scene_summary, :ai_generated, edited_at: nil)
@@ -171,16 +130,13 @@ RSpec.describe SceneSummaryPresenter do
     end
   end
 
-  describe "#scene_url" do
-    it "builds the scene's absolute URL from the injected game and url_helpers" do
-      game = build_stubbed(:game, id: 7)
-      scene = build_stubbed(:scene, id: 42)
-      allow(summary).to receive(:scene).and_return(scene)
+  describe "#routes" do
+    it "builds a SceneSummaryRoutesPresenter carrying the same game/urls" do
+      game = build_stubbed(:game)
       urls = double("urls")
-      allow(urls).to receive(:game_scene_url).with(game, scene).and_return("https://example.com/games/7/scenes/42")
-
       presenter = described_class.new(summary, game: game, urls: urls)
-      expect(presenter.scene_url).to eq("https://example.com/games/7/scenes/42")
+
+      expect(presenter.routes).to be_a(SceneSummaryRoutesPresenter)
     end
   end
 

@@ -728,10 +728,11 @@ RSpec.describe ScenesController, type: :request do
 
         expect(AttachmentUploader).to have_received(:attach).with(
           hash_including(
-            kind: "scene_image",
-            user: gm,
-            game: game,
-            original_filename: "test_image.png"
+            context: have_attributes(
+              kind: "scene_image",
+              owner: have_attributes(user: gm, game: game),
+              naming: have_attributes(original_filename: "test_image.png")
+            )
           )
         )
       end
@@ -825,7 +826,7 @@ RSpec.describe ScenesController, type: :request do
           j["arguments"]&.second == "new_scene"
         }
         expect(mail_jobs.size).to eq(1)
-        recipient_gid = mail_jobs.first["arguments"][3]["args"][1]["_aj_globalid"]
+        recipient_gid = mail_jobs.first["arguments"][3]["args"][0]["recipient"]["_aj_globalid"]
         expect(recipient_gid).to include("User/#{player.id}")
         expect(recipient_gid).not_to include("User/#{gm.id}")
       end
@@ -897,7 +898,7 @@ RSpec.describe ScenesController, type: :request do
           j["arguments"]&.second == "scene_resolved"
         }
         expect(mail_jobs.size).to eq(2)
-        recipient_gids = mail_jobs.map { |j| j["arguments"][3]["args"][1]["_aj_globalid"] }
+        recipient_gids = mail_jobs.map { |j| j["arguments"][3]["args"][0]["recipient"]["_aj_globalid"] }
         expect(recipient_gids).to include(a_string_including("User/#{gm.id}"))
         expect(recipient_gids).to include(a_string_including("User/#{player.id}"))
       end
@@ -914,7 +915,7 @@ RSpec.describe ScenesController, type: :request do
           j["arguments"]&.first == "NotificationMailer" &&
           j["arguments"]&.second == "scene_resolved"
         }
-        recipient_gids = mail_jobs.map { |j| j["arguments"][3]["args"][1]["_aj_globalid"] }
+        recipient_gids = mail_jobs.map { |j| j["arguments"][3]["args"][0]["recipient"]["_aj_globalid"] }
         expect(recipient_gids).not_to include(a_string_including("User/#{player.id}"))
       end
     end

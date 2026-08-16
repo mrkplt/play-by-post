@@ -3,14 +3,18 @@
 class Ui::GlowComponent < ApplicationComponent
   extend T::Sig
 
-  sig { params(active: T::Boolean).void }
-  def initialize(active: false)
-    @active = active
+  STATES = T.let(%i[glowing idle].freeze, T::Array[Symbol])
+
+  sig { params(state: Symbol).void }
+  def initialize(state: :idle)
+    raise ArgumentError, "Unknown state: #{state}" unless STATES.include?(state)
+
+    @state = state
   end
 
   sig { returns(T::Boolean) }
   def active?
-    @active
+    @state == :glowing
   end
 
   sig { returns(String) }

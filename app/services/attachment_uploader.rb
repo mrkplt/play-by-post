@@ -11,7 +11,7 @@
 # x-amz-meta-* by the S3 service), then attaches that blob.
 #
 # Custom metadata is written once, at upload time, and is immutable afterward.
-class AttachmentUploader
+module AttachmentUploader
   extend T::Sig
 
   # Object-key prefixes, one per kind.
@@ -22,23 +22,55 @@ class AttachmentUploader
     "post_image" => "post_images"
   }.freeze, T::Hash[String, String])
 
-  sig do
-    params(
-      attachment: T.untyped,
-      attachable: T.untyped,
-      kind: String,
-      user: T.nilable(User),
-      game: T.nilable(Game),
-      original_filename: T.nilable(String),
-      export_scope: T.nilable(String)
-    ).void
+  # Who the attachment belongs to. Grouped so callers pass one owner object
+  # instead of two loose (user, game) params. Built via .build (not .new) so
+  # both keys are optional — Data's generated .new requires every member.
+  Owner = Data.define(:user, :game) do
+    extend T::Sig
+
+    sig { params(user: T.nilable(User), game: T.nilable(Game)).returns(AttachmentUploader::Owner) }
+    def self.build(user: nil, game: nil)
+      new(user: user, game: game)
+    end
   end
-  def self.attach(attachment:, attachable:, kind:, user: nil, game: nil, original_filename: nil, export_scope: nil)
-    prefix = KEY_PREFIXES.fetch(kind)
-    metadata = build_metadata(
-      kind: kind, user: user, game: game,
-      original_filename: original_filename, export_scope: export_scope
-    )
+
+  # How the attachment is named/scoped for metadata. Grouped for the same
+  # reason as Owner. Built via .build so both keys are optional.
+  Naming = Data.define(:original_filename, :export_scope) do
+    extend T::Sig
+
+    sig do
+      params(original_filename: T.nilable(String), export_scope: T.nilable(String))
+        .returns(AttachmentUploader::Naming)
+    end
+    def self.build(original_filename: nil, export_scope: nil)
+      new(original_filename: original_filename, export_scope: export_scope)
+    end
+  end
+
+  # The kind/provenance data recorded as R2 custom metadata, grouped so
+  # #attach and #build_metadata take one object instead of a five-way
+  # parameter list. Built via .build (not .new) so owner/naming are optional —
+  # Data's generated .new requires every member.
+  Context = Data.define(:kind, :owner, :naming) do
+    extend T::Sig
+
+    sig do
+      params(
+        kind: String,
+        owner: AttachmentUploader::Owner,
+        naming: AttachmentUploader::Naming
+      ).returns(AttachmentUploader::Context)
+    end
+    def self.build(kind:, owner: Owner.build, naming: Naming.build)
+      new(kind: kind, owner: owner, naming: naming)
+    end
+  end
+
+  sig { params(attachment: T.untyped, attachable: T.untyped, context: AttachmentUploader::Context).void }
+  def self.attach(attachment:, attachable:, context:)
+    prefix = KEY_PREFIXES.fetch(context.kind)
+    metadata = build_metadata(context)
     io, filename, content_type = normalize(attachable)
 
     blob = ActiveStorage::Blob.create_and_upload!(
@@ -58,28 +90,38 @@ class AttachmentUploader
     if attachable.is_a?(Hash)
       [ attachable.fetch(:io), attachable.fetch(:filename), attachable[:content_type] ]
     else
-      io = attachable.respond_to?(:open) ? attachable.open : attachable
-      [ io, attachable.original_filename, attachable.content_type ]
+      [ uploaded_file_io(attachable), attachable.original_filename, attachable.content_type ]
     end
   end
 
-  sig do
-    params(
-      kind: String,
-      user: T.nilable(User),
-      game: T.nilable(Game),
-      original_filename: T.nilable(String),
-      export_scope: T.nilable(String)
-    ).returns(T::Hash[String, String])
+  # ActionDispatch::Http::UploadedFile is the shape a controller receives from
+  # params for a real multipart upload, and exposes #open (the backing
+  # Tempfile's IO). Every other attachable (a raw Tempfile, or
+  # Rack::Test::UploadedFile passed directly to .normalize in specs) is
+  # already IO-ready as-is. Matched by class rather than respond_to? so this
+  # isn't a manual method-existence dispatch.
+  sig { params(attachable: T.untyped).returns(T.untyped) }
+  def self.uploaded_file_io(attachable)
+    case attachable
+    in ActionDispatch::Http::UploadedFile
+      attachable.open
+    else
+      attachable
+    end
   end
-  def self.build_metadata(kind:, user:, game:, original_filename:, export_scope:)
+
+  sig { params(context: AttachmentUploader::Context).returns(T::Hash[String, String]) }
+  def self.build_metadata(context)
+    owner = context.owner
+    naming = context.naming
+
     {
-      "kind" => kind,
-      "game-id" => game&.id&.to_s,
-      "user-id" => user&.id&.to_s,
+      "kind" => context.kind,
+      "game-id" => owner.game&.id&.to_s,
+      "user-id" => owner.user&.id&.to_s,
       "uploaded-at" => Time.current.utc.iso8601,
-      "original-filename" => original_filename,
-      "export-scope" => export_scope
+      "original-filename" => naming.original_filename,
+      "export-scope" => naming.export_scope
     }.compact
   end
 end

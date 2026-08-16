@@ -30,16 +30,29 @@ class Shared::PageFormComponent < ApplicationComponent
 
   sig { returns(String) }
   def submit_label
-    new_record? ? "Create Page" : "Save"
+    mode_value(new: "Create Page", edit: "Save")
   end
 
   sig { returns(String) }
   def back_href
-    new_record? ? helpers.game_path(game, anchor: "pages") : helpers.game_page_path(game, @page)
+    mode_value(
+      new: -> { helpers.game_path(game, anchor: "pages") },
+      edit: -> { helpers.game_page_path(game, @page) }
+    ).call
   end
 
   sig { returns(String) }
   def form_id
-    new_record? ? "new_page_form" : "edit_page_#{@page.id}_form"
+    mode_value(new: "new_page_form", edit: "edit_page_#{@page.id}_form")
+  end
+
+  private
+
+  # The single new_record?-keyed branch every mode-dependent value goes
+  # through, so the form's new/edit distinction is tested once per call
+  # rather than re-testing new_record? in each label/href/id method.
+  sig { type_parameters(:T).params(new: T.type_parameter(:T), edit: T.type_parameter(:T)).returns(T.type_parameter(:T)) }
+  def mode_value(new:, edit:)
+    new_record? ? new : edit
   end
 end

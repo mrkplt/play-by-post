@@ -2,7 +2,7 @@
     multipart: true,
     data: {
       controller: "post-draft",
-      post_draft_save_url_value: @scene.save_draft_url
+      post_draft_save_url_value: @scene.routes.save_draft_url
     } do |f| %>
   <% if @post.errors.any? %>
     <div class="bg-red-50 border border-red-300 rounded-lg px-3 py-2 mb-3 text-sm text-red-600">
@@ -15,15 +15,12 @@
   <%= render Ui::SectionLabelComponent.new(html_class: "mb-2") do %>Post a Reply<% end %>
 
   <%= render Ui::MarkdownEditorComponent.new(
-        binding: { form: f, field: :content },
-        config: Ui::MarkdownEditorComponent::Config.with_preview(content_class: "post-content"),
-        value: @draft&.content,
-        placeholder: "Write your post... (markdown)",
-        data: {
+          binding: { form: f, field: :content },
+          config: Ui::MarkdownEditorComponent::Config.with_preview(content_class: "post-content"),
+          field: Ui::MarkdownEditorComponent::Field.new(value: @draft&.content, placeholder: "Write your post... (markdown)", data: {
           post_draft_target: "content",
           action: "input->markdown-preview#update input->post-draft#scheduleSave"
-        },
-        wrapper_class: "mb-3") %>
+        }, wrapper_class: "mb-3")) %>
 
   <% unless @game.images_disabled? %>
     <div class="mb-2">

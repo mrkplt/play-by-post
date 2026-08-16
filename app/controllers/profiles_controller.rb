@@ -26,9 +26,8 @@ class ProfilesController < ApplicationController
   def update
     current_profile = profile
     authorize current_profile
-    current_profile.display_name = params[:user_profile][:display_name]
 
-    if current_profile.save
+    if current_profile.update_display_name(params[:user_profile][:display_name])
       redirect_to root_path, notice: "Display name saved."
     else
       assign_profile_presenter(current_profile)
@@ -47,24 +46,12 @@ class ProfilesController < ApplicationController
   sig { void }
   def export_all
     authorize profile, :manage?
-    deliver_export
+    ExportDelivery.request!(user: current_user, game: nil)
 
     redirect_to profile_path, notice: "Export requested — you'll receive an email shortly."
   end
 
   private
-
-  sig { void }
-  def deliver_export
-    receipt = GameExportRequest.valid_receipt_for(current_user, nil)
-
-    if receipt
-      ExportDelivery.email_download_link(receipt)
-    else
-      request = GameExportRequest.create!(user: current_user, game: nil)
-      ExportJob.perform_later(request.id)
-    end
-  end
 
   sig { params(current_profile: UserProfile).void }
   def assign_profile_presenter(current_profile)

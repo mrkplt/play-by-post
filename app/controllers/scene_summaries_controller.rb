@@ -30,18 +30,9 @@ class SceneSummariesController < ApplicationController
   sig { void }
   def create
     authorize SceneSummary.new(scene_id: scene.id), :create?
-    if scene.scene_summary.present?
-      return redirect_to edit_game_scene_scene_summary_path(game, scene),
-                          alert: "A summary already exists. Edit it instead."
-    end
+    return redirect_to_existing_summary if scene.scene_summary.present?
 
-    new_summary = scene.build_scene_summary(summary_params.merge(edited_by: current_user, edited_at: Time.current))
-    if new_summary.save
-      redirect_to game_scene_path(game, scene), notice: "Summary saved."
-    else
-      assign_presenters(new_summary)
-      render :new, status: :unprocessable_content
-    end
+    save_new_summary
   end
 
   sig { void }
@@ -70,6 +61,22 @@ class SceneSummariesController < ApplicationController
   end
 
   private
+
+  sig { void }
+  def redirect_to_existing_summary
+    redirect_to edit_game_scene_scene_summary_path(game, scene), alert: "A summary already exists. Edit it instead."
+  end
+
+  sig { void }
+  def save_new_summary
+    new_summary = scene.build_scene_summary(summary_params.merge(edited_by: current_user, edited_at: Time.current))
+    if new_summary.save
+      redirect_to game_scene_path(game, scene), notice: "Summary saved."
+    else
+      assign_presenters(new_summary)
+      render :new, status: :unprocessable_content
+    end
+  end
 
   # Populates the game/summary presenter pair every new/edit/error render needs.
   sig { params(found_summary: SceneSummary).void }

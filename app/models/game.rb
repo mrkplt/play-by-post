@@ -71,10 +71,7 @@ class Game < ApplicationRecord
   # except a banned member or a non-member.
   sig { params(user: User).returns(T::Boolean) }
   def viewable_by?(user)
-    membership = member_for(user)
-    return false unless membership
-
-    membership.game_master? || membership.active? || membership.removed?
+    member_for(user)&.viewable? || false
   end
 
   # Phase one of deletion: hide the game now. The record and its artifacts are
@@ -91,9 +88,6 @@ class Game < ApplicationRecord
 
   sig { returns(T.nilable(ActiveSupport::Duration)) }
   def edit_window_duration
-    minutes = post_edit_window_minutes
-    return nil if minutes.nil?
-
-    minutes.minutes
+    post_edit_window_minutes&.minutes
   end
 end

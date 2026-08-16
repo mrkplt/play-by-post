@@ -154,4 +154,20 @@ RSpec.describe Character, type: :model do
       expect(character.editable_by?(other, game)).to be false
     end
   end
+
+  describe ".first_active_name_by_user" do
+    it "maps each user_id to their first character's name" do
+      user = build_stubbed(:user, id: 1)
+      first = build_stubbed(:character, user: user, name: "First")
+      second = build_stubbed(:character, user: user, name: "Second")
+
+      result = described_class.first_active_name_by_user([ first, second ])
+
+      expect(result).to eq(user.id => "First")
+    end
+
+    it "returns an empty hash for no characters" do
+      expect(described_class.first_active_name_by_user([])).to eq({})
+    end
+  end
 end

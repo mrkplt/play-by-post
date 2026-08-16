@@ -41,6 +41,7 @@ matcher:
     # Presenters
     - BannedMemberPresenter
     - CharacterPresenter
+    - CharacterShowPresenter
     - CharacterVersionPresenter
     - GameDashboardItemPresenter
     - GameDashboardPresenter
@@ -49,6 +50,7 @@ matcher:
     - FlashPresenter
     - SceneNotificationPresenter
     - GameFilePresenter
+    - GameFileMediaPresenter
     - GameMemberPresenter
     - GameFeedRowPresenter
     - GameLinkPresenter
@@ -65,6 +67,7 @@ matcher:
     - NotebookEntryPresenter
     - PagePresenter
     - PostPresenter
+    - PostRoutesPresenter
     - RosterCharacterPresenter
     - SceneCardPresenter
     - ScenePlayerPresenter
@@ -72,8 +75,10 @@ matcher:
     - SceneShowPresenter
     - SceneNavigationPresenter
     - SceneSummaryPresenter
+    - SceneSummaryRoutesPresenter
     - SceneSummaryCollectionPresenter
     - ScenePresenter
+    - SceneRoutesPresenter
     - SceneParticipantRosterPresenter
     - SceneRosterRowsPresenter
     - SceneTreeRowPresenter
@@ -116,12 +121,15 @@ matcher:
     - Shared::StatusBadgeRowComponent
     - Shared::SceneResolveFormComponent
     - Shared::SceneFormComponent
+    - Shared::SceneFormComponent::Selection
     - Shared::ParticipantCheckboxListComponent
     - Shared::GameFormComponent
+    - Shared::GameFormComponent::Submission
     - Shared::GameDetailsComponent
     - Shared::SidebarComponent
     - Shared::TreeNodeComponent
     - Shared::HeaderComponent
+    - Shared::HeaderComponent::Title
     - Shared::GameNavComponent
     - Shared::BreadcrumbsComponent
     - Shared::PageActionsComponent
@@ -147,6 +155,8 @@ matcher:
     - Ui::BadgeComponent
     - Ui::BreadcrumbComponent
     - Ui::ButtonComponent
+    - Ui::ButtonComponent::Style
+    - Ui::ButtonComponent::Link
     - Ui::GlowComponent
     - Ui::AvatarComponent
     - Ui::CardComponent
@@ -154,6 +164,7 @@ matcher:
     - Ui::ToggleSwitchComponent
     - Ui::MarkdownEditorComponent
     - Ui::MarkdownEditorComponent::Config
+    - Ui::MarkdownEditorComponent::Field
     - Ui::MarkdownEditorComponent::Region
     - Ui::MarkdownEditorComponent::ToolbarRegion
     - Ui::MarkdownEditorComponent::PreviewRegion
@@ -169,13 +180,20 @@ matcher:
     - Ui::TurnstileWidgetComponent
     # Services
     - AttachmentUploader
+    - AttachmentUploader::Owner
+    - AttachmentUploader::Naming
+    - AttachmentUploader::Context
     - TurnstileVerifier
+    - TurnstileVerifier::SiteverifyUri
     - CharacterCreation
     - CharacterPresenterBuilder
     - ExportDelivery
     - EmailContentExtractor
+    - EmailContentExtraction::OpenrouterRequest
+    - InboundMailBuilder
     - GameDashboardQuery
     - GameSettingToggle
+    - GamePurgeScope
     - SceneShowBuilder
     - SceneTreeBuilder
     - SceneNotifier
@@ -203,6 +221,7 @@ matcher:
     - SceneParticipantSync
     - SceneReadState
     - SceneSummaryService
+    - SceneSummaryService::Result
     - FizzySweepService
     # Controllers
     - ActionMailbox::Ingresses::Resend::InboundEmailsController
@@ -242,14 +261,18 @@ matcher:
     # Jobs
     - PostDigestJob
     - ExportJob
+    - ExportTarget
     - ExportCleanupJob
     - SceneSummaryJob
     - CoolifyDeployJob
+    - CoolifyDeployResponse
     - GamePurgeSweepJob
     - GamePurgeJob
     - FeedbackSweepJob
     # Mailers
     - NotificationMailer
+    - NotificationMailer::Delivery
+    - NotificationMailerDeliverySerializer
     - InvitationMailer
     - ExportMailer
     # Mailboxes

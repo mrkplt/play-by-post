@@ -4,8 +4,7 @@
   <%= render Shared::MobileFrameComponent.new do |frame| %>
     <% frame.with_header do %>
       <%= render Shared::HeaderComponent.new(
-            title: @game_screen.game.name,
-            crown: @game_screen.game.can_manage?,
+            title: Shared::HeaderComponent::Title.new(text: @game_screen.game.name, crown: @game_screen.game.can_manage?),
             gear: game_player_management_path(@game_screen.game),
             secondary_nav: Shared::GameNavComponent.new(game_presenter: @game_screen.game, active_tab: :scenes, mode: :switch)) %>
     <% end %>
@@ -18,7 +17,7 @@
       <% else %>
         <div>
           <% @game_screen.scenes.active_scenes.each do |scene| %>
-            <%= render Shared::SceneCardComponent.new(scene: scene, game: @game_screen.game, hot: scene.hot?) %>
+            <%= render Shared::SceneCardComponent.new(scene: scene, game: @game_screen.game) %>
           <% end %>
         </div>
       <% end %>
@@ -36,12 +35,13 @@
         <%# The crown marks the person this row is about, not the viewer: this
             row IS the GM, so it is always crowned. %>
         <%= render Shared::RosterRowComponent.new(
-              name: @game_screen.scenes.gm_name, subtitle: "Running this game",
-              avatar_tone: :dark, crown: true, last: @game_screen.scenes.gm_row_last?) %>
+              row: { name: @game_screen.scenes.gm_name, subtitle: "Running this game",
+                     avatar_tone: :dark, crown: true },
+              position: @game_screen.scenes.gm_row_position) %>
         <% @game_screen.scenes.roster_preview.each_with_index do |row, i| %>
           <%= render Shared::RosterRowComponent.new(
-                name: row[:name], subtitle: row[:scene],
-                avatar_tone: :gold, last: @game_screen.scenes.roster_preview_last?(i)) %>
+                row: { name: row[:name], subtitle: row[:scene], avatar_tone: :gold },
+                position: @game_screen.scenes.roster_preview_position(i)) %>
         <% end %>
       </div>
     </section>
@@ -67,11 +67,9 @@
             <% @game_screen.roster.roster_characters.each_with_index do |row, i| %>
               <div data-roster-filter-target="row" data-roster-name="<%= row.filter_key %>">
                 <%= render Shared::RosterRowComponent.new(
-                      name: row.character_name,
-                      subtitle: "Played by #{row.owner_name}",
-                      avatar_tone: row.avatar_tone,
-                      dimmed: row.removed?,
-                      last: @game_screen.roster.roster_character_last?(i)) do %>
+                      row: { name: row.character_name, subtitle: "Played by #{row.owner_name}",
+                             avatar_tone: row.avatar_tone, dimmed: row.removed? },
+                      position: @game_screen.roster.roster_character_position(i)) do %>
                   <% if row.removed? %>
                     <%= render(Ui::BadgeComponent.new(variant: :slate)) { "Removed" } %>
                   <% end %>
@@ -92,12 +90,10 @@
           <div class="bg-tint-blue-bg border border-tint-blue-border rounded-card overflow-hidden opacity-85 mt-1">
             <% @game_screen.roster.banned_members.each_with_index do |banned, i| %>
               <%= render Shared::RosterRowComponent.new(
-                    name: banned.display_name,
-                    subtitle: "Played by #{banned.display_name}",
-                    avatar_tone: :blue,
-                    name_class: "text-tint-blue-strong",
-                    subtitle_class: "text-tint-blue-soft",
-                    last: @game_screen.roster.banned_member_last?(i)) do %>
+                    row: { name: banned.display_name, subtitle: "Played by #{banned.display_name}",
+                           avatar_tone: :blue, name_class: "text-tint-blue-strong",
+                           subtitle_class: "text-tint-blue-soft" },
+                    position: @game_screen.roster.banned_member_position(i)) do %>
                 <%= form_with url: banned.unban_path, method: :patch, class: "inline" do |f| %>
                   <%= f.hidden_field :status, value: "active" %>
                   <%= f.submit "Unban", class: "text-[11px] font-bold text-danger-soft bg-transparent border-0 cursor-pointer p-0" %>
@@ -122,7 +118,7 @@
         <p class="text-muted-2 text-sm">No files uploaded yet.</p>
       <% else %>
         <%= render Ui::SectionLabelComponent.new do %>Newest first<% end %>
-        <%= render Shared::GalleryComponent.new(game_files: @game_screen.show.game_files, can_manage: @game_screen.game.can_manage?) %>
+        <%= render Shared::GalleryComponent.new(game_files: @game_screen.show.game_files) %>
       <% end %>
     </section>
 

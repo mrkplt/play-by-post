@@ -1,6 +1,6 @@
 <%= render Ui::SectionLabelComponent.new do %>Game Details<% end %>
 <%= render Ui::CardComponent.new do %>
-  <%= render Ui::SettingsRowComponent.new(label: name, last: true) do %>
+  <%= render Ui::SettingsRowComponent.new(label: name, position: :last) do %>
     <%= link_to "Edit", edit_path, class: "text-xs font-bold text-accent no-underline" %>
   <% end %>
   <% if description? %>

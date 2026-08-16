@@ -4,10 +4,29 @@
 # (after processing a fresh export) and GameExportsController (when resending an
 # existing valid receipt), so the signed-URL lifetime and mailer call live in
 # one place.
-class ExportDelivery
+module ExportDelivery
   extend T::Sig
 
   DOWNLOAD_EXPIRY = T.let(7.days, ActiveSupport::Duration)
+
+  # Resends an existing valid receipt's download link, or creates a fresh
+  # export request and enqueues it. `game` may be nil (the profile's
+  # "export everything" request). Shared by GameExportsController#create and
+  # ProfilesController#export_all — both controllers ask this one question
+  # ("is there already a receipt to resend?") and take the same two actions.
+  sig { params(user: User, game: T.nilable(Game)).void }
+  def self.request!(user:, game:)
+    receipt = GameExportRequest.valid_receipt_for(user, game)
+
+    if receipt
+      # A successful export already exists within the receipt window — resend
+      # its download link instead of reprocessing.
+      email_download_link(receipt)
+    else
+      export_request = GameExportRequest.create!(user: user, game: game)
+      ExportJob.perform_later(export_request.id)
+    end
+  end
 
   sig { params(request: GameExportRequest).void }
   def self.email_download_link(request)

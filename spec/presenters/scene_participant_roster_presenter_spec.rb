@@ -12,4 +12,12 @@ RSpec.describe SceneParticipantRosterPresenter do
       expect(presenter.selected_character_ids).to eq([])
     end
   end
+
+  describe "#players_with_characters" do
+    it "returns the injected players_with_characters option" do
+      players = [ instance_double(ScenePlayerPresenter) ]
+      presenter = described_class.new([], players_with_characters: players)
+      expect(presenter.players_with_characters).to eq(players)
+    end
+  end
 end

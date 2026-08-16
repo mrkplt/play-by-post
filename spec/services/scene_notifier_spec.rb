@@ -15,8 +15,8 @@ RSpec.describe SceneNotifier, :db do
 
   def recipients_of(mail_method)
     deliveries = []
-    allow(NotificationMailer).to receive(mail_method) do |_scene, recipient|
-      deliveries << recipient
+    allow(NotificationMailer).to receive(mail_method) do |delivery|
+      deliveries << delivery.recipient
       double(deliver_later: true)
     end
     yield

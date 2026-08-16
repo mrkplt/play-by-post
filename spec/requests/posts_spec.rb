@@ -121,10 +121,11 @@ RSpec.describe PostsController, type: :request do
 
       expect(AttachmentUploader).to have_received(:attach).with(
         hash_including(
-          kind: "post_image",
-          user: player,
-          game: game,
-          original_filename: "test_image.png"
+          context: have_attributes(
+            kind: "post_image",
+            owner: have_attributes(user: player, game: game),
+            naming: have_attributes(original_filename: "test_image.png")
+          )
         )
       )
     end

@@ -15,12 +15,11 @@
           waits until the entry is promoted to a Page. Dropping the preview is
           omitting its region; there is no preview flag. %>
       <%= render Ui::MarkdownEditorComponent.new(
-            binding: { form: f, field: :body },
-            config: Ui::MarkdownEditorComponent::Config.new(
+          binding: { form: f, field: :body },
+          config: Ui::MarkdownEditorComponent::Config.new(
               edit_height: :xl,
               regions: [ Ui::MarkdownEditorComponent::ToolbarRegion.new ]),
-            rows: 24,
-            placeholder: "Write the entry in markdown…") %>
+          field: Ui::MarkdownEditorComponent::Field.new(rows: 24, placeholder: "Write the entry in markdown…")) %>
     </div>
 
   <% end %>

@@ -8,6 +8,8 @@
 class Shared::RssFeedsSectionComponent < ApplicationComponent
   extend T::Sig
 
+  POSITIONS = T.let({ true => :last, false => :middle }.freeze, T::Hash[T::Boolean, Symbol])
+
   sig { params(rows: T::Array[GameFeedRowPresenter]).void }
   def initialize(rows:)
     @rows = T.let(rows, T::Array[GameFeedRowPresenter])
@@ -21,8 +23,8 @@ class Shared::RssFeedsSectionComponent < ApplicationComponent
     @rows.any?
   end
 
-  sig { params(index: Integer).returns(T::Boolean) }
-  def last_row?(index)
-    index == @rows.length - 1
+  sig { params(index: Integer).returns(Symbol) }
+  def row_position(index)
+    POSITIONS.fetch(index == @rows.length - 1)
   end
 end

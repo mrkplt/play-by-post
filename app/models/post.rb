@@ -26,12 +26,14 @@ class Post < ApplicationRecord
 
   sig { params(user: User).returns(T::Boolean) }
   def editable_by?(user)
-    return false unless self.user == user
+    return false unless authored_by?(user)
 
-    window = T.must(game).edit_window_duration
-    return true if window.nil?
+    within_edit_window?
+  end
 
-    created_at > window.ago
+  sig { params(user: User).returns(T::Boolean) }
+  def authored_by?(user)
+    self.user == user
   end
 
   sig { returns(T::Boolean) }
@@ -47,11 +49,10 @@ class Post < ApplicationRecord
   def acceptable_image
     return unless image.attached?
 
-    unless image.blob.byte_size <= IMAGE_MAX_SIZE
-      errors.add(:image, "must be less than 10MB")
-    end
+    blob = image.blob
+    errors.add(:image, "must be less than 10MB") unless blob.byte_size <= IMAGE_MAX_SIZE
 
-    unless IMAGE_TYPES.include?(image.blob.content_type)
+    unless IMAGE_TYPES.include?(blob.content_type)
       errors.add(:image, "must be a JPEG, PNG, GIF, or WebP image")
     end
   end

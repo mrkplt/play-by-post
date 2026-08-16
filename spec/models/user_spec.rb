@@ -83,7 +83,11 @@ RSpec.describe User, type: :model do
   describe "#send_devise_notification" do
     it "delivers the magic link off the request cycle, not inline" do
       user = build_stubbed(:user)
-      message = double(deliver_later: true, deliver_now: true)
+      # A real ActionMailer::MessageDelivery (dispatch is by class, not
+      # respond_to?, so a plain double would not exercise the branch).
+      message = ActionMailer::MessageDelivery.new(ApplicationMailer, :welcome_email)
+      allow(message).to receive(:deliver_later)
+      allow(message).to receive(:deliver_now)
       mailer = double
       allow(mailer).to receive(:send).and_return(message)
       allow(user).to receive(:devise_mailer).and_return(mailer)
@@ -95,10 +99,15 @@ RSpec.describe User, type: :model do
       expect(message).not_to have_received(:deliver_now)
     end
 
-    it "delivers now when the message cannot be delivered later" do
+    it "delivers now when the message is not an ActionMailer::MessageDelivery" do
       user = build_stubbed(:user)
-      message = double
-      allow(message).to receive(:respond_to?).with(:deliver_later).and_return(false)
+      # Devise::Mailer can hand back a raw Mail::Message for some notification
+      # paths (no deliver_later), so anything other than a MessageDelivery
+      # must fall through to deliver_now. A plain object (not a double, since
+      # dispatch is now by class/is_a?, which a double never satisfies) stands
+      # in for that raw-message shape.
+      message = Object.new
+      def message.deliver_now; end
       allow(message).to receive(:deliver_now)
       allow(user).to receive(:devise_mailer).and_return(double(send: message))
 

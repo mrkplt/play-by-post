@@ -16,7 +16,8 @@ RSpec.describe Shared::HeaderComponent, type: :component do
   end
 
   it "accents the title when requested" do
-    expect(rendered(title: "Your Games", accent_title: true)).to have_css("h1.text-accent")
+    title = described_class::Title.new(text: "Your Games", accent: true)
+    expect(rendered(title: title)).to have_css("h1.text-accent")
   end
 
   it "uses white title by default" do
@@ -25,11 +26,17 @@ RSpec.describe Shared::HeaderComponent, type: :component do
 
   context "crown" do
     it "renders when crown: true" do
-      expect(rendered(title: "Game", crown: true)).to have_css("svg, img", minimum: 1)
+      title = described_class::Title.new(text: "Game", crown: true)
+      expect(rendered(title: title)).to have_css("svg, img", minimum: 1)
     end
 
     it "does not render when crown: false" do
-      expect(described_class.new(title: "Game", crown: false).crown?).to be false
+      title = described_class::Title.new(text: "Game", crown: false)
+      expect(described_class.new(title: title).crown?).to be false
+    end
+
+    it "does not render for a bare string title" do
+      expect(described_class.new(title: "Game").crown?).to be false
     end
   end
 

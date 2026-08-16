@@ -23,6 +23,15 @@ class Invitation < ApplicationRecord
     update!(accepted_at: Time.current)
   end
 
+  # Joins the given user to this invitation's game as an active player and
+  # marks the invitation accepted, in one call — the two writes
+  # InvitationsController#accept needs beyond finding/creating the user.
+  sig { params(user: User).void }
+  def accept_for!(user)
+    T.must(game).game_members.find_or_create_by!(user: user, role: "player", status: "active")
+    accept!
+  end
+
   private
 
   def generate_token

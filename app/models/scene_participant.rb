@@ -10,7 +10,7 @@ class SceneParticipant < ApplicationRecord
   # Characters are the primary actor; GM rows have no character so fall back to display name.
   sig { returns(String) }
   def display_name
-    u = T.must(user)
-    character&.name || u.display_name || u.email
+    participant = T.must(user)
+    character&.name || participant.display_name || participant.email
   end
 end

@@ -6,15 +6,19 @@
 class Ui::ToggleSwitchComponent < ApplicationComponent
   extend T::Sig
 
-  sig { params(on: T::Boolean, html_class: String).void }
-  def initialize(on: false, html_class: "")
-    @on = on
+  STATES = T.let(%i[on off].freeze, T::Array[Symbol])
+
+  sig { params(state: Symbol, html_class: String).void }
+  def initialize(state: :off, html_class: "")
+    raise ArgumentError, "Unknown state: #{state}" unless STATES.include?(state)
+
+    @state = state
     @html_class = html_class
   end
 
   sig { returns(T::Boolean) }
   def on?
-    @on
+    @state == :on
   end
 
   sig { returns(String) }

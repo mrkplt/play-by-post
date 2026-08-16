@@ -14,7 +14,7 @@
         <%= render Ui::ButtonComponent.new(html_options: { type: "submit", form: "notebook_entry_#{@entry_presenter.id}_edit_form_element" }) do %>Save<% end %>
       <% end %>
       <% actions.with_cancel do %>
-        <%= render Ui::ButtonComponent.new(variant: :secondary, url: game_routes.notebook_board_href) do %>Cancel<% end %>
+        <%= render Ui::ButtonComponent.new(style: Ui::ButtonComponent::Style.new(variant: :secondary), link: Ui::ButtonComponent::Link.new(url: game_routes.notebook_board_href)) do %>Cancel<% end %>
       <% end %>
     <% end %>
   <% end %>

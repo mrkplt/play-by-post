@@ -7,20 +7,35 @@ RSpec.describe PostPresenterBuilder do
   let(:post) { build_stubbed(:post) }
   let(:current_user) { build_stubbed(:user) }
   let(:policy) { PostPolicy.new(current_user, post) }
+  let(:authorized_post) { PostPresenterBuilder::AuthorizedPost.new(post: post, policy: policy) }
 
   subject(:builder) { described_class.new(game, scene, urls) }
 
   describe "#post_presenter" do
     it "wraps the post with the injected game, scene, urls and policy" do
-      result = builder.post_presenter(post, policy)
+      result = builder.post_presenter(authorized_post)
       expect(result).to be_a(PostPresenter)
       expect(result.__getobj__).to eq(post)
     end
 
     it "carries scene_participants through when supplied" do
       participant = instance_double(SceneParticipant, user_id: post.user_id, display_name: "Lady Ashford")
-      result = builder.post_presenter(post, policy, scene_participants: [ participant ])
+      result = builder.post_presenter(authorized_post, scene_participants: [ participant ])
 
+      expect(result.author_display_name).to eq("Lady Ashford")
+    end
+  end
+
+  describe "#post_presenter_with_participants" do
+    it "builds a post presenter with this scene's participants loaded" do
+      participant = instance_double(SceneParticipant, user_id: post.user_id, display_name: "Lady Ashford")
+      allow(scene).to receive(:scene_participants).and_return(
+        instance_double(ActiveRecord::Associations::CollectionProxy).tap do |relation|
+          allow(relation).to receive(:includes).with(:character, :user).and_return([ participant ])
+        end
+      )
+
+      result = builder.post_presenter_with_participants(authorized_post)
       expect(result.author_display_name).to eq("Lady Ashford")
     end
   end
@@ -31,7 +46,7 @@ RSpec.describe PostPresenterBuilder do
       scene_presenter = ScenePresenter.new(scene)
       page = PostPresenterBuilder::PageContext.new(game_presenter: game_presenter, scene_presenter: scene_presenter)
 
-      result = builder.composer_component(post, policy, page)
+      result = builder.composer_component(authorized_post, page)
       expect(result).to be_a(Shared::PostComposerComponent)
     end
   end

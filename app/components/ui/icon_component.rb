@@ -19,18 +19,22 @@ class Ui::IconComponent < ApplicationComponent
     extra_small: "w-[13px] h-[13px]"
   }.freeze, T::Hash[Symbol, String])
 
+  EMPHASES = T.let(%i[normal accent].freeze, T::Array[Symbol])
+
   sig do
     params(
       name: Symbol,
       size: Symbol,
-      accent: T::Boolean,
+      emphasis: Symbol,
       html_options: T::Hash[Symbol, T.untyped]
     ).void
   end
-  def initialize(name:, size: :small, accent: false, html_options: {})
+  def initialize(name:, size: :small, emphasis: :normal, html_options: {})
+    raise ArgumentError, "Unknown emphasis: #{emphasis}" unless EMPHASES.include?(emphasis)
+
     @name = name
     @size = size
-    @accent = accent
+    @emphasis = emphasis
     @html_options = html_options
   end
 
@@ -44,13 +48,21 @@ class Ui::IconComponent < ApplicationComponent
 
   sig { returns(T::Hash[Symbol, T.untyped]) }
   def build_options
-    classes = [ size_class ]
-    classes << "text-accent" if @accent
-    # `@html_options[:class]` gates entry, so the deleted value is always truthy.
-    classes << T.unsafe(@html_options.delete(:class)) if @html_options[:class]
-    merged = { class: classes.join(" ") }.merge(@html_options)
+    merged = { class: icon_classes }.merge(@html_options)
     merged.delete(:class) if merged[:class].to_s.empty?
     merged
+  end
+
+  # The size/accent/caller classes, with any caller-supplied
+  # `html_options[:class]` folded in and removed from html_options so it
+  # isn't merged in twice.
+  sig { returns(String) }
+  def icon_classes
+    classes = [ size_class ]
+    classes << "text-accent" if @emphasis == :accent
+    # `@html_options[:class]` gates entry, so the deleted value is always truthy.
+    classes << T.unsafe(@html_options.delete(:class)) if @html_options[:class]
+    classes.join(" ")
   end
 
   sig { returns(String) }

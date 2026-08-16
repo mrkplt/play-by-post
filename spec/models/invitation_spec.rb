@@ -81,4 +81,39 @@ RSpec.describe Invitation, type: :model do
       expect(build(:invitation, :accepted).accepted?).to be true
     end
   end
+
+  describe "#accept_for!" do
+    it "creates an active player membership for the user in the invitation's game" do
+      game = create(:game)
+      invitation = create(:invitation, game: game)
+      user = create(:user)
+
+      invitation.accept_for!(user)
+
+      membership = game.game_members.find_by(user: user)
+      expect(membership).to be_present
+      expect(membership.role).to eq("player")
+      expect(membership.status).to eq("active")
+    end
+
+    it "marks the invitation accepted" do
+      invitation = create(:invitation)
+      user = create(:user)
+
+      invitation.accept_for!(user)
+
+      expect(invitation.accepted?).to be true
+    end
+
+    it "does not duplicate an existing membership for the user" do
+      game = create(:game)
+      invitation = create(:invitation, game: game)
+      user = create(:user)
+      game.game_members.create!(user: user, role: "player", status: "active")
+
+      expect {
+        invitation.accept_for!(user)
+      }.not_to change(GameMember, :count)
+    end
+  end
 end

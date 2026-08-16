@@ -29,15 +29,10 @@ class ScenesController < ApplicationController
 
   sig { void }
   def create
-    new_scene = game.scenes.new
-    authorize new_scene
-    new_scene.assign_attributes(permitted_attributes(new_scene))
-    attach_uploaded_image(new_scene, game, param_key: :scene)
+    new_scene = build_new_scene
 
     if new_scene.save
-      SceneParticipantSeeder.new(new_scene, game).call(params[:character_ids])
-      SceneNotifier.new(new_scene).created(current_user)
-      redirect_to game_scene_path(game, new_scene), notice: "Scene created."
+      finish_scene_creation(new_scene)
     else
       render :new, status: :unprocessable_content, locals: { scene_form: build_scene_form(new_scene) }
     end
@@ -73,6 +68,22 @@ class ScenesController < ApplicationController
   end
 
   private
+
+  sig { returns(Scene) }
+  def build_new_scene
+    new_scene = game.scenes.new
+    authorize new_scene
+    new_scene.assign_attributes(permitted_attributes(new_scene))
+    attach_uploaded_image(new_scene, game, param_key: :scene)
+    new_scene
+  end
+
+  sig { params(new_scene: Scene).void }
+  def finish_scene_creation(new_scene)
+    SceneParticipantSeeder.new(new_scene, game).call(params[:character_ids])
+    SceneNotifier.new(new_scene).created(current_user)
+    redirect_to game_scene_path(game, new_scene), notice: "Scene created."
+  end
 
   # Memoized, not a before_action: #new/#create render a form not named after
   # either action, so there is no single action to hang the assignment on.

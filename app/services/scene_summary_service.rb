@@ -7,7 +7,21 @@ class SceneSummaryService
   DEFAULT_MODEL = "openai/gpt-4o"
   MAX_POSTS = 500
 
-  Result = Struct.new(:body, :model_used, :input_tokens, :output_tokens, keyword_init: true)
+  Result = Struct.new(:body, :model_used, :input_tokens, :output_tokens, keyword_init: true) do
+    # Parses an OpenRouter chat-completion response into a Result. Owned by
+    # Result (not SceneSummaryService) since every field it reads comes from
+    # the response, not from the caller's own state.
+    def self.from_response(response, model_used:)
+      usage = response["usage"] || {}
+
+      new(
+        body: response.dig("choices", 0, "message", "content").to_s.strip,
+        model_used: model_used,
+        input_tokens: usage["prompt_tokens"],
+        output_tokens: usage["completion_tokens"]
+      )
+    end
+  end
 
   sig { params(scene: Scene).void }
   def initialize(scene)
@@ -16,37 +30,27 @@ class SceneSummaryService
 
   sig { returns(Result) }
   def call
-    if api_key.blank?
-      raise ConfigurationError,
-            "OpenRouter API key is not set (credentials.openrouter_api_key or OPENROUTER_API_KEY)"
-    end
-
-    client = OpenAI::Client.new(
-      access_token: api_key,
-      uri_base: OPENROUTER_API_BASE
-    )
-
-    response = client.chat(
-      parameters: {
-        model: model,
-        messages: [ { role: "user", content: prompt } ]
-      }
-    )
-
-    body = response.dig("choices", 0, "message", "content").to_s.strip
-    usage = response["usage"] || {}
-
-    Result.new(
-      body: body,
-      model_used: model,
-      input_tokens: usage["prompt_tokens"],
-      output_tokens: usage["completion_tokens"]
-    )
+    ensure_api_key!
+    Result.from_response(request_completion, model_used: model)
   end
 
   class ConfigurationError < StandardError; end
 
   private
+
+  sig { void }
+  def ensure_api_key!
+    return if api_key.present?
+
+    raise ConfigurationError,
+          "OpenRouter API key is not set (credentials.openrouter_api_key or OPENROUTER_API_KEY)"
+  end
+
+  sig { returns(T::Hash[String, T.untyped]) }
+  def request_completion
+    client = OpenAI::Client.new(access_token: api_key, uri_base: OPENROUTER_API_BASE)
+    client.chat(parameters: { model: model, messages: [ { role: "user", content: prompt } ] })
+  end
 
   # Reads the encrypted credential first so this matches EmailContentExtractor;
   # the env var remains a fallback for local runs without the credentials key.
@@ -68,16 +72,25 @@ class SceneSummaryService
     @scene.posts.published.includes(:user).order(:created_at).limit(MAX_POSTS).to_a
   end
 
+  # T.untyped so specs can render prompt output from plain doubles, decoupled
+  # from real Post/User records (see spec's post_double helper).
+  sig { params(post: T.untyped).returns(String) }
+  def post_line(post)
+    user = T.must(post.user)
+    author = user.display_name || user.email
+    prefix = post.is_ooc? ? "[OOC] " : ""
+    "#{prefix}#{author}: #{post.content}"
+  end
+
+  sig { returns(String) }
+  def description_section
+    description = @scene.description
+    description.present? ? "\nScene description: #{description}\n" : ""
+  end
+
   sig { returns(String) }
   def prompt
-    post_lines = posts_for_prompt.map do |post|
-      user = T.must(post.user)
-      author = user.display_name || user.email
-      prefix = post.is_ooc? ? "[OOC] " : ""
-      "#{prefix}#{author}: #{post.content}"
-    end.join("\n\n")
-
-    description_section = @scene.description.present? ? "\nScene description: #{@scene.description}\n" : ""
+    post_lines = posts_for_prompt.map { |post| post_line(post) }.join("\n\n")
 
     <<~PROMPT
       You are a campaign chronicler for a tabletop RPG. Write a narrative summary of

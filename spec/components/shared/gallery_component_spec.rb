@@ -57,7 +57,7 @@ RSpec.describe Shared::GalleryComponent, type: :component do
   end
 
   context "when can_manage is true" do
-    subject(:component) { described_class.new(game_files: [ presenter(game_file: game_file, can_manage: true) ], can_manage: true) }
+    subject(:component) { described_class.new(game_files: [ presenter(game_file: game_file, can_manage: true) ]) }
 
     it "renders the delete button" do
       expect(rendered_component).to have_css("[data-lightbox-delete-btn]", visible: :hidden)
@@ -134,7 +134,7 @@ RSpec.describe Shared::GalleryComponent, type: :component do
 
   context "when the file has a thumbnail" do
     before do
-      allow_any_instance_of(GameFilePresenter).to receive(:thumbnail).and_return("/thumb.jpg")
+      allow_any_instance_of(GameFileMediaPresenter).to receive(:thumbnail).and_return("/thumb.jpg")
     end
 
     it "renders an img with correct src, alt, and loading attributes in the card" do
@@ -153,8 +153,8 @@ RSpec.describe Shared::GalleryComponent, type: :component do
 
   context "when the file is an image with display_image" do
     before do
-      allow_any_instance_of(GameFilePresenter).to receive(:image?).and_return(true)
-      allow_any_instance_of(GameFilePresenter).to receive(:display_image).and_return("/display.jpg")
+      allow_any_instance_of(GameFileMediaPresenter).to receive(:image?).and_return(true)
+      allow_any_instance_of(GameFileMediaPresenter).to receive(:display_image).and_return("/display.jpg")
     end
 
     it "stores an img tag without max-w-full in the data-lightbox-html attribute" do
@@ -167,8 +167,8 @@ RSpec.describe Shared::GalleryComponent, type: :component do
 
   context "when display_image is present but image? is false" do
     before do
-      allow_any_instance_of(GameFilePresenter).to receive(:image?).and_return(false)
-      allow_any_instance_of(GameFilePresenter).to receive(:display_image).and_return("/display.jpg")
+      allow_any_instance_of(GameFileMediaPresenter).to receive(:image?).and_return(false)
+      allow_any_instance_of(GameFileMediaPresenter).to receive(:display_image).and_return("/display.jpg")
     end
 
     it "does not render the display image" do

@@ -11,10 +11,11 @@ RSpec.describe AttachmentUploader do
       described_class.attach(
         attachment: game_file.file,
         attachable: { io: StringIO.new("data"), filename: "map.pdf", content_type: "application/pdf" },
-        kind: "game_file",
-        user: user,
-        game: game,
-        original_filename: "map.pdf"
+        context: described_class::Context.build(
+          kind: "game_file",
+          owner: described_class::Owner.build(user: user, game: game),
+          naming: described_class::Naming.build(original_filename: "map.pdf")
+        )
       )
 
       expect(game_file.file.key).to start_with("game_files/")
@@ -26,7 +27,11 @@ RSpec.describe AttachmentUploader do
         described_class.attach(
           attachment: gf.file,
           attachable: { io: StringIO.new("data"), filename: "map.pdf", content_type: "application/pdf" },
-          kind: "game_file", user: user, game: game, original_filename: "map.pdf"
+          context: described_class::Context.build(
+            kind: "game_file",
+            owner: described_class::Owner.build(user: user, game: game),
+            naming: described_class::Naming.build(original_filename: "map.pdf")
+          )
         )
         gf.file.key
       end
@@ -41,11 +46,11 @@ RSpec.describe AttachmentUploader do
       described_class.attach(
         attachment: request.archive,
         attachable: { io: StringIO.new("zip"), filename: "e.zip", content_type: "application/zip" },
-        kind: "export",
-        user: user,
-        game: game,
-        original_filename: "e.zip",
-        export_scope: "all-games"
+        context: described_class::Context.build(
+          kind: "export",
+          owner: described_class::Owner.build(user: user, game: game),
+          naming: described_class::Naming.build(original_filename: "e.zip", export_scope: "all-games")
+        )
       )
 
       expect(request.archive.key).to start_with("exports/")
@@ -57,10 +62,11 @@ RSpec.describe AttachmentUploader do
       described_class.attach(
         attachment: game_file.file,
         attachable: { io: StringIO.new("data"), filename: "map.pdf", content_type: "application/pdf" },
-        kind: "game_file",
-        user: user,
-        game: game,
-        original_filename: "map.pdf"
+        context: described_class::Context.build(
+          kind: "game_file",
+          owner: described_class::Owner.build(user: user, game: game),
+          naming: described_class::Naming.build(original_filename: "map.pdf")
+        )
       )
 
       blob = game_file.file.blob
@@ -80,7 +86,11 @@ RSpec.describe AttachmentUploader do
       described_class.attach(
         attachment: game_file.file,
         attachable: { io: StringIO.new("data"), filename: "data", content_type: "application/pdf" },
-        kind: "game_file", user: user, game: game, original_filename: "data"
+        context: described_class::Context.build(
+          kind: "game_file",
+          owner: described_class::Owner.build(user: user, game: game),
+          naming: described_class::Naming.build(original_filename: "data")
+        )
       )
 
       expect(game_file.file.blob.content_type).to eq("application/pdf")
@@ -92,11 +102,11 @@ RSpec.describe AttachmentUploader do
       described_class.attach(
         attachment: request.archive,
         attachable: { io: StringIO.new("zip"), filename: "e.zip", content_type: "application/zip" },
-        kind: "export",
-        user: user,
-        game: game,
-        original_filename: "e.zip",
-        export_scope: "all-games"
+        context: described_class::Context.build(
+          kind: "export",
+          owner: described_class::Owner.build(user: user, game: game),
+          naming: described_class::Naming.build(original_filename: "e.zip", export_scope: "all-games")
+        )
       )
 
       expect(request.archive.blob.custom_metadata["export-scope"]).to eq("all-games")
@@ -108,7 +118,7 @@ RSpec.describe AttachmentUploader do
       described_class.attach(
         attachment: game_file.file,
         attachable: { io: StringIO.new("data"), filename: "map.pdf", content_type: "application/pdf" },
-        kind: "game_file"
+        context: described_class::Context.build(kind: "game_file")
       )
 
       expect(game_file.file.key).to start_with("game_files/")
@@ -122,7 +132,7 @@ RSpec.describe AttachmentUploader do
         described_class.attach(
           attachment: game_file.file,
           attachable: { io: StringIO.new("data"), filename: "map.pdf", content_type: "application/pdf" },
-          kind: "bogus"
+          context: described_class::Context.build(kind: "bogus")
         )
       }.to raise_error(KeyError)
     end
@@ -138,7 +148,11 @@ RSpec.describe AttachmentUploader do
           io: File.open(Rails.root.join("spec/fixtures/files/test_image.png")),
           filename: "map.png", content_type: "image/png"
         },
-        kind: "game_file", user: user, game: game, original_filename: "map.png"
+        context: described_class::Context.build(
+          kind: "game_file",
+          owner: described_class::Owner.build(user: user, game: game),
+          naming: described_class::Naming.build(original_filename: "map.png")
+        )
       )
       game_file.save!
 
@@ -158,7 +172,11 @@ RSpec.describe AttachmentUploader do
           io: StringIO.new("%PDF-1.4 fake"),
           filename: "rules.pdf", content_type: "application/pdf"
         },
-        kind: "game_file", user: user, game: game, original_filename: "rules.pdf"
+        context: described_class::Context.build(
+          kind: "game_file",
+          owner: described_class::Owner.build(user: user, game: game),
+          naming: described_class::Naming.build(original_filename: "rules.pdf")
+        )
       )
       game_file.save!
 
@@ -207,8 +225,11 @@ RSpec.describe AttachmentUploader do
   describe ".build_metadata" do
     it "maps each input to its expected metadata key" do
       metadata = described_class.build_metadata(
-        kind: "export", user: user, game: game,
-        original_filename: "e.zip", export_scope: "all-games"
+        described_class::Context.build(
+          kind: "export",
+          owner: described_class::Owner.build(user: user, game: game),
+          naming: described_class::Naming.build(original_filename: "e.zip", export_scope: "all-games")
+        )
       )
       expect(metadata).to include(
         "kind" => "export",
@@ -221,8 +242,11 @@ RSpec.describe AttachmentUploader do
 
     it "omits export-scope when nil" do
       metadata = described_class.build_metadata(
-        kind: "game_file", user: user, game: game,
-        original_filename: "e.pdf", export_scope: nil
+        described_class::Context.build(
+          kind: "game_file",
+          owner: described_class::Owner.build(user: user, game: game),
+          naming: described_class::Naming.build(original_filename: "e.pdf", export_scope: nil)
+        )
       )
       expect(metadata).not_to have_key("export-scope")
     end
@@ -230,8 +254,11 @@ RSpec.describe AttachmentUploader do
     it "stamps uploaded-at as a UTC ISO8601 string" do
       Timecop.freeze(Time.utc(2026, 7, 29, 15, 30, 45)) do
         metadata = described_class.build_metadata(
-          kind: "game_file", user: user, game: game,
-          original_filename: "e.pdf", export_scope: nil
+          described_class::Context.build(
+            kind: "game_file",
+            owner: described_class::Owner.build(user: user, game: game),
+            naming: described_class::Naming.build(original_filename: "e.pdf", export_scope: nil)
+          )
         )
         # Assert the class too: ActiveSupport's Time#== coerces the string, so a
         # bare Time would still `eq` this — be_a(String) catches a dropped .iso8601.
@@ -241,8 +268,7 @@ RSpec.describe AttachmentUploader do
 
     it "omits nil values" do
       metadata = described_class.build_metadata(
-        kind: "post_image", user: nil, game: nil,
-        original_filename: nil, export_scope: nil
+        described_class::Context.build(kind: "post_image")
       )
       expect(metadata.keys).to contain_exactly("kind", "uploaded-at")
     end

@@ -1,6 +1,6 @@
 <%= render Shared::MobileFrameComponent.new do |frame| %>
   <% frame.with_header do %>
-    <%= render Shared::HeaderComponent.new(title: "Your Games", accent_title: true) %>
+    <%= render Shared::HeaderComponent.new(title: Shared::HeaderComponent::Title.new(text: "Your Games", accent: true)) %>
   <% end %>
 
   <% frame.with_footer do %>
@@ -15,14 +15,7 @@
     </div>
   <% else %>
     <% @dashboard_presenter.items.each do |item| %>
-      <%= render Shared::GameCardComponent.new(
-            game: item.game,
-            can_manage: item.can_manage?,
-            former: item.former?,
-            character_label: item.character_label,
-            active_scene_count: item.active_scene_count,
-            new_activity: item.new_activity?
-          ) %>
+      <%= render Shared::GameCardComponent.new(item: item) %>
     <% end %>
   <% end %>
 <% end %>

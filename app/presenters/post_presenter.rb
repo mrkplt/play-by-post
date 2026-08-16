@@ -49,11 +49,6 @@ class PostPresenter < BasePresenter
   end
 
   sig { returns(T.untyped) }
-  def image
-    @model.image # mutant:disable
-  end
-
-  sig { returns(T.untyped) }
   def display_image
     @model.display_image # mutant:disable
   end
@@ -61,16 +56,6 @@ class PostPresenter < BasePresenter
   sig { returns(T::Boolean) }
   def image_attached?
     @model.image.attached? # mutant:disable
-  end
-
-  sig { returns(User) }
-  def user
-    @model.user # mutant:disable
-  end
-
-  sig { returns(Scene) }
-  def scene
-    @model.scene # mutant:disable
   end
 
   sig { returns(String) }
@@ -85,17 +70,12 @@ class PostPresenter < BasePresenter
     @options.fetch(:game).game_master?(@model.user) # mutant:disable
   end
 
-  # The "mark read" / edit endpoints for this post, resolved here so the
-  # component never holds the game/scene models to build a URL of its own.
-  # `urls`/`game`/`scene` are supplied at construction.
-  sig { returns(String) }
-  def mark_read_url
-    url_helpers.mark_read_game_scene_post_path(post_game, post_scene, @model) # mutant:disable
-  end
-
-  sig { returns(String) }
-  def edit_url
-    url_helpers.edit_game_scene_post_path(post_game, post_scene, @model) # mutant:disable
+  # A presenter for this post's "mark read" / edit URLs, built from the same
+  # game/scene/urls this presenter was constructed with — split out to keep
+  # this class under the project's method ceiling.
+  sig { returns(PostRoutesPresenter) }
+  def routes
+    PostRoutesPresenter.new(@model, game: @options.fetch(:game), scene: @options.fetch(:scene, @model.scene), urls: @options.fetch(:urls))
   end
 
   private
@@ -103,20 +83,5 @@ class PostPresenter < BasePresenter
   sig { returns(T::Array[SceneParticipant]) }
   def scene_participants
     @options.fetch(:scene_participants, [])
-  end
-
-  sig { returns(T.untyped) }
-  def url_helpers
-    @options.fetch(:urls)
-  end
-
-  sig { returns(Game) }
-  def post_game
-    @options.fetch(:game)
-  end
-
-  sig { returns(Scene) }
-  def post_scene
-    @options.fetch(:scene, @model.scene)
   end
 end

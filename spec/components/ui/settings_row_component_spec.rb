@@ -28,7 +28,7 @@ RSpec.describe Ui::SettingsRowComponent, type: :component do
   end
 
   it "omits the divider on the last row" do
-    expect(rendered(label: "A", last: true) { "x" }).not_to have_css("div.border-b")
+    expect(rendered(label: "A", position: :last) { "x" }).not_to have_css("div.border-b")
   end
 
   it "builds the exact non-last row class string" do
@@ -37,7 +37,11 @@ RSpec.describe Ui::SettingsRowComponent, type: :component do
   end
 
   it "builds the exact last row class string" do
-    expect(described_class.new(label: "A", last: true).row_classes)
+    expect(described_class.new(label: "A", position: :last).row_classes)
       .to eq("flex justify-between items-center py-3 gap-2.5")
+  end
+
+  it "rejects an unknown position" do
+    expect { described_class.new(label: "A", position: :unknown) }.to raise_error(ArgumentError, /Unknown position/)
   end
 end

@@ -4,6 +4,6 @@
     <%= render Ui::MarkdownRenderComponent.new(
           text: draft_content,
           content_class: "post-content text-sm text-body-ink mb-3 border border-tint-blue-border rounded-control p-3 bg-card") %>
-    <%= render Ui::ButtonComponent.new(variant: :text, url: discard_path, method: :delete, html_options: { class: "text-danger" }) do %>Discard Draft<% end %>
+    <%= render Ui::ButtonComponent.new(style: Ui::ButtonComponent::Style.new(variant: :text), link: Ui::ButtonComponent::Link.new(url: discard_path, method: :delete), html_options: { class: "text-danger" }) do %>Discard Draft<% end %>
   </div>
 <% end %>

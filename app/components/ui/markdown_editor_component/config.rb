@@ -70,6 +70,15 @@ class Ui::MarkdownEditorComponent::Config < T::Struct
     !edit_height.nil?
   end
 
+  # The scroll utility class the editor's textarea needs when it is capped to
+  # a max-height, or "" when it is not — Config owns edit_height, so it
+  # resolves this alongside edit_max_height rather than handing edit_scroll?
+  # out for the editor to branch on itself.
+  sig { returns(String) }
+  def edit_scroll_class
+    edit_scroll? ? "overflow-y-auto" : ""
+  end
+
   # The textarea's max-height declaration, nil when the textarea is uncapped.
   # Config owns the scale, so it resolves the step here rather than handing a
   # bare key out; HEIGHTS.fetch raises on a step outside the scale.

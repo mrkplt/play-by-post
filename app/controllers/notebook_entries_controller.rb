@@ -35,11 +35,7 @@ class NotebookEntriesController < ApplicationController
     authorize new_entry
     return redirect_to game_notebook_entries_path(game), notice: "Entry created." if new_entry.save
 
-    assign_entry_presenter(new_entry)
-    respond_to do |format|
-      format.turbo_stream { render :create_failed }
-      format.html { render :new, status: :unprocessable_content }
-    end
+    render_create_failed(new_entry)
   end
 
   sig { void }
@@ -74,6 +70,20 @@ class NotebookEntriesController < ApplicationController
   sig { params(notebook_entry: NotebookEntry).void }
   def assign_entry_presenter(notebook_entry)
     @entry_presenter = T.let(NotebookEntryPresenter.new(notebook_entry), T.nilable(NotebookEntryPresenter))
+  end
+
+  sig { params(new_entry: NotebookEntry).void }
+  def render_create_failed(new_entry)
+    assign_entry_presenter(new_entry)
+    respond_to_create_failure
+  end
+
+  sig { void }
+  def respond_to_create_failure
+    respond_to do |format|
+      format.turbo_stream { render :create_failed }
+      format.html { render :new, status: :unprocessable_content }
+    end
   end
 
   sig { returns(Game) }
