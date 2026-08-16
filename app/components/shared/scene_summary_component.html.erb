@@ -4,9 +4,9 @@
     <div class="flex gap-2 items-center">
       <%= render(Ui::BadgeComponent.new(variant: status_badge_variant.to_sym)) { @summary.status_label } %>
       <% if can_manage? %>
-        <%= link_to "Edit", @summary.edit_path,
+        <%= link_to "Edit", @summary.routes.edit_path,
             class: "text-xs text-amber-700 hover:text-amber-900 no-underline" %>
-        <%= button_to "Delete", @summary.submit_path,
+        <%= button_to "Delete", @summary.routes.submit_path,
             method: :delete,
             class: "text-xs text-red-600 hover:text-red-800 bg-transparent border-none cursor-pointer p-0",
             data: { confirm: "Delete this summary?" } %>

@@ -4,7 +4,7 @@
   </div>
 <% end %>
 
-<%= form_with model: @summary, url: @summary.submit_path, html: { id: form_id }, class: "flex flex-col gap-4" do |f| %>
+<%= form_with model: @summary, url: @summary.routes.submit_path, html: { id: form_id }, class: "flex flex-col gap-4" do |f| %>
   <%= render Ui::FormErrorsComponent.new(messages: error_messages) %>
 
   <div class="flex flex-col gap-1.5">

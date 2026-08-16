@@ -71,38 +71,10 @@ class SceneSummaryPresenter < BasePresenter
     @options.fetch(:policy).manage?
   end
 
-  # The scene this summary belongs to, resolved to a URL via the game and
-  # url_helpers supplied at construction (options[:game] / options[:urls]).
-  sig { returns(String) }
-  def scene_path
-    @options.fetch(:urls).game_scene_path(@options.fetch(:game), @model.scene)
-  end
-
-  sig { returns(String) }
-  def edit_path
-    @options.fetch(:urls).edit_game_scene_scene_summary_path(@options.fetch(:game), @model.scene)
-  end
-
-  # The summary's own resource path — used both to submit the create/update
-  # form and to issue the delete request, since both share one route.
-  sig { returns(String) }
-  def submit_path
-    @options.fetch(:urls).game_scene_scene_summary_path(@options.fetch(:game), @model.scene)
-  end
-
   sig { returns(T.untyped) }
   # mutant:disable
   def body
     @model.body
-  end
-
-  # The scene's absolute URL — RSS items link out from a feed with no
-  # request context of their own, so this is the one caller needing `_url`
-  # rather than `scene_path`'s in-app relative form. Same game/urls
-  # collaborators, different route helper.
-  sig { returns(String) }
-  def scene_url
-    @options.fetch(:urls).game_scene_url(@options.fetch(:game), @model.scene)
   end
 
   # The scene's resolved-at timestamp in RFC 2822 form, for an RSS item's
@@ -115,5 +87,13 @@ class SceneSummaryPresenter < BasePresenter
     return nil unless resolved
 
     resolved.rfc2822
+  end
+
+  # A presenter for this summary's screen/feed URLs, built from the same
+  # game/urls this presenter was constructed with — split out to keep this
+  # class under the project's method ceiling.
+  sig { returns(SceneSummaryRoutesPresenter) }
+  def routes
+    SceneSummaryRoutesPresenter.new(@model, game: @options.fetch(:game), urls: @options.fetch(:urls))
   end
 end

@@ -20,6 +20,6 @@ class Shared::SceneSummaryEntryComponent < ApplicationComponent
 
   sig { returns(String) }
   def scene_path
-    @summary.scene_path
+    @summary.routes.scene_path
   end
 end
