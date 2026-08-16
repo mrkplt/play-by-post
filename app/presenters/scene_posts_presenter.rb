@@ -79,6 +79,17 @@ class ScenePostsPresenter < BasePresenter
     PostPresenter.new(Post.new)
   end
 
+  # Where the draft-recovery notice's Discard action posts — the same discard
+  # route the composer uses. Resolved here so the view hands
+  # Shared::DraftRecoveryComponent a finished path.
+  sig { returns(String) }
+  def draft_discard_path
+    @model.routes.discard_draft_url
+  end
+
+  # The notice copy for a leftover post draft on a resolved scene.
+  DRAFT_RECOVERY_NOTICE = "You have an unsaved draft from this scene."
+
   # Marks the viewer's participation as visited now — called once per #show,
   # not idempotent by design (it is the "last seen" timestamp).
   sig { void }

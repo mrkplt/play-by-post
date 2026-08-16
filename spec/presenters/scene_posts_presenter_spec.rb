@@ -32,6 +32,15 @@ RSpec.describe ScenePostsPresenter do
     end
   end
 
+  describe "#draft_discard_path" do
+    it "resolves the discard route from the scene presenter" do
+      routes = instance_double(SceneRoutesPresenter, discard_draft_url: "/games/1/scenes/2/posts/discard_draft")
+      allow(scene_presenter).to receive(:routes).and_return(routes)
+
+      expect(presenter.draft_discard_path).to eq("/games/1/scenes/2/posts/discard_draft")
+    end
+  end
+
   describe "#recoverable_draft" do
     let(:draft) { PostPresenter.new(build_stubbed(:post, :draft, scene: scene)) }
 
