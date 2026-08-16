@@ -36,6 +36,24 @@ RSpec.describe PagesController, type: :request do
       expect(response.body).to include("Version History")
     end
 
+    context "when the page is a draft" do
+      let!(:page) { create(:page, game: game, title: "Secret draft", body: "hidden", draft: true) }
+
+      it "is visible to the GM who authored it" do
+        sign_in(gm)
+        get game_page_path(game, page)
+        expect(response).to have_http_status(:ok)
+        expect(response.body).to include("Secret draft")
+      end
+
+      it "is denied to a player — a draft never leaks through the show route" do
+        sign_in(player)
+        get game_page_path(game, page)
+        expect(response).not_to have_http_status(:ok)
+        expect(response.body).not_to include("Secret draft")
+      end
+    end
+
     it "does not show the version history to a player" do
       sign_in(player)
       get game_page_path(game, page)

@@ -42,5 +42,24 @@ RSpec.describe PageVersionsController, type: :request do
 
       expect(request.path).to include(page_record.slug)
     end
+
+    context "when the page is a draft" do
+      let(:page_record) { create(:page, game: game, title: "Draft lore", body: "hidden", draft: true) }
+
+      it "is visible to the GM who authored it" do
+        sign_in(gm)
+        get game_page_page_version_path(game, page_record, version)
+
+        expect(response).to have_http_status(:ok)
+      end
+
+      it "is denied to a player — draft content never leaks via the version endpoint" do
+        sign_in(player)
+        get game_page_page_version_path(game, page_record, version)
+
+        expect(response).not_to have_http_status(:ok)
+        expect(response.body).not_to include("Draft lore")
+      end
+    end
   end
 end
