@@ -1,4 +1,6 @@
 Rails.application.routes.draw do
+  mount Rswag::Ui::Engine => '/api-docs'
+  mount Rswag::Api::Engine => '/api-docs'
   # Resend inbound email webhook (custom ActionMailbox ingress)
   post "/mail/inbound" =>
     "action_mailbox/ingresses/resend/inbound_emails#create",
