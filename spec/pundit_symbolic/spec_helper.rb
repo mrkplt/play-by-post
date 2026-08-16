@@ -10,3 +10,16 @@ require "rails_helper"
 
 lib = File.expand_path("../../lib", __dir__)
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
+
+require "pundit_symbolic/formula"
+
+# Shared shorthand for the formula builders in tool specs.
+module FormulaHelpers
+  def var(name) = PunditSymbolic::Formula.var(name)
+  def const(value) = PunditSymbolic::Formula.const(value)
+  def conj(left, right) = PunditSymbolic::Formula.conj(left, right)
+  def disj(left, right) = PunditSymbolic::Formula.disj(left, right)
+  def negate(node) = PunditSymbolic::Formula.negate(node)
+end
+
+RSpec.configure { |config| config.include FormulaHelpers }
