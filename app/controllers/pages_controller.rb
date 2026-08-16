@@ -11,6 +11,7 @@ class PagesController < ApplicationController
     subject = page
     authorize subject
     assign_page_presenters(subject)
+    @page_version_presenters = T.let(page_version_presenters(subject), T.nilable(T::Array[PageVersionPresenter]))
   end
 
   sig { void }
@@ -87,6 +88,12 @@ class PagesController < ApplicationController
   sig { returns(ActionController::Parameters) }
   def page_params
     params.require(:page).permit(:title, :body, :draft)
+  end
+
+  # The page's version history, newest first, wrapped for the history component.
+  sig { params(subject: Page).returns(T::Array[PageVersionPresenter]) }
+  def page_version_presenters(subject)
+    subject.page_versions.order(created_at: :desc).map { |version| PageVersionPresenter.new(version) }
   end
 
   sig { params(subject: Page).returns(PagePresenter) }

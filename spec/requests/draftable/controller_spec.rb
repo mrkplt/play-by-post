@@ -35,6 +35,7 @@ RSpec.describe Draftable::Controller, type: :request do
 
     it "forces the draft flag on even when the request omits it" do
       sign_in(gm)
+      Current.user = gm # the direct update below snapshots a page version
       page.update!(draft: false)
 
       patch save_draft_game_page_path(game, page),

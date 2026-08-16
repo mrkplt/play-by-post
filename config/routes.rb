@@ -82,6 +82,7 @@ Rails.application.routes.draw do
           patch :save_draft, to: "pages/drafts#save"
           patch :publish, to: "pages/drafts#publish"
         end
+        resources :page_versions, only: %i[show], path: "versions"
       end
       resources :game_links, only: %i[index new create edit update destroy]
       resources :notebook_entries, only: %i[index new create edit update destroy], param: :slug do

@@ -71,6 +71,7 @@ matcher:
     - NotebookEntryPresenter
     - PagePresenter
     - PageRoutesPresenter
+    - PageVersionPresenter
     - PostPresenter
     - PostRoutesPresenter
     - RosterCharacterPresenter
@@ -120,6 +121,7 @@ matcher:
     - Shared::CharacterFormComponent
     - Shared::MarkdownToolbarComponent
     - Shared::CharacterVersionHistoryComponent
+    - Shared::PageVersionHistoryComponent
     - Shared::PostEditFormComponent
     - Shared::SceneCardComponent
     - Shared::SceneResolutionComponent
@@ -254,6 +256,7 @@ matcher:
     - InvitationsController
     - GameMembersController
     - CharacterVersionsController
+    - PageVersionsController
     - ProfilesController
     - PlayerManagementController
     - FeedbackController
@@ -304,6 +307,7 @@ matcher:
     - NotebookEntryPolicy
     - SceneSummaryPolicy
     - CharacterVersionPolicy
+    - PageVersionPolicy
     - UserProfilePolicy
     - FeedbackPolicy
     - ApiTokenPolicy

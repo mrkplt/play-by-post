@@ -3,6 +3,11 @@ require "rails_helper"
 RSpec.describe NotebookEntryPromotion, db: true do
   let(:game) { create(:game) }
 
+  # Promotion creates a Page, which snapshots a PageVersion attributed to the
+  # acting user. In production the controller sets Current.user before calling;
+  # the unit spec sets it so the page save can record its version.
+  before { Current.user = create(:user) }
+
   describe "#call" do
     it "creates a page from the entry and links it back" do
       entry = create(:notebook_entry, game: game, title: "Ruined Keep", body: "Notes.", status: "expand")

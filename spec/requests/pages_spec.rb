@@ -30,6 +30,18 @@ RSpec.describe PagesController, type: :request do
       expect(response.body).to include("Lore")
     end
 
+    it "shows the version history to the GM" do
+      sign_in(gm)
+      get game_page_path(game, page)
+      expect(response.body).to include("Version History")
+    end
+
+    it "does not show the version history to a player" do
+      sign_in(player)
+      get game_page_path(game, page)
+      expect(response.body).not_to include("Version History")
+    end
+
     it "is visible to a removed member" do
       sign_in(removed_player)
       get game_page_path(game, page)
