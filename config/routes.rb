@@ -85,6 +85,7 @@ Rails.application.routes.draw do
         resources :page_versions, only: %i[show], path: "versions"
       end
       resources :game_links, only: %i[index new create edit update destroy]
+      resources :content_templates, only: %i[index new create edit update destroy]
       resources :notebook_entries, only: %i[index new create edit update destroy], param: :slug do
         # Kept as move/promote_game_notebook_entry_path — the lane picker and
         # the promote button post to the same URLs; only the controller moved,

@@ -10,6 +10,12 @@ class ContentTemplatePolicy < ApplicationPolicy
   # May create, edit, or delete this game's templates. Answered by "is the GM"
   # (gm? is the private implementation); every write predicate delegates to it
   # so a rule change is a one-line edit.
+  # The template management screen is GM-only, like every other template action.
+  sig { returns(T::Boolean) }
+  def index?
+    manage?
+  end
+
   sig { returns(T::Boolean) }
   def manage?
     gm?

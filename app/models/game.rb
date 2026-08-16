@@ -27,6 +27,7 @@ class Game < ApplicationRecord
   has_many :pages, dependent: :destroy
   has_many :game_links, dependent: :destroy
   has_many :notebook_entries, dependent: :destroy
+  has_many :content_templates, dependent: :destroy
   has_many :invitations, dependent: :destroy
   has_many :api_tokens, dependent: :destroy
   has_many :game_export_requests, dependent: :destroy

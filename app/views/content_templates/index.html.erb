@@ -1,0 +1,11 @@
+<% content_for :active_game_id, @game_presenter.id %>
+
+<%= render Shared::MobileFrameComponent.new do |frame| %>
+  <% frame.with_header do %>
+    <%= render Shared::HeaderComponent.new(
+          title: "Templates",
+          breadcrumbs: Shared::BreadcrumbsComponent.new(game_presenter: @game_presenter)) %>
+  <% end %>
+
+  <%= render Shared::ContentTemplatesListComponent.new(game: @game_presenter, templates: @content_template_presenters) %>
+<% end %>

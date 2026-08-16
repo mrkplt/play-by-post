@@ -1,0 +1,22 @@
+<% content_for :active_game_id, @game_presenter.id %>
+
+<%= render Shared::MobileFrameComponent.new do |frame| %>
+  <% frame.with_header do %>
+    <%= render Shared::HeaderComponent.new(
+          title: "Edit Template",
+          breadcrumbs: Shared::BreadcrumbsComponent.new(game_presenter: @game_presenter)) %>
+  <% end %>
+
+  <% frame.with_footer do %>
+    <%= render Shared::PageActionsComponent.new do |actions| %>
+      <% actions.with_primary do %>
+        <%= render Ui::ButtonComponent.new(html_options: { type: "submit", form: "edit_content_template_form" }) do %>Save<% end %>
+      <% end %>
+      <% actions.with_cancel do %>
+        <%= render Ui::ButtonComponent.new(style: Ui::ButtonComponent::Style.new(variant: :secondary), link: Ui::ButtonComponent::Link.new(url: game_content_templates_path(@game_presenter))) do %>Cancel<% end %>
+      <% end %>
+    <% end %>
+  <% end %>
+
+  <%= render Shared::TemplateFormComponent.new(game: @game_presenter, template: @content_template_presenter) %>
+<% end %>

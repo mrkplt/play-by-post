@@ -59,6 +59,7 @@ matcher:
     - GameMemberPresenter
     - GameFeedRowPresenter
     - GameLinkPresenter
+    - ContentTemplatePresenter
     - GamePresenter
     - GameRosterOptionsPresenter
     - GameRosterPresenter
@@ -158,6 +159,8 @@ matcher:
     - Shared::PageRowActionsComponent
     - Shared::GameLinksListComponent
     - Shared::LinkFormComponent
+    - Shared::TemplateFormComponent
+    - Shared::ContentTemplatesListComponent
     - Shared::NotebookFormComponent
     - Shared::NotebookBoardComponent
     - Ui::BadgeComponent
@@ -252,6 +255,7 @@ matcher:
     - GameFilesController
     - PagesController
     - GameLinksController
+    - ContentTemplatesController
     - NotebookEntriesController
     - NotebookEntries::LanesController
     - InvitationsController
