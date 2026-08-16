@@ -3,6 +3,7 @@
 
 require "prism"
 require_relative "encoder"
+require_relative "delegation_resolver"
 
 module PunditSymbolic
   # Loads one policy's source, encodes each method, and resolves delegation so
@@ -14,40 +15,41 @@ module PunditSymbolic
       def public? = public
     end
 
-    attr_reader :policy_name, :predicates, :refusals
+    attr_reader :predicates
+
+    # Read externally (PolicyRegistry, the gate, the proof); plain readers rather
+    # than attr_reader because the ivar-hygiene check only sees intra-file use.
+    def policy_name = @policy_name
+    def refusals = @refusals
 
     def self.load(path)
-      new(path).tap(&:build)
+      new(path)
     end
 
     def initialize(path)
-      @path = path
-      @refusals = []
-    end
-
-    def build
-      program = Prism.parse_file(@path).value
-      class_node = find_policy_class(program)
+      refusals = []
+      program = Prism.parse_file(path).value
+      class_node = find_policy_class(program, path)
       @policy_name = class_node.name.to_s
       defs = method_defs(class_node)
 
       encoder = Encoder.new(defs.keys.map(&:to_s), path_helpers(defs))
-      raw = encode_all(defs, encoder)
-      @predicates = resolve_delegations(raw, defs)
-      self
+      raw = encode_all(defs, encoder, refusals)
+      @predicates = DelegationResolver.new(raw, defs, refusals).call
+      @refusals = refusals
     end
 
     # Public predicates only (the authorization surface). Refused methods are in
     # #refusals, keyed by name with a reason.
     def public_predicates
-      @predicates.select(&:public?)
+      predicates.select(&:public?)
     end
 
     private
 
-    def find_policy_class(program)
+    def find_policy_class(program, path)
       program.statements.body.grep(Prism::ClassNode).first ||
-        raise("no class definition in #{@path}")
+        raise("no class definition in #{path}")
     end
 
     # Pundit's field-level authorization methods return an attribute list, not a
@@ -87,7 +89,7 @@ module PunditSymbolic
           .transform_values { |info| info[:node] }
     end
 
-    def encode_all(defs, encoder)
+    def encode_all(defs, encoder, refusals)
       raw = {}
       defs.each do |name, info|
         # Path helpers (non-predicate navigation methods like `def scene =
@@ -97,67 +99,10 @@ module PunditSymbolic
         next if !name.to_s.end_with?("?") && encoder.path_helper?(info[:node])
 
         raw[name.to_s] = encoder.encode(info[:node])
-      rescue Encoder::Unencodable => error
-        @refusals << { name: name.to_s, public: info[:public], reason: error.reason }
+      rescue Unencodable => error
+        refusals << { name: name.to_s, public: info[:public], reason: error.reason }
       end
       raw
-    end
-
-    # Sentinel: a method delegates to a predicate that was itself refused, so it
-    # cannot be resolved to leaf facts and must be refused in turn.
-    class DelegatesToRefused < StandardError
-      attr_reader :target
-
-      def initialize(target)
-        @target = target
-        super
-      end
-    end
-
-    # Replace every `call:other?` var with `other?`'s own (already-resolved)
-    # formula, iterating until only leaf vars remain. Policies here delegate in a
-    # DAG (capability -> capability -> private role), so this terminates. A method
-    # delegating to a refused predicate is refused in turn, not crashed on.
-    def resolve_delegations(raw, defs)
-      resolved = {}
-      raw.each_key do |name|
-        resolve(name, raw, resolved, [])
-      rescue DelegatesToRefused => error
-        @refusals << { name: name, public: defs[name.to_sym][:public], reason: "delegates to refused predicate `#{error.target}`" }
-      end
-      refused_names = @refusals.map { |refusal| refusal[:name] }.to_set
-      resolved.filter_map do |name, formula|
-        next if refused_names.include?(name) # partial entry from an unwound resolve
-
-        Predicate.new(name: name, formula: formula, public: defs[name.to_sym][:public])
-      end
-    end
-
-    def resolve(name, raw, resolved, stack)
-      return resolved[name] if resolved.key?(name)
-      raise "delegation cycle through #{name}" if stack.include?(name)
-
-      resolved[name] = substitute(raw.fetch(name), raw, resolved, stack + [ name ])
-    end
-
-    def substitute(node, raw, resolved, stack)
-      case node
-      when Formula::Var
-        return node unless node.name.start_with?("call:")
-
-        target = node.name.delete_prefix("call:")
-        raise DelegatesToRefused, target unless raw.key?(target)
-
-        resolve(target, raw, resolved, stack)
-      when Formula::Not
-        Formula::Not.new(substitute(node.operand, raw, resolved, stack))
-      when Formula::And
-        Formula::And.new(substitute(node.left, raw, resolved, stack), substitute(node.right, raw, resolved, stack))
-      when Formula::Or
-        Formula::Or.new(substitute(node.left, raw, resolved, stack), substitute(node.right, raw, resolved, stack))
-      else
-        node
-      end
     end
   end
 end

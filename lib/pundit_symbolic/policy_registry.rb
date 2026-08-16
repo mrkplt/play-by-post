@@ -38,7 +38,7 @@ module PunditSymbolic
     # referring predicate unresolvable — recorded as a refusal, dropped from the
     # source's predicate list.
     def resolve_cross_policy!
-      @sources.each do |source|
+      sources.each do |source|
         kept = source.predicates.filter_map do |predicate|
           rewritten = rewrite(predicate.formula)
           if rewritten
