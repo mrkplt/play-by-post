@@ -52,6 +52,7 @@ class GamePurgeScope
   # foreign key is violated, in batches to bound memory. Attachments are
   # already purged by the caller, so these are plain deletes — no cascade,
   # no callbacks.
+  # Children before parents so no foreign key is violated.
   sig { void }
   def delete_all_dependents!
     delete_posts_and_reads
@@ -69,19 +70,13 @@ class GamePurgeScope
     Post.where(id: post_ids).in_batches.delete_all
   end
 
-  # Deletes every scene-scoped record: participants, summaries, notification
-  # preferences, then the scenes themselves. The self-referencing
-  # parent_scene_id link is broken first so the scene delete is FK-safe.
+  # The self-referencing parent_scene_id link is broken before the scenes are
+  # deleted so the delete is FK-safe.
   sig { void }
   def delete_scenes_and_children
     delete_scene_children
-    unlink_and_delete_scenes
-  end
-
-  sig { void }
-  def delete_characters_and_versions
-    CharacterVersion.where(character_id: character_ids).in_batches.delete_all
-    Character.where(id: character_ids).in_batches.delete_all
+    unlink_scenes
+    delete_scenes
   end
 
   sig { void }
@@ -90,11 +85,9 @@ class GamePurgeScope
     delete_game_membership_records
   end
 
-  # NotebookEntryVersion has a not-null FK to NotebookEntry, so its rows are
-  # deleted before their entries (mirroring CharacterVersion → Character).
   # NotebookEntry may reference a Page via promoted_page_id, so it is deleted
-  # before Page. PageVersion has a not-null FK to Page, so its rows are deleted
-  # before their pages.
+  # before Page. A versioned child (NotebookEntryVersion, PageVersion) has a
+  # not-null FK to its parent, so those rows are deleted before the parents.
   sig { void }
   def delete_game_content_records
     GameFile.where(game_id: game_id).in_batches.delete_all
@@ -104,10 +97,12 @@ class GamePurgeScope
     ContentTemplate.where(game_id: game_id).in_batches.delete_all
   end
 
-  # NotebookEntryVersion has a not-null FK to NotebookEntry, so its rows go
-  # before their entries (mirroring CharacterVersion → Character). Entry ids are
-  # plucked once into a local so both deletes target the same set without a
-  # duplicate query.
+  sig { void }
+  def delete_characters_and_versions
+    CharacterVersion.where(character_id: character_ids).in_batches.delete_all
+    Character.where(id: character_ids).in_batches.delete_all
+  end
+
   sig { void }
   def delete_notebook_entries_and_versions
     ids = NotebookEntry.where(game_id: game_id).pluck(:id)
@@ -115,9 +110,6 @@ class GamePurgeScope
     NotebookEntry.where(id: ids).in_batches.delete_all
   end
 
-  # PageVersion has a not-null FK to Page, so its rows go before their pages
-  # (mirroring CharacterVersion → Character). Page ids are plucked once into a
-  # local so both deletes target the same set without a duplicate query.
   sig { void }
   def delete_pages_and_versions
     ids = Page.where(game_id: game_id).pluck(:id)
@@ -138,12 +130,6 @@ class GamePurgeScope
     SceneParticipant.where(scene_id: scene_ids).in_batches.delete_all
     SceneSummary.where(scene_id: scene_ids).in_batches.delete_all
     NotificationPreference.where(scene_id: scene_ids).in_batches.delete_all
-  end
-
-  sig { void }
-  def unlink_and_delete_scenes
-    unlink_scenes
-    delete_scenes
   end
 
   sig { void }

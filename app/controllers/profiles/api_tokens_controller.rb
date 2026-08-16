@@ -32,12 +32,13 @@ class Profiles::ApiTokensController < ApplicationController
 
   private
 
-  # The human name for a token of the given scope, so flash copy reads
-  # "API token …" for scope:"api" and "Feed token …" for scope:"rss" (the
-  # default when a scope is absent).
+  # The human name per token scope, so flash copy reads "API token …" for
+  # scope:"api" and "Feed token …" otherwise (rss, or an absent scope).
+  TOKEN_LABELS = T.let({ "api" => "API token" }.freeze, T::Hash[String, String])
+
   sig { params(scope: T.nilable(String)).returns(String) }
   def token_label(scope)
-    scope == "api" ? "API token" : "Feed token"
+    TOKEN_LABELS.fetch(scope.to_s, "Feed token")
   end
 
   sig { returns(UserProfile) }

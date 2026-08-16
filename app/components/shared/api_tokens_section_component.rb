@@ -20,11 +20,11 @@ class Shared::ApiTokensSectionComponent < ApplicationComponent
 
   sig { returns(T::Boolean) }
   def any_games?
-    @rows.any?
+    rows.any?
   end
 
   sig { params(index: Integer).returns(Symbol) }
   def row_position(index)
-    POSITIONS.fetch(index == @rows.length - 1)
+    POSITIONS.fetch(index == rows.length - 1)
   end
 end

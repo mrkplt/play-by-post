@@ -30,7 +30,7 @@
 
   <%# API tokens %>
   <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do %>API tokens<% end %>
-  <%= render Shared::ApiTokensSectionComponent.new(rows: @api_token_rows) %>
+  <%= render Shared::ApiTokensSectionComponent.new(rows: @user_presenter.api_token_rows(urls: self)) %>
 
   <%# Export %>
   <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do %>Export<% end %>
