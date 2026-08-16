@@ -14,7 +14,7 @@
         <%= render Ui::ButtonComponent.new(html_options: { type: "submit", form: "new_game_link_form" }) do %>Create Link<% end %>
       <% end %>
       <% actions.with_cancel do %>
-        <%= render Ui::ButtonComponent.new(variant: :secondary, url: game_game_links_path(@game_presenter)) do %>Cancel<% end %>
+        <%= render Ui::ButtonComponent.new(style: Ui::ButtonComponent::Style.new(variant: :secondary), link: Ui::ButtonComponent::Link.new(url: game_game_links_path(@game_presenter))) do %>Cancel<% end %>
       <% end %>
     <% end %>
   <% end %>

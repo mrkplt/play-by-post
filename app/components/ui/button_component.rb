@@ -3,14 +3,14 @@
 # The single button primitive: token-styled, four variants, three sizes, and
 # two render paths.
 #
-#   - No `url:` — renders a plain <button>. Used inside a `form_with` block
-#     as the submit control (pass `type: "submit"` via `html_options`), or as
-#     a bare in-page control the caller wires up with Stimulus.
-#   - `url:` given — renders a Rails `link_to` styled as a button, with
-#     `method:`/`confirm:` passed through as `data-turbo-method` /
-#     `data-turbo-confirm` (Rails 8 Turbo's non-GET-link and confirm-dialog
-#     mechanism — the same behavior `button_to`/`f.submit data: { confirm: }`
-#     produce). Extra `data:` is merged in, caller keys winning on conflict.
+#   - No `link:` (or a Link with no `url:`) — renders a plain <button>. Used
+#     inside a `form_with` block as the submit control (pass
+#     `type: "submit"` via `html_options`), or as a bare in-page control the
+#     caller wires up with Stimulus.
+#   - `link:` carries a `url:` — renders a Rails `link_to` styled as a
+#     button. See button_component/link.rb and button_component/style.rb for
+#     the two configuration bundles this component takes instead of eight
+#     separate parameters.
 class Ui::ButtonComponent < ApplicationComponent
   extend T::Sig
 
@@ -33,55 +33,28 @@ class Ui::ButtonComponent < ApplicationComponent
     String
   )
 
-  sig do
-    params(
-      variant: Symbol,
-      size: Symbol,
-      disabled: T::Boolean,
-      url: T.nilable(String),
-      method: T.nilable(Symbol),
-      confirm: T.nilable(String),
-      data: T::Hash[Symbol, T.untyped],
-      html_options: T::Hash[Symbol, T.untyped]
-    ).void
-  end
-  def initialize(
-    variant: :primary, size: :md, disabled: false,
-    url: nil, method: nil, confirm: nil, data: {}, html_options: {}
-  )
-    @variant = variant
-    @size = size
-    @disabled = disabled
-    @url = url
-    @method = method
-    @confirm = confirm
-    @data = data
+  sig { params(style: Style, link: Link, html_options: T::Hash[Symbol, T.untyped]).void }
+  def initialize(style: Style.new, link: Link.new, html_options: {})
+    @style = style
+    @link = link
     @html_options = html_options
   end
 
   sig { returns(T::Boolean) }
   def link?
-    @url.present?
+    @link.present?
   end
 
   sig { returns(String) }
   def url
-    T.must(@url)
+    T.must(@link.url)
   end
 
   sig { returns(String) }
   def classes
-    parts = [ BASE, VARIANTS.fetch(@variant), SIZES.fetch(@size) ]
-    parts << "opacity-50 cursor-not-allowed pointer-events-none" if @disabled
+    parts = [ BASE, VARIANTS.fetch(@style.variant), SIZES.fetch(@style.size) ]
+    parts << "opacity-50 cursor-not-allowed pointer-events-none" if @style.disabled?
     parts.join(" ")
-  end
-
-  sig { returns(T::Hash[Symbol, T.untyped]) }
-  def link_data
-    data = @data.dup
-    data[:turbo_method] = @method if @method
-    data[:turbo_confirm] = @confirm if @confirm
-    data
   end
 
   # A link with method: performs a non-GET action (the same thing button_to
@@ -91,15 +64,15 @@ class Ui::ButtonComponent < ApplicationComponent
   # link.
   sig { returns(T::Hash[Symbol, T.untyped]) }
   def link_options
-    opts = { class: merged_classes, data: link_data }.merge(@html_options.except(:class))
-    opts[:role] = "button" if @method
+    opts = { class: merged_classes, data: @link.data_attributes }.merge(@html_options.except(:class))
+    opts[:role] = "button" if @link.http_method
     opts
   end
 
   sig { returns(T::Hash[Symbol, T.untyped]) }
   def button_options
     opts = { type: "button", class: merged_classes }.merge(@html_options.except(:class))
-    opts[:disabled] = true if @disabled
+    opts[:disabled] = true if @style.disabled?
     opts
   end
 

@@ -14,7 +14,7 @@
         <%= render Ui::ButtonComponent.new(html_options: { type: "submit", form: "edit_page_#{@page_presenter.id}_form" }) do %>Save<% end %>
       <% end %>
       <% actions.with_cancel do %>
-        <%= render Ui::ButtonComponent.new(variant: :secondary, url: @page_presenter.cancel_href) do %>Cancel<% end %>
+        <%= render Ui::ButtonComponent.new(style: Ui::ButtonComponent::Style.new(variant: :secondary), link: Ui::ButtonComponent::Link.new(url: @page_presenter.cancel_href)) do %>Cancel<% end %>
       <% end %>
     <% end %>
   <% end %>

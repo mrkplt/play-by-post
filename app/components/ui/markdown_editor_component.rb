@@ -12,7 +12,10 @@ class Ui::MarkdownEditorComponent < ApplicationComponent
   extend T::Sig
 
   # Layout configuration lives in Ui::MarkdownEditorComponent::Config
-  # (app/components/ui/markdown_editor_component/config.rb).
+  # (app/components/ui/markdown_editor_component/config.rb). Textarea-level
+  # configuration (rows, value, placeholder, required, data, wrapper_class)
+  # lives in Ui::MarkdownEditorComponent::Field
+  # (app/components/ui/markdown_editor_component/field.rb).
 
   # The editor owns its own appearance. Every markdown surface in the app is
   # the same control, so its border, radius, padding and text tokens live here
@@ -36,22 +39,17 @@ class Ui::MarkdownEditorComponent < ApplicationComponent
   # model, presenter, component, or primitive), so it travels in the same
   # kind of opaque options hash as html_options/data elsewhere, rather than as
   # a typed positional parameter.
-  sig { params(binding: T::Hash[Symbol, T.untyped], config: Config, rows: Integer, value: T.nilable(String), placeholder: T.nilable(String), required: T::Boolean, data: T::Hash[Symbol, T.untyped], wrapper_class: String).void }
-  def initialize(binding:, config: Config.new, rows: 5, value: nil, placeholder: nil, required: false, data: {}, wrapper_class: "")
+  sig { params(binding: T::Hash[Symbol, T.untyped], config: Config, field: Field).void }
+  def initialize(binding:, config: Config.new, field: Field.new)
     @form = T.let(binding.fetch(:form), ActionView::Helpers::FormBuilder)
-    @field = T.let(binding.fetch(:field), Symbol)
+    @field_name = T.let(binding.fetch(:field), Symbol)
     @config = config
-    @rows = rows
-    @value = value
-    @placeholder = placeholder
-    @required = required
-    @data = data
-    @wrapper_class = wrapper_class
+    @field = field
   end
 
   sig { returns(String) }
   def wrapper_class
-    @wrapper_class
+    @field.wrapper_class
   end
 
   sig { returns(T::Array[ViewComponent::Base]) }
@@ -76,20 +74,21 @@ class Ui::MarkdownEditorComponent < ApplicationComponent
 
   sig { returns(T::Hash[Symbol, T.untyped]) }
   def textarea_data
-    DEFAULT_TEXTAREA_DATA.merge(@data)
+    DEFAULT_TEXTAREA_DATA.merge(@field.data)
   end
 
   sig { returns(T::Hash[Symbol, T.untyped]) }
   def textarea_options
     options = {
-      rows: @rows,
-      placeholder: @placeholder,
-      required: @required,
+      rows: @field.rows,
+      placeholder: @field.placeholder,
+      required: @field.required?,
       data: textarea_data,
       class: edit_classes,
       style: edit_max_height
     }
-    options[:value] = @value unless @value.nil?
+    value = @field.value
+    options[:value] = value unless value.nil?
     options
   end
 end

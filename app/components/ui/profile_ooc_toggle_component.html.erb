@@ -5,7 +5,7 @@
           class="bg-transparent border-0 p-0 cursor-pointer"
           aria-label="<%= aria_label %>">
     <span data-ooc-filter-target="switch">
-      <%= render Ui::ToggleSwitchComponent.new(on: hide_ooc?) %>
+      <%= render Ui::ToggleSwitchComponent.new(state: hide_ooc? ? :on : :off) %>
     </span>
   </button>
 </div>

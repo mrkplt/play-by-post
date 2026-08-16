@@ -52,14 +52,14 @@ RSpec.describe Ui::IconComponent, type: :component do
       expect(ivar(component, :@size)).to eq(:medium)
     end
 
-    it "defaults accent to false" do
+    it "defaults emphasis to :normal" do
       component = described_class.new(name: :crown)
-      expect(ivar(component, :@accent)).to be(false)
+      expect(ivar(component, :@emphasis)).to eq(:normal)
     end
 
-    it "stores an explicit accent" do
-      component = described_class.new(name: :crown, accent: true)
-      expect(ivar(component, :@accent)).to be(true)
+    it "stores an explicit emphasis" do
+      component = described_class.new(name: :crown, emphasis: :accent)
+      expect(ivar(component, :@emphasis)).to eq(:accent)
     end
 
     it "defaults html_options to an empty hash" do
@@ -87,12 +87,12 @@ RSpec.describe Ui::IconComponent, type: :component do
       expect(build_options_for(size: :medium)).to eq(class: "w-5 h-5")
     end
 
-    it "appends text-accent when accent is true" do
-      expect(build_options_for(accent: true)).to eq(class: "w-4 h-4 text-accent")
+    it "appends text-accent when emphasis is :accent" do
+      expect(build_options_for(emphasis: :accent)).to eq(class: "w-4 h-4 text-accent")
     end
 
-    it "does not append text-accent when accent is false" do
-      expect(build_options_for(accent: false)).to eq(class: "w-4 h-4")
+    it "does not append text-accent when emphasis is :normal" do
+      expect(build_options_for(emphasis: :normal)).to eq(class: "w-4 h-4")
     end
 
     it "appends a truthy custom class" do
@@ -142,10 +142,10 @@ RSpec.describe Ui::IconComponent, type: :component do
       render_inline(described_class.new(name: :crown, size: :extra_small))
     end
 
-    it "adds text-accent class when accent is true" do
+    it "adds text-accent class when emphasis is :accent" do
       expect_any_instance_of(ApplicationHelper).to receive(:icon)
         .with("crown-03", class: "w-4 h-4 text-accent").and_return("<svg></svg>".html_safe)
-      render_inline(described_class.new(name: :crown, accent: true))
+      render_inline(described_class.new(name: :crown, emphasis: :accent))
     end
 
     it "passes html_options to the icon helper" do
@@ -186,6 +186,11 @@ RSpec.describe Ui::IconComponent, type: :component do
     it "raises ArgumentError for unknown sizes" do
       expect { render_inline(described_class.new(name: :crown, size: :huge)) }
         .to raise_error(ArgumentError, "Unknown size: huge")
+    end
+
+    it "raises ArgumentError for unknown emphasis" do
+      expect { described_class.new(name: :crown, emphasis: :bold) }
+        .to raise_error(ArgumentError, "Unknown emphasis: bold")
     end
   end
 

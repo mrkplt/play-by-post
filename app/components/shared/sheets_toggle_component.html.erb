@@ -1,5 +1,5 @@
 <%= render Ui::SettingsRowComponent.new(
-      label: "Sheet visibility", sub: "Character sheets shown to all players", last: true) do %>
+      label: "Sheet visibility", sub: "Character sheets shown to all players", position: :last) do %>
   <%= button_to toggle_label, toggle_path, method: :patch,
         class: "text-[11px] font-bold text-accent bg-transparent border-0 cursor-pointer p-0" %>
 <% end %>

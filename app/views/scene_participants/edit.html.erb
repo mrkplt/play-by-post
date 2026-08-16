@@ -14,7 +14,7 @@
         <%= render Ui::ButtonComponent.new(html_options: { type: "submit", form: "scene_participants_edit_form" }) do %>Update Participants<% end %>
       <% end %>
       <% actions.with_cancel do %>
-        <%= render Ui::ButtonComponent.new(variant: :secondary, url: @scene_navigation_presenter.show_path) do %>Cancel<% end %>
+        <%= render Ui::ButtonComponent.new(style: Ui::ButtonComponent::Style.new(variant: :secondary), link: Ui::ButtonComponent::Link.new(url: @scene_navigation_presenter.show_path)) do %>Cancel<% end %>
       <% end %>
     <% end %>
   <% end %>

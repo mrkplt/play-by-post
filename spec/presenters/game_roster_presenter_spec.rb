@@ -104,8 +104,8 @@ RSpec.describe GameRosterPresenter do
     end
   end
 
-  describe "#banned_member_last?" do
-    it "is true only for the final index" do
+  describe "#banned_member_position" do
+    it "is :last only for the final index" do
       allow(policy).to receive(:manage?).and_return(true)
       banned = build_stubbed(:game_member, :banned)
       where_rel = double("banned rel")
@@ -114,8 +114,8 @@ RSpec.describe GameRosterPresenter do
       allow(where_rel).to receive(:includes).with(:user).and_return(includes_rel)
       allow(includes_rel).to receive(:to_a).and_return([ banned ])
 
-      expect(presenter.banned_member_last?(0)).to be(true)
-      expect(presenter.banned_member_last?(-1)).to be(false)
+      expect(presenter.banned_member_position(0)).to eq(:last)
+      expect(presenter.banned_member_position(-1)).to eq(:middle)
     end
   end
 
@@ -153,15 +153,15 @@ RSpec.describe GameRosterPresenter do
     end
   end
 
-  describe "#roster_character_last?" do
-    it "is true only for the final index" do
+  describe "#roster_character_position" do
+    it "is :last only for the final index" do
       character = build_stubbed(:character)
       allow(game).to receive_message_chain(:game_members, :where, :pluck, :to_set).and_return(Set.new)
       allow(game).to receive_message_chain(:characters, :active, :visible_to, :includes, :order, :to_a)
         .and_return([ character ])
 
-      expect(presenter.roster_character_last?(0)).to be(true)
-      expect(presenter.roster_character_last?(-1)).to be(false)
+      expect(presenter.roster_character_position(0)).to eq(:last)
+      expect(presenter.roster_character_position(-1)).to eq(:middle)
     end
   end
 end

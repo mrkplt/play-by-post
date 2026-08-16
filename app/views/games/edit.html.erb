@@ -9,7 +9,8 @@
 
   <%= render Ui::SectionLabelComponent.new do %>Game Details<% end %>
   <%= render Shared::GameFormComponent.new(
-        game: @game_presenter, submit_label: "Save Changes", cancel_href: game_path(@game_presenter)) %>
+        game: @game_presenter,
+        submission: Shared::GameFormComponent::Submission.new(label: "Save Changes", cancel_href: game_path(@game_presenter))) %>
 
   <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do %>Post Images<% end %>
   <%= render Ui::CardComponent.new do %>
@@ -26,7 +27,7 @@
   <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do %>Players<% end %>
   <%= render Ui::CardComponent.new do %>
     <%= render Ui::SettingsRowComponent.new(
-          label: "Players & Invitations", sub: "Manage who can play and send invites", last: true) do %>
+          label: "Players & Invitations", sub: "Manage who can play and send invites", position: :last) do %>
       <%= link_to "Manage Players", game_player_management_path(@game_presenter),
             class: "text-[11px] font-bold text-accent no-underline" %>
     <% end %>

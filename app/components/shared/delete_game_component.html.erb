@@ -2,7 +2,7 @@
      data-action="keydown@document->game-delete#closeOnEscape">
   <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do %>Danger Zone<% end %>
   <%= render Ui::CardComponent.new do %>
-    <%= render Ui::SettingsRowComponent.new(label: "Delete this game", sub: "Permanently removes the game and all its data", last: true) do %>
+    <%= render Ui::SettingsRowComponent.new(label: "Delete this game", sub: "Permanently removes the game and all its data", position: :last) do %>
       <button type="button" data-action="click->game-delete#open"
               class="text-[11px] font-bold text-danger bg-transparent border-0 cursor-pointer p-0">
         Delete Game

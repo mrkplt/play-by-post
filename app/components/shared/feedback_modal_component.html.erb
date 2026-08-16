@@ -15,13 +15,11 @@
         </p>
         <%= form.hidden_field :url, data: { feedback_target: "url" } %>
         <%= render Ui::MarkdownEditorComponent.new(
-              binding: { form: form, field: :body },
-              config: Ui::MarkdownEditorComponent::Config.new(
+          binding: { form: form, field: :body },
+          config: Ui::MarkdownEditorComponent::Config.new(
                 edit_height: :md,
                 regions: [ Ui::MarkdownEditorComponent::ToolbarRegion.new ]),
-              placeholder: "Your feedback…",
-              required: true,
-              data: { feedback_target: "field" }) %>
+          field: Ui::MarkdownEditorComponent::Field.new(placeholder: "Your feedback…", requirement: :required, data: { feedback_target: "field" })) %>
         <p data-feedback-target="error" hidden class="text-sm text-danger">
           Something went wrong. Please try again.
         </p>

@@ -4,6 +4,6 @@
     <%= render Ui::MarkdownEditorComponent.new(
           binding: { form: f, field: :content },
           config: Ui::MarkdownEditorComponent::Config.with_preview(content_class: "post-content"),
-          rows: 6) %>
+          field: Ui::MarkdownEditorComponent::Field.new(rows: 6)) %>
   </div>
 <% end %>

@@ -4,8 +4,7 @@
   <%= render Shared::MobileFrameComponent.new do |frame| %>
     <% frame.with_header do %>
       <%= render Shared::HeaderComponent.new(
-            title: @game_screen.game.name,
-            crown: @game_screen.game.can_manage?,
+            title: Shared::HeaderComponent::Title.new(text: @game_screen.game.name, crown: @game_screen.game.can_manage?),
             gear: game_player_management_path(@game_screen.game),
             secondary_nav: Shared::GameNavComponent.new(game_presenter: @game_screen.game, active_tab: :scenes, mode: :switch)) %>
     <% end %>
@@ -38,11 +37,11 @@
         <%= render Shared::RosterRowComponent.new(
               row: { name: @game_screen.scenes.gm_name, subtitle: "Running this game",
                      avatar_tone: :dark, crown: true },
-              last: @game_screen.scenes.gm_row_last?) %>
+              position: @game_screen.scenes.gm_row_position) %>
         <% @game_screen.scenes.roster_preview.each_with_index do |row, i| %>
           <%= render Shared::RosterRowComponent.new(
                 row: { name: row[:name], subtitle: row[:scene], avatar_tone: :gold },
-                last: @game_screen.scenes.roster_preview_last?(i)) %>
+                position: @game_screen.scenes.roster_preview_position(i)) %>
         <% end %>
       </div>
     </section>
@@ -70,7 +69,7 @@
                 <%= render Shared::RosterRowComponent.new(
                       row: { name: row.character_name, subtitle: "Played by #{row.owner_name}",
                              avatar_tone: row.avatar_tone, dimmed: row.removed? },
-                      last: @game_screen.roster.roster_character_last?(i)) do %>
+                      position: @game_screen.roster.roster_character_position(i)) do %>
                   <% if row.removed? %>
                     <%= render(Ui::BadgeComponent.new(variant: :slate)) { "Removed" } %>
                   <% end %>
@@ -94,7 +93,7 @@
                     row: { name: banned.display_name, subtitle: "Played by #{banned.display_name}",
                            avatar_tone: :blue, name_class: "text-tint-blue-strong",
                            subtitle_class: "text-tint-blue-soft" },
-                    last: @game_screen.roster.banned_member_last?(i)) do %>
+                    position: @game_screen.roster.banned_member_position(i)) do %>
                 <%= form_with url: banned.unban_path, method: :patch, class: "inline" do |f| %>
                   <%= f.hidden_field :status, value: "active" %>
                   <%= f.submit "Unban", class: "text-[11px] font-bold text-danger-soft bg-transparent border-0 cursor-pointer p-0" %>

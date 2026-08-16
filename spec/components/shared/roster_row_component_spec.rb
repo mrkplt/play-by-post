@@ -38,7 +38,7 @@ RSpec.describe Shared::RosterRowComponent, type: :component do
   end
 
   it "drops the divider on the last row" do
-    expect(described_class.new(row: { name: "x", subtitle: "y" }, last: true).row_classes).not_to include("border-b")
+    expect(described_class.new(row: { name: "x", subtitle: "y" }, position: :last).row_classes).not_to include("border-b")
   end
 
   it "applies custom name and subtitle classes" do
@@ -53,8 +53,13 @@ RSpec.describe Shared::RosterRowComponent, type: :component do
   end
 
   it "builds exact last dimmed row classes" do
-    expect(described_class.new(row: { name: "x", subtitle: "y", dimmed: true }, last: true).row_classes)
+    expect(described_class.new(row: { name: "x", subtitle: "y", dimmed: true }, position: :last).row_classes)
       .to eq("flex items-center gap-2.5 p-[10px_12px] opacity-70")
+  end
+
+  it "rejects an unknown position" do
+    expect { described_class.new(row: { name: "x", subtitle: "y" }, position: :unknown) }
+      .to raise_error(ArgumentError, /Unknown position/)
   end
 
   it "builds exact default name/subtitle classes" do

@@ -22,12 +22,14 @@ class SceneFormBuilder
     Shared::SceneFormComponent.new(
       game: game_presenter,
       scene: ScenePresenter.new(@new_scene),
-      players_with_characters: active_players_with_characters,
-      parent_options: parent_scene_select_options,
-      quick: @params[:quick].present?,
-      selected_character_ids: selected_character_ids,
-      selected_parent_scene_id: @params[:parent_scene_id]&.to_s,
-      back_href: back_href
+      selection: Shared::SceneFormComponent::Selection.new(
+        quick: @params[:quick].present?,
+        back_href: back_href,
+        players_with_characters: active_players_with_characters,
+        parent_options: parent_scene_select_options,
+        selected_character_ids: selected_character_ids,
+        selected_parent_scene_id: @params[:parent_scene_id]&.to_s
+      )
     )
   end
 

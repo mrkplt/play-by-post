@@ -1,6 +1,6 @@
 <%= render Shared::MobileFrameComponent.new do |frame| %>
   <% frame.with_header do %>
-    <%= render Shared::HeaderComponent.new(title: "Your Games", accent_title: true) %>
+    <%= render Shared::HeaderComponent.new(title: Shared::HeaderComponent::Title.new(text: "Your Games", accent: true)) %>
   <% end %>
 
   <% frame.with_footer do %>

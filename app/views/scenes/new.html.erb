@@ -14,7 +14,7 @@
         <%= render Ui::ButtonComponent.new(html_options: { type: "submit", form: scene_form.form_id }) do %><%= scene_form.submit_label %><% end %>
       <% end %>
       <% actions.with_cancel do %>
-        <%= render Ui::ButtonComponent.new(variant: :secondary, url: scene_form.cancel_href) do %>Cancel<% end %>
+        <%= render Ui::ButtonComponent.new(style: Ui::ButtonComponent::Style.new(variant: :secondary), link: Ui::ButtonComponent::Link.new(url: scene_form.cancel_href)) do %>Cancel<% end %>
       <% end %>
     <% end %>
   <% end %>

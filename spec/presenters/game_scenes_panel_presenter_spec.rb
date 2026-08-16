@@ -77,28 +77,28 @@ RSpec.describe GameScenesPanelPresenter do
       expect(presenter.roster_preview_empty?).to be(false)
     end
 
-    it "gm_row_last? is true when the roster preview is empty" do
+    it "gm_row_position is :last when the roster preview is empty" do
       sp = double("scene_participant", character: nil)
       allow(scene).to receive(:scene_participants).and_return([ sp ])
 
-      expect(presenter.gm_row_last?).to be(true)
+      expect(presenter.gm_row_position).to eq(:last)
     end
 
-    it "gm_row_last? is false when the roster preview has rows" do
+    it "gm_row_position is :middle when the roster preview has rows" do
       character = build_stubbed(:character, name: "Vex")
       sp = double("scene_participant", character: character)
       allow(scene).to receive(:scene_participants).and_return([ sp ])
 
-      expect(presenter.gm_row_last?).to be(false)
+      expect(presenter.gm_row_position).to eq(:middle)
     end
 
-    it "roster_preview_last? is true only for the final index" do
+    it "roster_preview_position is :last only for the final index" do
       character = build_stubbed(:character, name: "Vex")
       sp = double("scene_participant", character: character)
       allow(scene).to receive(:scene_participants).and_return([ sp ])
 
-      expect(presenter.roster_preview_last?(0)).to be(true)
-      expect(presenter.roster_preview_last?(-1)).to be(false)
+      expect(presenter.roster_preview_position(0)).to eq(:last)
+      expect(presenter.roster_preview_position(-1)).to eq(:middle)
     end
   end
 

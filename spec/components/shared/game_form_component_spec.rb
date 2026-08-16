@@ -4,10 +4,14 @@ RSpec.describe Shared::GameFormComponent, type: :component do
   let(:game_model) { build_stubbed(:game, name: "Ashfall Reaches", description: "A grim saga") }
   let(:game) { GamePresenter.new(game_model, policy: instance_double(GamePolicy)) }
 
-  def build_component(**overrides)
-    described_class.new(
-      **{ game: game, submit_label: "Save Changes", cancel_href: "/games/#{game_model.id}" }.merge(overrides)
+  def build_submission(**overrides)
+    Shared::GameFormComponent::Submission.new(
+      **{ label: "Save Changes", cancel_href: "/games/#{game_model.id}" }.merge(overrides)
     )
+  end
+
+  def build_component(submission: nil, **submission_overrides)
+    described_class.new(game: game, submission: submission || build_submission(**submission_overrides))
   end
 
   describe "#note?" do
@@ -53,7 +57,7 @@ RSpec.describe Shared::GameFormComponent, type: :component do
 
   describe "rendering" do
     it "renders the name and description fields with the submit and cancel controls" do
-      render_inline(build_component(submit_label: "Create game", cancel_href: "/"))
+      render_inline(build_component(label: "Create game", cancel_href: "/"))
 
       expect(page).to have_field("Name")
       expect(page).to have_field("Description (optional, markdown supported)")
