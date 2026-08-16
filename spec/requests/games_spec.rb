@@ -10,6 +10,11 @@ RSpec.describe GamesController, type: :request do
     create(:game_member, game: game, user: player)
   end
 
+  it_behaves_like "a slug-addressed game action" do
+    let(:signed_in_user) { gm }
+    def perform_request(game_id) = get game_path(game_id)
+  end
+
   describe "GET /" do
     it "lists only the current user's non-banned games in name order, crowning GM games" do
       zeta_game = create(:game, name: "Zeta Quest")

@@ -10,6 +10,11 @@ RSpec.describe PlayerManagementController, type: :request do
     create(:game_member, game: game, user: player)
   end
 
+  it_behaves_like "a slug-addressed game action" do
+    let(:signed_in_user) { gm }
+    def perform_request(game_id) = get game_player_management_path(game_id)
+  end
+
   describe "GET /games/:game_id/player_management" do
     it "GM can access player management" do
       sign_in(gm)

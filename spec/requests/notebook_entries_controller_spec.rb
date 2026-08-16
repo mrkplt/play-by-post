@@ -18,6 +18,11 @@ RSpec.describe NotebookEntriesController, type: :request do
     create(:game_member, :game_master, game: other_game, user: other_gm)
   end
 
+  it_behaves_like "a slug-addressed game action" do
+    let(:signed_in_user) { gm }
+    def perform_request(game_id) = get game_notebook_entries_path(game_id)
+  end
+
   describe "GET index" do
     let!(:entry) { create(:notebook_entry, game: game, title: "Idea") }
 

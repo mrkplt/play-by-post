@@ -10,6 +10,11 @@ RSpec.describe Games::SettingsController, type: :request do
     create(:game_member, game: game, user: player)
   end
 
+  it_behaves_like "a slug-addressed game action" do
+    let(:signed_in_user) { gm }
+    def perform_request(game_id) = patch toggle_sheets_hidden_game_path(game_id)
+  end
+
   describe "PATCH /games/:id/toggle_sheets_hidden" do
     it "flips the flag for the GM and returns to the game" do
       sign_in gm

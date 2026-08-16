@@ -11,6 +11,11 @@ RSpec.describe NotebookEntries::LanesController, type: :request do
     create(:game_member, game: game, user: player)
   end
 
+  it_behaves_like "a slug-addressed game action" do
+    let(:signed_in_user) { gm }
+    def perform_request(game_id) = patch move_game_notebook_entry_path(game_id, "x")
+  end
+
   describe "PATCH move" do
     it "moves the entry to the requested lane" do
       sign_in gm

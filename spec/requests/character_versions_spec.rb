@@ -13,6 +13,11 @@ RSpec.describe CharacterVersionsController, type: :request do
     create(:game_member, game: game, user: player)
   end
 
+  it_behaves_like "a slug-addressed game action" do
+    let(:signed_in_user) { gm }
+    def perform_request(game_id) = get game_character_character_version_path(game_id, "x", "y")
+  end
+
   describe "GET /games/:game_id/characters/:character_id/versions/:id" do
     it "GM can view a character version" do
       sign_in(gm)

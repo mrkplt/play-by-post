@@ -15,6 +15,11 @@ RSpec.describe PagesController, type: :request do
     create(:game_member, :banned, game: game, user: banned_player)
   end
 
+  it_behaves_like "a slug-addressed game action" do
+    let(:signed_in_user) { gm }
+    def perform_request(game_id) = get game_page_path(game_id, "x")
+  end
+
   describe "GET show" do
     let!(:page) { create(:page, game: game, title: "Lore", body: "# Lore\n\nContent.") }
 

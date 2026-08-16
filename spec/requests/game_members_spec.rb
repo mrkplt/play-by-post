@@ -11,6 +11,11 @@ RSpec.describe GameMembersController, type: :request do
     player_member
   end
 
+  it_behaves_like "a slug-addressed game action" do
+    let(:signed_in_user) { gm }
+    def perform_request(game_id) = patch game_player_management_game_member_path(game_id, "x")
+  end
+
   describe "PATCH /games/:game_id/player_management/game_members/:id" do
     it "GM can update a player status" do
       sign_in(gm)

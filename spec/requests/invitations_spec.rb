@@ -10,6 +10,11 @@ RSpec.describe InvitationsController, type: :request do
     create(:game_member, game: game, user: player)
   end
 
+  it_behaves_like "a slug-addressed game action" do
+    let(:signed_in_user) { gm }
+    def perform_request(game_id) = post game_player_management_invitations_path(game_id)
+  end
+
   describe "POST /games/:game_id/player_management/invitations" do
     it "GM can send an invitation" do
       sign_in(gm)

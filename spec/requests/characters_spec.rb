@@ -12,6 +12,11 @@ RSpec.describe CharactersController, type: :request do
     create(:game_member, game: game, user: other_player)
   end
 
+  it_behaves_like "a slug-addressed game action" do
+    let(:signed_in_user) { gm }
+    def perform_request(game_id) = get new_game_character_path(game_id)
+  end
+
   describe "GET /games/:game_id/characters/new" do
     it "GM can access the new character form" do
       sign_in(gm)
