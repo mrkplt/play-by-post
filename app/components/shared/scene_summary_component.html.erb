@@ -4,6 +4,11 @@
     <div class="flex gap-2 items-center">
       <%= render(Ui::BadgeComponent.new(variant: status_badge_variant.to_sym)) { @summary.status_label } %>
       <% if can_manage? %>
+        <% if draft? %>
+          <%= render(Ui::BadgeComponent.new(variant: :slate)) { "Draft" } %>
+          <%= button_to "Publish", publish_path, method: :patch,
+              class: "text-xs text-amber-700 hover:text-amber-900 bg-transparent border-none cursor-pointer p-0" %>
+        <% end %>
         <%= link_to "Edit", @summary.routes.edit_path,
             class: "text-xs text-amber-700 hover:text-amber-900 no-underline" %>
         <%= button_to "Delete", @summary.routes.submit_path,

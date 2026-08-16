@@ -21,4 +21,16 @@ class Shared::SceneSummaryComponent < ApplicationComponent
   def can_manage?
     @summary.can_manage?
   end
+
+  # This summary is an unpublished draft — drives the draft badge and the
+  # Publish affordance, both GM-only.
+  sig { returns(T::Boolean) }
+  def draft?
+    @summary.draft?
+  end
+
+  sig { returns(String) }
+  def publish_path
+    @summary.routes.publish_path
+  end
 end

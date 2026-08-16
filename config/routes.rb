@@ -42,7 +42,13 @@ Rails.application.routes.draw do
           post :toggle_notification_preference
         end
         resource :scene_summary, only: %i[new create edit update destroy],
-                                  controller: "scene_summaries"
+                                  controller: "scene_summaries" do
+          # Namespaced under the summary: the editor autosaves the draft flag on
+          # the summary's own row (its scene_id is uniquely indexed, so a summary
+          # cannot hold a separate draft row), and publishing promotes it.
+          patch :save_draft, to: "scene_summaries/drafts#save"
+          patch :publish, to: "scene_summaries/drafts#publish"
+        end
         resources :posts, only: %i[create edit update] do
           member do
             post :mark_read

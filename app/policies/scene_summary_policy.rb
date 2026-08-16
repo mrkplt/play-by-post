@@ -31,6 +31,14 @@ class SceneSummaryPolicy < ApplicationPolicy
     manage?
   end
 
+  # May publish a draft summary, making it visible in the members log and the
+  # RSS feed — the same GM capability as managing it, named for the publish
+  # action rather than borrowing a CRUD predicate.
+  sig { returns(T::Boolean) }
+  def publish?
+    manage?
+  end
+
   private
 
   sig { returns(T::Boolean) }

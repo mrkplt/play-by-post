@@ -39,4 +39,20 @@ RSpec.describe SceneSummaryRoutesPresenter do
       expect(presenter.scene_url).to eq("https://example.com/games/7/scenes/42")
     end
   end
+
+  describe "#save_draft_path" do
+    it "builds the summary's draft autosave path from the injected game and url_helpers" do
+      allow(urls).to receive(:save_draft_game_scene_scene_summary_path).with(game, scene)
+        .and_return("/games/7/scenes/42/scene_summary/save_draft")
+      expect(presenter.save_draft_path).to eq("/games/7/scenes/42/scene_summary/save_draft")
+    end
+  end
+
+  describe "#publish_path" do
+    it "builds the summary's publish path from the injected game and url_helpers" do
+      allow(urls).to receive(:publish_game_scene_scene_summary_path).with(game, scene)
+        .and_return("/games/7/scenes/42/scene_summary/publish")
+      expect(presenter.publish_path).to eq("/games/7/scenes/42/scene_summary/publish")
+    end
+  end
 end

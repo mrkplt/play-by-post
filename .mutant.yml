@@ -231,6 +231,7 @@ matcher:
     - ActionMailbox::Ingresses::Resend::InboundEmailsController
     - Webhooks::DeployController
     - SceneSummariesController
+    - SceneSummaries::DraftsController
     - RssController
     - Profiles::ApiTokensController
     - GameExportsController
