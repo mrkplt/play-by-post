@@ -32,4 +32,13 @@
             class: "text-[11px] font-bold text-accent no-underline" %>
     <% end %>
   <% end %>
+
+  <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do %>Content Templates<% end %>
+  <%= render Ui::CardComponent.new do %>
+    <%= render Ui::SettingsRowComponent.new(
+          label: "Templates", sub: "Pre-fill new pages, notes, and characters", position: :last) do %>
+      <%= link_to "Manage Templates", game_content_templates_path(@game_presenter),
+            class: "text-[11px] font-bold text-accent no-underline" %>
+    <% end %>
+  <% end %>
 <% end %>
