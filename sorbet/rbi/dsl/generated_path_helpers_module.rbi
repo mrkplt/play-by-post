@@ -28,6 +28,9 @@ module GeneratedPathHelpersModule
   def edit_game_character_path(*args); end
 
   sig { params(args: T.untyped).returns(String) }
+  def edit_game_content_template_path(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
   def edit_game_game_link_path(*args); end
 
   sig { params(args: T.untyped).returns(String) }
@@ -67,6 +70,12 @@ module GeneratedPathHelpersModule
   def game_characters_path(*args); end
 
   sig { params(args: T.untyped).returns(String) }
+  def game_content_template_path(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def game_content_templates_path(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
   def game_export_path(*args); end
 
   sig { params(args: T.untyped).returns(String) }
@@ -86,6 +95,9 @@ module GeneratedPathHelpersModule
 
   sig { params(args: T.untyped).returns(String) }
   def game_notebook_entry_path(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def game_page_page_version_path(*args); end
 
   sig { params(args: T.untyped).returns(String) }
   def game_page_path(*args); end
@@ -133,9 +145,6 @@ module GeneratedPathHelpersModule
   def games_path(*args); end
 
   sig { params(args: T.untyped).returns(String) }
-  def generate_rss_token_profile_path(*args); end
-
-  sig { params(args: T.untyped).returns(String) }
   def join_game_scene_participants_path(*args); end
 
   sig { params(args: T.untyped).returns(String) }
@@ -149,6 +158,9 @@ module GeneratedPathHelpersModule
 
   sig { params(args: T.untyped).returns(String) }
   def new_game_character_path(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def new_game_content_template_path(*args); end
 
   sig { params(args: T.untyped).returns(String) }
   def new_game_game_link_path(*args); end
@@ -184,10 +196,22 @@ module GeneratedPathHelpersModule
   def preview_view_components_path(*args); end
 
   sig { params(args: T.untyped).returns(String) }
+  def profile_api_token_path(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def profile_api_tokens_path(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
   def profile_path(*args); end
 
   sig { params(args: T.untyped).returns(String) }
   def promote_game_notebook_entry_path(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def publish_game_page_path(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def publish_game_scene_scene_summary_path(*args); end
 
   sig { params(args: T.untyped).returns(String) }
   def rails_blob_path(*args); end
@@ -283,13 +307,19 @@ module GeneratedPathHelpersModule
   def restore_game_character_path(*args); end
 
   sig { params(args: T.untyped).returns(String) }
-  def revoke_rss_token_profile_path(*args); end
-
-  sig { params(args: T.untyped).returns(String) }
   def root_path(*args); end
 
   sig { params(args: T.untyped).returns(String) }
+  def rss_feed_path(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def save_draft_game_page_path(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
   def save_draft_game_scene_posts_path(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def save_draft_game_scene_scene_summary_path(*args); end
 
   sig { params(args: T.untyped).returns(String) }
   def toggle_ai_summaries_enabled_game_path(*args); end

@@ -15,10 +15,16 @@ RSpec.describe Page do
   end
 
   describe "validations" do
-    it "requires a title" do
-      page = build(:page, title: nil)
+    it "requires a title when published" do
+      page = build(:page, title: nil, draft: false)
       expect(page).not_to be_valid
       expect(page.errors[:title]).to be_present
+    end
+
+    it "allows a blank title when a draft" do
+      page = build(:page, title: nil, draft: true)
+      page.valid?
+      expect(page.errors[:title]).to be_empty
     end
 
     it "rejects a title longer than 200 characters" do
@@ -31,6 +37,43 @@ RSpec.describe Page do
       page = build(:page, body: nil)
       page.valid?
       expect(page.errors[:body]).to be_empty
+    end
+  end
+
+  describe "versioning" do
+    it "has many page versions destroyed with the page" do
+      association = described_class.reflect_on_association(:page_versions)
+      expect(association.macro).to eq(:has_many)
+      expect(association.options[:dependent]).to eq(:destroy)
+    end
+
+    it "snapshots title, body, and editor on save" do
+      editor = create(:user)
+      page = create(:page, title: "Lore", body: "the tale", editor: editor)
+
+      version = page.page_versions.last
+      expect(version.title).to eq("Lore")
+      expect(version.body).to eq("the tale")
+      expect(version.edited_by).to eq(editor)
+    end
+
+    it "attributes a version to the acting Current.user on update" do
+      page = create(:page)
+      editor = create(:user)
+      Current.user = editor
+
+      expect { page.update!(title: "Revised") }.to change { page.page_versions.count }.by(1)
+      expect(page.page_versions.last.edited_by).to eq(editor)
+    end
+  end
+
+  describe "draft scopes" do
+    it ".published selects only non-drafts" do
+      expect(described_class.published.where_values_hash).to eq("draft" => false)
+    end
+
+    it ".drafts selects only drafts" do
+      expect(described_class.drafts.where_values_hash).to eq("draft" => true)
     end
   end
 
@@ -50,6 +93,7 @@ RSpec.describe Page do
     it "only generates on create, leaving an edited record's slug untouched", db: true do
       page = create(:page)
       original = page.slug
+      Current.user = create(:user) # a page save snapshots a version attributed to the editor
       page.update!(title: "Renamed")
       expect(page.reload.slug).to eq(original)
     end

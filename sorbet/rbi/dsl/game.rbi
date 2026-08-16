@@ -390,6 +390,20 @@ class Game
     def characters=(value); end
 
     sig { returns(T::Array[T.untyped]) }
+    def content_template_ids; end
+
+    sig { params(ids: T::Array[T.untyped]).returns(T::Array[T.untyped]) }
+    def content_template_ids=(ids); end
+
+    # This method is created by ActiveRecord on the `Game` class because it declared `has_many :content_templates`.
+    # 🔗 [Rails guide for `has_many` association](https://guides.rubyonrails.org/association_basics.html#the-has-many-association)
+    sig { returns(::ContentTemplate::PrivateCollectionProxy) }
+    def content_templates; end
+
+    sig { params(value: T::Enumerable[::ContentTemplate]).void }
+    def content_templates=(value); end
+
+    sig { returns(T::Array[T.untyped]) }
     def game_export_request_ids; end
 
     sig { params(ids: T::Array[T.untyped]).returns(T::Array[T.untyped]) }

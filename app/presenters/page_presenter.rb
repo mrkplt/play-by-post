@@ -15,6 +15,7 @@
 #                           the form screens' Cancel target
 class PagePresenter < BasePresenter
   extend T::Sig
+  include Draftable::Presentation
 
   # The viewer may administer the game this page belongs to — the flag behind
   # the game-nav's GM-only affordances on every page screen.
@@ -45,6 +46,13 @@ class PagePresenter < BasePresenter
   sig { returns(String) }
   def href
     @options.fetch(:urls).game_page_path(@options.fetch(:game), @model)
+  end
+
+  # The page's draft/publish route endpoints, split into their own presenter to
+  # keep this class under the method ceiling (see PageRoutesPresenter).
+  sig { returns(PageRoutesPresenter) }
+  def routes
+    PageRoutesPresenter.new(@model, game: @options.fetch(:game), urls: @options.fetch(:urls))
   end
 
   # Where Cancel returns to on the form screens: an unsaved page has no show

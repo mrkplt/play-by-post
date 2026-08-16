@@ -1,6 +1,6 @@
 <% if draft? %>
   <div class="bg-tint-blue-bg border border-tint-blue-border rounded-card p-4">
-    <p class="text-sm font-semibold text-tint-blue-strong mb-2">You have an unsaved draft from this scene.</p>
+    <p class="text-sm font-semibold text-tint-blue-strong mb-2"><%= notice %></p>
     <%= render Ui::MarkdownRenderComponent.new(
           text: draft_content,
           content_class: "post-content text-sm text-body-ink mb-3 border border-tint-blue-border rounded-control p-3 bg-card") %>

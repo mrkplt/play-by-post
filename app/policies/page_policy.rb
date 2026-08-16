@@ -7,8 +7,14 @@
 class PagePolicy < ApplicationPolicy
   extend T::Sig
 
+  # A published page is visible to every non-banned member; a draft is visible
+  # only to a manager (the GM authoring it). Without the draft gate a player who
+  # knows a draft page's slug could read unpublished content directly, bypassing
+  # the list-level hiding in GameShowPresenter#visible_pages.
   sig { returns(T::Boolean) }
   def show?
+    return manage? if record.draft?
+
     viewable?
   end
 
@@ -33,6 +39,14 @@ class PagePolicy < ApplicationPolicy
 
   sig { returns(T::Boolean) }
   def destroy?
+    manage?
+  end
+
+  # May publish a draft page, making it visible to every member — the same GM
+  # capability as managing it, named for the publish action so the affordance
+  # and controller read as a capability rather than a borrowed CRUD predicate.
+  sig { returns(T::Boolean) }
+  def publish?
     manage?
   end
 

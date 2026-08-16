@@ -88,7 +88,10 @@
       <%= render Shared::SceneSummaryComponent.new(summary: @scene_screen.summary) %>
     <% end %>
 
-    <%= render Shared::DraftRecoveryComponent.new(game: @scene_screen.game, scene: @scene_screen.scene, draft: @scene_screen.posts.recoverable_draft(@scene_screen.posts.draft)) %>
+    <%= render Shared::DraftRecoveryComponent.new(
+          draft: @scene_screen.posts.recoverable_draft(@scene_screen.posts.draft),
+          discard_path: @scene_screen.posts.draft_discard_path,
+          notice: ScenePostsPresenter::DRAFT_RECOVERY_NOTICE) %>
 
     <%# Composer %>
     <% if @scene_screen.posts.can_post? %>

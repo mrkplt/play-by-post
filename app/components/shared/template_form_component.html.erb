@@ -1,0 +1,22 @@
+<%= form_with model: [ game, template ], html: { id: form_id }, class: "flex flex-col gap-4" do |f| %>
+  <%= render Ui::FormErrorsComponent.new(messages: error_messages) %>
+
+  <div class="flex flex-col gap-1.5">
+    <%= f.label :content_type, "Content type", class: "text-[11px] font-bold text-muted uppercase tracking-[0.05em]" %>
+    <% if new_record? %>
+      <%= f.select :content_type, content_type_options.map { |type| [ type.capitalize, type ] },
+            {}, class: "w-full border border-input-border rounded-control px-3 py-2.5 text-sm text-ink bg-card" %>
+    <% else %>
+      <p class="text-sm text-ink m-0"><%= template.content_type_label %></p>
+      <%= f.hidden_field :content_type %>
+    <% end %>
+  </div>
+
+  <div class="flex flex-col gap-1.5">
+    <%= f.label :body, "Template (markdown supported)", class: "text-[11px] font-bold text-muted uppercase tracking-[0.05em]" %>
+    <%= render Ui::MarkdownEditorComponent.new(
+          binding: { form: f, field: :body },
+          config: Ui::MarkdownEditorComponent::Config.with_preview,
+          field: Ui::MarkdownEditorComponent::Field.new(rows: 12, placeholder: "The markdown new records of this type start with…")) %>
+  </div>
+<% end %>

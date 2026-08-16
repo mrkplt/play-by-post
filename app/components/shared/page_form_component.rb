@@ -46,6 +46,26 @@ class Shared::PageFormComponent < ApplicationComponent
     mode_value(new: "new_page_form", edit: "edit_page_#{@page.id}_form")
   end
 
+  # Live draft autosave applies only to a persisted page — a new page has no row
+  # to autosave onto, so its draft state is chosen at create via the toggle.
+  sig { returns(T::Boolean) }
+  def autosave?
+    !new_record?
+  end
+
+  # Where the editor autosaves this page's draft (edit only).
+  sig { returns(String) }
+  def save_draft_path
+    page.routes.save_draft_path
+  end
+
+  # Whether this page is currently an unpublished draft — sets the toggle's
+  # initial state on edit.
+  sig { returns(T::Boolean) }
+  def draft?
+    page.draft?
+  end
+
   private
 
   # The single new_record?-keyed branch every mode-dependent value goes

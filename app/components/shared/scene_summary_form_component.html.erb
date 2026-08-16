@@ -4,7 +4,8 @@
   </div>
 <% end %>
 
-<%= form_with model: @summary, url: @summary.routes.submit_path, html: { id: form_id }, class: "flex flex-col gap-4" do |f| %>
+<%= form_with model: @summary, url: @summary.routes.submit_path, html: { id: form_id }, class: "flex flex-col gap-4",
+      data: autosave? ? { controller: "draft", draft_save_url_value: save_draft_path, draft_publish_label_value: submit_label, draft_param_key_value: "scene_summary" } : {} do |f| %>
   <%= render Ui::FormErrorsComponent.new(messages: error_messages) %>
 
   <div class="flex flex-col gap-1.5">
@@ -12,6 +13,11 @@
     <%= render Ui::MarkdownEditorComponent.new(
           binding: { form: f, field: :body },
           config: Ui::MarkdownEditorComponent::Config.with_preview,
-          field: Ui::MarkdownEditorComponent::Field.new(rows: 10, placeholder: "Write a narrative summary of this scene...")) %>
+          field: Ui::MarkdownEditorComponent::Field.new(rows: 10, placeholder: "Write a narrative summary of this scene...",
+            data: autosave? ? { draft_target: "content", action: "input->draft#scheduleSave" } : {})) %>
   </div>
+
+  <% if autosave? %>
+    <%= render Shared::SaveAsDraftToggleComponent.new(checked: draft?) %>
+  <% end %>
 <% end %>

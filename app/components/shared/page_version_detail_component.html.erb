@@ -1,0 +1,9 @@
+<div class="flex flex-col gap-0.5">
+  <span class="text-[11px] text-muted-2">
+    Version — <time data-local-time="<%= version.created_at_timestamp %>"><%= version.formatted_created_at %></time>
+  </span>
+  <span class="text-[11px] text-muted-2">Edited by: <%= version.editor_name %></span>
+</div>
+
+<%= render Shared::TitledCardComponent.new(
+      title: version.title, body: version.body, empty_notice: "No content in this version.") %>

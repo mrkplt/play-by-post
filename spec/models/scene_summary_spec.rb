@@ -19,8 +19,24 @@ RSpec.describe SceneSummary, type: :model do
       expect(build(:scene_summary)).to be_valid
     end
 
-    it "requires body" do
-      expect(build(:scene_summary, body: "")).not_to be_valid
+    it "requires body when published" do
+      expect(build(:scene_summary, body: "", draft: false)).not_to be_valid
+    end
+
+    it "allows a blank body when a draft" do
+      summary = build(:scene_summary, body: "", draft: true)
+      summary.valid?
+      expect(summary.errors[:body]).to be_empty
+    end
+  end
+
+  describe "draft scopes" do
+    it ".published selects only non-drafts" do
+      expect(described_class.published.where_values_hash).to eq("draft" => false)
+    end
+
+    it ".drafts selects only drafts" do
+      expect(described_class.drafts.where_values_hash).to eq("draft" => true)
     end
   end
 
@@ -37,6 +53,12 @@ RSpec.describe SceneSummary, type: :model do
       scene = create(:scene, :resolved, game: game, private: true)
       summary = create(:scene_summary, scene: scene)
       expect(described_class.public_for_game(game)).not_to include(summary)
+    end
+
+    it "excludes draft summaries — an unpublished summary never reaches the log or feed", :db do
+      scene = create(:scene, :resolved, game: game, private: false)
+      draft = create(:scene_summary, scene: scene, draft: true)
+      expect(described_class.public_for_game(game)).not_to include(draft)
     end
 
     it "excludes summaries of unresolved scenes", :db do

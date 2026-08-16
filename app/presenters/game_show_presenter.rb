@@ -25,10 +25,12 @@ class GameShowPresenter < BasePresenter
   end
 
   # The game's pages, alphabetised by title — the data behind the Pages tab.
+  # A draft page is visible only to a GM (who authored it); non-managers see
+  # only published pages, so an in-progress page never leaks to players.
   sig { returns(T::Array[PagePresenter]) }
   def pages
     @pages ||= T.let(
-      game.pages.order(:title).to_a.map do |page|
+      visible_pages.order(:title).to_a.map do |page|
         PagePresenter.new(page, game: game, urls: @options.fetch(:urls))
       end,
       T.nilable(T::Array[PagePresenter])
@@ -72,6 +74,16 @@ class GameShowPresenter < BasePresenter
   end
 
   private
+
+  # Pages this viewer may see: a GM sees every page including their own drafts;
+  # anyone else sees only published pages. Untyped because the association proxy
+  # and its scope are not statically modelled here — the relation is only ever
+  # ordered and enumerated by #pages.
+  sig { returns(T.untyped) }
+  def visible_pages
+    scope = game.pages
+    @model.can_manage? ? scope : scope.published
+  end
 
   sig { returns(Game) }
   def game

@@ -1,4 +1,5 @@
-<%= form_with model: [ game, page ], html: { id: form_id }, class: "flex flex-col gap-4" do |f| %>
+<%= form_with model: [ game, page ], html: { id: form_id }, class: "flex flex-col gap-4",
+      data: autosave? ? { controller: "draft", draft_save_url_value: save_draft_path, draft_publish_label_value: submit_label, draft_param_key_value: "page" } : {} do |f| %>
   <%= render Ui::FormErrorsComponent.new(messages: error_messages) %>
 
   <div class="flex flex-col gap-1.5">
@@ -12,7 +13,14 @@
     <%= render Ui::MarkdownEditorComponent.new(
           binding: { form: f, field: :body },
           config: Ui::MarkdownEditorComponent::Config.with_preview,
-          field: Ui::MarkdownEditorComponent::Field.new(rows: 14, placeholder: "Write the page in markdown…")) %>
+          field: Ui::MarkdownEditorComponent::Field.new(rows: 14, placeholder: "Write the page in markdown…",
+            data: autosave? ? { draft_target: "content", action: "input->draft#scheduleSave" } : {})) %>
   </div>
+
+  <% if autosave? %>
+    <%= render Shared::SaveAsDraftToggleComponent.new(checked: draft?) %>
+  <% else %>
+    <%= render Shared::SaveAsDraftToggleComponent.new(checked: draft?, param: "page") %>
+  <% end %>
 
 <% end %>

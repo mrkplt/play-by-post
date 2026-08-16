@@ -2,6 +2,7 @@
 
 class Post < ApplicationRecord
   extend T::Sig
+  include Draftable::Model
 
   belongs_to :scene
   belongs_to :user
@@ -12,10 +13,17 @@ class Post < ApplicationRecord
   IMAGE_TYPES = %w[image/jpeg image/png image/gif image/webp].freeze
   IMAGE_MAX_SIZE = 10.megabytes
 
+  # Drafting scopes and presence-unless-draft, declared here so the wiring is
+  # visible; Draftable::Model supplies the shared draft?/published?/publish!
+  # behaviour.
   scope :published, -> { where(draft: false) }
   scope :drafts, -> { where(draft: true) }
 
   validates :content, presence: true, unless: :draft?
+
+  # Post-specific and deliberately not shared — a participant may hold at most
+  # one draft per scene. Post is the only adopter with a per-user draft, so this
+  # uniqueness rule does not generalize.
   validates :user_id, uniqueness: { scope: :scene_id, message: "already has a draft for this scene" }, if: :draft?
   validate :acceptable_image
   validate :images_allowed_for_game

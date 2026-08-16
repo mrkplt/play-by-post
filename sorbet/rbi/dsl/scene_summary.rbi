@@ -491,6 +491,9 @@ class SceneSummary
     def distinct(value = true); end
 
     sig { params(args: T.untyped, blk: T.untyped).returns(PrivateAssociationRelation) }
+    def drafts(*args, &blk); end
+
+    sig { params(args: T.untyped, blk: T.untyped).returns(PrivateAssociationRelation) }
     def eager_load(*args, &blk); end
 
     sig { params(args: T.untyped, blk: T.untyped).returns(PrivateAssociationRelation) }
@@ -564,6 +567,9 @@ class SceneSummary
 
     sig { params(args: T.untyped, blk: T.untyped).returns(PrivateAssociationRelation) }
     def preload(*args, &blk); end
+
+    sig { params(args: T.untyped, blk: T.untyped).returns(PrivateAssociationRelation) }
+    def published(*args, &blk); end
 
     sig { params(args: T.untyped, blk: T.untyped).returns(PrivateAssociationRelation) }
     def readonly(*args, &blk); end
@@ -710,6 +716,51 @@ class SceneSummary
 
     sig { void }
     def created_at_will_change!; end
+
+    sig { returns(T::Boolean) }
+    def draft; end
+
+    sig { params(value: T::Boolean).returns(T::Boolean) }
+    def draft=(value); end
+
+    sig { returns(T::Boolean) }
+    def draft?; end
+
+    sig { returns(T.nilable(T::Boolean)) }
+    def draft_before_last_save; end
+
+    sig { returns(T.untyped) }
+    def draft_before_type_cast; end
+
+    sig { returns(T::Boolean) }
+    def draft_came_from_user?; end
+
+    sig { returns(T.nilable([T::Boolean, T::Boolean])) }
+    def draft_change; end
+
+    sig { returns(T.nilable([T::Boolean, T::Boolean])) }
+    def draft_change_to_be_saved; end
+
+    sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
+    def draft_changed?(from: T.unsafe(nil), to: T.unsafe(nil)); end
+
+    sig { returns(T.nilable(T::Boolean)) }
+    def draft_in_database; end
+
+    sig { returns(T.nilable([T::Boolean, T::Boolean])) }
+    def draft_previous_change; end
+
+    sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
+    def draft_previously_changed?(from: T.unsafe(nil), to: T.unsafe(nil)); end
+
+    sig { returns(T.nilable(T::Boolean)) }
+    def draft_previously_was; end
+
+    sig { returns(T.nilable(T::Boolean)) }
+    def draft_was; end
+
+    sig { void }
+    def draft_will_change!; end
 
     sig { returns(T.nilable(::ActiveSupport::TimeWithZone)) }
     def edited_at; end
@@ -1078,6 +1129,9 @@ class SceneSummary
     def restore_created_at!; end
 
     sig { void }
+    def restore_draft!; end
+
+    sig { void }
     def restore_edited_at!; end
 
     sig { void }
@@ -1118,6 +1172,12 @@ class SceneSummary
 
     sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
     def saved_change_to_created_at?(from: T.unsafe(nil), to: T.unsafe(nil)); end
+
+    sig { returns(T.nilable([T::Boolean, T::Boolean])) }
+    def saved_change_to_draft; end
+
+    sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
+    def saved_change_to_draft?(from: T.unsafe(nil), to: T.unsafe(nil)); end
 
     sig { returns(T.nilable([T.nilable(::ActiveSupport::TimeWithZone), T.nilable(::ActiveSupport::TimeWithZone)])) }
     def saved_change_to_edited_at; end
@@ -1276,6 +1336,9 @@ class SceneSummary
     def will_save_change_to_created_at?(from: T.unsafe(nil), to: T.unsafe(nil)); end
 
     sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
+    def will_save_change_to_draft?(from: T.unsafe(nil), to: T.unsafe(nil)); end
+
+    sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
     def will_save_change_to_edited_at?(from: T.unsafe(nil), to: T.unsafe(nil)); end
 
     sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
@@ -1324,6 +1387,9 @@ class SceneSummary
 
     sig { params(value: T::Boolean).returns(PrivateRelation) }
     def distinct(value = true); end
+
+    sig { params(args: T.untyped, blk: T.untyped).returns(PrivateRelation) }
+    def drafts(*args, &blk); end
 
     sig { params(args: T.untyped, blk: T.untyped).returns(PrivateRelation) }
     def eager_load(*args, &blk); end
@@ -1399,6 +1465,9 @@ class SceneSummary
 
     sig { params(args: T.untyped, blk: T.untyped).returns(PrivateRelation) }
     def preload(*args, &blk); end
+
+    sig { params(args: T.untyped, blk: T.untyped).returns(PrivateRelation) }
+    def published(*args, &blk); end
 
     sig { params(args: T.untyped, blk: T.untyped).returns(PrivateRelation) }
     def readonly(*args, &blk); end

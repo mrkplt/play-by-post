@@ -1,0 +1,3 @@
+.titled-card-empty {
+  @apply text-muted-2 m-0 text-sm;
+}

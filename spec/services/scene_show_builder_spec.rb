@@ -84,6 +84,24 @@ RSpec.describe SceneShowBuilder, :db do
 
       expect(builder.summary_presenter).to be_a(SceneSummaryPresenter)
     end
+
+    it "hides a draft summary from a non-GM viewer" do
+      create(:scene_summary, scene: scene, draft: true)
+
+      expect(builder.summary_presenter).to be_nil
+    end
+
+    it "shows a draft summary to the GM who authored it" do
+      gm = create(:user, :with_profile)
+      create(:game_member, :game_master, game: game, user: gm)
+      create(:scene_summary, scene: scene, draft: true)
+      gm_context = described_class::Context.new(
+        current_user: gm, urls: urls, policies: ->(record) { PostPolicy.new(gm, record) }
+      )
+      gm_builder = described_class.new(scene, game: game, context: gm_context)
+
+      expect(gm_builder.summary_presenter).to be_a(SceneSummaryPresenter)
+    end
   end
 
   describe "#screen" do

@@ -40,6 +40,18 @@ class SceneSummaryRoutesPresenter < BasePresenter
     urls.game_scene_url(game, @model.scene)
   end
 
+  # The editor's draft autosave endpoint (SceneSummaries::DraftsController#save).
+  sig { returns(String) }
+  def save_draft_path
+    urls.save_draft_game_scene_scene_summary_path(game, @model.scene)
+  end
+
+  # The Publish affordance's target (SceneSummaries::DraftsController#publish).
+  sig { returns(String) }
+  def publish_path
+    urls.publish_game_scene_scene_summary_path(game, @model.scene)
+  end
+
   private
 
   sig { returns(T.untyped) }

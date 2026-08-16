@@ -31,6 +31,18 @@ class Shared::PageDetailComponent < ApplicationComponent
     page.can_manage?
   end
 
+  # This page is an unpublished draft — drives the draft badge and the Publish
+  # affordance, both GM-only.
+  sig { returns(T::Boolean) }
+  def draft?
+    page.draft?
+  end
+
+  sig { returns(String) }
+  def publish_path
+    page.routes.publish_path
+  end
+
   sig { returns(T::Boolean) }
   def body?
     page.body?

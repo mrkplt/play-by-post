@@ -2,6 +2,7 @@
 
 class PostPresenter < BasePresenter
   extend T::Sig
+  include Draftable::Presentation
 
   sig { params(model: Post, options: T.untyped).void }
   def initialize(model, **options)

@@ -3,7 +3,12 @@ require "rails_helper"
 RSpec.describe Shared::SceneSummaryFormComponent, type: :component do
   let(:game) { build_stubbed(:game) }
   let(:scene) { build_stubbed(:scene, game: game) }
-  let(:urls) { double("urls", game_scene_scene_summary_path: "/summary") }
+  let(:urls) do
+    double("urls",
+      game_scene_scene_summary_path: "/summary",
+      save_draft_game_scene_scene_summary_path: "/summary/save_draft",
+      publish_game_scene_scene_summary_path: "/summary/publish")
+  end
   let(:policy) { instance_double(SceneSummaryPolicy, manage?: true) }
 
   def presenter_for(summary)
@@ -33,6 +38,15 @@ RSpec.describe Shared::SceneSummaryFormComponent, type: :component do
 
     it "show_ai_notice? returns false" do
       expect(component.show_ai_notice?).to be(false)
+    end
+
+    it "autosave? is false — a new summary has no row to autosave onto" do
+      expect(component.autosave?).to be(false)
+    end
+
+    it "renders no draft autosave controller" do
+      render_inline(component)
+      expect(page).to have_no_css("form[data-controller='draft']")
     end
 
     it "renders no error block when there are no errors" do
@@ -75,6 +89,38 @@ RSpec.describe Shared::SceneSummaryFormComponent, type: :component do
     it "renders a form with the edit-form id" do
       render_inline(component)
       expect(page).to have_css("form#scene_summary_edit_form")
+    end
+
+    it "autosave? is true so the draft controller wires up" do
+      expect(component.autosave?).to be(true)
+    end
+
+    it "save_draft_path resolves the summary's draft endpoint" do
+      expect(component.save_draft_path).to eq("/summary/save_draft")
+    end
+
+    it "renders the draft autosave controller and save-as-draft toggle" do
+      render_inline(component)
+      expect(page).to have_css("form[data-controller='draft']")
+      expect(page).to have_css("[data-draft-target='saveAsDraftToggle']")
+    end
+
+    it "leaves the save-as-draft toggle unchecked for a published summary" do
+      expect(component.draft?).to be(false)
+      render_inline(component)
+      expect(page).to have_no_css("[data-draft-target='saveAsDraftToggle'][checked]")
+    end
+  end
+
+  context "when editing a draft summary" do
+    let(:summary) { build_stubbed(:scene_summary, scene: scene, draft: true) }
+
+    subject(:component) { described_class.new(summary: presenter_for(summary)) }
+
+    it "draft? is true so the save-as-draft toggle starts checked" do
+      expect(component.draft?).to be(true)
+      render_inline(component)
+      expect(page).to have_css("[data-draft-target='saveAsDraftToggle'][checked]")
     end
   end
 

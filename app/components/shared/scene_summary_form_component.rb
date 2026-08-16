@@ -37,6 +37,25 @@ class Shared::SceneSummaryFormComponent < ApplicationComponent
     editing? && summary.ai_generated?
   end
 
+  # Live draft autosave applies only to a persisted summary — a new summary has
+  # no row to autosave onto, so its draft state is chosen at create.
+  sig { returns(T::Boolean) }
+  def autosave?
+    editing?
+  end
+
+  # Where the editor autosaves this summary's draft (edit only).
+  sig { returns(String) }
+  def save_draft_path
+    summary.routes.save_draft_path
+  end
+
+  # Whether this summary is currently an unpublished draft — sets the toggle's
+  # initial state on edit.
+  sig { returns(T::Boolean) }
+  def draft?
+    summary.draft?
+  end
 
   sig { returns(T::Array[String]) }
   def error_messages

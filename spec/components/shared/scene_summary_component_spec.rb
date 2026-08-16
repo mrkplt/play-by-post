@@ -5,14 +5,17 @@ RSpec.describe Shared::SceneSummaryComponent, type: :component do
   let(:scene) { build_stubbed(:scene, game: game) }
   let(:summary) { build_stubbed(:scene_summary, scene: scene, body: "A tale of **glory**.") }
 
-  def presenter_for(can_manage:)
+  def presenter_for(summary_record: summary, can_manage:)
     policy = instance_double(SceneSummaryPolicy, manage?: can_manage)
-    urls = double("urls", edit_game_scene_scene_summary_path: "/edit", game_scene_scene_summary_path: "/summary")
-    SceneSummaryPresenter.new(summary, game: game, urls: urls, policy: policy)
+    urls = double("urls",
+      edit_game_scene_scene_summary_path: "/edit",
+      game_scene_scene_summary_path: "/summary",
+      publish_game_scene_scene_summary_path: "/summary/publish")
+    SceneSummaryPresenter.new(summary_record, game: game, urls: urls, policy: policy)
   end
 
-  def rendered(can_manage: false)
-    render_inline(described_class.new(summary: presenter_for(can_manage: can_manage)))
+  def rendered(summary_record: summary, can_manage: false)
+    render_inline(described_class.new(summary: presenter_for(summary_record: summary_record, can_manage: can_manage)))
     page
   end
 
@@ -35,6 +38,24 @@ RSpec.describe Shared::SceneSummaryComponent, type: :component do
     it "hides edit and delete controls" do
       expect(rendered(can_manage: false)).not_to have_text("Edit")
       expect(rendered(can_manage: false)).not_to have_button("Delete")
+    end
+  end
+
+  context "draft affordances" do
+    let(:draft_summary) { build_stubbed(:scene_summary, scene: scene, draft: true) }
+
+    it "shows a Draft badge and Publish button to the GM on a draft summary" do
+      result = rendered(summary_record: draft_summary, can_manage: true)
+      expect(result).to have_text("Draft")
+      expect(result).to have_button("Publish")
+    end
+
+    it "shows no Publish button on a published summary" do
+      expect(rendered(can_manage: true)).to have_no_button("Publish")
+    end
+
+    it "shows no Publish button to a non-GM even on a draft summary" do
+      expect(rendered(summary_record: draft_summary, can_manage: false)).to have_no_button("Publish")
     end
   end
 

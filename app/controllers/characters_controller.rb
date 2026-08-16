@@ -14,7 +14,7 @@ class CharactersController < ApplicationController
 
   sig { void }
   def new
-    character = game.characters.new
+    character = game.characters.new(content: ContentTemplate.body_for(game: game, content_type: "character"))
     authorize character
     assign_presenters(character)
   end

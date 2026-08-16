@@ -24,6 +24,13 @@ RSpec.describe CharactersController, type: :request do
       expect(response).to have_http_status(:ok)
     end
 
+    it "pre-fills the content from the game's character template when one exists" do
+      create(:content_template, game: game, content_type: "character", body: "## Character skeleton")
+      sign_in(gm)
+      get new_game_character_path(game)
+      expect(response.body).to include("## Character skeleton")
+    end
+
     # Creating a sheet needs write access, not merely game access: a removed
     # member can still view the game but must not write to it. Nothing covered
     # this, so require_active_member_for_write! could be emptied entirely
