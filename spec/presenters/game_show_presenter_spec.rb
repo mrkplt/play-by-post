@@ -28,7 +28,7 @@ RSpec.describe GameShowPresenter do
   end
 
   describe "#pages" do
-    it "returns the game's pages ordered by title, wrapped as presenters" do
+    it "returns every page (including drafts) to a GM, ordered by title, wrapped as presenters" do
       page = build_stubbed(:page)
       ordered = [ page ]
       all_rel = double("all pages")
@@ -39,6 +39,22 @@ RSpec.describe GameShowPresenter do
 
       result = presenter.pages
       expect(result).to all(be_a(PagePresenter))
+      expect(result.map(&:__getobj__)).to eq(ordered)
+    end
+
+    it "returns only published pages to a non-GM, hiding drafts" do
+      allow(policy).to receive(:manage?).and_return(false)
+      page = build_stubbed(:page)
+      ordered = [ page ]
+      all_rel = double("all pages")
+      published_rel = double("published pages")
+      ordered_rel = double("ordered pages")
+      allow(game).to receive(:pages).and_return(all_rel)
+      allow(all_rel).to receive(:published).and_return(published_rel)
+      allow(published_rel).to receive(:order).with(:title).and_return(ordered_rel)
+      allow(ordered_rel).to receive(:to_a).and_return(ordered)
+
+      result = presenter.pages
       expect(result.map(&:__getobj__)).to eq(ordered)
     end
   end

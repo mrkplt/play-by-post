@@ -15,10 +15,16 @@ RSpec.describe Page do
   end
 
   describe "validations" do
-    it "requires a title" do
-      page = build(:page, title: nil)
+    it "requires a title when published" do
+      page = build(:page, title: nil, draft: false)
       expect(page).not_to be_valid
       expect(page.errors[:title]).to be_present
+    end
+
+    it "allows a blank title when a draft" do
+      page = build(:page, title: nil, draft: true)
+      page.valid?
+      expect(page.errors[:title]).to be_empty
     end
 
     it "rejects a title longer than 200 characters" do
@@ -31,6 +37,16 @@ RSpec.describe Page do
       page = build(:page, body: nil)
       page.valid?
       expect(page.errors[:body]).to be_empty
+    end
+  end
+
+  describe "draft scopes" do
+    it ".published selects only non-drafts" do
+      expect(described_class.published.where_values_hash).to eq("draft" => false)
+    end
+
+    it ".drafts selects only drafts" do
+      expect(described_class.drafts.where_values_hash).to eq("draft" => true)
     end
   end
 

@@ -9,6 +9,7 @@
 # unaffected). See Game's association comment and REQUIREMENTS "Game Deletion".
 class Page < ApplicationRecord
   extend T::Sig
+  include Draftable::Model
 
   SLUG_LENGTH = 16
 
@@ -24,7 +25,14 @@ class Page < ApplicationRecord
            foreign_key: :promoted_page_id, dependent: :nullify,
            inverse_of: :promoted_page
 
-  validates :title, presence: true, length: { maximum: 200 }
+  # Drafting scopes and presence-unless-draft, declared here so the wiring is
+  # visible; Draftable::Model supplies the shared draft?/published?/publish!
+  # behaviour. A draft may hold a blank title; a published page must have one.
+  scope :published, -> { where(draft: false) }
+  scope :drafts, -> { where(draft: true) }
+
+  validates :title, presence: true, unless: :draft?
+  validates :title, length: { maximum: 200 }
   validates :slug, presence: true, uniqueness: true
 
   # The slug is assigned once on create and never editable thereafter, so the
