@@ -1,15 +1,13 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-# Ratchets reek code smells: a changed app/ or lib/ file may not INCREASE its
-# smell count vs origin/master.
+# Reek smell gate: a changed app/ or lib/ Ruby file must have ZERO smells.
 #
 # Reek reports design smells (FeatureEnvy, TooManyStatements, DuplicateMethodCall,
-# LongParameterList, ...) that the bespoke bin/check-* guards don't cover. There
-# are ~270 pre-existing warnings across the tree, so this is progressive by
-# design — grandfathered smells stay, but a changed file's count can only go
-# down. New files must land at zero. The backlog is meant to be driven down and,
-# eventually, the ratchet tightened.
+# LongParameterList, ...) that the bespoke bin/check-* guards don't cover. The
+# tree was driven to zero smells (Fizzy #80), so this is now a flat gate rather
+# than a progressive ratchet: there is no grandfathered backlog left to compare
+# against, and every file — new or changed — must land clean.
 #
 # What reek checks and which detectors are on/off is configured in .reek.yml
 # (detectors that fight this project's own conventions — UtilityFunction vs the
@@ -31,74 +29,57 @@ def changed_ruby_files
     .select { |relative| File.exist?(File.join(ROOT, relative)) }
 end
 
-# Smell count for the working-tree copy of a file.
-def current_smell_count(relative)
+# Smells for the working-tree copy of a file, as parsed reek JSON entries.
+def smells_for(relative)
   out, _err, _status = Open3.capture3(
     "bundle", "exec", "reek", "--format", "json", File.join(ROOT, relative), chdir: ROOT
   )
-  parse_count(out)
-end
-
-# Smell count for the origin/master copy, fed to reek over stdin under the same
-# filename so .reek.yml path rules and the file's language still apply.
-def master_smell_count(relative)
-  old_source, status = Open3.capture2("git", "-C", ROOT, "show", "origin/master:#{relative}")
-  return 0 unless status.success? && !old_source.strip.empty?
-
-  out, _err, _s = Open3.capture3(
-    "bundle", "exec", "reek", "--format", "json", "--stdin-filename", relative,
-    stdin_data: old_source, chdir: ROOT
-  )
-  parse_count(out)
-end
-
-def parse_count(json_output)
-  JSON.parse(json_output).length
+  JSON.parse(out)
 rescue JSON::ParserError
   # reek prints nothing parseable when a file has a syntax error mid-edit; treat
-  # as zero so the ratchet doesn't crash (rubocop/sorbet catch real syntax break).
-  0
+  # as clean so the gate doesn't crash (rubocop/sorbet catch the real syntax break).
+  []
 end
 
 files = changed_ruby_files
 
 if files.empty?
-  puts "Reek check: OK (no changed Ruby files to ratchet)"
+  puts "Reek check: OK (no changed Ruby files)"
   exit 0
 end
 
 failures = []
 
 files.each do |relative|
-  new_count = current_smell_count(relative)
-  old_count = master_smell_count(relative)
-  delta = new_count - old_count
-  status = delta > 0 ? "FAIL" : "OK"
-  puts "  [#{status}] #{relative}: #{old_count} -> #{new_count} smell(s) (#{delta >= 0 ? '+' : ''}#{delta})"
-  failures << [ relative, old_count, new_count ] if delta > 0
+  smells = smells_for(relative)
+  status = smells.empty? ? "OK" : "FAIL"
+  puts "  [#{status}] #{relative}: #{smells.length} smell(s)"
+  failures << [ relative, smells ] unless smells.empty?
 end
 
 if failures.empty?
-  puts "\nReek check: OK (no changed file increased its smell count)"
+  puts "\nReek check: OK (no changed file has any smells)"
   exit 0
 end
 
 puts "\nReek check: FAIL\n\n"
-failures.each do |relative, old_count, new_count|
-  puts "  #{relative}: #{old_count} -> #{new_count} smells"
-  puts "    see the specific smells: bundle exec reek #{relative}"
+failures.each do |relative, smells|
+  puts "  #{relative}:"
+  smells.each do |smell|
+    lines = Array(smell["lines"]).join(", ")
+    puts "    [#{smell['smell_type']}] line #{lines}: #{smell['message']}"
+  end
 end
 puts <<~REMEDY
 
-  A changed file added a reek code smell. Resolve the new smell(s) rather than
-  suppress them:
+  A changed file has a reek code smell. Resolve it rather than suppress it:
     - TooManyStatements / TooManyMethods: extract a method or collaborator.
     - FeatureEnvy: move the method to the class whose data it uses.
     - DuplicateMethodCall: assign the repeated call to a local.
     - LongParameterList / DataClump: introduce a parameter object.
     - ControlParameter / BooleanParameter: split the method by the flag.
-  Run `bundle exec reek <file>` to see each smell and its doc link. Grandfathered
-  smells may remain; bring this file's count back to at most its origin/master
-  value. Detector policy (what's on/off, and why) lives in .reek.yml.
+  Run `bundle exec reek <file>` to see each smell and its doc link. Every changed
+  app/ or lib/ Ruby file must be smell-free. Detector policy (what's on/off, and
+  why) lives in .reek.yml.
 REMEDY
 exit 1
