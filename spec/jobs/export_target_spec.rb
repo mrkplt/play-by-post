@@ -16,10 +16,10 @@ RSpec.describe ExportTarget do
         expect(AttachmentUploader).to have_received(:attach) do |args|
           expect(args[:attachment]).to eq(request.archive)
           expect(args[:context].kind).to eq("export")
-          expect(args[:context].user).to eq(user)
-          expect(args[:context].game).to eq(game)
-          expect(args[:context].original_filename).to eq("the-lost-realm-export-2026-03-04.zip")
-          expect(args[:context].export_scope).to eq("The Lost Realm!")
+          expect(args[:context].owner.user).to eq(user)
+          expect(args[:context].owner.game).to eq(game)
+          expect(args[:context].naming.original_filename).to eq("the-lost-realm-export-2026-03-04.zip")
+          expect(args[:context].naming.export_scope).to eq("The Lost Realm!")
           expect(args[:attachable][:filename]).to eq("the-lost-realm-export-2026-03-04.zip")
           expect(args[:attachable][:content_type]).to eq("application/zip")
         end
@@ -31,9 +31,9 @@ RSpec.describe ExportTarget do
         described_class.new(nil).attach(request: request, zip_data: "zip-bytes", user: user)
 
         expect(AttachmentUploader).to have_received(:attach) do |args|
-          expect(args[:context].game).to be_nil
-          expect(args[:context].original_filename).to eq("all-games-export-2026-03-04.zip")
-          expect(args[:context].export_scope).to eq("all-games")
+          expect(args[:context].owner.game).to be_nil
+          expect(args[:context].naming.original_filename).to eq("all-games-export-2026-03-04.zip")
+          expect(args[:context].naming.export_scope).to eq("all-games")
         end
       end
     end
@@ -44,7 +44,7 @@ RSpec.describe ExportTarget do
       described_class.new(game).attach(request: request, zip_data: "z", user: user)
 
       expect(AttachmentUploader).to have_received(:attach) do |args|
-        expect(args[:context].original_filename).to match(/\Afoo-bar-the-sequel-export-\d{4}-\d{2}-\d{2}\.zip\z/)
+        expect(args[:context].naming.original_filename).to match(/\Afoo-bar-the-sequel-export-\d{4}-\d{2}-\d{2}\.zip\z/)
       end
     end
 
@@ -54,7 +54,7 @@ RSpec.describe ExportTarget do
       described_class.new(game).attach(request: request, zip_data: "z", user: user)
 
       expect(AttachmentUploader).to have_received(:attach) do |args|
-        expect(args[:context].original_filename).to match(/\Afoo-bar-export-\d{4}-\d{2}-\d{2}\.zip\z/)
+        expect(args[:context].naming.original_filename).to match(/\Afoo-bar-export-\d{4}-\d{2}-\d{2}\.zip\z/)
       end
     end
 
@@ -64,7 +64,7 @@ RSpec.describe ExportTarget do
       described_class.new(game).attach(request: request, zip_data: "z", user: user)
 
       expect(AttachmentUploader).to have_received(:attach) do |args|
-        expect(args[:context].original_filename).to match(/\Afoo-bar-baz-export-\d{4}-\d{2}-\d{2}\.zip\z/)
+        expect(args[:context].naming.original_filename).to match(/\Afoo-bar-baz-export-\d{4}-\d{2}-\d{2}\.zip\z/)
       end
     end
 

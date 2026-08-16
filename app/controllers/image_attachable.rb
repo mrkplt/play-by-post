@@ -23,7 +23,8 @@ module ImageAttachable
       attachment: record.image, attachable: image,
       context: AttachmentUploader::Context.build(
         kind: "#{param_key}_image",
-        user: current_user, game: game, original_filename: image.original_filename
+        owner: AttachmentUploader::Owner.build(user: current_user, game: game),
+        naming: AttachmentUploader::Naming.build(original_filename: image.original_filename)
       )
     )
   end

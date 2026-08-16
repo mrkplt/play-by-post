@@ -730,9 +730,8 @@ RSpec.describe ScenesController, type: :request do
           hash_including(
             context: have_attributes(
               kind: "scene_image",
-              user: gm,
-              game: game,
-              original_filename: "test_image.png"
+              owner: have_attributes(user: gm, game: game),
+              naming: have_attributes(original_filename: "test_image.png")
             )
           )
         )

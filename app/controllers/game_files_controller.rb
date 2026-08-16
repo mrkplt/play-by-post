@@ -63,9 +63,8 @@ class GameFilesController < ApplicationController
       attachable: uploaded_file,
       context: AttachmentUploader::Context.build(
         kind: "game_file",
-        user: current_user,
-        game: game,
-        original_filename: original_filename
+        owner: AttachmentUploader::Owner.build(user: current_user, game: game),
+        naming: AttachmentUploader::Naming.build(original_filename: original_filename)
       )
     )
     game_file

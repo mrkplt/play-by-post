@@ -123,9 +123,8 @@ RSpec.describe PostsController, type: :request do
         hash_including(
           context: have_attributes(
             kind: "post_image",
-            user: player,
-            game: game,
-            original_filename: "test_image.png"
+            owner: have_attributes(user: player, game: game),
+            naming: have_attributes(original_filename: "test_image.png")
           )
         )
       )

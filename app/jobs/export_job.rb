@@ -22,10 +22,8 @@ class ExportTarget
       attachable: { io: StringIO.new(zip_data), filename: filename, content_type: "application/zip" },
       context: AttachmentUploader::Context.build(
         kind: "export",
-        user: user,
-        game: @game,
-        original_filename: filename,
-        export_scope: scope_label
+        owner: AttachmentUploader::Owner.build(user: user, game: @game),
+        naming: AttachmentUploader::Naming.build(original_filename: filename, export_scope: scope_label)
       )
     )
   end

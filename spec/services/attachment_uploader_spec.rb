@@ -12,7 +12,9 @@ RSpec.describe AttachmentUploader do
         attachment: game_file.file,
         attachable: { io: StringIO.new("data"), filename: "map.pdf", content_type: "application/pdf" },
         context: described_class::Context.build(
-          kind: "game_file", user: user, game: game, original_filename: "map.pdf"
+          kind: "game_file",
+          owner: described_class::Owner.build(user: user, game: game),
+          naming: described_class::Naming.build(original_filename: "map.pdf")
         )
       )
 
@@ -26,7 +28,9 @@ RSpec.describe AttachmentUploader do
           attachment: gf.file,
           attachable: { io: StringIO.new("data"), filename: "map.pdf", content_type: "application/pdf" },
           context: described_class::Context.build(
-            kind: "game_file", user: user, game: game, original_filename: "map.pdf"
+            kind: "game_file",
+            owner: described_class::Owner.build(user: user, game: game),
+            naming: described_class::Naming.build(original_filename: "map.pdf")
           )
         )
         gf.file.key
@@ -43,7 +47,9 @@ RSpec.describe AttachmentUploader do
         attachment: request.archive,
         attachable: { io: StringIO.new("zip"), filename: "e.zip", content_type: "application/zip" },
         context: described_class::Context.build(
-          kind: "export", user: user, game: game, original_filename: "e.zip", export_scope: "all-games"
+          kind: "export",
+          owner: described_class::Owner.build(user: user, game: game),
+          naming: described_class::Naming.build(original_filename: "e.zip", export_scope: "all-games")
         )
       )
 
@@ -57,7 +63,9 @@ RSpec.describe AttachmentUploader do
         attachment: game_file.file,
         attachable: { io: StringIO.new("data"), filename: "map.pdf", content_type: "application/pdf" },
         context: described_class::Context.build(
-          kind: "game_file", user: user, game: game, original_filename: "map.pdf"
+          kind: "game_file",
+          owner: described_class::Owner.build(user: user, game: game),
+          naming: described_class::Naming.build(original_filename: "map.pdf")
         )
       )
 
@@ -79,7 +87,9 @@ RSpec.describe AttachmentUploader do
         attachment: game_file.file,
         attachable: { io: StringIO.new("data"), filename: "data", content_type: "application/pdf" },
         context: described_class::Context.build(
-          kind: "game_file", user: user, game: game, original_filename: "data"
+          kind: "game_file",
+          owner: described_class::Owner.build(user: user, game: game),
+          naming: described_class::Naming.build(original_filename: "data")
         )
       )
 
@@ -93,7 +103,9 @@ RSpec.describe AttachmentUploader do
         attachment: request.archive,
         attachable: { io: StringIO.new("zip"), filename: "e.zip", content_type: "application/zip" },
         context: described_class::Context.build(
-          kind: "export", user: user, game: game, original_filename: "e.zip", export_scope: "all-games"
+          kind: "export",
+          owner: described_class::Owner.build(user: user, game: game),
+          naming: described_class::Naming.build(original_filename: "e.zip", export_scope: "all-games")
         )
       )
 
@@ -137,7 +149,9 @@ RSpec.describe AttachmentUploader do
           filename: "map.png", content_type: "image/png"
         },
         context: described_class::Context.build(
-          kind: "game_file", user: user, game: game, original_filename: "map.png"
+          kind: "game_file",
+          owner: described_class::Owner.build(user: user, game: game),
+          naming: described_class::Naming.build(original_filename: "map.png")
         )
       )
       game_file.save!
@@ -159,7 +173,9 @@ RSpec.describe AttachmentUploader do
           filename: "rules.pdf", content_type: "application/pdf"
         },
         context: described_class::Context.build(
-          kind: "game_file", user: user, game: game, original_filename: "rules.pdf"
+          kind: "game_file",
+          owner: described_class::Owner.build(user: user, game: game),
+          naming: described_class::Naming.build(original_filename: "rules.pdf")
         )
       )
       game_file.save!
@@ -210,7 +226,9 @@ RSpec.describe AttachmentUploader do
     it "maps each input to its expected metadata key" do
       metadata = described_class.build_metadata(
         described_class::Context.build(
-          kind: "export", user: user, game: game, original_filename: "e.zip", export_scope: "all-games"
+          kind: "export",
+          owner: described_class::Owner.build(user: user, game: game),
+          naming: described_class::Naming.build(original_filename: "e.zip", export_scope: "all-games")
         )
       )
       expect(metadata).to include(
@@ -225,7 +243,9 @@ RSpec.describe AttachmentUploader do
     it "omits export-scope when nil" do
       metadata = described_class.build_metadata(
         described_class::Context.build(
-          kind: "game_file", user: user, game: game, original_filename: "e.pdf", export_scope: nil
+          kind: "game_file",
+          owner: described_class::Owner.build(user: user, game: game),
+          naming: described_class::Naming.build(original_filename: "e.pdf", export_scope: nil)
         )
       )
       expect(metadata).not_to have_key("export-scope")
@@ -235,7 +255,9 @@ RSpec.describe AttachmentUploader do
       Timecop.freeze(Time.utc(2026, 7, 29, 15, 30, 45)) do
         metadata = described_class.build_metadata(
           described_class::Context.build(
-            kind: "game_file", user: user, game: game, original_filename: "e.pdf", export_scope: nil
+            kind: "game_file",
+            owner: described_class::Owner.build(user: user, game: game),
+            naming: described_class::Naming.build(original_filename: "e.pdf", export_scope: nil)
           )
         )
         # Assert the class too: ActiveSupport's Time#== coerces the string, so a
@@ -246,9 +268,7 @@ RSpec.describe AttachmentUploader do
 
     it "omits nil values" do
       metadata = described_class.build_metadata(
-        described_class::Context.build(
-          kind: "post_image", user: nil, game: nil, original_filename: nil, export_scope: nil
-        )
+        described_class::Context.build(kind: "post_image")
       )
       expect(metadata.keys).to contain_exactly("kind", "uploaded-at")
     end
