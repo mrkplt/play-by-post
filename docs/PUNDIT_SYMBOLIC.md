@@ -104,6 +104,15 @@ reviewed refusal in the allowlist. Today: 0 findings, 1 accepted refusal
 The faithfulness proof (`spec/pundit_symbolic/faithfulness_spec.rb`) runs in the
 normal RSpec suite, so the gate's verdicts stay backed by the proof.
 
+**The gate scopes its own claim.** "OK" means the invariants the tool KNOWS
+(role-grant-ignores-status, documented equivalences) hold — not that the policies
+are fully verified. The tool checks a *fixed* set of properties and does not
+discover new ones; a new invariant worth proving (e.g. "these two capabilities
+are mutually exclusive") is added by hand in `PunditSymbolic::Verifier`. Both the
+OK message and the refusal guidance say this, so an agent reading the output
+can't mistake "0 findings" for "fully proven," and can't mistake extending the
+encoder (which makes a predicate *checkable*) for adding a new *check*.
+
 ### The tool's own code is exempt from mutation testing — deliberately
 
 `lib/pundit_symbolic/` is **not** registered in `.mutant.yml`, and that's

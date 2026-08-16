@@ -91,7 +91,10 @@ def refusal_fix(reason)
       "public surface (make it private, or relocate it to a service/presenter)."
   when /out of theory|comparisons|operators/
     "The encoder can't model this construct yet. Extend lib/pundit_symbolic/" \
-      "encoder.rb to handle it AND add its faithfulness case, or accept it below."
+      "encoder.rb to handle it AND add its faithfulness case, or accept it below. " \
+      "Note: encoding it only makes it CHECKABLE by the tool's existing invariants " \
+      "— it does not add new checks. If this predicate needs a property the tool " \
+      "doesn't have (see the OK-message note), that's a separate, human decision."
   when /cross-policy/
     "The delegated-to policy predicate is itself unresolvable. Fix that target " \
       "predicate first (its refusal will be listed too)."
@@ -131,6 +134,19 @@ if findings_count.zero? && unexpected_refusals.zero?
   accepted = ACCEPTED_REFUSALS.size
   puts "Policy consistency check: OK " \
        "(#{registry.sources.size} policies, 0 findings, #{accepted} accepted refusal(s))"
+  # Scope the claim. "OK" means the invariants THIS TOOL KNOWS hold — not that
+  # the policies are fully verified. The tool checks a FIXED set of properties:
+  #   * role_grant_ignores_status (a grant that leans on an unstated invariant)
+  #   * broken_equivalence (predicates documented as equal that disagree)
+  # It does NOT discover new kinds of invariant. If a policy has a NEW property
+  # worth proving (e.g. "these two predicates must be mutually exclusive",
+  # "this capability must imply that one"), a human adds it: write the check in
+  # PunditSymbolic::Verifier (and, for equivalences, list the pair in
+  # EQUIVALENCES). The tool will never prompt you to do this — deciding what
+  # must be true of a policy is domain knowledge, not something it can derive.
+  puts "  Checked: role-grant-ignores-status, documented equivalences. This is"
+  puts "  the fixed set the tool knows — it does not invent new invariants. A"
+  puts "  new property worth proving is added by hand in PunditSymbolic::Verifier."
   exit 0
 end
 
