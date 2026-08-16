@@ -12,7 +12,7 @@ require "pundit_symbolic/solver"
 # solver decides properties of that formula. The whole edifice is sound ONLY IF
 # the formula means the same thing as the real Ruby method — i.e.
 #
-#     ∀ inputs i,  encode(m).eval(i) == m.call(i)
+#     ∀ inputs i,  encode(m).evaluate(i) == m.call(i)
 #
 # The leaf-fact domain is finite and tiny, so we discharge that ∀ by EXHAUSTIVE
 # enumeration: for every assignment of a predicate's leaf facts we build a real
@@ -139,7 +139,7 @@ RSpec.describe "PunditSymbolic encoder faithfulness", type: :model do
             user = RecordProxy.new(assignment, "user.", reads)
             record = RecordProxy.new(assignment, "record.", reads)
             real = policy_class.new(user, record).public_send(predicate.name)
-            symbolic = predicate.formula.eval(assignment)
+            symbolic = predicate.formula.evaluate(assignment)
             { predicate: predicate.name, assignment: assignment.select { |_, v| v }, real: real, symbolic: symbolic } if real != symbolic
           end
 

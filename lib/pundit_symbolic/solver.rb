@@ -18,7 +18,7 @@ module PunditSymbolic
     # { "var" => bool } hashes. Empty array == UNSAT.
     def models_for(formula)
       vars = formula.variables.to_a.sort
-      assignments(vars).select { |assignment| formula.eval(assignment) }
+      assignments(vars).select { |assignment| formula.evaluate(assignment) }
     end
 
     # True iff at least one assignment satisfies the formula.
