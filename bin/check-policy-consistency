@@ -1,0 +1,143 @@
+#!/usr/bin/env ruby
+# typed: false
+# frozen_string_literal: true
+
+# Symbolic consistency gate for the Pundit policy layer.
+#
+# Runs the pundit-symbolic verifier (lib/pundit_symbolic) over every policy and
+# fails the build on:
+#   * any FINDING — a reachable authorization state worth a human's judgement
+#     (e.g. a grant that relies on an unstated invariant, or two predicates
+#     documented as equivalent that disagree); and
+#   * any PUBLIC REFUSAL not in ACCEPTED_REFUSALS — a public policy method that
+#     isn't a boolean predicate (a convention violation), or one the encoder
+#     can't yet model.
+#
+# The verifier is trustworthy because spec/pundit_symbolic/faithfulness_spec.rb
+# proves each formula matches the real Ruby method on every input. This gate is
+# pure Ruby + Prism (no Rails boot), so it belongs in the fast tier.
+#
+# WHY / HOW-TO-FIX guidance is printed with every failure — see explain_* below.
+
+lib = File.expand_path("../lib", __dir__)
+$LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
+
+require "sorbet-runtime"
+require "pundit_symbolic/verifier"
+require "pundit_symbolic/policy_registry"
+
+# Documented equivalences per policy (predicates the source says ask "the same
+# question"); the verifier proves each pair agrees on every input.
+EQUIVALENCES = {
+  "GamePolicy" => [ %w[show? view?], %w[manage_players? view?], %w[export? view?] ],
+  "UserProfilePolicy" => [ %w[show? update?], %w[show? manage?] ]
+}.freeze
+
+# Public refusals we have SEEN and ACCEPTED. Each entry is "Policy#method" and a
+# note. A refusal here does not fail the build; a public refusal NOT here does.
+# This is the ratchet: accept a known one deliberately (with a reason), or fix
+# it. Keep this list shrinking.
+ACCEPTED_REFUSALS = {
+  "GamePolicy#export_scene_selection" =>
+    "Returns a Symbol (:all/:participating/:visible), not a boolean predicate. " \
+    "Tracked as a convention violation to move off the public policy surface (Fizzy #104)."
+}.freeze
+
+POLICIES_DIR = File.expand_path("../app/policies", __dir__)
+
+def explain_finding(policy, finding)
+  puts "  FINDING  #{policy}##{finding_subject(finding)}  [#{finding.kind}]"
+  puts "    What:  #{finding.description}"
+  witness = finding.model.select { |_, value| value }.keys.sort
+  puts "    Where: reachable when #{witness.empty? ? '(no leaf true)' : witness.join(' ∧ ')}"
+  puts "    Fix:   #{finding_fix(finding.kind)}"
+  puts
+end
+
+def finding_subject(finding)
+  finding.description[/\A(\S+?)[\s]/, 1] || "?"
+end
+
+def finding_fix(kind)
+  case kind
+  when :role_grant_ignores_status
+    "Gate on active membership (record[.game].active_member?(user)), not the " \
+      "game_master role — so a removed/banned member can't act even if they " \
+      "hold the GM role. Then update the policy's spec + keep mutation at 100%."
+  when :broken_equivalence
+    "Two predicates documented as the same question disagree. Either make their " \
+      "bodies delegate to one shared predicate, or correct the doc comment/the " \
+      "EQUIVALENCES entry in this script if they are NOT meant to be equal."
+  else
+    "See docs/PUNDIT_SYMBOLIC.md for this finding kind."
+  end
+end
+
+def explain_refusal(policy, refusal)
+  subject = "#{policy}##{refusal[:name]}"
+  puts "  REFUSED  #{subject}  (public method the tool could not verify)"
+  puts "    Why:   #{refusal[:reason]}"
+  puts "    Fix:   #{refusal_fix(refusal[:reason])}"
+  puts "    Or:    if this is a deliberate, reviewed exception, add"
+  puts "           \"#{subject}\" to ACCEPTED_REFUSALS in bin/check-policy-consistency"
+  puts "           with a one-line reason."
+  puts
+end
+
+def refusal_fix(reason)
+  case reason
+  when /non-boolean|returns via/
+    "A public policy method must be a boolean predicate. Move this off the " \
+      "public surface (make it private, or relocate it to a service/presenter)."
+  when /out of theory|comparisons|operators/
+    "The encoder can't model this construct yet. Extend lib/pundit_symbolic/" \
+      "encoder.rb to handle it AND add its faithfulness case, or accept it below."
+  when /cross-policy/
+    "The delegated-to policy predicate is itself unresolvable. Fix that target " \
+      "predicate first (its refusal will be listed too)."
+  else
+    "Extend the encoder (with a faithfulness case) or accept it below."
+  end
+end
+
+registry = PunditSymbolic::PolicyRegistry.load_dir(POLICIES_DIR)
+
+findings_count = 0
+unexpected_refusals = 0
+
+registry.sources.each do |source|
+  result = PunditSymbolic::Verifier.new(
+    source, equivalences: EQUIVALENCES.fetch(source.policy_name, [])
+  ).verify
+
+  offending_refusals = result[:refusals].select do |refusal|
+    refusal[:public] && !ACCEPTED_REFUSALS.key?("#{source.policy_name}##{refusal[:name]}")
+  end
+
+  next if result[:findings].empty? && offending_refusals.empty?
+
+  puts "== #{source.policy_name} =="
+  result[:findings].each do |finding|
+    findings_count += 1
+    explain_finding(source.policy_name, finding)
+  end
+  offending_refusals.each do |refusal|
+    unexpected_refusals += 1
+    explain_refusal(source.policy_name, refusal)
+  end
+end
+
+if findings_count.zero? && unexpected_refusals.zero?
+  accepted = ACCEPTED_REFUSALS.size
+  puts "Policy consistency check: OK " \
+       "(#{registry.sources.size} policies, 0 findings, #{accepted} accepted refusal(s))"
+  exit 0
+end
+
+puts "Policy consistency check: FAIL"
+puts "  #{findings_count} finding(s), #{unexpected_refusals} unexpected refusal(s)."
+puts "  Each is explained above with a concrete fix. The faithfulness proof"
+puts "  (spec/pundit_symbolic/faithfulness_spec.rb) guarantees these reflect the"
+puts "  real policy behavior. Fix them, or (for a reviewed exception) accept the"
+puts "  refusal in ACCEPTED_REFUSALS."
+exit 1

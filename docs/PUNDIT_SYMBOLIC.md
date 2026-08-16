@@ -91,6 +91,29 @@ dimension a bug would live in. Two ways it could be fooled, both closed:
   enumeration, so any dropped status diverges. Corrupting the encoder's membership
   leaf naming makes the proof fail — verified.
 
+## Operationalization
+
+`bin/check-policy-consistency` runs the verifier over every policy and **fails
+the build** on any finding, or any *public* refusal not in its `ACCEPTED_REFUSALS`
+allowlist. It's wired into `bin/pre-push` (fast tier, ~0.2s, no Rails boot) so it
+runs on every push and in CI. Every failure prints **what**, **where** (the
+reachable leaf state), and **how to fix** — plus the escape hatch of accepting a
+reviewed refusal in the allowlist. Today: 0 findings, 1 accepted refusal
+(`export_scene_selection`, Fizzy #104).
+
+The faithfulness proof (`spec/pundit_symbolic/faithfulness_spec.rb`) runs in the
+normal RSpec suite, so the gate's verdicts stay backed by the proof.
+
+### The tool's own code is exempt from mutation testing — deliberately
+
+`lib/pundit_symbolic/` is **not** registered in `.mutant.yml`, and that's
+intentional: the tool is a separate beast from the application it checks. Its
+correctness is guarded by its own faithfulness proof — an exhaustive differential
+check of the encoder's output against real policy behavior — which is a stronger,
+purpose-built guarantee than generic mutation coverage would give. `.mutant.yml`
+and `bin/check-mutant-coverage` govern `app/` (the check only scans `app/`), so
+the tool is correctly out of that scope with no gate change needed.
+
 ## Scope / status
 
 Generalized across **all 15 policies**; the faithfulness proof (`30 examples`)
