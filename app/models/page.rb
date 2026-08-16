@@ -10,10 +10,12 @@
 class Page < ApplicationRecord
   extend T::Sig
   include Draftable::Model
+  include Versionable::Model
 
   SLUG_LENGTH = 16
 
   belongs_to :game
+  has_many :page_versions, dependent: :destroy
 
   # A notebook entry may be "promoted" into a Page, recording the resulting
   # page id on the entry. Deleting the page must NOT delete the entry — it
@@ -48,6 +50,25 @@ class Page < ApplicationRecord
   sig { returns(String) }
   def self.generate_secure_slug
     SecureRandom.alphanumeric(SLUG_LENGTH)
+  end
+
+  # The versions association Versionable::Model snapshots through — a page's
+  # change history lives in page_versions.
+  sig { override.returns(T.untyped) }
+  def versions
+    page_versions
+  end
+
+  # A page version captures both editable fields. Attribution is the acting
+  # user; a page has no owning user to fall back to, and every save happens in a
+  # request where Current.user is set.
+  sig { override.returns(T::Hash[Symbol, T.untyped]) }
+  def version_attributes
+    {
+      title: title,
+      body: body,
+      edited_by_id: Current.user&.id
+    }
   end
 
   private

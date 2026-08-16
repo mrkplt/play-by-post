@@ -36,6 +36,10 @@ rescue ActiveRecord::PendingMigrationError => e
 end
 RSpec.configure do |config|
   config.before(:each) { ActionMailer::Base.deliveries.clear }
+  # Current is request/job-scoped in production (reset by the executor), but
+  # unit specs have no executor, so a test that sets Current.user (e.g. to
+  # attribute a page version) would otherwise leak it into the next example.
+  config.after(:each) { Current.reset }
   # Remove this line if you're not using ActiveRecord or ActiveRecord fixtures
   config.fixture_paths = [
     Rails.root.join('spec/fixtures')

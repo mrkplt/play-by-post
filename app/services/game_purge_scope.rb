@@ -91,13 +91,24 @@ class GamePurgeScope
   end
 
   # NotebookEntry may reference a Page via promoted_page_id, so it is deleted
-  # before Page.
+  # before Page. PageVersion has a not-null FK to Page, so its rows are deleted
+  # before their pages (mirroring CharacterVersion → Character above).
   sig { void }
   def delete_game_content_records
     GameFile.where(game_id: game_id).in_batches.delete_all
     NotebookEntry.where(game_id: game_id).in_batches.delete_all
-    Page.where(game_id: game_id).in_batches.delete_all
+    delete_pages_and_versions
     GameLink.where(game_id: game_id).in_batches.delete_all
+  end
+
+  # PageVersion has a not-null FK to Page, so its rows go before their pages
+  # (mirroring CharacterVersion → Character). Page ids are plucked once into a
+  # local so both deletes target the same set without a duplicate query.
+  sig { void }
+  def delete_pages_and_versions
+    ids = Page.where(game_id: game_id).pluck(:id)
+    PageVersion.where(page_id: ids).in_batches.delete_all
+    Page.where(id: ids).in_batches.delete_all
   end
 
   sig { void }
