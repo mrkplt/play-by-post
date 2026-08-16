@@ -22,24 +22,48 @@ module AttachmentUploader
     "post_image" => "post_images"
   }.freeze, T::Hash[String, String])
 
+  # Who the attachment belongs to. Grouped so callers pass one owner object
+  # instead of two loose (user, game) params. Built via .build (not .new) so
+  # both keys are optional — Data's generated .new requires every member.
+  Owner = Data.define(:user, :game) do
+    extend T::Sig
+
+    sig { params(user: T.nilable(User), game: T.nilable(Game)).returns(AttachmentUploader::Owner) }
+    def self.build(user: nil, game: nil)
+      new(user: user, game: game)
+    end
+  end
+
+  # How the attachment is named/scoped for metadata. Grouped for the same
+  # reason as Owner. Built via .build so both keys are optional.
+  Naming = Data.define(:original_filename, :export_scope) do
+    extend T::Sig
+
+    sig do
+      params(original_filename: T.nilable(String), export_scope: T.nilable(String))
+        .returns(AttachmentUploader::Naming)
+    end
+    def self.build(original_filename: nil, export_scope: nil)
+      new(original_filename: original_filename, export_scope: export_scope)
+    end
+  end
+
   # The kind/provenance data recorded as R2 custom metadata, grouped so
   # #attach and #build_metadata take one object instead of a five-way
-  # parameter list. Built via .build (not .new) so kind is the only required
-  # key — Data's generated .new requires every member.
-  Context = Data.define(:kind, :user, :game, :original_filename, :export_scope) do
+  # parameter list. Built via .build (not .new) so owner/naming are optional —
+  # Data's generated .new requires every member.
+  Context = Data.define(:kind, :owner, :naming) do
     extend T::Sig
 
     sig do
       params(
         kind: String,
-        user: T.nilable(User),
-        game: T.nilable(Game),
-        original_filename: T.nilable(String),
-        export_scope: T.nilable(String)
+        owner: AttachmentUploader::Owner,
+        naming: AttachmentUploader::Naming
       ).returns(AttachmentUploader::Context)
     end
-    def self.build(kind:, user: nil, game: nil, original_filename: nil, export_scope: nil)
-      new(kind: kind, user: user, game: game, original_filename: original_filename, export_scope: export_scope)
+    def self.build(kind:, owner: Owner.build, naming: Naming.build)
+      new(kind: kind, owner: owner, naming: naming)
     end
   end
 
@@ -88,13 +112,16 @@ module AttachmentUploader
 
   sig { params(context: AttachmentUploader::Context).returns(T::Hash[String, String]) }
   def self.build_metadata(context)
+    owner = context.owner
+    naming = context.naming
+
     {
       "kind" => context.kind,
-      "game-id" => context.game&.id&.to_s,
-      "user-id" => context.user&.id&.to_s,
+      "game-id" => owner.game&.id&.to_s,
+      "user-id" => owner.user&.id&.to_s,
       "uploaded-at" => Time.current.utc.iso8601,
-      "original-filename" => context.original_filename,
-      "export-scope" => context.export_scope
+      "original-filename" => naming.original_filename,
+      "export-scope" => naming.export_scope
     }.compact
   end
 end

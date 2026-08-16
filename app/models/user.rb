@@ -62,11 +62,13 @@ class User < ApplicationRecord
   end
 
   # Devise's default delivery is deliver_now; queue it onto Active Job when the
-  # mailer supports deferred delivery (every mailer in the app except the raw
-  # Mail::Message some Devise notifications hand back), otherwise send inline.
+  # mailer hands back an ActionMailer::MessageDelivery (every mailer in the app
+  # except the raw Mail::Message some Devise notifications hand back),
+  # otherwise send inline. Dispatched on class, not respond_to?(:deliver_later).
   sig { params(message: T.untyped).void }
   def deliver_off_request_cycle(message)
-    if message.respond_to?(:deliver_later)
+    case message
+    when ActionMailer::MessageDelivery
       message.deliver_later
     else
       message.deliver_now

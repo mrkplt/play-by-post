@@ -62,7 +62,11 @@ RSpec.describe ExportJob, type: :job do
 
       expect(AttachmentUploader).to have_received(:attach).with(
         hash_including(
-          context: have_attributes(kind: "export", user: user, game: game, export_scope: game.name)
+          context: have_attributes(
+            kind: "export",
+            owner: have_attributes(user: user, game: game),
+            naming: have_attributes(export_scope: game.name)
+          )
         )
       )
       expect(export_request).to have_received(:mark_succeeded!)
@@ -110,7 +114,8 @@ RSpec.describe ExportJob, type: :job do
       ExportJob.new.perform(request.id)
 
       expect(AttachmentUploader).to have_received(:attach) do |args|
-        expect(args[:context].original_filename).to match(/\Athe-lost-realm-export-\d{4}-\d{2}-\d{2}\.zip\z/)
+        expect(args[:context].naming.original_filename)
+          .to match(/\Athe-lost-realm-export-\d{4}-\d{2}-\d{2}\.zip\z/)
       end
     end
 
@@ -157,8 +162,9 @@ RSpec.describe ExportJob, type: :job do
         ExportJob.new.perform(all_games_request.id)
 
         expect(AttachmentUploader).to have_received(:attach) do |args|
-          expect(args[:context].original_filename).to match(/\Aall-games-export-\d{4}-\d{2}-\d{2}\.zip\z/)
-          expect(args[:context].export_scope).to eq("all-games")
+          expect(args[:context].naming.original_filename)
+            .to match(/\Aall-games-export-\d{4}-\d{2}-\d{2}\.zip\z/)
+          expect(args[:context].naming.export_scope).to eq("all-games")
         end
       end
     end

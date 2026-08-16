@@ -170,6 +170,8 @@ matcher:
     - Ui::TurnstileWidgetComponent
     # Services
     - AttachmentUploader
+    - AttachmentUploader::Owner
+    - AttachmentUploader::Naming
     - AttachmentUploader::Context
     - TurnstileVerifier
     - TurnstileVerifier::SiteverifyUri
