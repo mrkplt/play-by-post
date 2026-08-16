@@ -13,11 +13,21 @@ RSpec.describe NotebookEntryVersionPresenter do
     it "returns the version's title" do
       expect(presenter.title).to eq("Secret")
     end
+
+    it "returns an empty string when the title is nil" do
+      blank = build_stubbed(:notebook_entry_version, edited_by: editor, title: nil)
+      expect(described_class.new(blank).title).to eq("")
+    end
   end
 
   describe "#body" do
     it "returns the version's body" do
       expect(presenter.body).to eq("the plans")
+    end
+
+    it "returns an empty string when the body is nil" do
+      blank = build_stubbed(:notebook_entry_version, edited_by: editor, body: nil)
+      expect(described_class.new(blank).body).to eq("")
     end
   end
 
