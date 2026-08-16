@@ -253,6 +253,9 @@ matcher:
     - SceneSummariesController
     - SceneSummaries::DraftsController
     - RssController
+    - Api::BaseController
+    - Api::NotebookEntriesController
+    - Api::PagesController
     - Profiles::ApiTokensController
     - GameExportsController
     - ScenesController

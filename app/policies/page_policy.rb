@@ -18,6 +18,14 @@ class PagePolicy < ApplicationPolicy
     viewable?
   end
 
+  # May list this game's pages at all (the /api index action). The list itself
+  # is member-readable — same rule as a published page's #show — while draft
+  # visibility within it stays gated per-record via #show?.
+  sig { returns(T::Boolean) }
+  def index?
+    viewable?
+  end
+
   # May manage this game's pages: create, edit, and delete. Currently
   # answered by "is the GM" (gm? is the private implementation), but the
   # capability is the stable name — every CRUD predicate below delegates to

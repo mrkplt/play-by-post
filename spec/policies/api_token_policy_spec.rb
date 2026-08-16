@@ -48,4 +48,47 @@ RSpec.describe ApiTokenPolicy, type: :policy do
       end
     end
   end
+
+  describe "#api?" do
+    let(:scope) { "api" }
+
+    context "with an api token whose user is an active member", :db do
+      before { create(:game_member, game: game, user: user) }
+
+      it "permits" do
+        expect(policy.api?).to be(true)
+      end
+    end
+
+    context "with an api token whose user is the GM", :db do
+      before { create(:game_member, :game_master, game: game, user: user) }
+
+      it "permits" do
+        expect(policy.api?).to be(true)
+      end
+    end
+
+    context "with an api token whose user was banned", :db do
+      before { create(:game_member, :banned, game: game, user: user) }
+
+      it "denies" do
+        expect(policy.api?).to be(false)
+      end
+    end
+
+    context "with an api token whose user is not a member", :db do
+      it "denies" do
+        expect(policy.api?).to be(false)
+      end
+    end
+
+    context "with a non-api scope even for an active member", :db do
+      let(:scope) { "rss" }
+      before { create(:game_member, game: game, user: user) }
+
+      it "denies" do
+        expect(policy.api?).to be(false)
+      end
+    end
+  end
 end

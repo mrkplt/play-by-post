@@ -112,5 +112,12 @@ Rails.application.routes.draw do
   # game, so no :game_id in the path.
   get "/rss/feed", to: "rss#feed", defaults: { format: :rss }
 
+  # JSON data API (bearer api-scoped ApiToken). CRU over the token's game's pages
+  # and notebook entries, addressed by slug; no delete.
+  namespace :api, defaults: { format: :json } do
+    resources :pages, only: %i[index show create update], param: :slug
+    resources :notebook_entries, only: %i[index show create update], param: :slug
+  end
+
   root "games#index"
 end

@@ -55,6 +55,7 @@ ContentTemplatePolicy:
 ApiTokenPolicy:
   invariants:
     - no_status_blind_grant: feed?
+    - no_status_blind_grant: api?
   unconstrained: []
 
 FeedbackPolicy:
@@ -107,7 +108,7 @@ PagePolicy:
     - equivalent: [update?, manage?]
     - equivalent: [destroy?, manage?]
     - equivalent: [publish?, manage?]
-  unconstrained: [] # show? is a draft-gated read the verifier can't encode (ACCEPTED_REFUSALS)
+  unconstrained: [index?] # show? is a draft-gated read the verifier can't encode (ACCEPTED_REFUSALS)
 
 PageVersionPolicy:
   invariants: []
