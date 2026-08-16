@@ -38,6 +38,7 @@ matcher:
     - Page
     - GameLink
     - NotebookEntry
+    - Draftable::Model
     # Presenters
     - BannedMemberPresenter
     - CharacterPresenter
