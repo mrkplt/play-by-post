@@ -9,8 +9,8 @@ xml.rss(version: "2.0") do
     @summaries.each do |summary|
       xml.item do
         xml.title summary.scene_title
-        xml.link summary.scene_url
-        xml.guid summary.scene_url, isPermaLink: true
+        xml.link summary.routes.scene_url
+        xml.guid summary.routes.scene_url, isPermaLink: true
         xml.pubDate summary.scene_resolved_at_pub_date if summary.scene_resolved_at_pub_date
         xml.description summary.body
       end

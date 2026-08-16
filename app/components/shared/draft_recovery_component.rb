@@ -29,6 +29,6 @@ class Shared::DraftRecoveryComponent < ApplicationComponent
 
   sig { returns(String) }
   def discard_path
-    @scene.discard_draft_url
+    @scene.routes.discard_draft_url
   end
 end

@@ -67,7 +67,7 @@
           <%= render Ui::ButtonComponent.new(variant: :text, url: @scene_screen.navigation.edit_participants_path) do %>Edit Participants<% end %>
           <%= render Ui::ButtonComponent.new(variant: :text, html_options: { class: "text-danger", data: { action: "click->resolve-toggle#toggle" } }) do %>End Scene<% end %>
         <% end %>
-        <%= render Shared::SceneResolveFormComponent.new(resolve_path: @scene_screen.scene.resolve_path) %>
+        <%= render Shared::SceneResolveFormComponent.new(resolve_path: @scene_screen.scene.routes.resolve_path) %>
       </div>
     <% end %>
 

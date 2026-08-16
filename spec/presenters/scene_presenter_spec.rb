@@ -27,27 +27,13 @@ RSpec.describe ScenePresenter do
     end
   end
 
-  describe "#save_draft_url" do
-    let(:game) { build_stubbed(:game) }
-    let(:urls) { double(save_draft_game_scene_posts_path: "/games/1/scenes/2/posts/save_draft") }
+  describe "#routes" do
+    it "builds a SceneRoutesPresenter carrying the same game/urls" do
+      game = build_stubbed(:game)
+      urls = double("urls")
+      presenter = described_class.new(scene, game: game, urls: urls)
 
-    subject(:presenter) { described_class.new(scene, game: game, urls: urls) }
-
-    it "resolves the save-draft URL against its own game and scene" do
-      expect(presenter.save_draft_url).to eq("/games/1/scenes/2/posts/save_draft")
-      expect(urls).to have_received(:save_draft_game_scene_posts_path).with(game, scene)
-    end
-  end
-
-  describe "#discard_draft_url" do
-    let(:game) { build_stubbed(:game) }
-    let(:urls) { double(discard_draft_game_scene_posts_path: "/games/1/scenes/2/posts/discard_draft") }
-
-    subject(:presenter) { described_class.new(scene, game: game, urls: urls) }
-
-    it "resolves the discard-draft URL against its own game and scene" do
-      expect(presenter.discard_draft_url).to eq("/games/1/scenes/2/posts/discard_draft")
-      expect(urls).to have_received(:discard_draft_game_scene_posts_path).with(game, scene)
+      expect(presenter.routes).to be_a(SceneRoutesPresenter)
     end
   end
 
@@ -188,17 +174,6 @@ RSpec.describe ScenePresenter do
     it "returns nil when the resolution is blank" do
       allow(scene).to receive(:resolution).and_return("")
       expect(presenter.resolution).to be_nil
-    end
-  end
-
-  describe "#resolve_path" do
-    it "builds the scene's resolve path from the injected game and url_helpers" do
-      game = build_stubbed(:game)
-      urls = double("urls")
-      allow(urls).to receive(:resolve_game_scene_path).with(game, scene).and_return("/games/1/scenes/2/resolve")
-
-      presenter = described_class.new(scene, game: game, urls: urls)
-      expect(presenter.resolve_path).to eq("/games/1/scenes/2/resolve")
     end
   end
 

@@ -2,7 +2,7 @@
      class="<%= card_classes %>"
      data-ooc="<%= ooc? %>"
      data-unread="<%= unread? %>"
-     <% if unread? %>data-mark-read-url="<%= @post.mark_read_url %>"<% end %>
+     <% if unread? %>data-mark-read-url="<%= @post.routes.mark_read_url %>"<% end %>
      <% if ooc? %>data-testid="ooc-post"<% end %>>
 
   <%# Floated author block — body text wraps around it, illuminated-manuscript style %>
@@ -33,7 +33,7 @@
       <span class="italic">(edited)</span>
     <% end %>
     <% if @post.editable_by_viewer? %>
-      <%= link_to "Edit", @post.edit_url, class: "text-accent font-semibold" %>
+      <%= link_to "Edit", @post.routes.edit_url, class: "text-accent font-semibold" %>
     <% end %>
   </div>
 </div>

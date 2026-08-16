@@ -2,7 +2,7 @@
     multipart: true,
     data: {
       controller: "post-draft",
-      post_draft_save_url_value: @scene.save_draft_url
+      post_draft_save_url_value: @scene.routes.save_draft_url
     } do |f| %>
   <% if @post.errors.any? %>
     <div class="bg-red-50 border border-red-300 rounded-lg px-3 py-2 mb-3 text-sm text-red-600">
