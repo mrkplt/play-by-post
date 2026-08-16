@@ -105,6 +105,13 @@ RSpec.describe NotebookEntriesController, type: :request do
       expect(response).to have_http_status(:ok)
     end
 
+    it "pre-fills the body from the game's note template when one exists" do
+      create(:content_template, game: game, content_type: "note", body: "## Note skeleton")
+      sign_in(gm)
+      get new_game_notebook_entry_path(game)
+      expect(response.body).to include("## Note skeleton")
+    end
+
     it "is denied to an active player" do
       sign_in(player)
       get new_game_notebook_entry_path(game)

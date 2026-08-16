@@ -92,6 +92,19 @@ RSpec.describe PagesController, type: :request do
       expect(response).to have_http_status(:ok)
     end
 
+    it "pre-fills the body from the game's page template when one exists" do
+      create(:content_template, game: game, content_type: "page", body: "## Page skeleton")
+      sign_in(gm)
+      get new_game_page_path(game)
+      expect(response.body).to include("## Page skeleton")
+    end
+
+    it "leaves the body blank when there is no page template" do
+      sign_in(gm)
+      get new_game_page_path(game)
+      expect(response.body).not_to include("Page skeleton")
+    end
+
     it "is denied to an active player" do
       sign_in(player)
       get new_game_page_path(game)

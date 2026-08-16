@@ -39,6 +39,7 @@ matcher:
     - Page
     - GameLink
     - NotebookEntry
+    - ContentTemplate
     - Draftable::Model
     - Draftable::Presentation
     - Versionable::Model
@@ -304,6 +305,7 @@ matcher:
     - PostPolicy
     - GameFilePolicy
     - GameLinkPolicy
+    - ContentTemplatePolicy
     - NotebookEntryPolicy
     - SceneSummaryPolicy
     - CharacterVersionPolicy

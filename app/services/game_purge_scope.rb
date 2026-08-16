@@ -99,6 +99,7 @@ class GamePurgeScope
     NotebookEntry.where(game_id: game_id).in_batches.delete_all
     delete_pages_and_versions
     GameLink.where(game_id: game_id).in_batches.delete_all
+    ContentTemplate.where(game_id: game_id).in_batches.delete_all
   end
 
   # PageVersion has a not-null FK to Page, so its rows go before their pages

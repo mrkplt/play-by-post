@@ -24,7 +24,7 @@ class NotebookEntriesController < ApplicationController
 
   sig { void }
   def new
-    new_entry = game.notebook_entries.new
+    new_entry = game.notebook_entries.new(body: ContentTemplate.body_for(game: game, content_type: "note"))
     authorize new_entry
     assign_entry_presenter(new_entry)
   end

@@ -16,7 +16,7 @@ class PagesController < ApplicationController
 
   sig { void }
   def new
-    new_page = game.pages.new
+    new_page = game.pages.new(body: ContentTemplate.body_for(game: game, content_type: "page"))
     authorize new_page
     assign_page_presenters(new_page)
   end

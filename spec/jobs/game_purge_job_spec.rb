@@ -32,6 +32,7 @@ RSpec.describe GamePurgeJob, type: :job, db: true do
     records[:page] = create(:page, game: game)
     records[:page_version] = records[:page].page_versions.first!
     records[:game_link] = create(:game_link, game: game)
+    records[:content_template] = create(:content_template, game: game)
     records[:notebook_entry] = create(:notebook_entry, game: game)
     records[:export] = create(:game_export_request, user: gm, game: game)
     records[:api_token] = create(:api_token, user: gm, game: game)
@@ -57,6 +58,7 @@ RSpec.describe GamePurgeJob, type: :job, db: true do
       GameFile.exists?(r[:game_file].id) && Page.exists?(r[:page].id) &&
       PageVersion.exists?(r[:page_version].id) &&
       GameLink.exists?(r[:game_link].id) &&
+      ContentTemplate.exists?(r[:content_template].id) &&
       NotebookEntry.exists?(r[:notebook_entry].id) &&
       Invitation.exists?(r[:invitation].id) &&
       GameMember.where(id: r[:memberships].map(&:id)).count == 2 &&
@@ -104,6 +106,7 @@ RSpec.describe GamePurgeJob, type: :job, db: true do
         expect(Page.where(id: target[:page].id)).to be_empty
         expect(PageVersion.where(id: target[:page_version].id)).to be_empty
         expect(GameLink.where(id: target[:game_link].id)).to be_empty
+        expect(ContentTemplate.where(id: target[:content_template].id)).to be_empty
         expect(NotebookEntry.where(id: target[:notebook_entry].id)).to be_empty
         expect(Invitation.where(id: target[:invitation].id)).to be_empty
         expect(GameMember.where(id: target[:memberships].map(&:id))).to be_empty
