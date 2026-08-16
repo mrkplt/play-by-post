@@ -41,9 +41,11 @@ class PostPolicy < ApplicationPolicy
     T.must(scene.game)
   end
 
+  # Active member — the write gate. A GM is an active member; keyed on active
+  # membership rather than the game_master role so a removed/banned member never
+  # writes even if they hold the GM role.
   sig { returns(T::Boolean) }
   def write_member?
-    membership = game.member_for(user)
-    (membership&.game_master? || membership&.active?) || false
+    game.active_member?(user)
   end
 end

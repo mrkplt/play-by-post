@@ -16,9 +16,10 @@ RSpec.describe ScenePolicy do
     allow(game).to receive(:viewable_by?).with(user).and_return(viewable)
   end
 
-  def stub_membership(gm: false, active: false, present: true)
-    membership = present ? instance_double(GameMember, game_master?: gm, active?: active) : nil
-    allow(game).to receive(:member_for).with(user).and_return(membership)
+  # The write gate is now "active member" (a GM is an active member). Stub the
+  # model predicate the policy actually calls.
+  def stub_write_member(active_member)
+    allow(game).to receive(:active_member?).with(user).and_return(active_member)
   end
 
   def stub_private(value)
@@ -109,23 +110,13 @@ RSpec.describe ScenePolicy do
   end
 
   describe "#join? (write member)" do
-    it "is true for the GM" do
-      stub_membership(gm: true)
+    it "is true for an active member (a GM is an active member)" do
+      stub_write_member(true)
       expect(policy.join?).to be(true)
     end
 
-    it "is true for an active member" do
-      stub_membership(active: true)
-      expect(policy.join?).to be(true)
-    end
-
-    it "is false for a non-active member (e.g. removed)" do
-      stub_membership(gm: false, active: false)
-      expect(policy.join?).to be(false)
-    end
-
-    it "is false for a non-member" do
-      stub_membership(present: false)
+    it "is false for a non-active member (removed/banned, even if GM role)" do
+      stub_write_member(false)
       expect(policy.join?).to be(false)
     end
   end

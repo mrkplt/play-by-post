@@ -22,9 +22,10 @@ RSpec.describe PostPolicy do
     allow(game).to receive(:game_master?).with(user).and_return(value)
   end
 
-  def stub_membership(gm: false, active: false, present: true)
-    membership = present ? instance_double(GameMember, game_master?: gm, active?: active) : nil
-    allow(game).to receive(:member_for).with(user).and_return(membership)
+  # The write gate is now "active member" (a GM is an active member). Stub the
+  # model predicate the policy actually calls.
+  def stub_write_member(active_member)
+    allow(game).to receive(:active_member?).with(user).and_return(active_member)
   end
 
   describe "#update? / #edit? (Post#editable_by?)" do
@@ -65,32 +66,20 @@ RSpec.describe PostPolicy do
   describe "#create? (participant/GM AND active member)" do
     it "is true for a participant who is an active member" do
       stub_participant(true)
-      stub_membership(active: true)
+      stub_write_member(true)
       expect(policy.create?).to be(true)
     end
 
-    it "is true for a participant whose membership is the GM role" do
+    it "is false for a participant who is not an active member (removed/banned, even if GM role)" do
       stub_participant(true)
-      stub_membership(gm: true, active: false)
-      expect(policy.create?).to be(true)
-    end
-
-    it "is false for a participant who is not a writer (e.g. removed)" do
-      stub_participant(true)
-      stub_membership(gm: false, active: false)
-      expect(policy.create?).to be(false)
-    end
-
-    it "is false for a participant who is not a member at all" do
-      stub_participant(true)
-      stub_membership(present: false)
+      stub_write_member(false)
       expect(policy.create?).to be(false)
     end
 
     it "is false for an active member who cannot take part in the scene" do
       stub_participant(false)
       stub_gm(false)
-      stub_membership(active: true)
+      stub_write_member(true)
       expect(policy.create?).to be(false)
     end
   end

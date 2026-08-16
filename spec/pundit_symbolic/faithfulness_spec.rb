@@ -60,6 +60,25 @@ RSpec.describe "PunditSymbolic encoder faithfulness", type: :model do
     end
 
     def respond_to_missing?(_name, _include_private = false) = true
+
+    # The proxy stands in for whatever the policy's helpers return (a Scene, a
+    # Game). Some policies have private helpers with model-return sigs
+    # (`sig { returns(Scene) }`); claim to be any class so sorbet-runtime's sig
+    # check accepts the stand-in. This is scoped to the double and never leaks.
+    def is_a?(_klass) = true
+    def kind_of?(_klass) = true
+
+    # ActiveSupport (loaded via rails_helper) defines Object#present?/#blank?, so
+    # a real predicate read like `user.present?` would bypass method_missing and
+    # always be truthy. Route these boolean reads back through the assignment so
+    # the leaf var is what's exercised, matching how the encoder names them.
+    def present?
+      leaf = "#{@path}present?"
+      @reads << leaf
+      @assignment.fetch(leaf, false)
+    end
+
+    def blank? = !present?
   end
 
   ALL_POLICIES = Dir[File.expand_path("../../app/policies/*_policy.rb", __dir__)]
