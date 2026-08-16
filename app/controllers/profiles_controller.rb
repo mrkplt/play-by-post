@@ -12,6 +12,10 @@ class ProfilesController < ApplicationController
     authorize current_profile
     @user_presenter = T.let(UserPresenter.new(current_user), T.nilable(UserPresenter))
     @feed_rows = T.let(T.must(@user_presenter).feed_rows(urls: self), T.nilable(T::Array[GameFeedRowPresenter]))
+    @api_token_rows = T.let(
+      T.must(@user_presenter).api_token_rows(urls: self),
+      T.nilable(T::Array[ApiTokenRowPresenter])
+    )
     assign_profile_presenter(current_profile)
   end
 

@@ -28,6 +28,10 @@
   <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do %>RSS Feeds<% end %>
   <%= render Shared::RssFeedsSectionComponent.new(rows: @feed_rows) %>
 
+  <%# API tokens %>
+  <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do %>API tokens<% end %>
+  <%= render Shared::ApiTokensSectionComponent.new(rows: @api_token_rows) %>
+
   <%# Export %>
   <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do %>Export<% end %>
   <div class="bg-card border border-card-border rounded-card px-3.5">

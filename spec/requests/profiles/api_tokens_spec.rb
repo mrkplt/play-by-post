@@ -25,6 +25,29 @@ RSpec.describe Profiles::ApiTokensController, type: :request do
       expect(ApiToken.last.scope).to eq("rss")
     end
 
+    it "creates an api token for a game the user belongs to", :db do
+      sign_in(user)
+      expect {
+        post profile_api_tokens_path, params: { game_id: game.id, scope: "api" }
+      }.to change(ApiToken, :count).by(1)
+      token = ApiToken.last
+      expect(token.user).to eq(user)
+      expect(token.game).to eq(game)
+      expect(token.scope).to eq("api")
+    end
+
+    it "flashes API-token copy when creating an api token", :db do
+      sign_in(user)
+      post profile_api_tokens_path, params: { game_id: game.id, scope: "api" }
+      expect(flash[:notice]).to eq("API token created.")
+    end
+
+    it "flashes feed-token copy when creating an rss token", :db do
+      sign_in(user)
+      post profile_api_tokens_path, params: { game_id: game.id, scope: "rss" }
+      expect(flash[:notice]).to eq("Feed token created.")
+    end
+
     it "rotates an existing token instead of creating a second", :db do
       sign_in(user)
       existing = create(:api_token, user: user, game: game, scope: "rss")
@@ -76,6 +99,20 @@ RSpec.describe Profiles::ApiTokensController, type: :request do
         delete profile_api_token_path(token)
       }.to change(ApiToken, :count).by(-1)
       expect(response).to redirect_to(profile_path)
+    end
+
+    it "flashes API-token copy when revoking an api token", :db do
+      sign_in(user)
+      token = create(:api_token, user: user, game: game, scope: "api")
+      delete profile_api_token_path(token)
+      expect(flash[:notice]).to eq("API token revoked.")
+    end
+
+    it "flashes feed-token copy when revoking an rss token", :db do
+      sign_in(user)
+      token = create(:api_token, user: user, game: game, scope: "rss")
+      delete profile_api_token_path(token)
+      expect(flash[:notice]).to eq("Feed token revoked.")
     end
 
     it "does not destroy another user's token", :db do

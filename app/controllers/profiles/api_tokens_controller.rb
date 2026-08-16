@@ -16,7 +16,7 @@ class Profiles::ApiTokensController < ApplicationController
 
     game = member_game(params[:game_id])
     scope = token_scope
-    return redirect_to profile_path, alert: "Could not create a feed token for that game." unless game && scope
+    return redirect_to profile_path, alert: "Could not create a token for that game." unless game && scope
 
     issue_token(game, scope)
   end
@@ -25,11 +25,20 @@ class Profiles::ApiTokensController < ApplicationController
   def destroy
     authorize current_profile, :manage?
 
-    current_user.api_tokens.find_by(id: params[:id])&.destroy
-    redirect_to profile_path, notice: "Feed token revoked."
+    token = current_user.api_tokens.find_by(id: params[:id])
+    token&.destroy
+    redirect_to profile_path, notice: "#{token_label(token&.scope)} revoked."
   end
 
   private
+
+  # The human name for a token of the given scope, so flash copy reads
+  # "API token …" for scope:"api" and "Feed token …" for scope:"rss" (the
+  # default when a scope is absent).
+  sig { params(scope: T.nilable(String)).returns(String) }
+  def token_label(scope)
+    scope == "api" ? "API token" : "Feed token"
+  end
 
   sig { returns(UserProfile) }
   def current_profile
@@ -39,7 +48,7 @@ class Profiles::ApiTokensController < ApplicationController
   sig { params(game: Game, scope: String).void }
   def issue_token(game, scope)
     ApiToken.issue_for!(user: current_user, game: game, scope: scope)
-    redirect_to profile_path, notice: "Feed token created."
+    redirect_to profile_path, notice: "#{token_label(scope)} created."
   end
 
   # The requested game, but only if the current user is a non-banned member of
