@@ -2,10 +2,12 @@ require "rails_helper"
 
 RSpec.describe Shared::PageDetailComponent, type: :component do
   let(:game) { build_stubbed(:game) }
+  let(:urls) { Rails.application.routes.url_helpers }
   let(:page_record) { build_stubbed(:page, game: game, title: "Lore", slug: "abc123def456ghij", body: "# Heading\n\nBody text.") }
 
   def presenter_for(page_record, can_manage: false)
-    PagePresenter.new(page_record, page_policy: instance_double(PagePolicy, manage?: can_manage))
+    PagePresenter.new(page_record, page_policy: instance_double(PagePolicy, manage?: can_manage),
+                                   game: game, urls: urls)
   end
 
   def build_component(page_record: self.page_record, can_manage: false)
@@ -23,6 +25,26 @@ RSpec.describe Shared::PageDetailComponent, type: :component do
       render_inline(build_component(can_manage: false))
       expect(page).to have_no_link("Edit")
       expect(page).to have_no_button("Delete")
+    end
+  end
+
+  describe "draft affordances" do
+    let(:draft_page) { build_stubbed(:page, game: game, slug: "draftslug0000000", draft: true) }
+
+    it "shows a Draft badge and Publish button to the GM on a draft page" do
+      render_inline(build_component(page_record: draft_page, can_manage: true))
+      expect(page).to have_text("Draft")
+      expect(page).to have_button("Publish")
+    end
+
+    it "shows no Publish button on a published page" do
+      render_inline(build_component(can_manage: true))
+      expect(page).to have_no_button("Publish")
+    end
+
+    it "shows no Publish button to a non-GM even on a draft page" do
+      render_inline(build_component(page_record: draft_page, can_manage: false))
+      expect(page).to have_no_button("Publish")
     end
   end
 

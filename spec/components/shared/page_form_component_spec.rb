@@ -5,8 +5,10 @@ RSpec.describe Shared::PageFormComponent, type: :component do
   let(:new_page) { game.pages.new }
   let(:existing_page) { build_stubbed(:page, game: game, title: "Lore", slug: "abc123def456ghij") }
 
+  let(:urls) { Rails.application.routes.url_helpers }
+
   def build_component(page:)
-    described_class.new(page: PagePresenter.new(page))
+    described_class.new(page: PagePresenter.new(page, game: game, urls: urls))
   end
 
   def path(name, *args)

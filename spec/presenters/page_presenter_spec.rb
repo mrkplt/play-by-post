@@ -54,6 +54,16 @@ RSpec.describe PagePresenter do
     end
   end
 
+  describe "#routes" do
+    it "builds a PageRoutesPresenter for the page's draft/publish endpoints" do
+      urls = double("urls")
+      presenter = described_class.new(page_record, game: game, urls: urls,
+        game_policy: game_policy, page_policy: policy)
+
+      expect(presenter.routes).to be_a(PageRoutesPresenter)
+    end
+  end
+
   describe "#cancel_href" do
     it "returns the game's Pages tab for an unsaved page" do
       new_page = game.pages.new

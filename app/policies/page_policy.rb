@@ -36,6 +36,14 @@ class PagePolicy < ApplicationPolicy
     manage?
   end
 
+  # May publish a draft page, making it visible to every member — the same GM
+  # capability as managing it, named for the publish action so the affordance
+  # and controller read as a capability rather than a borrowed CRUD predicate.
+  sig { returns(T::Boolean) }
+  def publish?
+    manage?
+  end
+
   private
 
   sig { returns(T::Boolean) }

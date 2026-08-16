@@ -23,12 +23,13 @@ RSpec.describe PagePolicy do
     end
   end
 
-  describe "#create? / #update? / #destroy? (delegate to #manage?)" do
+  describe "#create? / #update? / #destroy? / #publish? (delegate to #manage?)" do
     it "are true for the GM" do
       allow(game).to receive(:game_master?).with(user).and_return(true)
       expect(policy.create?).to be(true)
       expect(policy.update?).to be(true)
       expect(policy.destroy?).to be(true)
+      expect(policy.publish?).to be(true)
     end
 
     it "are false for a non-GM" do
@@ -36,6 +37,7 @@ RSpec.describe PagePolicy do
       expect(policy.create?).to be(false)
       expect(policy.update?).to be(false)
       expect(policy.destroy?).to be(false)
+      expect(policy.publish?).to be(false)
     end
   end
 

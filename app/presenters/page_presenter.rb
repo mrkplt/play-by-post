@@ -48,6 +48,13 @@ class PagePresenter < BasePresenter
     @options.fetch(:urls).game_page_path(@options.fetch(:game), @model)
   end
 
+  # The page's draft/publish route endpoints, split into their own presenter to
+  # keep this class under the method ceiling (see PageRoutesPresenter).
+  sig { returns(PageRoutesPresenter) }
+  def routes
+    PageRoutesPresenter.new(@model, game: @options.fetch(:game), urls: @options.fetch(:urls))
+  end
+
   # Where Cancel returns to on the form screens: an unsaved page has no show
   # URL yet, so it goes back to the game's Pages tab; an existing page returns
   # to its own detail screen (#href).

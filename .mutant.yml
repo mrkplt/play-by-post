@@ -68,6 +68,7 @@ matcher:
     - NotebookBoardPresenter
     - NotebookEntryPresenter
     - PagePresenter
+    - PageRoutesPresenter
     - PostPresenter
     - PostRoutesPresenter
     - RosterCharacterPresenter
@@ -240,6 +241,8 @@ matcher:
     - SceneParticipantsController
     - PostsController
     - Posts::DraftsController
+    - Pages::DraftsController
+    - Draftable::Controller
     - GameFilesController
     - PagesController
     - GameLinksController

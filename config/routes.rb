@@ -68,7 +68,15 @@ Rails.application.routes.draw do
       resource :export, only: %i[create], controller: "game_exports"
       resources :scene_summaries, only: %i[index]
       resources :game_files, only: %i[index create destroy]
-      resources :pages, only: %i[new create show edit update destroy], param: :slug
+      resources :pages, only: %i[new create show edit update destroy], param: :slug do
+        # Namespaced under the page: the editor autosaves the draft flag on the
+        # page's own row, and publishing promotes it. PagesController stays about
+        # published pages, as PostsController does for posts.
+        member do
+          patch :save_draft, to: "pages/drafts#save"
+          patch :publish, to: "pages/drafts#publish"
+        end
+      end
       resources :game_links, only: %i[index new create edit update destroy]
       resources :notebook_entries, only: %i[index new create edit update destroy], param: :slug do
         # Kept as move/promote_game_notebook_entry_path — the lane picker and

@@ -86,7 +86,7 @@ class PagesController < ApplicationController
 
   sig { returns(ActionController::Parameters) }
   def page_params
-    params.require(:page).permit(:title, :body)
+    params.require(:page).permit(:title, :body, :draft)
   end
 
   sig { params(subject: Page).returns(PagePresenter) }
