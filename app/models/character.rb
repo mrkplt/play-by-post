@@ -2,6 +2,7 @@
 
 class Character < ApplicationRecord
   extend T::Sig
+  include Versionable::Model
 
   belongs_to :game
   belongs_to :user
@@ -56,38 +57,21 @@ class Character < ApplicationRecord
     self.user == user || game.game_master?(user)
   end
 
-  # Snapshotting is an explicit consequence of saving rather than an after_save
-  # callback, so the behaviour is readable at the definition instead of in a
-  # callback chain. save/save! are the only paths that need overriding: create
-  # and update route through save, create!/update! through save!, and
-  # touch/update_column bypass both — exactly as after_save did.
-  #
-  # super is wrapped in the transaction so a failed snapshot still rolls the
-  # character back, which is what running inside the callback chain gave us.
-  sig { params(options: T.untyped).returns(T.untyped) }
-  def save(**options)
-    transaction { super.tap { |saved| snapshot_version if saved } }
-  end
-
-  sig { params(options: T.untyped).returns(T.untyped) }
-  def save!(**options)
-    transaction { super.tap { snapshot_version } }
+  # The versions association Versionable::Model snapshots through. Character's
+  # history lives in character_versions; the module writes each snapshot here.
+  sig { override.returns(T.untyped) }
+  def versions
+    character_versions
   end
 
   # The version row this character's current state should produce. Pure — the
   # snapshot writes exactly what this returns, so attribution (Current.user
   # falling back to the owner) can be tested without saving anything.
-  sig { returns(T::Hash[Symbol, T.untyped]) }
+  sig { override.returns(T::Hash[Symbol, T.untyped]) }
   def version_attributes
     {
       content: content.to_s,
       edited_by_id: Current.user&.id || user_id
     }
-  end
-
-  private
-
-  def snapshot_version
-    character_versions.create!(version_attributes)
   end
 end
