@@ -15,6 +15,7 @@
 #                           the form screens' Cancel target
 class PagePresenter < BasePresenter
   extend T::Sig
+  include Draftable::Presentation
 
   # The viewer may administer the game this page belongs to — the flag behind
   # the game-nav's GM-only affordances on every page screen.

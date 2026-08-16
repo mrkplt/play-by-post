@@ -7,6 +7,7 @@
 # only place that knows how to build them.
 class SceneSummaryPresenter < BasePresenter
   extend T::Sig
+  include Draftable::Presentation
 
   sig { returns(String) }
   # mutant:disable
