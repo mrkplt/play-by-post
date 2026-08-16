@@ -26,7 +26,8 @@ require "pundit_symbolic/verifier"
 # Documented equivalences per policy: predicates the source says ask "the same
 # question". Extend as policies are added.
 EQUIVALENCES = {
-  "GamePolicy" => [%w[show? view?], %w[manage_players? view?], %w[export? view?]]
+  "GamePolicy" => [ %w[show? view?], %w[manage_players? view?], %w[export? view?] ],
+  "UserProfilePolicy" => [ %w[show? update?], %w[show? manage?] ]
 }.freeze
 
 paths = ARGV.empty? ? Dir[File.expand_path("../app/policies/*_policy.rb", __dir__)] : ARGV

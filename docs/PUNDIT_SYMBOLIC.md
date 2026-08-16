@@ -75,9 +75,47 @@ not vacuous.
 The spec runs without booting Rails (policies are pure `(user, record)`
 objects loaded with only `sorbet-runtime`), keeping it in the fast tier.
 
+## The faithfulness proof is not vacuous — two blind spots it closes
+
+Exhaustive testing is only a proof if the enumeration actually exercises the
+dimension a bug would live in. Two ways it could be fooled, both closed:
+
+- **Dropped variables.** If the encoder omits a leaf from a formula, enumerating
+  only that formula's own vars would never vary the missing dimension. The proof
+  enumerates over the whole policy's leaf-var union, and asserts every leaf the
+  real method *read* (recorded by the double) appears in the formula.
+- **Short-circuit reads.** `membership&.a? || membership&.b?` only evaluates `b?`
+  when `a?` is false, so a dropped `b?` leaf is invisible unless the enumeration
+  creates the `¬a? ∧ b?` state. For every `member_for` base the proof forces all
+  four status/role leaves (`game_master?`/`active?`/`removed?`/`banned?`) into the
+  enumeration, so any dropped status diverges. Corrupting the encoder's membership
+  leaf naming makes the proof fail — verified.
+
 ## Scope / status
 
-Checkpoint slice: `GamePolicy` fully encoded, verified, and proven faithful.
-The encoder generalizes to the other policies as they adopt the same leaf-fact
-vocabulary; extend `Encoder#leaf_for` for any new leaf-fact read and add the
-policy's documented equivalences to `bin/verify-policies`.
+Generalized across **all 15 policies**; the faithfulness proof (`30 examples`)
+holds for every one. The encoder handles: boolean predicates over leaf facts,
+delegation (`show? -> view?`), path helpers (`def scene = record.scene` inlined
+into leaf paths), `T.must(...)` unwrapping, and receiver paths of any depth
+(`record.game.member_for.active?`). Leaf-fact names are derived from the read
+path automatically — no per-policy whitelist to maintain.
+
+### Systemic finding
+
+The `role_grant_ignores_status` finding is **not GamePolicy-specific**: the same
+GM-role-trusts-without-status pattern recurs across the write-access surface —
+`GamePolicy#write_access?`/`#feed?`, `CharacterPolicy#create?`/`#update?`,
+`PostPolicy#create?`, `ScenePolicy#join?` (all via the shared `write_member?`
+helper). One shared fix, six sites.
+
+### Known limitations (refused, not silently mis-encoded)
+
+- **Cross-policy delegation.** `CharacterVersionPolicy#show?` and
+  `ApiTokenPolicy#feed?` delegate to `GamePolicy.new(user, other_record).view?`.
+  The tool refuses these rather than model a second policy over a rebased record.
+- **Identity comparison.** `UserProfilePolicy#owner?` is `record.user == user`.
+  `==` relates two entities and isn't a free boolean of the (user, record) pair,
+  so it's out of theory and refused (and its delegators refuse in turn).
+
+These are the honest boundary: a refused *public* predicate is reported, never
+skipped, so the coverage gap is always visible.

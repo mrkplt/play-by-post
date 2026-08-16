@@ -15,9 +15,11 @@ module PunditSymbolic
   class Verifier
     Finding = Struct.new(:kind, :description, :model, keyword_init: true)
 
-    # The leaf facts and the app-belief that some combinations are unreachable.
-    # Stated here ONLY to annotate findings, never asserted into the solver.
-    STATUS_LEAVES = %w[member_gm member_active member_removed].freeze
+    # The game_master ROLE leaf of a membership, named `<path>.member_for.game_master?`
+    # — the decomposition of `record[.game].member_for(user)&.game_master?`. Matching
+    # this pattern (not a hardcoded var name) is how the verifier recognizes the
+    # status-invariant shape across policies with different receiver paths.
+    MEMBER_ROLE = /member_for\.game_master\?\z/
 
     def self.verify_file(path)
       new(PolicySource.load(path)).verify
@@ -29,7 +31,7 @@ module PunditSymbolic
     def initialize(source, equivalences: [])
       @source = source
       @equivalences = equivalences
-      @by_name = source.public_predicates.to_h { |p| [p.name, p] }
+      @by_name = source.public_predicates.to_h { |p| [ p.name, p ] }
     end
 
     def verify
@@ -42,32 +44,34 @@ module PunditSymbolic
       grants_under_forbidden_status + broken_equivalences
     end
 
-    # A predicate whose grant is LOAD-BEARING on the membership-role leaf
-    # (`member_gm`) reaching access together with a non-active status
-    # (`member_removed`). "Load-bearing" = the predicate reads member_gm and can
-    # be flipped from deny to grant purely by the member_gm ∧ member_removed
-    # combination — the exact state the app believes unreachable because a GM's
-    # membership status cannot change. If that invariant ever breaks, this is the
-    # grant that leaks. Trivial predicates (`true`, pure `gm`) don't qualify:
-    # they don't read the membership leaf, so no status invariant protects them.
+    # A predicate whose grant is LOAD-BEARING on the membership game_master ROLE
+    # leaf, WITHOUT that same membership's status being consulted. Concretely:
+    # the predicate reads `<path>.member_for.game_master?` and the role leaf
+    # alone flips it from deny to grant (grants with role true even when the
+    # active-status leaf is false; denies when role is false, statuses held
+    # false). That grant is correct only under the unstated invariant that a
+    # game_master's membership status cannot become removed/banned — the moment
+    # multiple GMs make that invariant false, it leaks to a removed/banned GM.
     def grants_under_forbidden_status
       @by_name.values.filter_map do |predicate|
-        next unless predicate.formula.variables.include?("member_gm")
+        role_leaf = predicate.formula.variables.find { |v| v.match?(MEMBER_ROLE) }
+        next unless role_leaf
 
-        base = Formula.var("member_gm")
-        removed = Formula.var("member_removed")
-        # Grant holds with (member_gm ∧ member_removed) ...
-        with_removed = Solver.sat?(all_of(predicate.formula, base, removed))
-        # ... and the member_gm path is what carries it (deny when NOT member_gm,
-        # holding member_active false so only the role leaf differs).
-        role_carries = Solver.sat?(all_of(predicate.formula, base, Formula.negate(Formula.var("member_active")))) &&
-          !Solver.sat?(all_of(predicate.formula, Formula.negate(base), Formula.negate(Formula.var("member_active"))))
-        next unless with_removed && role_carries
+        # The active-status leaf paired with this role leaf (same member_for path).
+        active_leaf = role_leaf.sub("game_master?", "active?")
+        role = Formula.var(role_leaf)
+        deny_ctx = Formula.negate(Formula.var(active_leaf))
+
+        # role alone carries the grant: grants with (role ∧ ¬active),
+        # denies with (¬role ∧ ¬active).
+        role_grants = Solver.sat?(all_of(predicate.formula, role, deny_ctx))
+        role_needed = !Solver.sat?(all_of(predicate.formula, Formula.negate(role), deny_ctx))
+        next unless role_grants && role_needed
 
         Finding.new(
           kind: :role_grant_ignores_status,
-          description: "#{predicate.name} grants to a member via the game_master role leaf regardless of a removed/banned status — safe only under the unstated invariant that a GM's membership status cannot change.",
-          model: Solver.models_for(all_of(predicate.formula, base, removed)).first
+          description: "#{predicate.name} grants via the game_master role of a membership without consulting that membership's status — safe only under the unstated invariant that a GM's membership status cannot change (breaks under multiple game masters).",
+          model: Solver.models_for(all_of(predicate.formula, role, deny_ctx)).first
         )
       end
     end
@@ -76,6 +80,10 @@ module PunditSymbolic
     # input. Report a counterexample where they diverge.
     def broken_equivalences
       @equivalences.filter_map do |(name_a, name_b)|
+        # A documented-equivalent pair where one side was refused can't be
+        # checked; skip rather than crash (the refusal is already reported).
+        next unless @by_name.key?(name_a) && @by_name.key?(name_b)
+
         a = @by_name.fetch(name_a).formula
         b = @by_name.fetch(name_b).formula
         # SAT( a XOR b ) — an input where they disagree.

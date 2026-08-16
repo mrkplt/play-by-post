@@ -39,9 +39,13 @@ module PunditSymbolic
 
     # `predicate_names` is the set of same-policy predicates that may be inlined
     # by delegation (so `show?`'s body `view?` resolves rather than being treated
-    # as a leaf). Leaf-fact naming is centralized in #leaf_for.
-    def initialize(predicate_names)
+    # as a leaf). `path_helpers` maps non-predicate helper names to their DefNode,
+    # so a helper like `def scene = record.scene` inlines into receiver paths
+    # (`scene.participant?` -> "record.scene.participant?"). Leaf-fact naming is
+    # centralized in #leaf_for.
+    def initialize(predicate_names, path_helpers = {})
       @predicate_names = predicate_names.to_set
+      @path_helpers = path_helpers
     end
 
     # Encode a Prism DefNode's body into a Formula. `local_facts` carries locals
@@ -59,30 +63,42 @@ module PunditSymbolic
       expression(result, local_facts)
     end
 
+    # True if `def_node` is a pure navigation path helper (single-statement body
+    # that is a chain of no-arg reads, possibly T.must-wrapped) — i.e. it can be
+    # inlined into a receiver path rather than treated as a predicate.
+    def path_helper?(def_node)
+      statements = body_statements(def_node)
+      return false unless statements.length == 1
+
+      body = statements.first
+      return false unless body.is_a?(Prism::CallNode) || t_must?(body)
+
+      receiver_path(body)
+      true
+    rescue Unencodable
+      false
+    end
+
     private
 
     def body_statements(def_node)
       body = def_node.body
       raise unencodable("empty body") if body.nil?
 
-      body.is_a?(Prism::StatementsNode) ? body.body : [body]
+      body.is_a?(Prism::StatementsNode) ? body.body : [ body ]
     end
 
-    # Handle `membership = record.member_for(user)` — record that `membership`
-    # names the game's membership for the user, so `membership&.active?` later
-    # maps to the `member_active` leaf.
+    # Handle `membership = <path>.member_for(user)` — bind the local to the
+    # canonical membership path (e.g. "record.game.member_for"), so a later
+    # `membership&.active?` maps to "record.game.member_for.active?".
     def bind_local(node, local_facts)
-      unless node.is_a?(Prism::LocalVariableWriteNode) && member_for_call?(node.value)
+      call = node.is_a?(Prism::LocalVariableWriteNode) ? node.value : nil
+      unless call.is_a?(Prism::CallNode) && call.name == :member_for
         kind = node.class.name.split("::").last.sub(/Node$/, "")
         raise unencodable("non-boolean body (returns via #{kind}) — not a boolean predicate")
       end
 
-      local_facts[node.name] = :membership
-    end
-
-    def member_for_call?(node)
-      node.is_a?(Prism::CallNode) && node.name == :member_for &&
-        receiver_is_record?(node.receiver)
+      local_facts[node.name] = "#{receiver_path(call.receiver)}member_for"
     end
 
     # The core translation: a Prism expression node -> Formula.
@@ -113,6 +129,9 @@ module PunditSymbolic
       # `!x` / `x.!` — unary negation.
       return Formula.negate(expression(node.receiver, local_facts)) if node.name == :! && node.receiver
 
+      # T.must(x) is a Sorbet nil-unwrap: transparent to the value.
+      return expression(t_must_argument(node), local_facts) if t_must?(node)
+
       # A bare call to another predicate in this policy: inline it as a leaf var
       # named after that predicate, so delegation composes. (Faithfulness holds
       # because the predicate's own formula uses the same var name; cross-method
@@ -124,36 +143,93 @@ module PunditSymbolic
       Formula.var(leaf_for(node, local_facts))
     end
 
-    # Canonical leaf-fact variable name for a world-reading call. This is the
-    # ONE place a Ruby fact-read becomes a symbol; the faithfulness spec pins
-    # each mapping against the real policy, so this table is the trusted core.
+    # Canonical leaf-fact variable name for a world-reading call. A leaf is a
+    # boolean-returning method call whose truth the tool treats as free: it is
+    # named by the RECEIVER PATH plus the method, so the same real read always
+    # gets the same var (record.game.game_master? -> "record.game.game_master?").
+    # No hand-maintained whitelist — any policy's fact reads name themselves, and
+    # the faithfulness spec pins every name against the real method. Argument
+    # lists are dropped from the name: a policy passes only `user` / `record.*`
+    # as args, which carry no distinguishing information for a per-(user,record)
+    # question.
     def leaf_for(node, local_facts)
-      # record.game_master?(user) -> gm ; record.viewable_by?(user) -> viewable
-      if receiver_is_record?(node.receiver)
-        case node.name
-        when :game_master? then return "gm"
-        when :viewable_by? then return "viewable"
-        end
+      # A boolean leaf is a PREDICATE read (`...game_master?`, `user.present?`).
+      # A non-predicate call in boolean position — an operator/comparison like
+      # `record.user == user`, or a bare value — is not a free boolean of the
+      # (user, record) pair (its truth relates two entities), so it is out of the
+      # boolean-leaf theory and must be refused, not encoded as a free var.
+      unless node.name.to_s.end_with?("?")
+        raise unencodable("non-predicate in boolean position: `#{node.name}` (comparisons/operators are out of theory)")
       end
 
-      # membership&.game_master? / membership&.active? -> member_gm / member_active
-      if node.safe_navigation? && membership_local?(node.receiver, local_facts)
-        case node.name
-        when :game_master? then return "member_gm"
-        when :active? then return "member_active"
-        when :removed? then return "member_removed"
-        end
+      # membership&.active? where `membership = <path>.member_for(user)` -> a
+      # leaf on that membership path, e.g. "record.game.member_for.active?".
+      if node.safe_navigation? && (base = membership_base(node.receiver, local_facts))
+        return "#{base}.#{node.name}"
       end
 
-      raise unencodable("unrecognized fact read: #{unparse(node)}")
+      "#{receiver_path(node.receiver)}#{node.name}"
     end
 
-    def receiver_is_record?(receiver)
-      receiver.is_a?(Prism::CallNode) && receiver.name == :record && receiver.receiver.nil?
+    # The dotted path of a chain of no-arg calls rooted at `record` (or `user`),
+    # ending in a trailing dot: `record.game.` , `record.` , `user.`.
+    # Raises Unencodable on anything that isn't such a pure read path.
+    def receiver_path(receiver)
+      return "" if receiver.nil?
+      return receiver_path(t_must_argument(receiver)) if t_must?(receiver)
+
+      unless receiver.is_a?(Prism::CallNode) && no_args?(receiver)
+        raise unencodable("unrecognized receiver #{unparse(receiver)}")
+      end
+
+      # A bare call to a path-helper (`scene`, `game`) inlines that helper's own
+      # path in place of the name (`scene.` -> "record.scene.").
+      if receiver.receiver.nil? && (helper = @path_helpers[receiver.name])
+        return helper_path(receiver.name, helper)
+      end
+
+      "#{receiver_path(receiver.receiver)}#{receiver.name}."
     end
 
-    def membership_local?(receiver, local_facts)
-      receiver.is_a?(Prism::LocalVariableReadNode) && local_facts[receiver.name] == :membership
+    # The navigation path a path-helper's body produces, as a trailing-dot prefix.
+    # The body must itself be a pure path (a chain of no-arg reads, possibly
+    # T.must-wrapped); anything else means the "helper" is not a path and the
+    # calling method is unencodable.
+    def helper_path(name, def_node)
+      statements = body_statements(def_node)
+      raise unencodable("path helper `#{name}` has a multi-statement body") unless statements.length == 1
+
+      body = statements.first
+      raise unencodable("path helper `#{name}` is not a pure navigation path") unless body.is_a?(Prism::CallNode) || t_must?(body)
+
+      receiver_path(body)
+    end
+
+    # T.must(x) — a Sorbet nil-unwrap CallNode: receiver `T`, name `must`.
+    def t_must?(node)
+      return false unless node.is_a?(Prism::CallNode) && node.name == :must
+
+      receiver = node.receiver
+      receiver.is_a?(Prism::ConstantReadNode) && receiver.name == :T
+    end
+
+    def t_must_argument(node)
+      args = node.arguments&.arguments
+      raise unencodable("T.must with unexpected arity") unless args&.length == 1
+
+      args.first
+    end
+
+    # If `receiver` is a local bound to `<path>.member_for(user)`, return that
+    # path's canonical membership base (e.g. "record.game.member_for").
+    def membership_base(receiver, local_facts)
+      return nil unless receiver.is_a?(Prism::LocalVariableReadNode)
+
+      local_facts[receiver.name]
+    end
+
+    def no_args?(call_node)
+      call_node.arguments.nil? && call_node.block.nil?
     end
 
     def unparse(node)

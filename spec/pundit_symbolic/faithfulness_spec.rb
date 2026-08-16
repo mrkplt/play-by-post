@@ -19,72 +19,105 @@ require "pundit_symbolic/solver"
 # equals the formula. Total enumeration over a finite domain is a proof, not a
 # sample — this is the tool's `by decide`.
 #
-# Runs without booting Rails: GamePolicy is a pure (user, record) object, so we
-# stand up doubles that answer exactly the leaf reads the policy makes.
+# The double is GENERIC: a leaf var name IS a canonical read path
+# (`record.game.member_for.game_master?`), so a single proxy that interprets any
+# such path against the assignment stands in for every policy's record. That is
+# what lets the same proof cover all policies. Runs without booting Rails
+# (policies are pure (user, record) objects).
 RSpec.describe "PunditSymbolic encoder faithfulness", type: :model do
-  # A membership stand-in: answers the status/role predicates the policy asks.
-  Membership = Struct.new(:game_master, :active, :removed) do
-    def game_master? = game_master
-    def active? = active
-    def removed? = removed
-  end
-
-  # A game stand-in: routes the policy's leaf reads to the assignment. Only the
-  # methods GamePolicy actually calls are implemented; anything else is a bug in
-  # the encoder's leaf map and should blow up loudly here.
-  class GameDouble
-    def initialize(assignment)
+  # Interprets a leaf's read path against a boolean assignment. Navigation calls
+  # (`.game`, `.member_for`) return a deeper proxy; predicate calls (`.game_master?`)
+  # resolve to the assignment. `member_for` returns nil when the whole membership
+  # is absent, so the real code's `membership&.x` safe-nav collapses to false —
+  # exactly as the encoder models it.
+  class RecordProxy
+    # `reads` is a shared Set the whole proxy tree records boolean leaf reads
+    # into, so a test can assert the formula mentions every leaf the real method
+    # actually consulted (catching a dropped variable even if no other predicate
+    # reads it).
+    def initialize(assignment, path, reads = Set.new)
       @assignment = assignment
+      @path = path # e.g. "record." or "record.game.member_for."
+      @reads = reads
     end
 
-    def game_master?(_user) = @assignment.fetch("gm")
-    def viewable_by?(_user) = @assignment.fetch("viewable")
-
-    def member_for(_user)
-      return nil unless membership?
-
-      Membership.new(
-        @assignment.fetch("member_gm", false),
-        @assignment.fetch("member_active", false),
-        @assignment.fetch("member_removed", false)
-      )
+    def method_missing(name, *_args)
+      leaf = "#{@path}#{name}"
+      if name.to_s.end_with?("?")
+        # A boolean leaf read: record it and look it up (absent => false).
+        @reads << leaf
+        @assignment.fetch(leaf, false)
+      elsif name == :member_for
+        # Membership navigation: nil when no member_* leaf under this path is set,
+        # so `&.` yields false for every status/role predicate.
+        base = "#{leaf}."
+        any = @assignment.keys.any? { |k| k.start_with?(base) && @assignment[k] }
+        any ? RecordProxy.new(@assignment, base, @reads) : nil
+      else
+        # Plain association navigation (`.game`, `.scene`, `.character`).
+        RecordProxy.new(@assignment, "#{leaf}.", @reads)
+      end
     end
 
-    private
-
-    # A nil membership is the assignment where all member_* leaves are false —
-    # exactly what the safe-nav (`membership&.x`) collapses to in the real code.
-    def membership?
-      %w[member_gm member_active member_removed].any? { |leaf| @assignment.fetch(leaf, false) }
-    end
+    def respond_to_missing?(_name, _include_private = false) = true
   end
 
-  let(:policy_path) { File.expand_path("../../app/policies/game_policy.rb", __dir__) }
-  let(:source) { PunditSymbolic::PolicySource.load(policy_path) }
+  ALL_POLICIES = Dir[File.expand_path("../../app/policies/*_policy.rb", __dir__)]
+    .reject { |p| p.end_with?("application_policy.rb") }
+    .sort
 
-  it "encodes only boolean predicates and refuses the rest, matching the real class" do
-    real_publics = GamePolicy.instance_methods(false).map(&:to_s)
-    encoded = source.public_predicates.map(&:name)
-    refused = source.refusals.map { |r| r[:name] }
+  ALL_POLICIES.each do |path|
+    context File.basename(path) do
+      let(:source) { PunditSymbolic::PolicySource.load(path) }
+      let(:policy_class) { Object.const_get(source.policy_name) }
 
-    # Every public method is accounted for: either encoded or explicitly refused.
-    expect((encoded + refused).sort).to include(*real_publics.sort)
-    # export_scene_selection is the non-boolean public method; it must be refused.
-    expect(refused).to include("export_scene_selection")
-  end
+      it "accounts for every public method (encoded or explicitly refused)" do
+        real_publics = policy_class.instance_methods(false).map(&:to_s)
+        # Field-authz methods are intentionally neither encoded nor refused.
+        field_authz = %w[permitted_attributes permitted_attributes_for_create permitted_attributes_for_update]
+        accounted = source.public_predicates.map(&:name) + source.refusals.map { |r| r[:name] } + field_authz
 
-  # THE PROOF: exhaustive differential equivalence, per encodable predicate.
-  it "produces a formula that agrees with the real method on EVERY input" do
-    source.public_predicates.each do |predicate|
-      vars = predicate.formula.variables.to_a
-      mismatches = PunditSymbolic::Solver.assignments(vars).filter_map do |assignment|
-        real = GamePolicy.new(:user_double, GameDouble.new(assignment)).public_send(predicate.name)
-        symbolic = predicate.formula.eval(assignment)
-        { predicate: predicate.name, assignment: assignment, real: real, symbolic: symbolic } if real != symbolic
+        expect(accounted.sort).to include(*real_publics.sort)
       end
 
-      expect(mismatches).to be_empty,
-        "#{predicate.name} formula diverges from real method: #{mismatches.inspect}"
+      # THE PROOF: exhaustive differential equivalence, per encodable predicate.
+      it "produces formulas that agree with the real methods on EVERY input" do
+        # Enumerate over the union of leaf vars across the whole policy, EXPANDED
+        # so that for every membership base (`<path>.member_for.`) the enumeration
+        # varies all four status/role leaves — even ones no formula kept. This
+        # defeats the short-circuit blind spot: the real method's `membership&.a? ||
+        # membership&.b?` only reads b? when a? is false, so if the encoder DROPS
+        # b?, nothing in a formula-derived var set would ever create the state that
+        # reads it. Forcing all four statuses makes such a drop diverge.
+        formula_vars = source.public_predicates.flat_map { |p| p.formula.variables.to_a }.uniq
+        member_bases = formula_vars.filter_map { |v| v[/\A.*member_for\./] }.uniq
+        expanded = member_bases.flat_map { |base| %w[game_master? active? removed? banned?].map { |s| "#{base}#{s}" } }
+        all_vars = (formula_vars + expanded).uniq
+
+        source.public_predicates.each do |predicate|
+          reads = Set.new
+          mismatches = PunditSymbolic::Solver.assignments(all_vars).filter_map do |assignment|
+            user = RecordProxy.new(assignment, "user.", reads)
+            record = RecordProxy.new(assignment, "record.", reads)
+            real = policy_class.new(user, record).public_send(predicate.name)
+            symbolic = predicate.formula.eval(assignment)
+            { predicate: predicate.name, assignment: assignment.select { |_, v| v }, real: real, symbolic: symbolic } if real != symbolic
+          end
+
+          expect(mismatches).to be_empty,
+            "#{source.policy_name}##{predicate.name} diverges from real method on #{mismatches.size} input(s); first: #{mismatches.first.inspect}"
+
+          # Completeness: every boolean leaf the REAL method read must appear in
+          # the formula. A read not in the formula's vars is a dropped variable —
+          # the enumeration above can't see a dimension the formula omits, so this
+          # guards the proof against being vacuous. (`member_for.*` reads only
+          # happen when the membership is present; the union enumeration exercises
+          # those, so any status leaf the method reads gets recorded.)
+          dropped = reads - predicate.formula.variables
+          expect(dropped).to be_empty,
+            "#{source.policy_name}##{predicate.name} reads leaves absent from its formula (dropped variables): #{dropped.to_a.inspect}"
+        end
+      end
     end
   end
 end
