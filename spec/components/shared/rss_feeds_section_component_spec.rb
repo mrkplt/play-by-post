@@ -43,11 +43,11 @@ RSpec.describe Shared::RssFeedsSectionComponent, type: :component do
     end
   end
 
-  describe "#last_row?" do
-    it "is true only for the final index" do
+  describe "#row_position" do
+    it "is :last only for the final index" do
       component = described_class.new(rows: [ row, row ])
-      expect(component.last_row?(0)).to be(false)
-      expect(component.last_row?(1)).to be(true)
+      expect(component.row_position(0)).to eq(:middle)
+      expect(component.row_position(1)).to eq(:last)
     end
   end
 end

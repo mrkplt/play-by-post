@@ -12,34 +12,38 @@
 # one shape: this is the "one header for every screen" fix — a screen passes
 # in only the pieces relevant to it; there is no hand-rolled per-screen
 # layout and no `leading: :back` branch (the hamburger is always rendered).
+#
+# `title:` accepts either a bare String (the common case — plain white title,
+# no crown) or a Title struct (see header_component/title.rb) when a screen
+# needs the accent colour or the GM crown.
 class Shared::HeaderComponent < ApplicationComponent
   extend T::Sig
 
+  TitleArg = T.type_alias { T.any(String, Title) }
+
   sig do
     params(
-      title: String,
+      title: TitleArg,
       secondary_nav: T.nilable(ViewComponent::Base),
       gear: T.nilable(String),
-      breadcrumbs: T.nilable(ViewComponent::Base),
-      accent_title: T::Boolean,
-      crown: T::Boolean
+      breadcrumbs: T.nilable(ViewComponent::Base)
     ).void
   end
-  def initialize(title:, secondary_nav: nil, gear: nil, breadcrumbs: nil, accent_title: false, crown: false)
-    @title = title
+  def initialize(title:, secondary_nav: nil, gear: nil, breadcrumbs: nil)
+    @title = T.let(title.is_a?(Title) ? title : Title.new(text: title), Title)
     @secondary_nav = secondary_nav
     @gear = gear
     @breadcrumbs = breadcrumbs
-    @accent_title = accent_title
-    @crown = crown
   end
 
   sig { returns(String) }
-  attr_reader :title
+  def title
+    @title.text
+  end
 
   sig { returns(T::Boolean) }
   def crown?
-    @crown
+    @title.crown
   end
 
   sig { returns(T::Boolean) }
@@ -75,6 +79,6 @@ class Shared::HeaderComponent < ApplicationComponent
   sig { returns(String) }
   def title_classes
     base = "font-bold text-[19px] m-0 truncate"
-    @accent_title ? "#{base} text-accent" : "#{base} text-white"
+    @title.accent ? "#{base} text-accent" : "#{base} text-white"
   end
 end

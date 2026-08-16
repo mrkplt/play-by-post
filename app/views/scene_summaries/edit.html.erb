@@ -13,7 +13,7 @@
         <%= render Ui::ButtonComponent.new(html_options: { type: "submit", form: "scene_summary_edit_form" }) do %>Update Summary<% end %>
       <% end %>
       <% actions.with_cancel do %>
-        <%= render Ui::ButtonComponent.new(variant: :secondary, url: @summary_presenter.routes.scene_path) do %>Cancel<% end %>
+        <%= render Ui::ButtonComponent.new(style: Ui::ButtonComponent::Style.new(variant: :secondary), link: Ui::ButtonComponent::Link.new(url: @summary_presenter.routes.scene_path)) do %>Cancel<% end %>
       <% end %>
     <% end %>
   <% end %>

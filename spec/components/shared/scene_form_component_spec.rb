@@ -9,18 +9,18 @@ RSpec.describe Shared::SceneFormComponent, type: :component do
   let(:scene_presenter) { ScenePresenter.new(scene) }
 
   def build_component(**overrides)
-    described_class.new(
+    selection = Shared::SceneFormComponent::Selection.new(
       **{
-        game: game_presenter,
-        scene: scene_presenter,
+        quick: false,
+        back_href: "/games/#{game.id}",
         players_with_characters: [],
         parent_options: [],
-        quick: false,
         selected_character_ids: [],
-        selected_parent_scene_id: nil,
-        back_href: "/games/#{game.id}"
+        selected_parent_scene_id: nil
       }.merge(overrides)
     )
+
+    described_class.new(game: game_presenter, scene: scene_presenter, selection: selection)
   end
 
   describe "labels and copy" do

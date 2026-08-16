@@ -8,6 +8,8 @@
 class GameRosterPresenter < BasePresenter
   extend T::Sig
 
+  POSITIONS = T.let({ true => :last, false => :middle }.freeze, T::Hash[T::Boolean, Symbol])
+
   sig { params(model: GamePresenter, options: T.untyped).void }
   def initialize(model, **options)
     super
@@ -28,9 +30,9 @@ class GameRosterPresenter < BasePresenter
     roster_characters.any?
   end
 
-  sig { params(index: Integer).returns(T::Boolean) }
-  def roster_character_last?(index)
-    index == roster_characters.length - 1
+  sig { params(index: Integer).returns(Symbol) }
+  def roster_character_position(index)
+    POSITIONS.fetch(index == roster_characters.length - 1)
   end
 
   # Archived characters visible to the viewer but hidden from the roster —
@@ -63,9 +65,9 @@ class GameRosterPresenter < BasePresenter
     @model.can_manage? ? banned_members.any? : false
   end
 
-  sig { params(index: Integer).returns(T::Boolean) }
-  def banned_member_last?(index)
-    index == banned_members.length - 1
+  sig { params(index: Integer).returns(Symbol) }
+  def banned_member_position(index)
+    POSITIONS.fetch(index == banned_members.length - 1)
   end
 
   private

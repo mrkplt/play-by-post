@@ -4,8 +4,7 @@
     <%= render Ui::MarkdownEditorComponent.new(
           binding: { form: f, field: :resolution },
           config: Ui::MarkdownEditorComponent::Config.with_preview,
-          rows: 3,
-          placeholder: "What happened? What was gained or lost?") %>
+          field: Ui::MarkdownEditorComponent::Field.new(rows: 3, placeholder: "What happened? What was gained or lost?")) %>
     <%= f.submit "Confirm — End Scene", class: "mt-2 bg-card text-danger border border-red-200 rounded-control px-4 py-2 text-sm cursor-pointer" %>
   <% end %>
 </div>

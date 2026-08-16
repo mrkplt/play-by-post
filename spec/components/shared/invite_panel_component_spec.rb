@@ -46,9 +46,9 @@ RSpec.describe Shared::InvitePanelComponent, type: :component do
       expect(page).to have_text("Sent about 2 hours ago")
     end
 
-    it "last? is true only for the final index" do
-      expect(component.last?(0)).to be(true)
-      expect(component.last?(1)).to be(false)
+    it "row_position is :last only for the final index" do
+      expect(component.row_position(0)).to eq(:last)
+      expect(component.row_position(1)).to eq(:middle)
     end
 
     it "posts the invite form to the game's invitations collection" do

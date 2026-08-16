@@ -2,7 +2,7 @@
   <% regions_above.each do |region| %>
     <%= render region %>
   <% end %>
-  <%= @form.text_area @field, **textarea_options %>
+  <%= @form.text_area @field_name, **textarea_options %>
   <% regions_below.each do |region| %>
     <%= render region %>
   <% end %>

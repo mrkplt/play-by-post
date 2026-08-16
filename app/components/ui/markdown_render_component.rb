@@ -6,19 +6,26 @@
 class Ui::MarkdownRenderComponent < ApplicationComponent
   extend T::Sig
 
-  # Display configuration. `scroll` caps the region height (px) and scrolls
-  # internally; when false the content flows at its natural height.
+  # Display configuration. `mode: :scroll` caps the region height (px) and
+  # scrolls internally; `:flow` (the default) lets content flow at its
+  # natural height.
   class Config
     extend T::Sig
 
-    sig { params(scroll: T::Boolean, height: Integer).void }
-    def initialize(scroll: false, height: 480)
-      @scroll = scroll
+    MODES = T.let(%i[flow scroll].freeze, T::Array[Symbol])
+
+    sig { params(mode: Symbol, height: Integer).void }
+    def initialize(mode: :flow, height: 480)
+      raise ArgumentError, "Unknown mode: #{mode}" unless MODES.include?(mode)
+
+      @mode = mode
       @height = height
     end
 
     sig { returns(T::Boolean) }
-    attr_reader :scroll
+    def scroll
+      @mode == :scroll
+    end
 
     sig { returns(Integer) }
     attr_reader :height

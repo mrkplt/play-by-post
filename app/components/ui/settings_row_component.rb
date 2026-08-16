@@ -6,11 +6,15 @@
 class Ui::SettingsRowComponent < ApplicationComponent
   extend T::Sig
 
-  sig { params(label: String, sub: T.nilable(String), last: T::Boolean).void }
-  def initialize(label:, sub: nil, last: false)
+  POSITIONS = T.let(%i[middle last].freeze, T::Array[Symbol])
+
+  sig { params(label: String, sub: T.nilable(String), position: Symbol).void }
+  def initialize(label:, sub: nil, position: :middle)
+    raise ArgumentError, "Unknown position: #{position}" unless POSITIONS.include?(position)
+
     @label = label
     @sub = sub
-    @last = last
+    @position = position
   end
 
   sig { returns(String) }
@@ -22,6 +26,6 @@ class Ui::SettingsRowComponent < ApplicationComponent
   sig { returns(String) }
   def row_classes
     base = "flex justify-between items-center py-3 gap-2.5"
-    @last ? base : "#{base} border-b border-card-divider"
+    @position == :last ? base : "#{base} border-b border-card-divider"
   end
 end

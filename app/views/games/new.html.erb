@@ -5,8 +5,9 @@
 
   <%= render Shared::GameFormComponent.new(
         game: @game_presenter,
-        submit_label: "Create game",
-        cancel_href: root_path,
-        note: "You will become the Game Master of this game.",
-        confirm: "Create this game? You will be the GM.") %>
+        submission: Shared::GameFormComponent::Submission.new(
+          label: "Create game",
+          cancel_href: root_path,
+          note: "You will become the Game Master of this game.",
+          confirm: "Create this game? You will be the GM.")) %>
 <% end %>

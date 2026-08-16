@@ -9,7 +9,7 @@
 # one Row hash rather than eight positional parameters — callers build it from
 # whichever source they have (a presenter, a hardcoded GM row, a plain hash),
 # so the component takes derived, presentation-ready data rather than forcing
-# every caller shape through the same model. `last` stays a separate
+# every caller shape through the same model. `position` stays a separate
 # parameter: it is the row's position in the list the caller is rendering, not
 # a fact about the row's own data.
 class Shared::RosterRowComponent < ApplicationComponent
@@ -35,10 +35,14 @@ class Shared::RosterRowComponent < ApplicationComponent
     subtitle_class: "text-muted-2"
   }.freeze, T::Hash[Symbol, T.untyped])
 
-  sig { params(row: T::Hash[Symbol, T.untyped], last: T::Boolean).void }
-  def initialize(row:, last: false)
+  POSITIONS = T.let(%i[middle last].freeze, T::Array[Symbol])
+
+  sig { params(row: T::Hash[Symbol, T.untyped], position: Symbol).void }
+  def initialize(row:, position: :middle)
+    raise ArgumentError, "Unknown position: #{position}" unless POSITIONS.include?(position)
+
     @row = T.let(T.cast(DEFAULT_ROW.merge(row), Row), Row)
-    @last = last
+    @position = position
   end
 
   sig { returns(String) }
@@ -74,7 +78,7 @@ class Shared::RosterRowComponent < ApplicationComponent
   sig { returns(String) }
   def row_classes
     base = "flex items-center gap-2.5 p-[10px_12px]"
-    base += " border-b border-card-divider" unless @last
+    base += " border-b border-card-divider" unless @position == :last
     base += " opacity-70" if @row.fetch(:dimmed)
     base
   end

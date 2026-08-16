@@ -121,12 +121,15 @@ matcher:
     - Shared::StatusBadgeRowComponent
     - Shared::SceneResolveFormComponent
     - Shared::SceneFormComponent
+    - Shared::SceneFormComponent::Selection
     - Shared::ParticipantCheckboxListComponent
     - Shared::GameFormComponent
+    - Shared::GameFormComponent::Submission
     - Shared::GameDetailsComponent
     - Shared::SidebarComponent
     - Shared::TreeNodeComponent
     - Shared::HeaderComponent
+    - Shared::HeaderComponent::Title
     - Shared::GameNavComponent
     - Shared::BreadcrumbsComponent
     - Shared::PageActionsComponent
@@ -152,6 +155,8 @@ matcher:
     - Ui::BadgeComponent
     - Ui::BreadcrumbComponent
     - Ui::ButtonComponent
+    - Ui::ButtonComponent::Style
+    - Ui::ButtonComponent::Link
     - Ui::GlowComponent
     - Ui::AvatarComponent
     - Ui::CardComponent
@@ -159,6 +164,7 @@ matcher:
     - Ui::ToggleSwitchComponent
     - Ui::MarkdownEditorComponent
     - Ui::MarkdownEditorComponent::Config
+    - Ui::MarkdownEditorComponent::Field
     - Ui::MarkdownEditorComponent::Region
     - Ui::MarkdownEditorComponent::ToolbarRegion
     - Ui::MarkdownEditorComponent::PreviewRegion

@@ -12,8 +12,7 @@
     <%= render Ui::MarkdownEditorComponent.new(
           binding: { form: f, field: :body },
           config: Ui::MarkdownEditorComponent::Config.with_preview,
-          rows: 14,
-          placeholder: "Write the page in markdown…") %>
+          field: Ui::MarkdownEditorComponent::Field.new(rows: 14, placeholder: "Write the page in markdown…")) %>
   </div>
 
 <% end %>
