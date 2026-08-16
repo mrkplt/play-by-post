@@ -119,10 +119,10 @@ RSpec.describe Ui::MarkdownEditorComponent, type: :component do
     end
 
     it "merges caller data attributes onto the textarea" do
-      render_editor(data: { post_draft_target: "content", action: "input->markdown-preview#update input->post-draft#scheduleSave" })
+      render_editor(data: { draft_target: "content", action: "input->markdown-preview#update input->draft#scheduleSave" })
       textarea = page.find("textarea[name='feedback[body]']")
-      expect(textarea["data-post-draft-target"]).to eq("content")
-      expect(textarea["data-action"]).to eq("input->markdown-preview#update input->post-draft#scheduleSave")
+      expect(textarea["data-draft-target"]).to eq("content")
+      expect(textarea["data-action"]).to eq("input->markdown-preview#update input->draft#scheduleSave")
     end
 
     it "applies the requested rows" do

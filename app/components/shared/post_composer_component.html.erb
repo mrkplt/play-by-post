@@ -1,8 +1,9 @@
 <%= form_with model: [  @game, @scene, @post  ],
     multipart: true,
     data: {
-      controller: "post-draft",
-      post_draft_save_url_value: @scene.routes.save_draft_url
+      controller: "draft",
+      draft_save_url_value: @scene.routes.save_draft_url,
+      draft_publish_label_value: "POST"
     } do |f| %>
   <% if @post.errors.any? %>
     <div class="bg-red-50 border border-red-300 rounded-lg px-3 py-2 mb-3 text-sm text-red-600">
@@ -18,8 +19,8 @@
           binding: { form: f, field: :content },
           config: Ui::MarkdownEditorComponent::Config.with_preview(content_class: "post-content"),
           field: Ui::MarkdownEditorComponent::Field.new(value: @draft&.content, placeholder: "Write your post... (markdown)", data: {
-          post_draft_target: "content",
-          action: "input->markdown-preview#update input->post-draft#scheduleSave"
+          draft_target: "content",
+          action: "input->markdown-preview#update input->draft#scheduleSave"
         }, wrapper_class: "mb-3")) %>
 
   <% unless @game.images_disabled? %>
@@ -38,10 +39,10 @@
         OOC
       </label>
       <label class="flex items-center gap-1.5 text-[13px] text-row-ink font-semibold px-2.5 py-2 rounded-control cursor-pointer">
-        <input type="checkbox" class="w-[18px] h-[18px] accent-accent" data-post-draft-target="saveAsDraftToggle" data-action="change->post-draft#toggleSaveAsDraft">
+        <input type="checkbox" class="w-[18px] h-[18px] accent-accent" data-draft-target="saveAsDraftToggle" data-action="change->draft#toggleSaveAsDraft">
         Save as draft
       </label>
-      <span data-post-draft-target="status" class="text-xs text-muted-2 hidden"></span>
+      <span data-draft-target="status" class="text-xs text-muted-2 hidden"></span>
     </div>
     <%= f.submit "POST", class: "bg-accent text-accent-ink border-0 rounded-control px-5 py-2.5 font-extrabold text-[13px] tracking-[0.02em] cursor-pointer", style: "min-height: 44px;" %>
   </div>

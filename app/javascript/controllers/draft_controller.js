@@ -2,9 +2,20 @@ import { Controller } from "@hotwired/stimulus"
 
 const AUTOSAVE_DELAY_MS = 2000
 
+// Autosaves a long-form composer to a draft endpoint and offers an explicit
+// "save as draft" toggle. Shared by every draftable record (posts, pages, scene
+// summaries); the two record-specific bits are values:
+//   publishLabelValue — the submit button's normal (publish) caption, restored
+//                       when the toggle is turned off
+//   paramKeyValue     — the wrapper key the save request nests content under,
+//                       so the controller posts { <paramKey>: { content } }
 export default class extends Controller {
   static targets = ["content", "saveAsDraftToggle", "status"]
-  static values = { saveUrl: String }
+  static values = {
+    saveUrl: String,
+    publishLabel: { type: String, default: "Post" },
+    paramKey: { type: String, default: "post" }
+  }
 
   connect() {
     this._timer = null
@@ -29,7 +40,7 @@ export default class extends Controller {
       form.dataset.saveAsDraft = "true"
       form.addEventListener("submit", this._interceptSubmit, { once: false })
     } else {
-      submit.value = "Post"
+      submit.value = this.publishLabelValue
       delete form.dataset.saveAsDraft
       form.removeEventListener("submit", this._interceptSubmit)
     }
@@ -55,7 +66,7 @@ export default class extends Controller {
           "X-CSRF-Token": csrfToken,
           "Accept": "application/json"
         },
-        body: JSON.stringify({ post: { content } })
+        body: JSON.stringify({ [this.paramKeyValue]: { content } })
       })
 
       if (response.ok) {
