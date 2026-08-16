@@ -28,6 +28,13 @@ class ApiTokenRowPresenter < BasePresenter
     @options[:token].token
   end
 
+  # The value the shared token section reveals for this row — for the API, the
+  # raw bearer token.
+  sig { returns(String) }
+  def secret_value
+    token_value
+  end
+
   sig { returns(String) }
   def revoke_path
     @options.fetch(:urls).profile_api_token_path(@options[:token])

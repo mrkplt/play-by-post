@@ -105,8 +105,7 @@ matcher:
     - Shared::RecordBackedForm
     - Ui::FormErrorsComponent
     - Ui::SecretFieldComponent
-    - Shared::RssFeedsSectionComponent
-    - Shared::ApiTokensSectionComponent
+    - Shared::TokenSectionComponent
     - Shared::AiSummariesToggleComponent
     - Shared::ImagesToggleComponent
     - Shared::SheetsToggleComponent
@@ -131,10 +130,9 @@ matcher:
     - Shared::CharacterVersionHistoryComponent
     - Shared::VersionHistoryComponent
     - Shared::VersionHistoryComponent::Row
+    - Shared::VersionDetailComponent
     - Shared::PageVersionHistoryComponent
-    - Shared::PageVersionDetailComponent
     - Shared::NotebookEntryVersionHistoryComponent
-    - Shared::NotebookEntryVersionDetailComponent
     - Shared::PostEditFormComponent
     - Shared::SceneCardComponent
     - Shared::SceneResolutionComponent
