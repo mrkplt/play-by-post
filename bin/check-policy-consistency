@@ -41,7 +41,14 @@ CONTRACT = File.expand_path("../config/policy_invariants.yml", __dir__)
 ACCEPTED_REFUSALS = {
   "GamePolicy#export_scene_selection" =>
     "Returns a Symbol (:all/:participating/:visible), not a boolean predicate. " \
-    "Tracked to move off the public policy surface (Fizzy #104)."
+    "Tracked to move off the public policy surface (Fizzy #104).",
+  "PagePolicy#show?" =>
+    "Draft-gated read: returns via an if (manage? for drafts, viewable? otherwise), " \
+    "so the verifier cannot encode it as a single boolean. Behaviour is covered by " \
+    "PagePolicy specs.",
+  "PageVersionPolicy#show?" =>
+    "Draft-gated read mirroring PagePolicy#show? (manage? for a draft page's version, " \
+    "game view? otherwise); non-boolean body the verifier cannot encode. Covered by specs."
 }.freeze
 
 def scaffold_for(policy_name, formulas)
