@@ -65,19 +65,32 @@ class SceneShowBuilder
   end
 
   # nil until the scene has a summary — building the policy speculatively
-  # would authorize a record that does not exist yet.
+  # would authorize a record that does not exist yet. A draft summary is visible
+  # only to a GM (its author); a player sees nothing until it is published, so
+  # the has_one (which no published scope can reach) is gated here.
   sig { returns(T.nilable(SceneSummaryPresenter)) }
   def summary_presenter
     summary = @scene.scene_summary
-    return nil unless summary
+    return nil unless summary && summary_visible?(summary)
 
-    viewer = @context.current_user
     SceneSummaryPresenter.new(
-      summary, game: @game, urls: @context.urls, policy: SceneSummaryPolicy.new(viewer, summary)
+      summary, game: @game, urls: @context.urls, policy: summary_policy(summary)
     )
   end
 
   private
+
+  # A draft summary is visible only to a GM (its author); everyone else sees it
+  # as absent until it is published.
+  sig { params(summary: SceneSummary).returns(T::Boolean) }
+  def summary_visible?(summary)
+    !summary.draft? || summary_policy(summary).manage?
+  end
+
+  sig { params(summary: SceneSummary).returns(SceneSummaryPolicy) }
+  def summary_policy(summary)
+    SceneSummaryPolicy.new(@context.current_user, summary)
+  end
 
   sig { returns(T::Array[PostPresenter]) }
   def post_presenters

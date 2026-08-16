@@ -55,6 +55,12 @@ RSpec.describe SceneSummary, type: :model do
       expect(described_class.public_for_game(game)).not_to include(summary)
     end
 
+    it "excludes draft summaries — an unpublished summary never reaches the log or feed", :db do
+      scene = create(:scene, :resolved, game: game, private: false)
+      draft = create(:scene_summary, scene: scene, draft: true)
+      expect(described_class.public_for_game(game)).not_to include(draft)
+    end
+
     it "excludes summaries of unresolved scenes", :db do
       scene = create(:scene, game: game, private: false)
       summary = create(:scene_summary, scene: scene)

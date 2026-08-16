@@ -56,6 +56,13 @@ RSpec.describe RssController, type: :request do
       expect(response.body).not_to include(summary.body)
     end
 
+    it "does not include draft summaries — an unpublished summary never reaches the feed", :db do
+      resolved = create(:scene, :resolved, game: game, private: false)
+      draft = create(:scene_summary, scene: resolved, body: "A secret work in progress.", draft: true)
+      get "/rss/feed", params: { token: token.token }
+      expect(response.body).not_to include(draft.body)
+    end
+
     it "returns 401 with no token", :db do
       get "/rss/feed"
       expect(response).to have_http_status(:unauthorized)

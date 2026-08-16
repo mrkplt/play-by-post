@@ -15,12 +15,14 @@ class SceneSummary < ApplicationRecord
 
   validates :body, presence: true, unless: :draft?
 
-  # The public campaign-log listing for a game: summaries of its public, resolved
-  # scenes, newest first. Shared by the members-only HTML index and the RSS feed
-  # so the two never diverge.
+  # The public campaign-log listing for a game: published summaries of its
+  # public, resolved scenes, newest first. Shared by the members-only HTML index
+  # and the RSS feed so the two never diverge. Excludes drafts — an in-progress
+  # summary is invisible to readers until its author publishes it.
   sig { params(game: Game).returns(ActiveRecord::Relation) }
   def self.public_for_game(game)
-    joins(scene: :game)
+    published
+      .joins(scene: :game)
       .where(scenes: { game_id: game.id, private: false })
       .where.not(scenes: { resolved_at: nil })
       .includes(:scene)
