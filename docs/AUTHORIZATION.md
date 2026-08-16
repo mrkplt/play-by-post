@@ -27,6 +27,28 @@ usable from a ViewComponent and from `SceneMailbox` — neither has a request.
 All three live in the same policy class. Field-level is authorization too — the
 plan treats it as first-class, not a strong-params afterthought.
 
+### The machine-auth surface reuses the same policies
+
+The token-authenticated surface (`DataApplicationController`; see ARCHITECTURE
+"The machine-auth surface") authorizes through the *same* Pundit policies as the
+session surface — its `pundit_user` is the token's user, so `authorize @page`
+runs `PagePolicy` exactly as a browser request does. There is no second
+authorization model for the API.
+
+`ApiTokenPolicy` gates the **token itself** (a separate question from
+per-resource access): its capability predicates check that the token is scoped
+for the surface *and* that its user is currently in good standing.
+
+- `feed?` — `scope == "rss"` AND `GamePolicy#feed?` (active membership).
+- `api?` — `scope == "api"` AND `GamePolicy#write_access?` (active membership).
+
+Both are declared `no_status_blind_grant` in `config/policy_invariants.yml` and
+proven by the pundit-symbolic verifier, so a removed/banned member's token is
+provably rejected. Per-resource authorization for an `/api` request stays on
+`PagePolicy` (member-read / GM-write) and `NotebookEntryPolicy` (GM-only in every
+direction, including a banned GM — its gate requires the GM role AND an active
+membership), decided inside each API controller action, not in `ApiTokenPolicy`.
+
 ---
 
 ## Audit — current state

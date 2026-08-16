@@ -236,6 +236,21 @@ must be reissued from Resend, Cloudflare, and OpenRouter. Back it up to a passwo
 
 ---
 
+## The data API
+
+The token-authenticated `/api` surface (pages + notebook entries; see ARCHITECTURE
+"The machine-auth surface") needs no configuration or secrets of its own — it
+authenticates by a bearer `ApiToken`, not an env var.
+
+- **Docs / contract:** Swagger UI at **`/api-docs`**, backed by the committed
+  `openapi/v1/openapi.yaml`. That document is generated from the `/api` request
+  specs (`RAILS_ENV=test bundle exec rake rswag:specs:swaggerize`); the
+  `bin/check-openapi-fresh` gate fails the build if the committed copy has drifted.
+  It is also what `Api::SchemaValidation` validates live requests against.
+- **Issuing a token:** a signed-in user mints and revokes their own `api`-scoped
+  tokens from their **profile** page (the "API tokens" section). A token is valid
+  only while its user is an active member of the game it was minted for.
+
 ## External services to provision
 
 | Service | Purpose | Values to recover |
