@@ -98,10 +98,11 @@ class CharacterPolicy < ApplicationPolicy
     record.game.viewable_by?(user)
   end
 
-  # GM or active member — the write gate (mirrors require_active_member!).
+  # Active member — the write gate (mirrors require_active_member!). A GM is an
+  # active member; keyed on active membership rather than the game_master role so
+  # a removed/banned member never writes even if they hold the GM role.
   sig { returns(T::Boolean) }
   def write_member?
-    membership = record.game.member_for(user)
-    (membership&.game_master? || membership&.active?) || false
+    record.game.active_member?(user)
   end
 end

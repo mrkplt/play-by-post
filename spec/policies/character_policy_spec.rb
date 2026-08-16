@@ -17,9 +17,10 @@ RSpec.describe CharacterPolicy do
     allow(game).to receive(:viewable_by?).with(user).and_return(viewable)
   end
 
-  def stub_membership(gm: false, active: false, present: true)
-    membership = present ? instance_double(GameMember, game_master?: gm, active?: active) : nil
-    allow(game).to receive(:member_for).with(user).and_return(membership)
+  # The write gate is now "active member" (a GM is an active member). Stub the
+  # model predicate the policy actually calls.
+  def stub_write_member(active_member)
+    allow(game).to receive(:active_member?).with(user).and_return(active_member)
   end
 
   def stub_editable(value)
@@ -74,53 +75,43 @@ RSpec.describe CharacterPolicy do
   end
 
   describe "#create? / #new? (write member)" do
-    it "is true for the GM" do
-      stub_membership(gm: true)
+    it "is true for an active member (a GM is an active member)" do
+      stub_write_member(true)
       expect(policy.create?).to be(true)
     end
 
-    it "is true for an active member" do
-      stub_membership(active: true)
-      expect(policy.create?).to be(true)
-    end
-
-    it "is false for a member who is neither GM nor active (e.g. removed)" do
-      stub_membership(gm: false, active: false)
-      expect(policy.create?).to be(false)
-    end
-
-    it "is false for a non-member" do
-      stub_membership(present: false)
+    it "is false for a non-active member (removed/banned, even if GM role)" do
+      stub_write_member(false)
       expect(policy.create?).to be(false)
     end
 
     it "new? mirrors create?" do
-      stub_membership(active: true)
+      stub_write_member(true)
       expect(policy.new?).to be(true)
     end
   end
 
   describe "#update? / #edit? (write member AND editable)" do
     it "is true for an active member who may edit the sheet" do
-      stub_membership(active: true)
+      stub_write_member(true)
       stub_editable(true)
       expect(policy.update?).to be(true)
     end
 
     it "is false for an active member who may not edit the sheet" do
-      stub_membership(active: true)
+      stub_write_member(true)
       stub_editable(false)
       expect(policy.update?).to be(false)
     end
 
     it "is false for a non-writer even if they own the sheet (e.g. removed owner)" do
-      stub_membership(gm: false, active: false)
+      stub_write_member(false)
       stub_editable(true)
       expect(policy.update?).to be(false)
     end
 
     it "edit? mirrors update?" do
-      stub_membership(active: true)
+      stub_write_member(true)
       stub_editable(true)
       expect(policy.edit?).to be(true)
     end

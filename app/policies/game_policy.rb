@@ -68,12 +68,15 @@ class GamePolicy < ApplicationPolicy
     view?
   end
 
-  # Write access to the game: the GM or an active member (mirrors the write
-  # guard shared by post/character/scene creation).
+  # Write access to the game: an active member (a GM is an active member;
+  # mirrors the write guard shared by post/character/scene creation). Keyed on
+  # active membership rather than the game_master role, so a removed/banned
+  # member never writes even if they also hold the GM role — correctness no
+  # longer rests on GM status being immutable (which multiple game masters would
+  # break).
   sig { returns(T::Boolean) }
   def write_access?
-    membership = record.member_for(user)
-    (membership&.game_master? || membership&.active?) || false
+    record.active_member?(user)
   end
 
   # RSS feed access (machine-auth, DataApplicationController): the GM or an
