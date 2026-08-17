@@ -9,7 +9,10 @@ Rswag::Ui.configure do |c|
   # (under openapi_root) as JSON or YAML endpoints, then the list below should
   # correspond to the relative paths for those endpoints.
 
-  c.swagger_endpoint "/api-docs/v1/openapi.yaml", "Play-by-Post API V1"
+  # Read ENV directly rather than via Branding: this initializer runs before the
+  # app-model autoloader, so referencing Branding here raises uninitialized
+  # constant. Keep the default in sync with Branding::DEFAULT_NAME.
+  c.swagger_endpoint "/api-docs/v1/openapi.yaml", "#{ENV.fetch('APP_NAME', 'Play by Post')} API V1"
 
   # Add Basic Auth in case your API is private
   # c.basic_auth_enabled = true

@@ -15,7 +15,7 @@ RSpec.describe Shared::SidebarComponent, type: :component do
 
     it "renders the brand link" do
       expect(rendered_component).to have_css(".sidebar-brand")
-      expect(rendered_component).to have_link("Play by Post")
+      expect(rendered_component).to have_link(Branding.display_name)
     end
 
     it "renders the My Games label" do

@@ -19,6 +19,7 @@ matcher:
     # Models
     - AiUsage
     - ApiToken
+    - Branding
     - Game
     - SceneSummary
     - GameExportRequest

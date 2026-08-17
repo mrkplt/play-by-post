@@ -65,7 +65,7 @@ Set these in the Coolify UI. The app is broken without them.
 | Variable | Read at | Notes |
 |---|---|---|
 | `RAILS_MASTER_KEY` | `encrypted_file.rb:53` | Contents of `config/credentials/production.key`. Without it every credential below is unreadable |
-| `APP_HOST` | `config/environments/production.rb:74` | Host for mailer links. **Fails silently** — see Traps |
+| `APP_HOST` | `config/environments/production.rb:74`, `app/models/branding.rb` | Host for mailer links **and** the brand URL (`Branding.url` → `https://<host>`, used in the OpenAPI server). **Fails silently** for mailer links — see Traps |
 
 That is the entire list — two variables. The database needs no configuration: it is
 SQLite, and `DATABASE_PATH` is set to `/data` in `docker-compose.coolify.yml` rather
@@ -103,6 +103,7 @@ Safe defaults exist; set only to override.
 
 | Variable | Read at | Default |
 |---|---|---|
+| `APP_NAME` | `app/models/branding.rb` (`Branding.display_name`); `config/initializers/rswag_ui.rb`, `rswag_api.rb` read `ENV` directly (pre-autoload) | `Play by Post` — the deployment's display name, shown in the layout title, sidebar wordmark, invitation emails, PWA manifest, and API docs. This instance sets `flailwhale.com` |
 | `STORAGE_REGION` | `config/storage.yml` | `auto` — correct for R2. Prefer `storage.region` in credentials |
 | `OPENROUTER_MODEL` | `app/services/scene_summary_service.rb` | `openai/gpt-4o`. Not a secret, so env var is fine |
 | `RAILS_MAX_THREADS` | `config/database.yml:2`, `config/puma.rb:27` | `5` (DB pool) / `3` (Puma). Compose sets `5` |

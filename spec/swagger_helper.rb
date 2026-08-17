@@ -14,7 +14,7 @@ RSpec.configure do |config|
     "v1/openapi.yaml" => {
       openapi: "3.0.1",
       info: {
-        title: "flailwhale.com API",
+        title: "#{Branding.display_name} API",
         version: "v1",
         description: <<~DESC
           Token-authenticated data API for a game's pages and notebook entries.
@@ -24,7 +24,7 @@ RSpec.configure do |config|
       },
       paths: {},
       servers: [
-        { url: "https://flailwhale.com" }
+        { url: Branding.url }
       ],
       components: {
         securitySchemes: {

@@ -1,22 +1,20 @@
-{
-  "name": "PlayByPost",
-  "icons": [
-    {
-      "src": "/icon.png",
-      "type": "image/png",
-      "sizes": "512x512"
-    },
-    {
-      "src": "/icon.png",
-      "type": "image/png",
-      "sizes": "512x512",
-      "purpose": "maskable"
-    }
+<%#
+  Rendered from a Ruby hash serialized in one shot, so the brand name (from
+  Branding.display_name) is JSON-encoded by to_json rather than interpolated
+  into hand-written JSON — no per-field html_safe, no escaping hazard.
+-%>
+<%= {
+  name: Branding.display_name,
+  icons: [
+    { src: "/icon.png", type: "image/png", sizes: "512x512" },
+    { src: "/icon.png", type: "image/png", sizes: "512x512", purpose: "maskable" }
   ],
-  "start_url": "/",
-  "display": "standalone",
-  "scope": "/",
-  "description": "PlayByPost.",
-  "theme_color": "red",
-  "background_color": "red"
-}
+  start_url: "/",
+  display: "standalone",
+  scope: "/",
+  description: "#{Branding.display_name}.",
+  theme_color: "red",
+  background_color: "red"
+  # rubocop:disable Rails/OutputSafety -- whole document is to_json (valid JSON,
+  # not HTML); html_safe stops ERB escaping the JSON quotes into &quot;.
+}.to_json.html_safe %><%# rubocop:enable Rails/OutputSafety %>

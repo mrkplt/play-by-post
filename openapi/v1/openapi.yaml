@@ -1,7 +1,7 @@
 ---
 openapi: 3.0.1
 info:
-  title: flailwhale.com API
+  title: Play by Post API
   version: v1
   description: |
     Token-authenticated data API for a game's pages and notebook entries.
@@ -235,7 +235,7 @@ paths:
             schema:
               "$ref": "#/components/schemas/page_input"
 servers:
-- url: https://flailwhale.com
+- url: https://play-by-post.example.com
 components:
   securitySchemes:
     bearer_token:
