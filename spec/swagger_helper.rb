@@ -19,10 +19,7 @@ RSpec.configure do |config|
         description: <<~DESC
           Token-authenticated data API for a game's pages and notebook entries.
 
-          Authentication: pass an `api`-scoped ApiToken as `Authorization: Bearer <token>`
-          or a `token` query/body param. The token carries the game, so no game id
-          appears in any path. Bodies are raw markdown. Pages are readable by any
-          non-banned member; notebook entries are game-master-only.
+          Authorization is via bearer token. You can create one in your profile.
         DESC
       },
       paths: {},

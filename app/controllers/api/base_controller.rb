@@ -25,6 +25,17 @@ module Api
 
     private
 
+    # The /api surface accepts the token *only* as an `Authorization: Bearer`
+    # header — never a query or body param. A URL-embedded token leaks into
+    # logs, proxies, and browser history; the RSS feed tolerates that param
+    # because a feed reader cannot send a header, but a machine API client can
+    # and must. This narrows the base's header-or-param acceptance to
+    # header-only for /api.
+    sig { returns(T.nilable(String)) }
+    def bearer_token
+      request.authorization.to_s[/\ABearer (.+)\z/i, 1]
+    end
+
     # The game every API request operates within: the token carries it, so the
     # controllers scope all lookups through here rather than a path param.
     sig { returns(Game) }

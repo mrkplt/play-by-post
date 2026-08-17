@@ -7,8 +7,10 @@
 # never sets a session cookie, and reads no session state. Pundit runs with
 # `current_data_user` (the token's user) as the authorization subject.
 #
-# The token is accepted either as a `token` query/body param or an
-# `Authorization: Bearer <token>` header. A missing or unknown token is a flat
+# The token is accepted as an `Authorization: Bearer <token>` header, and — for
+# the RSS feed, whose reader cannot send a header — also as a `token` query
+# param. The JSON /api surface overrides this to header-only (Api::BaseController),
+# so a token never rides in a URL there. A missing or unknown token is a flat
 # 401; per-resource authorization is the concern of each action's `authorize`.
 class DataApplicationController < ActionController::Base
   extend T::Sig

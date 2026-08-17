@@ -105,4 +105,23 @@ RSpec.describe Api::PagesController, :db, type: :request do
     get "/api/pages"
     expect(response).to have_http_status(:unauthorized)
   end
+
+  it "accepts a lowercase bearer scheme (RFC 7235 case-insensitive)" do
+    get "/api/pages", headers: { "Authorization" => "bearer #{member_token.token}" }
+    expect(response).to have_http_status(:ok)
+  end
+
+  describe "token may not travel in the URL or body" do
+    it "401s when a valid token is passed as a query param" do
+      get "/api/pages", params: { token: member_token.token }
+      expect(response).to have_http_status(:unauthorized)
+    end
+
+    it "401s when a valid token is passed as a body param" do
+      post "/api/pages",
+        params: { token: gm_token.token, page: { title: "x", body: "y" } }.to_json,
+        headers: { "Content-Type" => "application/json" }
+      expect(response).to have_http_status(:unauthorized)
+    end
+  end
 end
