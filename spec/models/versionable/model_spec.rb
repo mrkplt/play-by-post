@@ -61,6 +61,66 @@ RSpec.describe Versionable::Model do
     end
   end
 
+  describe "attribution derived from version history" do
+    let(:creator) { create(:user) }
+    let(:later_editor) { create(:user) }
+
+    # Character#version_attributes falls back to the record's owner when
+    # Current.user is nil, so setting Current.user before each save pins a
+    # distinct editor onto each version — creator on create, later_editor on the
+    # update.
+    def with_current(editor)
+      previous = Current.user
+      Current.user = editor
+      yield
+    ensure
+      Current.user = previous
+    end
+
+    # The second version is backdated so its created_at precedes the first
+    # version's while it is still inserted last. That divorces created_at order
+    # from insertion order, so a reader that dropped the explicit
+    # `order(:created_at)` and leaned on default (id/insertion) order would pick
+    # the wrong version — pinning both the earliest-by-time and latest-by-time
+    # attributions.
+    it "created_by_id is the editor of the earliest version by time, not insertion order" do
+      record = nil
+      with_current(creator) { record = character(content: "first").tap(&:save!) }
+      Timecop.freeze(2.days.ago) do
+        with_current(later_editor) { record.update!(content: "second") }
+      end
+
+      expect(record.created_by_id).to eq(later_editor.id)
+    end
+
+    it "last_edited_by_id is the editor of the latest version by time, not insertion order" do
+      record = nil
+      with_current(creator) { record = character(content: "first").tap(&:save!) }
+      Timecop.freeze(2.days.ago) do
+        with_current(later_editor) { record.update!(content: "second") }
+      end
+
+      # `creator`'s version is the newest by time but was inserted first, so a
+      # reader leaning on insertion order would wrongly return `later_editor`.
+      expect(record.last_edited_by_id).to eq(creator.id)
+    end
+
+    it "created_by_id does not change when a later edit is added" do
+      record = nil
+      with_current(creator) { record = character(content: "first").tap(&:save!) }
+      with_current(later_editor) { record.update!(content: "second") }
+
+      expect(record.created_by_id).to eq(creator.id)
+    end
+
+    it "both are nil when there is no version history" do
+      record = character(content: "unsaved")
+
+      expect(record.created_by_id).to be_nil
+      expect(record.last_edited_by_id).to be_nil
+    end
+  end
+
   describe "transactional rollback" do
     it "rolls the record back when the snapshot fails" do
       record = character(content: "first")

@@ -13,7 +13,8 @@ module Api
     sig { void }
     def index
       authorize current_game.pages.new, :index?
-      @pages = T.let(visible_pages.to_a, T.nilable(T::Array[Page]))
+      filtered = Api::IndexFilters.new(visible_pages, params).apply
+      @pages = T.let(filtered.to_a, T.nilable(T::Array[Page]))
     end
 
     sig { void }

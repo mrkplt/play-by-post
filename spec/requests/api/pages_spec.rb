@@ -30,6 +30,23 @@ RSpec.describe "api/pages", type: :request do
       tags "Pages"
       produces "application/json"
       security [ { bearer_token: [] } ]
+      parameter name: :title, in: :query, required: false, schema: { type: :string },
+                description: "Case-insensitive substring match on the page title."
+      parameter name: :created_by, in: :query, required: false, schema: { type: :integer },
+                description: "Keep only pages created by this user id (the editor of the page's first version; immutable across later versions)."
+      parameter name: :edited_by, in: :query, required: false, schema: { type: :integer },
+                description: "Keep only pages this user id authored any version of (creator or later editor)."
+      parameter name: :since, in: :query, required: false, schema: { type: :string, format: "date-time" },
+                description: "ISO-8601 timestamp; keep only pages created at or after it."
+      parameter name: :order, in: :query, required: false,
+                schema: { type: :string, enum: %w[newest oldest], default: "newest" },
+                description: "Sort by creation time. Defaults to newest first."
+
+      let(:title) { nil }
+      let(:created_by) { nil }
+      let(:edited_by) { nil }
+      let(:since) { nil }
+      let(:order) { nil }
 
       response "200", "a non-GM member sees only published pages, never drafts" do
         let(:Authorization) { "Bearer #{member_token.token}" }

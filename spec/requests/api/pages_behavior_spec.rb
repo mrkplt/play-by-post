@@ -39,6 +39,90 @@ RSpec.describe Api::PagesController, :db, type: :request do
     end
   end
 
+  describe "GET /api/pages filtering and ordering" do
+    let(:other_gm) { create(:user, :with_profile) }
+    let!(:other_gm_membership) { create(:game_member, :game_master, game: game, user: other_gm) }
+
+    it "filters by a case-insensitive title substring" do
+      create(:page, game: game, title: "The Red Dragon", editor: gm)
+      create(:page, game: game, title: "A Quiet Inn", editor: gm)
+
+      get "/api/pages", params: { title: "dragon" }, headers: auth(gm_token)
+
+      titles = json.map { |p| p["title"] }
+      expect(titles).to contain_exactly("The Red Dragon")
+    end
+
+    it "filters by created_by to the id of the user who created the page" do
+      mine = create(:page, game: game, title: "Mine", editor: gm)
+      create(:page, game: game, title: "Theirs", editor: other_gm)
+
+      get "/api/pages", params: { created_by: gm.id }, headers: auth(gm_token)
+
+      slugs = json.map { |p| p["slug"] }
+      expect(slugs).to include(mine.slug)
+      expect(json.map { |p| p["title"] }).not_to include("Theirs")
+    end
+
+    it "created_by does not match a user who only edited a page they did not create" do
+      page = create(:page, game: game, title: "Origin", editor: gm)
+      Current.user = other_gm
+      page.update!(body: "edited by other")
+      Current.user = nil
+
+      get "/api/pages", params: { created_by: other_gm.id }, headers: auth(gm_token)
+
+      expect(json.map { |p| p["slug"] }).not_to include(page.slug)
+    end
+
+    it "edited_by matches a page the user edited even though they did not create it" do
+      page = create(:page, game: game, title: "Origin", editor: gm)
+      Current.user = other_gm
+      page.update!(body: "edited by other")
+      Current.user = nil
+
+      get "/api/pages", params: { edited_by: other_gm.id }, headers: auth(gm_token)
+
+      expect(json.map { |p| p["slug"] }).to include(page.slug)
+    end
+
+    it "exposes created_by_id (immutable) and edited_by_id (latest editor)" do
+      page = create(:page, game: game, title: "Attributed", editor: gm)
+      Current.user = other_gm
+      page.update!(body: "revised")
+      Current.user = nil
+
+      get "/api/pages", params: { title: "Attributed" }, headers: auth(gm_token)
+
+      row = json.find { |p| p["slug"] == page.slug }
+      expect(row).to include("created_by_id" => gm.id, "edited_by_id" => other_gm.id)
+    end
+
+    it "keeps only pages created at or after `since`" do
+      old_page = Timecop.freeze(3.days.ago) { create(:page, game: game, title: "Old", editor: gm) }
+      new_page = create(:page, game: game, title: "New", editor: gm)
+
+      get "/api/pages", params: { since: 1.day.ago.iso8601 }, headers: auth(gm_token)
+
+      slugs = json.map { |p| p["slug"] }
+      expect(slugs).to include(new_page.slug)
+      expect(slugs).not_to include(old_page.slug)
+    end
+
+    it "orders newest-first by default and oldest-first on request" do
+      first = Timecop.freeze(2.days.ago) { create(:page, game: game, title: "First", editor: gm) }
+      last = create(:page, game: game, title: "Last", editor: gm)
+
+      get "/api/pages", params: { order: "oldest" }, headers: auth(gm_token)
+      oldest_first = json.map { |p| p["slug"] }
+      expect(oldest_first.index(first.slug)).to be < oldest_first.index(last.slug)
+
+      get "/api/pages", params: { order: "newest" }, headers: auth(gm_token)
+      newest_first = json.map { |p| p["slug"] }
+      expect(newest_first.index(last.slug)).to be < newest_first.index(first.slug)
+    end
+  end
+
   describe "GET /api/pages/:slug" do
     it "returns the requested page's fields" do
       get "/api/pages/#{published.slug}", headers: auth(member_token)

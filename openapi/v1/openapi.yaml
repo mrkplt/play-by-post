@@ -15,6 +15,44 @@ paths:
       - Notebook Entries
       security:
       - bearer_token: []
+      parameters:
+      - name: title
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Case-insensitive substring match on the entry title.
+      - name: created_by
+        in: query
+        required: false
+        schema:
+          type: integer
+        description: Keep only entries created by this user id (the editor of the
+          entry's first version; immutable across later versions).
+      - name: edited_by
+        in: query
+        required: false
+        schema:
+          type: integer
+        description: Keep only entries this user id authored any version of (creator
+          or later editor).
+      - name: since
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date-time
+        description: ISO-8601 timestamp; keep only entries created at or after it.
+      - name: order
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - newest
+          - oldest
+          default: newest
+        description: Sort by creation time. Defaults to newest first.
       responses:
         '200':
           description: notebook entries for the token's game
@@ -128,6 +166,44 @@ paths:
       - Pages
       security:
       - bearer_token: []
+      parameters:
+      - name: title
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Case-insensitive substring match on the page title.
+      - name: created_by
+        in: query
+        required: false
+        schema:
+          type: integer
+        description: Keep only pages created by this user id (the editor of the page's
+          first version; immutable across later versions).
+      - name: edited_by
+        in: query
+        required: false
+        schema:
+          type: integer
+        description: Keep only pages this user id authored any version of (creator
+          or later editor).
+      - name: since
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date-time
+        description: ISO-8601 timestamp; keep only pages created at or after it.
+      - name: order
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - newest
+          - oldest
+          default: newest
+        description: Sort by creation time. Defaults to newest first.
       responses:
         '200':
           description: the GM sees published pages and their own drafts
@@ -253,6 +329,14 @@ components:
         body:
           type: string
           description: Raw markdown
+        created_by_id:
+          type: integer
+          nullable: true
+          description: User id of the creator (immutable across versions)
+        edited_by_id:
+          type: integer
+          nullable: true
+          description: User id of the most recent editor
         created_at:
           type: string
           format: date-time
@@ -294,6 +378,14 @@ components:
           - expand
           - done
           - discard
+        created_by_id:
+          type: integer
+          nullable: true
+          description: User id of the creator (immutable across versions)
+        edited_by_id:
+          type: integer
+          nullable: true
+          description: User id of the most recent editor
         created_at:
           type: string
           format: date-time

@@ -37,6 +37,14 @@ RSpec.configure do |config|
               slug: { type: :string, description: "16-char stable identifier" },
               title: { type: :string },
               body: { type: :string, description: "Raw markdown" },
+              created_by_id: {
+                type: :integer, nullable: true,
+                description: "User id of the creator (immutable across versions)"
+              },
+              edited_by_id: {
+                type: :integer, nullable: true,
+                description: "User id of the most recent editor"
+              },
               created_at: { type: :string, format: "date-time" },
               updated_at: { type: :string, format: "date-time" }
             },
@@ -62,6 +70,14 @@ RSpec.configure do |config|
               title: { type: :string },
               body: { type: :string, description: "Raw markdown" },
               status: { type: :string, enum: %w[new expand done discard] },
+              created_by_id: {
+                type: :integer, nullable: true,
+                description: "User id of the creator (immutable across versions)"
+              },
+              edited_by_id: {
+                type: :integer, nullable: true,
+                description: "User id of the most recent editor"
+              },
               created_at: { type: :string, format: "date-time" },
               updated_at: { type: :string, format: "date-time" }
             },

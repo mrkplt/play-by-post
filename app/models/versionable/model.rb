@@ -40,6 +40,21 @@ module Versionable
     sig { abstract.returns(T::Hash[Symbol, T.untyped]) }
     def version_attributes; end
 
+    # Attribution derived from the version history, for read surfaces (the /api
+    # payloads). The creator is the editor of the first version and is immutable
+    # — later versions never change it; the last editor is the editor of the most
+    # recent version. Both read the ordered `versions` association, so an adopter
+    # that eager-loads versions pays no extra query.
+    sig { returns(T.nilable(Integer)) }
+    def created_by_id
+      versions.order(:created_at).first&.edited_by_id
+    end
+
+    sig { returns(T.nilable(Integer)) }
+    def last_edited_by_id
+      versions.order(:created_at).last&.edited_by_id
+    end
+
     sig { params(options: T.untyped).returns(T.untyped) }
     def save(**options)
       transaction { super.tap { |saved| snapshot_version if saved } }
