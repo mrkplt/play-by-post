@@ -24,10 +24,7 @@ RSpec.configure do |config|
       },
       paths: {},
       servers: [
-        { url: "{scheme}://{host}", variables: {
-          scheme: { default: "https", enum: %w[https http] },
-          host: { default: "flailwhale.com" }
-        } }
+        { url: "https://flailwhale.com" }
       ],
       components: {
         securitySchemes: {

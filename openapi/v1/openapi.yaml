@@ -235,15 +235,7 @@ paths:
             schema:
               "$ref": "#/components/schemas/page_input"
 servers:
-- url: "{scheme}://{host}"
-  variables:
-    scheme:
-      default: https
-      enum:
-      - https
-      - http
-    host:
-      default: flailwhale.com
+- url: https://flailwhale.com
 components:
   securitySchemes:
     bearer_token:
