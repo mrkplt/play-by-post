@@ -14,7 +14,7 @@ RSpec.configure do |config|
     "v1/openapi.yaml" => {
       openapi: "3.0.1",
       info: {
-        title: "Play-by-Post API",
+        title: "flailwhale.com API",
         version: "v1",
         description: <<~DESC
           Token-authenticated data API for a game's pages and notebook entries.
@@ -26,7 +26,7 @@ RSpec.configure do |config|
       servers: [
         { url: "{scheme}://{host}", variables: {
           scheme: { default: "https", enum: %w[https http] },
-          host: { default: "localhost:3000" }
+          host: { default: "flailwhale.com" }
         } }
       ],
       components: {

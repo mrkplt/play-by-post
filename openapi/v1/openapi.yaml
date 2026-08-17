@@ -1,7 +1,7 @@
 ---
 openapi: 3.0.1
 info:
-  title: Play-by-Post API
+  title: flailwhale.com API
   version: v1
   description: |
     Token-authenticated data API for a game's pages and notebook entries.
@@ -243,7 +243,7 @@ servers:
       - https
       - http
     host:
-      default: localhost:3000
+      default: flailwhale.com
 components:
   securitySchemes:
     bearer_token:
