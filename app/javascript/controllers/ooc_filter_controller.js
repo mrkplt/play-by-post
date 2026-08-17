@@ -45,7 +45,8 @@ export default class extends Controller {
   _updateIndicator() {
     if (this.hasIndicatorTarget) {
       this.indicatorTarget.textContent = this.hiding ? "✓ On" : "Off"
-      this.indicatorTarget.style.color = this.hiding ? "#16a34a" : "#94a3b8"
+      this.indicatorTarget.classList.toggle("text-toggle-on", this.hiding)
+      this.indicatorTarget.classList.toggle("text-toggle-off", !this.hiding)
     }
   }
 

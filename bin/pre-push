@@ -32,6 +32,9 @@ bin/rubocop || exit 1
 echo "==> Design-token adherence (no raw hex in ERB)"
 bin/check-design-tokens || exit 1
 
+echo "==> Palette sync (_palette.css matches lib/palette.rb)"
+bin/check-palette-sync || exit 1
+
 echo "==> Mutant coverage registration check"
 bin/check-mutant-coverage || exit 1
 

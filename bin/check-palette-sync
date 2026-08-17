@@ -1,0 +1,25 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Fails if app/assets/tailwind/_palette.css has drifted from lib/palette.rb.
+#
+# The generated CSS is committed so it is diff-visible and gate-checkable; this
+# check guarantees the committed file matches what lib/palette.rb would
+# produce. Run bin/build-palette to fix a failure. Standalone pass/fail,
+# mirroring bin/check-design-tokens.
+
+require_relative "../lib/palette"
+require_relative "../lib/palette_css"
+
+OUTPUT = File.expand_path("../app/assets/tailwind/_palette.css", __dir__)
+expected = PaletteCss.render
+actual = File.exist?(OUTPUT) ? File.read(OUTPUT) : nil
+
+if actual == expected
+  puts "[OK] palette sync: _palette.css matches lib/palette.rb"
+  exit 0
+end
+
+warn "[FAIL] palette sync: app/assets/tailwind/_palette.css is stale."
+warn "       Run bin/build-palette and commit the result."
+exit 1
