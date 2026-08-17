@@ -17,8 +17,8 @@
       <%# Rendered as a sibling of the nav drawer, not inside the main column:
           the toast layer is fixed-position and must never occupy flow, or it
           pushes the screen's header down (the bug that made flash messages
-          read as "nothing happened"). Sibling placement is also what the
-          desktop `.nav-drawer ~ .toast-layer` rail offset selects on. %>
+          read as "nothing happened"). The layer spans the full viewport and
+          centres toasts on the whole page, ignoring the desktop nav rail. %>
       <%= render Ui::ToastComponent.new(toasts: FlashPresenter.new(flash).toasts) %>
 
       <!-- Main -->

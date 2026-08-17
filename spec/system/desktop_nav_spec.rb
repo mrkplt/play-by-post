@@ -34,9 +34,17 @@ RSpec.describe "Desktop navigation", type: :feature do
   it "offsets the page content to the right of the rail" do
     visit root_path
     margin = page.evaluate_script(
-      "getComputedStyle(document.querySelector('aside.nav-drawer + div')).marginLeft"
+      "getComputedStyle(document.querySelector('.nav-drawer ~ div:last-child')).marginLeft"
     )
     expect(margin).to eq("270px")
+  end
+
+  it "does not offset the fixed toast layer (it centres on the full page)" do
+    visit root_path
+    margin = page.evaluate_script(
+      "getComputedStyle(document.querySelector('.toast-layer')).marginLeft"
+    )
+    expect(margin).to eq("0px")
   end
 
   it "shows drawer games and account links without opening anything" do
