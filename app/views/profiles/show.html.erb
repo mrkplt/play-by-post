@@ -31,6 +31,14 @@
 
   <%# API tokens %>
   <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do %>API tokens<% end %>
+  <%# Swagger UI lives at the mounted /api-docs engine; turbo: false forces a
+      full navigation so Turbo doesn't graft it into the app frame. Spacing rides
+      on the component (html_options), not a wrapping view div, to keep styling
+      out of the view template. %>
+  <%= render Ui::ButtonComponent.new(
+        style: Ui::ButtonComponent::Style.new(variant: :text, size: :sm),
+        link: Ui::ButtonComponent::Link.new(url: "/api-docs", data: { turbo: false }),
+        html_options: { class: "inline-block mb-1.5" }) do %>View API documentation<% end %>
   <%= render Shared::TokenSectionComponent.new(
         rows: @user_presenter.api_token_rows(urls: self), scope: "api", secret_label: "API token", create_label: "Create token") %>
 

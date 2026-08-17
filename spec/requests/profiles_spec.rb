@@ -20,6 +20,15 @@ RSpec.describe ProfilesController, type: :request do
       get profile_path
       expect_hamburger_present
     end
+
+    it "links the API tokens section to the Swagger UI docs, escaping Turbo" do
+      sign_in(user)
+      get profile_path
+      expect(response.body).to include('href="/api-docs"')
+      # Swagger UI is a mounted engine, not a Turbo page — the link must do a
+      # full navigation or Turbo swaps its <body> into the app frame.
+      expect(response.body).to include('data-turbo="false"')
+    end
   end
 
   describe "GET /profile/edit" do

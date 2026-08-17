@@ -23,6 +23,7 @@ NOT_A_MODEL = %w[application_record.rb current.rb].freeze
 NON_AUTHORIZABLE = %w[
   AiUsage
   ApiToken
+  Branding
   GameExportRequest
   NotificationPreference
   PostRead
