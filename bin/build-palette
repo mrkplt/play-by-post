@@ -1,0 +1,25 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Regenerates app/assets/tailwind/_palette.css from lib/palette.rb.
+#
+# Runs as a prerequisite of tailwindcss:build (see lib/tasks/palette.rake), so
+# the @theme colours are always fresh before Tailwind compiles — during
+# assets:precompile (Docker build) and the dev puma plugin alike. Reads a plain
+# Ruby hash and writes a CSS file; it touches no credentials or Active Storage,
+# so it is safe under SECRET_KEY_BASE_DUMMY.
+
+require_relative "../lib/palette"
+require_relative "../lib/palette_css"
+
+OUTPUT = File.expand_path("../app/assets/tailwind/_palette.css", __dir__)
+
+css = PaletteCss.render
+current = File.exist?(OUTPUT) ? File.read(OUTPUT) : nil
+
+if current == css
+  puts "[OK] _palette.css already up to date"
+else
+  File.write(OUTPUT, css)
+  puts "[write] regenerated app/assets/tailwind/_palette.css"
+end

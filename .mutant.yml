@@ -312,6 +312,10 @@ matcher:
     - SceneMailbox
     # Helpers
     - ApplicationHelper
+    - MailStylesHelper
+    # Palette (single source of truth for colour + its CSS generator)
+    - Palette
+    - PaletteCss
     # Policies
     - ApplicationPolicy
     - ApplicationPolicy::Scope

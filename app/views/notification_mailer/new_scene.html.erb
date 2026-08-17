@@ -9,7 +9,7 @@
 <p><%= link_to "View scene", @scene_notification.scene_url %></p>
 
 <hr>
-<p style="font-size:0.8em; color:#64748b;">
+<p style="<%= mail_meta_style(size: "0.8em") %>">
   Reply to this email to post in the scene. |
   <%= link_to "Mute this scene", @scene_notification.mute_url %>
 </p>

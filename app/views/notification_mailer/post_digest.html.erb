@@ -1,8 +1,8 @@
 <p>New activity in <strong><%= @game_presenter.name %></strong> — <strong><%= @scene_notification.title %></strong>.</p>
 
 <% @scene_notification.post_presenters.each do |post| %>
-  <div style="border-left:3px solid #e2e8f0; padding-left:1rem; margin-bottom:1rem;">
-    <p style="font-size:0.85em; color:#64748b; margin:0 0 0.25rem;">
+  <div style="<%= mail_rule_style %>">
+    <p style="<%= mail_meta_style(size: "0.85em", extra: "margin:0 0 0.25rem") %>">
       <strong><%= post.author_display_name %></strong>
       &middot; <%= post.formatted_created_at %>
       <% if post.is_ooc? %>[OOC]<% end %>
@@ -12,13 +12,13 @@
 <% end %>
 
 <% if @scene_notification.extra_count > 0 %>
-  <p style="color:#64748b;">...and <%= @scene_notification.extra_count %> more <%= "post".pluralize(@scene_notification.extra_count) %>.</p>
+  <p style="<%= mail_meta_style %>">...and <%= @scene_notification.extra_count %> more <%= "post".pluralize(@scene_notification.extra_count) %>.</p>
 <% end %>
 
 <p><%= link_to "View scene", @scene_notification.scene_url %></p>
 
 <hr>
-<p style="font-size:0.8em; color:#64748b;">
+<p style="<%= mail_meta_style(size: "0.8em") %>">
   Reply to this email to post in the scene. |
   <%= link_to "Mute this scene", @scene_notification.mute_url %>
 </p>

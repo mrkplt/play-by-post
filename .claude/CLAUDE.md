@@ -204,7 +204,10 @@ explains the contract.
 ### CSS
 - Tailwind only. Co-located component stylesheets live next to their component (`app/components/**/*.css`) and are imported from `app/assets/tailwind/application.css`; add new component CSS there, not in a global sheet.
 - Never edit `app/assets/builds/` (generated).
-- No raw hex in ERB class utilities — use an `@theme` token (`bin/check-design-tokens` enforces).
+- **Colours have one source of truth: `lib/palette.rb`.** Every colour hex is defined there and nowhere else — CSS, components, JS, and emails all derive from it. Add or change a colour in `lib/palette.rb`, then run `bin/build-palette`. Read `docs/STYLE_GUIDE.md` §1 before touching colour. Corollaries:
+  - `app/assets/tailwind/_palette.css` is **generated** (the `@theme` colour block) — never hand-edit it; `bin/check-palette-sync` fails if it drifts.
+  - In Ruby (mailers, presenters), read a colour with `Palette[:token]`; never inline a hex. Mailer inline styles come from `MailStylesHelper`, which is sourced from `Palette`.
+  - In JS/ERB, use the token utility (`text-muted`, `bg-accent`) — never a raw hex or arbitrary `text-[#…]` value (`bin/check-design-tokens` enforces).
 
 ### Sorbet
 - `# typed: true` minimum on all new/touched files in `app/`, `lib/`, and `config/initializers/`

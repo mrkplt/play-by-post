@@ -8,10 +8,39 @@ and a set of automated gates enforce the pattern so it doesn't drift.
 
 ## 1. Design tokens — the single source of truth
 
-All colours and radii are defined once in the `@theme` block of
-`app/assets/tailwind/application.css` and consumed as Tailwind utilities
-(`bg-accent`, `text-tint-blue-strong`, `rounded-card`). **Never hard-code a hex
-value in a class** (`bg-[#c8a96e]` is a gate failure — use `bg-accent`).
+**Every colour hex is defined once, in `lib/palette.rb`.** Nothing else holds a
+raw colour — CSS, components, JS, and emails all derive from that one Ruby
+dictionary. Consumed as Tailwind utilities (`bg-accent`,
+`text-tint-blue-strong`) in views/components/JS, and as `Palette[:token]` in
+Ruby. **Never hard-code a hex** in a class (`bg-[#c8a96e]` is a gate failure —
+use `bg-accent`) or in Ruby (use `Palette[:accent]`).
+
+Radii and non-colour theme values (toast timing, z-index) still live in the
+hand-written `@theme` block of `app/assets/tailwind/application.css` — the
+palette pipeline is colours-only.
+
+### How the pipeline fits together
+
+```
+lib/palette.rb            ← the dictionary (name → hex). Edit colours ONLY here.
+   │
+   ├─ bin/build-palette generates → app/assets/tailwind/_palette.css  (@theme block)
+   │     runs before every Tailwind compile (palette:build is a prerequisite of
+   │     tailwindcss:build → covers assets:precompile and the dev puma plugin),
+   │     so bg-accent / text-muted compile exactly as before.
+   │
+   └─ Ruby reads it live → Palette[:muted]  (mailers, presenters — no build step)
+```
+
+- **`_palette.css` is generated** — never hand-edit it. `bin/check-palette-sync`
+  (in `bin/pre-push` and CI) fails if it drifts from `lib/palette.rb`; run
+  `bin/build-palette` and commit the result to fix.
+- **Ruby-as-source, CSS-as-artifact** is deliberate: it lets emails (which
+  ActionMailer renders at runtime and mail clients can't style with the compiled
+  stylesheet) inline their hex from the *same* dictionary as everything else.
+  Mailer views pull inline styles from `MailStylesHelper`, which reads `Palette`.
+- **Tokens are hyphenated** (`--color-mail-meta`) but `Palette[:mail_meta]`
+  accepts the underscore form too — both resolve.
 
 ### Colour tokens
 
@@ -37,10 +66,13 @@ value in a class** (`bg-[#c8a96e]` is a gate failure — use `bg-accent`).
 `rounded-control` (8px, buttons/inputs) · `rounded-card` (10px) ·
 `rounded-post` (12px) · `rounded-pill` (20px, pills/badges).
 
-**Adding a colour:** add a token to `@theme` first, then use its utility. The
-only sanctioned place for a raw palette hex is a component Ruby class's tone
-table (e.g. `Ui::BadgeComponent::VARIANTS`, `Ui::AvatarComponent::TONES`) — the
-token gate scans ERB, not Ruby, so those small, contained palettes are allowed.
+**Adding a colour:** add a `"token" => "#hex"` entry to the right group in
+`lib/palette.rb`, run `bin/build-palette` (commit the regenerated
+`_palette.css`), then use `bg-token` / `text-token` in views/JS or
+`Palette[:token]` in Ruby. There is no sanctioned home for a raw hex outside
+`lib/palette.rb` — component Ruby classes and JS controllers must reference a
+token, never inline a hex (`bin/check-design-tokens` scans ERB, component Ruby,
+and JS for arbitrary-hex utilities).
 
 ---
 

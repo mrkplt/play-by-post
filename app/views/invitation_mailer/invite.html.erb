@@ -4,4 +4,4 @@
 
 <p>Or copy this link: <%= @invitation_presenter.accept_url %></p>
 
-<p style="color:#64748b; font-size:0.85rem;">This invitation was sent by <%= @invitation_presenter.inviter_name %>.</p>
+<p style="<%= mail_meta_style(size: "0.85rem") %>">This invitation was sent by <%= @invitation_presenter.inviter_name %>.</p>
