@@ -13,7 +13,8 @@ module Api
     def index
       entries = current_game.notebook_entries
       authorize entries.new, :index?
-      @notebook_entries = T.let(entries.to_a, T.nilable(T::Array[NotebookEntry]))
+      filtered = Api::IndexFilters.new(entries, params).apply
+      @notebook_entries = T.let(filtered.to_a, T.nilable(T::Array[NotebookEntry]))
     end
 
     sig { void }

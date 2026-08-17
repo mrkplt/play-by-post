@@ -26,6 +26,28 @@ class NotebookEntry < ApplicationRecord
   validates :slug, presence: true, uniqueness: true
   validates :status, inclusion: { in: STATUSES }
 
+  # /api index filters. Each no-ops on a nil argument (a Rails scope that returns
+  # nil yields `all`), so the /api filter chain narrows only by the params a
+  # client supplied. `title_matching` is a case-insensitive substring search;
+  # SQLite's LIKE is case-insensitive for ASCII, and the term is bound (not
+  # interpolated) so LIKE metacharacters in it are escaped. `created_by` returns
+  # the entries a user *created* — the editor of the entry's earliest version
+  # row, which never changes as later versions accrue — so a later editor of
+  # someone else's entry is not matched. `edited_by` returns entries the user
+  # authored *any* version of, creator or not. `created_after` floors on created_at.
+  scope :title_matching, ->(term) { where("title LIKE ?", "%#{sanitize_sql_like(term)}%") if term }
+  scope :created_by, ->(user_id) {
+    if user_id
+      where(id: NotebookEntryVersion.where(edited_by_id: user_id).where(
+        "notebook_entry_versions.created_at = (SELECT MIN(created_at) FROM notebook_entry_versions v WHERE v.notebook_entry_id = notebook_entry_versions.notebook_entry_id)"
+      ).select(:notebook_entry_id))
+    end
+  }
+  scope :edited_by, ->(user_id) {
+    where(id: NotebookEntryVersion.where(edited_by_id: user_id).select(:notebook_entry_id)) if user_id
+  }
+  scope :created_after, ->(time) { where("created_at >= ?", time) if time }
+
   # The slug is assigned once on create and never editable thereafter, so the
   # entry's URL is stable for the life of the entry.
   before_validation :generate_slug, on: :create

@@ -33,6 +33,28 @@ class Page < ApplicationRecord
   scope :published, -> { where(draft: false) }
   scope :drafts, -> { where(draft: true) }
 
+  # /api index filters. Each no-ops on a nil argument (a Rails scope that returns
+  # nil yields `all`), so the /api filter chain narrows only by the params a
+  # client supplied. `title_matching` is a case-insensitive substring search;
+  # SQLite's LIKE is case-insensitive for ASCII, and the term is bound (not
+  # interpolated) so LIKE metacharacters in it are escaped. `created_by` returns
+  # the pages a user *created* — the editor of the page's earliest version row,
+  # which never changes as later versions accrue — so a later editor of someone
+  # else's page is not matched. `edited_by` returns pages the user authored *any*
+  # version of, creator or not. `created_after` floors on created_at.
+  scope :title_matching, ->(term) { where("title LIKE ?", "%#{sanitize_sql_like(term)}%") if term }
+  scope :created_by, ->(user_id) {
+    if user_id
+      where(id: PageVersion.where(edited_by_id: user_id).where(
+        "page_versions.created_at = (SELECT MIN(created_at) FROM page_versions v WHERE v.page_id = page_versions.page_id)"
+      ).select(:page_id))
+    end
+  }
+  scope :edited_by, ->(user_id) {
+    where(id: PageVersion.where(edited_by_id: user_id).select(:page_id)) if user_id
+  }
+  scope :created_after, ->(time) { where("created_at >= ?", time) if time }
+
   validates :title, presence: true, unless: :draft?
   validates :title, length: { maximum: 200 }
   validates :slug, presence: true, uniqueness: true
