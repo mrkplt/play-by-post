@@ -11,7 +11,7 @@ RSpec.describe "API docs branding", type: :request do
   around do |example|
     original_name = ENV.fetch("APP_NAME", nil)
     original_host = ENV.fetch("APP_HOST", nil)
-    ENV["APP_NAME"] = "flailwhale.com"
+    ENV["APP_NAME"] = "Flail Whale"
     ENV["APP_HOST"] = "flailwhale.com"
     example.run
   ensure
@@ -24,7 +24,9 @@ RSpec.describe "API docs branding", type: :request do
 
     expect(response).to have_http_status(:ok)
     doc = YAML.safe_load(response.body)
-    expect(doc["info"]["title"]).to eq("flailwhale.com API")
+    # The display name (spaces and all) goes in the title; the server URL is
+    # built from APP_HOST alone, so the spaced name never reaches a URL.
+    expect(doc["info"]["title"]).to eq("Flail Whale API")
     expect(doc["servers"]).to eq([ { "url" => "https://flailwhale.com" } ])
   end
 end

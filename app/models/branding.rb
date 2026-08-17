@@ -7,9 +7,12 @@
 # PWA manifest, and the API docs — reads its name here rather than hardcoding a
 # string, so rebranding an instance is a matter of setting two env vars.
 #
-#   APP_NAME  the display name (default "Play by Post")
-#   APP_HOST  the host, reused from the mailer-link setting; the URL is
-#             https://<host> (default "play-by-post.example.com")
+#   APP_NAME  the human display name (default "Play by Post"). May contain
+#             spaces ("Flail Whale") — it is *only* ever rendered as text and is
+#             never used to build a URL.
+#   APP_HOST  the host, reused from the mailer-link setting. The URL is
+#             https://<host> (default "play-by-post.example.com"). #url derives
+#             from APP_HOST alone, never from APP_NAME.
 #
 # A pure, memo-free reader so tests can stub ENV per-example without a
 # cached value leaking across them. Named #display_name rather than #name so it
