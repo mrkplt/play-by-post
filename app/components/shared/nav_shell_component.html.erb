@@ -5,8 +5,9 @@
 
 <%# The feedback modal lives here — a sibling of the drawer, not inside it, so
     its fixed-position overlay is measured against the viewport rather than the
-    off-screen (translateX) drawer. Placed before the drawer so the desktop
-    `.nav-drawer ~ div` rail-offset rule never matches it. %>
+    off-screen (translateX) drawer. The desktop rail-offset rule is scoped to
+    `.nav-drawer ~ div:last-child` (the content column), so only that column is
+    pushed right — this modal and the toast layer stay full-viewport. %>
 <%= render Shared::FeedbackModalComponent.new %>
 
 <aside class="nav-drawer" data-sidebar-target="sidebar">

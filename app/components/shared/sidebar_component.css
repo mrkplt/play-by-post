@@ -95,9 +95,12 @@
        the IconButton's `flex` utility, which lives in a later cascade layer. */
     [data-action="click->sidebar#open"] { display: none !important; }
 
-    /* Content sits to the right of the 270px rail. Scoped to the sibling of an
-       actual drawer, so signed-out pages (no rail) stay full-width. */
-    .nav-drawer ~ div { margin-left: 270px; }
+    /* Content sits to the right of the 270px rail. Scoped to the LAST sibling
+       div — the main content column — so the rail offset never leaks onto the
+       fixed-position toast layer (an earlier `.nav-drawer ~ div` that must stay
+       centred on the full viewport). Signed-out pages have no rail, so the
+       `.nav-drawer ~` prefix keeps them full-width. */
+    .nav-drawer ~ div:last-child { margin-left: 270px; }
 
     /* The frame stops being a centered phone column and fills the content
        pane; only the body is capped to a comfortable reading width. */

@@ -82,12 +82,4 @@
   @media (prefers-reduced-motion: reduce) {
     .toast--leaving { transition: none; }
   }
-
-  /* Desktop: clear the 270px docked nav rail so a centred toast is centred on
-     the content pane, matching `.nav-drawer ~ div { margin-left: 270px }` in
-     sidebar_component.css. Scoped to a signed-in page that actually has a
-     rail, same as that rule. */
-  @media (min-width: 1024px) {
-    .nav-drawer ~ .toast-layer { left: 270px; }
-  }
 }

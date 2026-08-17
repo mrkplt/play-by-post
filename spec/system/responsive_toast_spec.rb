@@ -80,6 +80,22 @@ RSpec.describe "Toasts (responsive)", type: :feature do
         expect(rect["right"]).to be <= width
       end
 
+      # Regression for the "off-centre of the whole page" report: the toast must
+      # centre on the full viewport, not on the content pane right of the desktop
+      # nav rail. Under the old `.nav-drawer ~ .toast-layer { left: 270px }` rule
+      # the toast centre sat ~135px right of the page centre on desktop.
+      it "centres the toast on the full page width" do
+        move_lane(to: "Expand")
+        expect(page).to have_css("[data-testid='toast']")
+
+        centre = page.evaluate_script(
+          "(() => { const r = document.querySelector('.toast').getBoundingClientRect();" \
+          "return (r.left + r.right) / 2; })()"
+        )
+
+        expect(centre).to be_within(1).of(width / 2.0)
+      end
+
       it "does not intercept clicks meant for the content beneath it" do
         move_lane(to: "Expand")
         expect(page).to have_css("[data-testid='toast']")
