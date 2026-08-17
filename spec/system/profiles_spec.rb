@@ -115,6 +115,19 @@ RSpec.describe "Profiles", type: :feature do
     end
   end
 
+  describe "API tokens section" do
+    let(:game) { create(:game) }
+
+    before { create(:game_member, game: game, user: user) }
+
+    it "links to the API documentation from the API tokens section" do
+      visit profile_path
+
+      expect(page).to have_text("API TOKENS")
+      expect(page).to have_link("View API documentation", href: "/api-docs")
+    end
+  end
+
   describe "profile show page" do
     it "shows display name and email" do
       visit profile_path
