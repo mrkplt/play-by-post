@@ -3,13 +3,13 @@
     <%= render Ui::SettingsRowComponent.new(label: row.name, position: row_position(index)) do %>
     <% if row.token? %>
       <div class="flex flex-col items-end gap-2 min-w-0">
-        <%= render Ui::SecretFieldComponent.new(value: row.feed_url, label: "Feed URL") %>
+        <%= render Ui::SecretFieldComponent.new(value: row.secret_value, label: secret_label) %>
         <%= button_to "Revoke", row.revoke_path, method: :delete,
               class: "text-xs font-bold text-accent bg-transparent border-0 cursor-pointer p-0" %>
       </div>
     <% else %>
-      <%= button_to "Create feed", row.create_path, method: :post,
-            params: { game_id: row.game_id, scope: "rss" },
+      <%= button_to create_label, row.create_path, method: :post,
+            params: { game_id: row.game_id, scope: scope },
             class: "text-xs font-bold text-accent bg-transparent border-0 cursor-pointer p-0" %>
       <% end %>
     <% end %>

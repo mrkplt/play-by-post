@@ -76,3 +76,42 @@ Key named helpers: `game_path`, `game_scene_path`, `game_scene_post_path`, `game
 
 Dev only: `/letter_opener` (email preview).
 
+## The machine-auth surface (`DataApplicationController`)
+
+Two authentication models live side by side. Most of the app is session-authed
+through `ApplicationController` (Devise/Warden). A separate **machine-auth
+surface** is a *sibling* of `ApplicationController` — `DataApplicationController`
+— that never touches Warden, sets no session cookie, and authenticates a request
+solely by a bearer **`ApiToken`** (`Authorization: Bearer <token>` or a `token`
+param). The token carries the user *and the game*, so these routes take no
+`:game_id` in the path. Pundit runs with the token's user as `pundit_user`, and
+authorization (active membership) is re-checked on every request, so a revoked
+membership disables access even while the token still exists.
+
+Three consumers:
+
+- **`GET /rss/feed`** (`RssController`) — the campaign-log RSS feed (`ApiToken`
+  scope `"rss"`).
+- **`/api/pages` and `/api/notebook_entries`** (`Api::PagesController`,
+  `Api::NotebookEntriesController` under `Api::BaseController`) — a JSON data API
+  (`ApiToken` scope `"api"`) offering **CRU** (create/read/update, no delete)
+  over the token's game's pages and notebook entries. Bodies are **raw markdown**;
+  records are addressed by their 16-char **slug**. Pages are member-readable /
+  GM-write; notebook entries are GM-only in every direction. `Api::BaseController`
+  sets `Current.user` to the token's user so API writes attribute their version
+  snapshots (see Versionable) correctly.
+
+**OpenAPI as one source of truth.** `openapi/v1/openapi.yaml` is generated from
+the `/api` request specs (`rake rswag:specs:swaggerize`) and drives three things:
+the Swagger UI at `/api-docs`, the machine-readable contract API clients read, and
+**live request validation** — `Api::SchemaValidation` (a small Rack middleware in
+`lib/api`) validates each `/api` request body against that document via
+`json-schema`, rejecting a schema violation with a `400` before it reaches a
+controller. Business-rule failures (e.g. a blank title) remain a model-validation
+`422`. `bin/check-openapi-fresh` fails the build if the committed document has
+drifted from the specs.
+
+Users mint and revoke their own `ApiToken`s (both scopes) from their profile
+(`Profiles::ApiTokensController`), signed in; the tokens are then used against
+the machine-auth surface without a session.
+

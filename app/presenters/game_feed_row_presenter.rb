@@ -28,6 +28,13 @@ class GameFeedRowPresenter < BasePresenter
     @options.fetch(:urls).rss_feed_url(token: @options[:token].token)
   end
 
+  # The value the shared token section reveals for this row — for RSS, the whole
+  # feed URL (the token is embedded in it).
+  sig { returns(String) }
+  def secret_value
+    feed_url
+  end
+
   sig { returns(String) }
   def revoke_path
     @options.fetch(:urls).profile_api_token_path(@options[:token])

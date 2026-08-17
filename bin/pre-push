@@ -71,6 +71,9 @@ bin/check-reek || exit 1
 echo "==> Request-spec coverage (every controller has an integration spec)"
 bin/check-request-spec-coverage || exit 1
 
+echo "==> OpenAPI freshness (openapi/v1/openapi.yaml matches the /api specs)"
+bin/check-openapi-fresh || exit 1
+
 echo "==> JS security scan (importmap audit)"
 bin/importmap audit || exit 1
 

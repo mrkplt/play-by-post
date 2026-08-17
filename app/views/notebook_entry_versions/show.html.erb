@@ -1,0 +1,12 @@
+<% content_for :active_game_id, @game_presenter.id %>
+
+<%= render Shared::MobileFrameComponent.new do |frame| %>
+  <% frame.with_header do %>
+    <%= render Shared::HeaderComponent.new(
+          title: @entry_presenter.title,
+          breadcrumbs: Shared::BreadcrumbsComponent.new(game_presenter: @game_presenter),
+          secondary_nav: Shared::GameNavComponent.new(game_presenter: @game_presenter, active_tab: :notebook, mode: :link)) %>
+  <% end %>
+
+  <%= render Shared::VersionDetailComponent.new(version: @version_presenter) %>
+<% end %>

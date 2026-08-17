@@ -21,4 +21,5 @@
 
   <%= render Shared::NotebookEntryActionsComponent.new(game: game_presenter, notebook_entry: @entry_presenter) %>
   <%= render Shared::NotebookFormComponent.new(game: game_presenter, notebook_entry: @entry_presenter) %>
+  <%= render Shared::NotebookEntryVersionHistoryComponent.new(game: game_presenter, entry: @entry_presenter, versions: @entry_presenter.version_history) %>
 <% end %>

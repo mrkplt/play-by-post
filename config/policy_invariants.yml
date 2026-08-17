@@ -44,9 +44,18 @@ CharacterVersionPolicy:
   invariants: []
   unconstrained: [show?] # game access, delegated to GamePolicy#view?
 
+ContentTemplatePolicy:
+  invariants:
+    - equivalent: [index?, manage?]
+    - equivalent: [create?, manage?]
+    - equivalent: [update?, manage?]
+    - equivalent: [destroy?, manage?]
+  unconstrained: []
+
 ApiTokenPolicy:
   invariants:
     - no_status_blind_grant: feed?
+    - no_status_blind_grant: api?
   unconstrained: []
 
 FeedbackPolicy:
@@ -85,6 +94,12 @@ NotebookEntryPolicy:
     - equivalent: [create?, manage?]
     - equivalent: [update?, manage?]
     - equivalent: [destroy?, manage?]
+    - no_status_blind_grant: manage? # a banned GM reads/writes no notes
+  unconstrained: []
+
+NotebookEntryVersionPolicy:
+  invariants:
+    - no_status_blind_grant: show? # a banned GM reads no note history
   unconstrained: []
 
 PagePolicy:
@@ -92,7 +107,12 @@ PagePolicy:
     - equivalent: [create?, manage?]
     - equivalent: [update?, manage?]
     - equivalent: [destroy?, manage?]
-  unconstrained: [show?]
+    - equivalent: [publish?, manage?]
+  unconstrained: [index?] # show? is a draft-gated read the verifier can't encode (ACCEPTED_REFUSALS)
+
+PageVersionPolicy:
+  invariants: []
+  unconstrained: [] # show? is a draft-gated read the verifier can't encode (ACCEPTED_REFUSALS)
 
 PostPolicy:
   invariants:
@@ -115,6 +135,7 @@ SceneSummaryPolicy:
     - equivalent: [create?, manage?]
     - equivalent: [update?, manage?]
     - equivalent: [destroy?, manage?]
+    - equivalent: [publish?, manage?]
   unconstrained: []
 
 UserProfilePolicy:

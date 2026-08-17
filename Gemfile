@@ -30,6 +30,14 @@ gem "stimulus-rails"
 # Build JSON APIs with ease [https://github.com/rails/jbuilder]
 gem "jbuilder"
 
+# OpenAPI: the /api surface's schema is generated from rswag request specs and
+# served as Swagger UI. Api::SchemaValidation (a Rack middleware in lib/) validates
+# incoming /api request bodies against that same document via json-schema, so the
+# one document is the single source of truth for docs and live request validation.
+gem "rswag-api"
+gem "rswag-ui"
+gem "json-schema"
+
 # Use Active Model has_secure_password [https://guides.rubyonrails.org/active_model_basics.html#securepassword]
 # gem "bcrypt", "~> 3.1.7"
 
@@ -102,6 +110,8 @@ group :test do
   gem "simplecov", require: false
   gem "timecop"
   gem "activerecord-nulldb-adapter", require: false
+  # Generates the OpenAPI document for the /api surface from request specs.
+  gem "rswag-specs"
 end
 
 gem "sorbet-runtime"

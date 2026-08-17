@@ -1,4 +1,6 @@
 Rails.application.routes.draw do
+  mount Rswag::Ui::Engine => "/api-docs"
+  mount Rswag::Api::Engine => "/api-docs"
   # Resend inbound email webhook (custom ActionMailbox ingress)
   post "/mail/inbound" =>
     "action_mailbox/ingresses/resend/inbound_emails#create",
@@ -94,6 +96,7 @@ Rails.application.routes.draw do
           patch :move, to: "notebook_entries/lanes#move"
           post :promote, to: "notebook_entries/lanes#promote"
         end
+        resources :notebook_entry_versions, only: %i[show], path: "versions"
       end
       resources :characters, only: %i[new create show edit update] do
         member do
@@ -108,6 +111,13 @@ Rails.application.routes.draw do
   # Machine-auth surface (bearer ApiToken, no session). The token carries the
   # game, so no :game_id in the path.
   get "/rss/feed", to: "rss#feed", defaults: { format: :rss }
+
+  # JSON data API (bearer api-scoped ApiToken). CRU over the token's game's pages
+  # and notebook entries, addressed by slug; no delete.
+  namespace :api, defaults: { format: :json } do
+    resources :pages, only: %i[index show create update], param: :slug
+    resources :notebook_entries, only: %i[index show create update], param: :slug
+  end
 
   root "games#index"
 end

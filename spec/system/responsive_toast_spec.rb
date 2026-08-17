@@ -12,7 +12,10 @@ RSpec.describe "Toasts (responsive)", type: :feature do
   let(:gm) { create(:user, :with_profile) }
   let(:game) { create(:game) }
   let!(:member) { create(:game_member, :game_master, game: game, user: gm) }
-  let!(:entry) { game.notebook_entries.create!(title: "Probe Entry", body: "body text") }
+  # Built through the factory (not game.notebook_entries.create!) so the
+  # Versionable snapshot is attributed: an entry has no owning user, so it takes
+  # attribution from Current.user, which the factory's to_create supplies.
+  let!(:entry) { create(:notebook_entry, game: game, editor: gm, title: "Probe Entry", body: "body text") }
 
   before { sign_in_as(gm) }
 

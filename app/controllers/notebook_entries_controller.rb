@@ -44,7 +44,9 @@ class NotebookEntriesController < ApplicationController
   end
 
   # Saving keeps the writer on the edit screen — an entry is long-form markdown
-  # and being re-rendered from scratch on every save loses their place.
+  # and being re-rendered from scratch on every save loses their place. The edit
+  # screen shows version history, so the presenter is re-assigned on every save
+  # (the just-written snapshot is included via NotebookEntryPresenter#version_history).
   sig { void }
   def update
     entry = authorized_entry

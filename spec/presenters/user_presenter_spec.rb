@@ -164,4 +164,54 @@ RSpec.describe UserPresenter do
       expect(rows.first.token?).to be(false)
     end
   end
+
+  describe "#api_token_rows", db: true do
+    let(:user) { create(:user) }
+    let(:urls) { double("urls") }
+
+    it "returns one row per non-banned membership, paired with any api token" do
+      with_token = create(:game, name: "With Token")
+      without_token = create(:game, name: "Without Token")
+      create(:game_member, game: with_token, user: user)
+      create(:game_member, game: without_token, user: user)
+      token = create(:api_token, user: user, game: with_token, scope: "api")
+
+      rows = described_class.new(user).api_token_rows(urls: urls)
+
+      row_with_token = rows.find { |r| r.game_id == with_token.id }
+      row_without_token = rows.find { |r| r.game_id == without_token.id }
+      expect(row_with_token.token?).to be(true)
+      expect(row_with_token.token_value).to eq(token.token)
+      expect(row_without_token.token?).to be(false)
+      expect(rows.size).to eq(2)
+    end
+
+    it "excludes banned memberships" do
+      banned = create(:game, name: "Forbidden Keep")
+      create(:game_member, :banned, game: banned, user: user)
+
+      rows = described_class.new(user).api_token_rows(urls: urls)
+
+      expect(rows.map(&:game_id)).not_to include(banned.id)
+    end
+
+    it "ignores an rss-scoped token when matching the api token" do
+      game = create(:game)
+      create(:game_member, game: game, user: user)
+      create(:api_token, user: user, game: game, scope: "rss")
+
+      rows = described_class.new(user).api_token_rows(urls: urls)
+
+      expect(rows.first.token?).to be(false)
+    end
+
+    it "returns ApiTokenRowPresenters" do
+      game = create(:game)
+      create(:game_member, game: game, user: user)
+
+      rows = described_class.new(user).api_token_rows(urls: urls)
+
+      expect(rows).to all(be_a(ApiTokenRowPresenter))
+    end
+  end
 end

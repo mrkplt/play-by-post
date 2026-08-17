@@ -67,4 +67,14 @@ class NotebookEntryPresenter < BasePresenter
   def promoted_page_slug
     @model.promoted_page.slug.to_s
   end
+
+  # The entry's version history, newest first, wrapped for the history component
+  # on the edit screen. Owning the wrapping here keeps the controller free of the
+  # model→presenter mapping.
+  sig { returns(T::Array[NotebookEntryVersionPresenter]) }
+  def version_history
+    @model.notebook_entry_versions.order(created_at: :desc).map do |version|
+      NotebookEntryVersionPresenter.new(version)
+    end
+  end
 end

@@ -26,7 +26,13 @@
 
   <%# RSS Feeds %>
   <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do %>RSS Feeds<% end %>
-  <%= render Shared::RssFeedsSectionComponent.new(rows: @feed_rows) %>
+  <%= render Shared::TokenSectionComponent.new(
+        rows: @feed_rows, scope: "rss", secret_label: "Feed URL", create_label: "Create feed") %>
+
+  <%# API tokens %>
+  <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do %>API tokens<% end %>
+  <%= render Shared::TokenSectionComponent.new(
+        rows: @user_presenter.api_token_rows(urls: self), scope: "api", secret_label: "API token", create_label: "Create token") %>
 
   <%# Export %>
   <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do %>Export<% end %>

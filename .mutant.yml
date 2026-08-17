@@ -27,6 +27,7 @@ matcher:
     - Character
     - CharacterVersion
     - PageVersion
+    - NotebookEntryVersion
     - Scene
     - SceneParticipant
     - Post
@@ -58,6 +59,7 @@ matcher:
     - GameFileMediaPresenter
     - GameMemberPresenter
     - GameFeedRowPresenter
+    - ApiTokenRowPresenter
     - GameLinkPresenter
     - ContentTemplatePresenter
     - GamePresenter
@@ -74,6 +76,7 @@ matcher:
     - PagePresenter
     - PageRoutesPresenter
     - PageVersionPresenter
+    - NotebookEntryVersionPresenter
     - PostPresenter
     - PostRoutesPresenter
     - RosterCharacterPresenter
@@ -102,7 +105,7 @@ matcher:
     - Shared::RecordBackedForm
     - Ui::FormErrorsComponent
     - Ui::SecretFieldComponent
-    - Shared::RssFeedsSectionComponent
+    - Shared::TokenSectionComponent
     - Shared::AiSummariesToggleComponent
     - Shared::ImagesToggleComponent
     - Shared::SheetsToggleComponent
@@ -127,8 +130,9 @@ matcher:
     - Shared::CharacterVersionHistoryComponent
     - Shared::VersionHistoryComponent
     - Shared::VersionHistoryComponent::Row
+    - Shared::VersionDetailComponent
     - Shared::PageVersionHistoryComponent
-    - Shared::PageVersionDetailComponent
+    - Shared::NotebookEntryVersionHistoryComponent
     - Shared::PostEditFormComponent
     - Shared::SceneCardComponent
     - Shared::SceneResolutionComponent
@@ -241,12 +245,16 @@ matcher:
     - SceneSummaryService
     - SceneSummaryService::Result
     - FizzySweepService
+    - Api::SchemaValidation
     # Controllers
     - ActionMailbox::Ingresses::Resend::InboundEmailsController
     - Webhooks::DeployController
     - SceneSummariesController
     - SceneSummaries::DraftsController
     - RssController
+    - Api::BaseController
+    - Api::NotebookEntriesController
+    - Api::PagesController
     - Profiles::ApiTokensController
     - GameExportsController
     - ScenesController
@@ -268,6 +276,7 @@ matcher:
     - GameMembersController
     - CharacterVersionsController
     - PageVersionsController
+    - NotebookEntryVersionsController
     - ProfilesController
     - PlayerManagementController
     - FeedbackController
@@ -320,6 +329,7 @@ matcher:
     - SceneSummaryPolicy
     - CharacterVersionPolicy
     - PageVersionPolicy
+    - NotebookEntryVersionPolicy
     - UserProfilePolicy
     - FeedbackPolicy
     - ApiTokenPolicy

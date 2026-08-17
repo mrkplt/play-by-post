@@ -20,7 +20,9 @@ RSpec.describe GamePurgeScope, type: :model, db: true do
       scene_summary: create(:scene_summary, scene: scene),
       notification_preference: create(:notification_preference, scene: scene, user: player),
       post: create(:post, scene: scene, user: player),
-      game_file: create(:game_file, game: game)
+      game_file: create(:game_file, game: game),
+      notebook_entry: notebook_entry = create(:notebook_entry, game: game, editor: player),
+      notebook_entry_version: notebook_entry.notebook_entry_versions.first!
     }
   end
 
@@ -71,6 +73,15 @@ RSpec.describe GamePurgeScope, type: :model, db: true do
       expect(Character.exists?(records[:character].id)).to be(false)
       expect(CharacterVersion.exists?(records[:character_version].id)).to be(false)
       expect(GameFile.exists?(records[:game_file].id)).to be(false)
+      expect(NotebookEntry.exists?(records[:notebook_entry].id)).to be(false)
+      expect(NotebookEntryVersion.exists?(records[:notebook_entry_version].id)).to be(false)
+    end
+
+    it "deletes notebook entry versions before their entries (FK-safe)" do
+      records = populate_game
+
+      expect { described_class.for(records[:game]).delete_all_dependents! }.not_to raise_error
+      expect(NotebookEntryVersion.exists?(records[:notebook_entry_version].id)).to be(false)
     end
 
     it "leaves another game's records untouched" do

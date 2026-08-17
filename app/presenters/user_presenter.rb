@@ -82,6 +82,21 @@ class UserPresenter < BasePresenter
     end
   end
 
+  # The profile's "API tokens" section, one row per non-banned game membership
+  # paired with this user's api-scoped token for that game (if any). Parallel to
+  # #feed_rows, but filters `scope: "api"` and yields ApiTokenRowPresenters whose
+  # populated state exposes the raw token value rather than a feed URL.
+  sig { params(urls: T.untyped).returns(T::Array[ApiTokenRowPresenter]) }
+  def api_token_rows(urls:)
+    tokens_by_game_id = @model.api_tokens.where(scope: "api").index_by(&:game_id)
+    feed_memberships.filter_map do |membership|
+      game = membership.game
+      next unless game
+
+      ApiTokenRowPresenter.new(game, token: tokens_by_game_id[game.id], urls: urls)
+    end
+  end
+
   private
 
   sig { returns(T.untyped) }

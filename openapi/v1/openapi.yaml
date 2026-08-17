@@ -1,0 +1,342 @@
+---
+openapi: 3.0.1
+info:
+  title: Play-by-Post API
+  version: v1
+  description: |
+    Token-authenticated data API for a game's pages and notebook entries.
+
+    Authentication: pass an `api`-scoped ApiToken as `Authorization: Bearer <token>`
+    or a `token` query/body param. The token carries the game, so no game id
+    appears in any path. Bodies are raw markdown. Pages are readable by any
+    non-banned member; notebook entries are game-master-only.
+paths:
+  "/api/notebook_entries":
+    get:
+      summary: List notebook entries
+      tags:
+      - Notebook Entries
+      security:
+      - bearer_token: []
+      responses:
+        '200':
+          description: notebook entries for the token's game
+        '401':
+          description: no token
+        '403':
+          description: banned GM is denied
+    post:
+      summary: Create a notebook entry
+      tags:
+      - Notebook Entries
+      security:
+      - bearer_token: []
+      parameters: []
+      responses:
+        '201':
+          description: notebook entry created
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/notebook_entry"
+        '401':
+          description: no token
+        '403':
+          description: banned GM is denied
+        '422':
+          description: blank title is rejected
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/errors"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/notebook_entry_input"
+  "/api/notebook_entries/{slug}":
+    get:
+      summary: Show a notebook entry
+      tags:
+      - Notebook Entries
+      security:
+      - bearer_token: []
+      parameters:
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: notebook entry found
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/notebook_entry"
+        '401':
+          description: no token
+        '403':
+          description: banned GM is denied
+        '404':
+          description: unknown slug
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/errors"
+    patch:
+      summary: Update a notebook entry
+      tags:
+      - Notebook Entries
+      security:
+      - bearer_token: []
+      parameters:
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: notebook entry updated
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/notebook_entry"
+        '401':
+          description: no token
+        '403':
+          description: banned GM is denied
+        '404':
+          description: unknown slug
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/errors"
+        '422':
+          description: blank title is rejected
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/errors"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/notebook_entry_input"
+  "/api/pages":
+    get:
+      summary: List pages
+      tags:
+      - Pages
+      security:
+      - bearer_token: []
+      responses:
+        '200':
+          description: the GM sees published pages and their own drafts
+        '401':
+          description: no token
+        '403':
+          description: banned member is denied
+    post:
+      summary: Create a page
+      tags:
+      - Pages
+      security:
+      - bearer_token: []
+      parameters: []
+      responses:
+        '201':
+          description: page created
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/page"
+        '401':
+          description: no token
+        '403':
+          description: active non-GM member is denied
+        '422':
+          description: blank title is rejected
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/errors"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/page_input"
+  "/api/pages/{slug}":
+    get:
+      summary: Show a page
+      tags:
+      - Pages
+      security:
+      - bearer_token: []
+      parameters:
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: published page found
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/page"
+        '401':
+          description: no token
+        '403':
+          description: a draft page is denied to a non-GM member
+        '404':
+          description: unknown slug
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/errors"
+    patch:
+      summary: Update a page
+      tags:
+      - Pages
+      security:
+      - bearer_token: []
+      parameters:
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: page updated
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/page"
+        '401':
+          description: no token
+        '403':
+          description: active non-GM member is denied
+        '404':
+          description: unknown slug
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/errors"
+        '422':
+          description: blank title is rejected
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/errors"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/page_input"
+servers:
+- url: "{scheme}://{host}"
+  variables:
+    scheme:
+      default: https
+      enum:
+      - https
+      - http
+    host:
+      default: localhost:3000
+components:
+  securitySchemes:
+    bearer_token:
+      type: http
+      scheme: bearer
+  schemas:
+    page:
+      type: object
+      properties:
+        slug:
+          type: string
+          description: 16-char stable identifier
+        title:
+          type: string
+        body:
+          type: string
+          description: Raw markdown
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      required:
+      - slug
+      - title
+      - body
+    page_input:
+      type: object
+      properties:
+        page:
+          type: object
+          properties:
+            title:
+              type: string
+            body:
+              type: string
+              description: Raw markdown
+      required:
+      - page
+    notebook_entry:
+      type: object
+      properties:
+        slug:
+          type: string
+          description: 16-char stable identifier
+        title:
+          type: string
+        body:
+          type: string
+          description: Raw markdown
+        status:
+          type: string
+          enum:
+          - new
+          - expand
+          - done
+          - discard
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      required:
+      - slug
+      - title
+      - body
+      - status
+    notebook_entry_input:
+      type: object
+      properties:
+        notebook_entry:
+          type: object
+          properties:
+            title:
+              type: string
+            body:
+              type: string
+              description: Raw markdown
+      required:
+      - notebook_entry
+    errors:
+      type: object
+      properties:
+        errors:
+          type: array
+          items:
+            type: string
+      required:
+      - errors
+security:
+- bearer_token: []

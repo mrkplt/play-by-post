@@ -16,4 +16,16 @@ class ApiTokenPolicy < ApplicationPolicy
 
     GamePolicy.new(user, record.game).feed?
   end
+
+  # May this token drive the data API: it must be api-scoped AND its user must be
+  # an active (non-banned, non-removed) member of the token's game — re-checked
+  # every request, so lost membership disables the API even while the token
+  # exists. Per-resource authorization (pages vs the GM-only notebook) is decided
+  # by PagePolicy / NotebookEntryPolicy in the API controllers, not here.
+  sig { returns(T::Boolean) }
+  def api?
+    return false unless record.scope == "api"
+
+    GamePolicy.new(user, record.game).write_access?
+  end
 end

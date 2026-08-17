@@ -48,8 +48,22 @@ class NotebookEntryPolicy < ApplicationPolicy
 
   private
 
+  # Game master AND currently active: a banned (or removed) member never reads
+  # or writes notes even if they still hold the game_master role. The role alone
+  # is status-blind; the notebook is GM-only *in good standing*. Composed from
+  # two single-call predicates so the symbolic verifier can encode each atom.
   sig { returns(T::Boolean) }
   def gm?
+    game_master? && active?
+  end
+
+  sig { returns(T::Boolean) }
+  def game_master?
     record.game.game_master?(user)
+  end
+
+  sig { returns(T::Boolean) }
+  def active?
+    record.game.active_member?(user)
   end
 end

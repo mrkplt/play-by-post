@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_16_140000) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_16_150000) do
   create_table "action_mailbox_inbound_emails", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "message_checksum", null: false
@@ -198,6 +198,17 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_16_140000) do
     t.index ["slug"], name: "index_notebook_entries_on_slug", unique: true
   end
 
+  create_table "notebook_entry_versions", force: :cascade do |t|
+    t.text "body"
+    t.datetime "created_at", null: false
+    t.integer "edited_by_id", null: false
+    t.integer "notebook_entry_id", null: false
+    t.string "title"
+    t.datetime "updated_at", null: false
+    t.index ["edited_by_id"], name: "index_notebook_entry_versions_on_edited_by_id"
+    t.index ["notebook_entry_id"], name: "index_notebook_entry_versions_on_notebook_entry_id"
+  end
+
   create_table "notification_preferences", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.boolean "muted", default: false, null: false
@@ -351,6 +362,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_16_140000) do
   add_foreign_key "invitations", "users", column: "invited_by_id"
   add_foreign_key "notebook_entries", "games"
   add_foreign_key "notebook_entries", "pages", column: "promoted_page_id"
+  add_foreign_key "notebook_entry_versions", "notebook_entries"
+  add_foreign_key "notebook_entry_versions", "users", column: "edited_by_id"
   add_foreign_key "notification_preferences", "scenes"
   add_foreign_key "notification_preferences", "users"
   add_foreign_key "page_versions", "pages"

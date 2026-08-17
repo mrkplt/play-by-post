@@ -446,6 +446,20 @@ class NotebookEntry
     sig { returns(T::Boolean) }
     def game_previously_changed?; end
 
+    sig { returns(T::Array[T.untyped]) }
+    def notebook_entry_version_ids; end
+
+    sig { params(ids: T::Array[T.untyped]).returns(T::Array[T.untyped]) }
+    def notebook_entry_version_ids=(ids); end
+
+    # This method is created by ActiveRecord on the `NotebookEntry` class because it declared `has_many :notebook_entry_versions`.
+    # 🔗 [Rails guide for `has_many` association](https://guides.rubyonrails.org/association_basics.html#the-has-many-association)
+    sig { returns(::NotebookEntryVersion::PrivateCollectionProxy) }
+    def notebook_entry_versions; end
+
+    sig { params(value: T::Enumerable[::NotebookEntryVersion]).void }
+    def notebook_entry_versions=(value); end
+
     sig { returns(T.nilable(::Page)) }
     def promoted_page; end
 
