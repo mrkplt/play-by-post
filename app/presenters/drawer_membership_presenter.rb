@@ -15,7 +15,15 @@ class DrawerMembershipPresenter < BasePresenter
     @model.game.name
   end
 
-  # The game this row links to, for the drawer's `game_path(...)`.
+  # The slug this row links to, for the drawer's `game_path(...)`. GamesController#show
+  # looks a game up by slug (`find_by!(slug:)`), so the drawer must link by slug, not id —
+  # `game_path(game_id)` yields `/games/<id>`, which no game's slug matches and 404s.
+  sig { returns(String) }
+  def game_slug
+    @model.game.to_param
+  end
+
+  # The game this row belongs to, for matching against the request's active_game_id.
   sig { returns(Integer) }
   def game_id
     @model.game_id

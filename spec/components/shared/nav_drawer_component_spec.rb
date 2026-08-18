@@ -43,6 +43,14 @@ RSpec.describe Shared::NavDrawerComponent, type: :component do
     expect(rendered).not_to have_text("Hidden")
   end
 
+  it "links each game row by slug, not by id" do
+    # GamesController#show looks games up by slug (find_by!(slug:)); a `/games/<id>`
+    # link 404s. Regression guard for that exact break.
+    r = rendered
+    expect(r).to have_link("Ashwood", href: "/games/#{player_game.slug}")
+    expect(r).to have_link("Sunken Archive", href: "/games/#{gm_game.slug}")
+  end
+
   it "highlights the active game row" do
     expect(rendered(active_game_id: player_game.id)).to have_css("a.bg-sidebar-bg", text: "Ashwood")
   end
@@ -96,6 +104,10 @@ RSpec.describe Shared::NavDrawerComponent, type: :component do
 
   it "exposes the game name" do
     expect(DrawerMembershipPresenter.new(gm_member, active_game_id: nil).game_name).to eq("Sunken Archive")
+  end
+
+  it "exposes the game slug as the link target" do
+    expect(DrawerMembershipPresenter.new(gm_member, active_game_id: nil).game_slug).to eq(gm_game.slug)
   end
 
   it "emphasizes the active row's name and mutes others" do

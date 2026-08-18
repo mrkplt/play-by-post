@@ -15,7 +15,7 @@
   <%# Games list — the only scrollable region %>
   <nav class="flex-1 overflow-y-auto min-h-0">
     <% memberships.each do |member| %>
-      <%= link_to game_path(member.game_id), class: row_classes(member) do %>
+      <%= link_to game_path(member.game_slug), class: row_classes(member) do %>
         <span class="w-[18px] text-center flex-shrink-0 text-[15px]">
           <% case member.status_icon %>
           <% when :crown %>
