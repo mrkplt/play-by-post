@@ -143,3 +143,17 @@ UserProfilePolicy:
     - equivalent: [show?, update?]
     - equivalent: [show?, manage?]
   unconstrained: []
+
+CharacterImagePolicy:
+  invariants:
+    - equivalent: [create?, manage?]
+    - equivalent: [update?, manage?]
+    - equivalent: [destroy?, manage?]
+  unconstrained: [manage?] # the capability itself: owns the image's character
+
+UserImagePolicy:
+  invariants:
+    - equivalent: [create?, manage?]
+    - equivalent: [update?, manage?]
+    - equivalent: [destroy?, manage?]
+  unconstrained: [manage?] # the capability itself: the image is the acting user's

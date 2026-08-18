@@ -285,9 +285,11 @@ matcher:
     - PlayerManagementController
     - FeedbackController
     - Users::SessionsController
+    - CharacterImagesController
+    - UserImagesController
     - TurnstileVerification
     - CharacterScoped
-    - ImageAttachable
+    - ImageLibrary
     - PostScoped
     - RequestMemo
     - ProfileScoped
@@ -341,6 +343,8 @@ matcher:
     - UserProfilePolicy
     - FeedbackPolicy
     - ApiTokenPolicy
+    - CharacterImagePolicy
+    - UserImagePolicy
 
 mutation:
   timeout: 20.0

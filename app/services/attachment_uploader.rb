@@ -1,7 +1,7 @@
 # typed: true
 
-# Single entry point for the four primary Active Storage uploads (game files,
-# export archives, scene images, post images).
+# Single entry point for the primary Active Storage uploads (game files,
+# export archives, character portrait images, user avatar images).
 #
 # It namespaces the object key by kind and attaches R2 Custom Metadata
 # (S3 x-amz-meta-*) describing the object, using only public Active Storage API:
@@ -17,7 +17,9 @@ module AttachmentUploader
   # Object-key prefixes, one per kind.
   KEY_PREFIXES = T.let({
     "game_file" => "game_files",
-    "export" => "exports"
+    "export" => "exports",
+    "character_image" => "character_images",
+    "user_image" => "user_images"
   }.freeze, T::Hash[String, String])
 
   # Who the attachment belongs to. Grouped so callers pass one owner object
