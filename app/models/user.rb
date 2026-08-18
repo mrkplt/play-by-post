@@ -19,10 +19,25 @@ class User < ApplicationRecord
   has_many :characters, dependent: :destroy
   has_many :feedback, dependent: :destroy
   has_many :api_tokens, dependent: :destroy
+  has_many :user_images, dependent: :destroy
 
   sig { returns(T.nilable(String)) }
   def display_name
     user_profile&.display_name
+  end
+
+  # The library image currently serving as this user's avatar, or nil when the
+  # library is empty / none is marked current.
+  sig { returns(T.nilable(UserImage)) }
+  def current_avatar
+    user_images.current.first
+  end
+
+  # The display variant of the current avatar, or nil when there is none — the
+  # profile screen's avatar <img>.
+  sig { returns(T.untyped) }
+  def avatar_variant
+    current_avatar&.display_variant
   end
 
   # Deliver Devise mail (the passwordless magic link) through Active Job /

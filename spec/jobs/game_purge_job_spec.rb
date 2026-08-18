@@ -17,6 +17,7 @@ RSpec.describe GamePurgeJob, type: :job, db: true do
     records[:invitation] = create(:invitation, game: game, invited_by: gm)
     records[:character] = create(:character, game: game, user: player)
     records[:character_version] = create(:character_version, character: records[:character], edited_by: player)
+    records[:character_image] = create(:character_image, character: records[:character])
 
     parent = create(:scene, game: game)
     child = create(:scene, game: game, parent_scene: parent)
@@ -37,10 +38,11 @@ RSpec.describe GamePurgeJob, type: :job, db: true do
     records[:export] = create(:game_export_request, user: gm, game: game)
     records[:api_token] = create(:api_token, user: gm, game: game)
 
+    records[:character_image].file.attach(io: StringIO.new("c"), filename: "portrait-#{suffix}.png", content_type: "image/png")
     records[:game_file].file.attach(io: StringIO.new("d"), filename: "doc-#{suffix}.txt", content_type: "text/plain")
     records[:export].archive.attach(io: StringIO.new("z"), filename: "export-#{suffix}.zip", content_type: "application/zip")
 
-    records[:blob_filenames] = %W[doc-#{suffix}.txt export-#{suffix}.zip]
+    records[:blob_filenames] = %W[portrait-#{suffix}.png doc-#{suffix}.txt export-#{suffix}.zip]
     records
   end
 
@@ -53,6 +55,7 @@ RSpec.describe GamePurgeJob, type: :job, db: true do
       SceneSummary.exists?(r[:scene_summary].id) &&
       NotificationPreference.exists?(r[:notification_preference].id) &&
       Character.exists?(r[:character].id) && CharacterVersion.exists?(r[:character_version].id) &&
+      CharacterImage.exists?(r[:character_image].id) &&
       GameFile.exists?(r[:game_file].id) && Page.exists?(r[:page].id) &&
       PageVersion.exists?(r[:page_version].id) &&
       GameLink.exists?(r[:game_link].id) &&
@@ -62,7 +65,7 @@ RSpec.describe GamePurgeJob, type: :job, db: true do
       GameMember.where(id: r[:memberships].map(&:id)).count == 2 &&
       GameExportRequest.exists?(r[:export].id) &&
       ApiToken.exists?(r[:api_token].id) &&
-      ActiveStorage::Blob.where(filename: r[:blob_filenames]).count == 2
+      ActiveStorage::Blob.where(filename: r[:blob_filenames]).count == 3
   end
 
   describe "#perform" do

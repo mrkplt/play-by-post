@@ -27,6 +27,8 @@ matcher:
     - GameFile
     - Character
     - CharacterVersion
+    - CharacterImage
+    - UserImage
     - PageVersion
     - NotebookEntryVersion
     - Scene
@@ -45,6 +47,7 @@ matcher:
     - Draftable::Model
     - Draftable::Presentation
     - Versionable::Model
+    - UploadedImage::Model
     # Presenters
     - BannedMemberPresenter
     - CharacterPresenter

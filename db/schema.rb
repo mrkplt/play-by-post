@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_17_120000) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_17_130100) do
   create_table "action_mailbox_inbound_emails", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "message_checksum", null: false
@@ -67,6 +67,15 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_17_120000) do
     t.integer "user_id", null: false
     t.index ["token"], name: "index_api_tokens_on_token", unique: true
     t.index ["user_id", "scope", "game_id"], name: "index_api_tokens_on_user_id_and_scope_and_game_id", unique: true
+  end
+
+  create_table "character_images", force: :cascade do |t|
+    t.integer "character_id", null: false
+    t.datetime "created_at", null: false
+    t.boolean "current", default: false, null: false
+    t.datetime "updated_at", null: false
+    t.index ["character_id", "current"], name: "index_character_images_on_character_id_and_current"
+    t.index ["character_id"], name: "index_character_images_on_character_id"
   end
 
   create_table "character_versions", force: :cascade do |t|
@@ -318,6 +327,15 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_17_120000) do
     t.index ["updated_at"], name: "index_sessions_on_updated_at"
   end
 
+  create_table "user_images", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.boolean "current", default: false, null: false
+    t.datetime "updated_at", null: false
+    t.integer "user_id", null: false
+    t.index ["user_id", "current"], name: "index_user_images_on_user_id_and_current"
+    t.index ["user_id"], name: "index_user_images_on_user_id"
+  end
+
   create_table "user_profiles", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "display_name"
@@ -345,6 +363,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_17_120000) do
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "api_tokens", "games"
   add_foreign_key "api_tokens", "users"
+  add_foreign_key "character_images", "characters"
   add_foreign_key "character_versions", "characters"
   add_foreign_key "character_versions", "users", column: "edited_by_id"
   add_foreign_key "characters", "games"
@@ -379,5 +398,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_17_120000) do
   add_foreign_key "scene_summaries", "users", column: "edited_by_id"
   add_foreign_key "scenes", "games"
   add_foreign_key "scenes", "scenes", column: "parent_scene_id"
+  add_foreign_key "user_images", "users"
   add_foreign_key "user_profiles", "users"
 end

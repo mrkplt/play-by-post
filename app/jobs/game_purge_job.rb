@@ -29,13 +29,21 @@ class GamePurgeJob < ApplicationJob
 
   private
 
-  # Collect and remove every stored artifact tied to the game — uploaded game
-  # files and export archives — deleting each from storage now (purge, not
-  # purge_later) so nothing is left orphaned in R2.
+  # Collect and remove every stored artifact tied to the game — character
+  # portrait images, uploaded game files, and export archives — deleting each
+  # from storage now (purge, not purge_later) so nothing is left orphaned in R2.
   # ActiveStorage::Attached::One#purge is a no-op when nothing is attached.
   sig { params(scope: GamePurgeScope).void }
   def purge_artifacts(scope)
+    purge_character_images(scope)
     purge_game_files(scope)
+  end
+
+  sig { params(scope: GamePurgeScope).void }
+  def purge_character_images(scope)
+    CharacterImage.where(character_id: scope.character_ids).with_attached_file.find_each do |image|
+      image.file.purge
+    end
   end
 
   sig { params(scope: GamePurgeScope).void }

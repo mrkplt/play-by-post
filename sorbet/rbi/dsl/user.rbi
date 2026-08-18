@@ -488,6 +488,20 @@ class User
     sig { params(value: T::Enumerable[::Scene]).void }
     def scenes=(value); end
 
+    sig { returns(T::Array[T.untyped]) }
+    def user_image_ids; end
+
+    sig { params(ids: T::Array[T.untyped]).returns(T::Array[T.untyped]) }
+    def user_image_ids=(ids); end
+
+    # This method is created by ActiveRecord on the `User` class because it declared `has_many :user_images`.
+    # 🔗 [Rails guide for `has_many` association](https://guides.rubyonrails.org/association_basics.html#the-has-many-association)
+    sig { returns(::UserImage::PrivateCollectionProxy) }
+    def user_images; end
+
+    sig { params(value: T::Enumerable[::UserImage]).void }
+    def user_images=(value); end
+
     sig { returns(T.nilable(::UserProfile)) }
     def user_profile; end
 

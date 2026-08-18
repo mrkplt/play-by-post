@@ -116,4 +116,36 @@ RSpec.describe User, type: :model do
       expect(message).to have_received(:deliver_now)
     end
   end
+
+  describe "#current_avatar", :db do
+    it "is the user's current library image" do
+      user = create(:user)
+      create(:user_image, user: user)
+      current = create(:user_image, :current, user: user)
+
+      expect(user.current_avatar).to eq(current)
+    end
+
+    it "is nil when no image is current" do
+      user = create(:user)
+      create(:user_image, user: user)
+
+      expect(user.current_avatar).to be_nil
+    end
+  end
+
+  describe "#avatar_variant", :db do
+    it "is the display variant of the current avatar" do
+      user = create(:user)
+      create(:user_image, :current, :with_file, user: user)
+
+      expect(user.avatar_variant).to be_a(ActiveStorage::VariantWithRecord)
+    end
+
+    it "is nil when there is no current avatar" do
+      user = create(:user)
+
+      expect(user.avatar_variant).to be_nil
+    end
+  end
 end
