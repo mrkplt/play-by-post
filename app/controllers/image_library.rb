@@ -36,7 +36,7 @@ module ImageLibrary
   def update
     authorize image_collection.new
     image_collection.find(params[:id]).make_current!
-    redirect_to library_redirect_path, notice: "Portrait updated."
+    redirect_to library_redirect_path, notice: "Image updated."
   end
 
   sig { void }
@@ -66,16 +66,32 @@ module ImageLibrary
 
   sig { params(uploaded: T.untyped).void }
   def save_uploaded_image(uploaded)
-    image = build_uploaded_image(uploaded)
+    rejection = upload_rejection(uploaded)
+    return redirect_to(library_redirect_path, alert: rejection) if rejection
 
-    if image.save
-      image.make_current!
-      redirect_to library_redirect_path, notice: "Portrait added."
-    else
-      redirect_to library_redirect_path, alert: image_error_message(image)
-    end
+    build_uploaded_image(uploaded).make_current!
+    redirect_to library_redirect_path, notice: "Image added."
   end
 
+  # Validate size and content type BEFORE the R2 upload, not after. The model's
+  # acceptable_image is the backstop, but it only runs on save — by which point
+  # AttachmentUploader has already written the blob to R2. Rejecting a bad file
+  # here (an oversized or non-image upload from a direct API caller bypassing the
+  # cropper) keeps a rejected upload from leaking an orphaned object in the
+  # bucket. Returns the error message, or nil when the file is acceptable.
+  sig { params(uploaded: T.untyped).returns(T.nilable(String)) }
+  def upload_rejection(uploaded)
+    return "Image must be less than 10MB." if uploaded.size > UploadedImage::Model::IMAGE_MAX_SIZE
+
+    unless UploadedImage::Model::IMAGE_TYPES.include?(uploaded.content_type)
+      return "Image must be a JPEG, PNG, GIF, or WebP image."
+    end
+
+    nil
+  end
+
+  # Build the library row, upload the (already-validated) file to R2, and persist
+  # it — returning the saved image so the caller can make it current.
   sig { params(uploaded: T.untyped).returns(T.untyped) }
   def build_uploaded_image(uploaded)
     image = image_collection.new
@@ -88,6 +104,7 @@ module ImageLibrary
         naming: AttachmentUploader::Naming.build(original_filename: uploaded.original_filename)
       )
     )
+    image.save!
     image
   end
 
@@ -95,10 +112,5 @@ module ImageLibrary
   def uploaded_image_param
     image = params.dig(:image, :file)
     image if image.is_a?(ActionDispatch::Http::UploadedFile)
-  end
-
-  sig { params(image: T.untyped).returns(String) }
-  def image_error_message(image)
-    image.errors[:file].first || "Could not add image."
   end
 end

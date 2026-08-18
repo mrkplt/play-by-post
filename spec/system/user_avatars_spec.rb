@@ -41,7 +41,7 @@ RSpec.describe "User avatars", type: :feature do
 
         click_on "Use"
 
-        expect(page).to have_text("Portrait updated.")
+        expect(page).to have_text("Image updated.")
         expect(second.reload.current?).to be(true)
       end
 

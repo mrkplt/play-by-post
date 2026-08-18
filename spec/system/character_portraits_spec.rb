@@ -69,7 +69,7 @@ RSpec.describe "Character portraits", type: :feature do
         # Only the non-current image offers "Use"; clicking it makes it current.
         click_on "Use"
 
-        expect(page).to have_text("Portrait updated.")
+        expect(page).to have_text("Image updated.")
         expect(second.reload.current?).to be(true)
       end
 

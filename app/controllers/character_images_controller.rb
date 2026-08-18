@@ -3,7 +3,7 @@
 # A character's portrait library, nested under the game's character. The CRUD
 # lives in ImageLibrary; this controller supplies the character-owned hooks and
 # the game/character lookup. Authorization is CharacterImagePolicy#manage? —
-# the owning player or the GM.
+# the owning player only (the GM does not curate a player's portraits).
 class CharacterImagesController < ApplicationController
   extend T::Sig
   include RequestMemo

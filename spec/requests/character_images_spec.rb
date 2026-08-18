@@ -70,6 +70,35 @@ RSpec.describe CharacterImagesController, type: :request do
       expect(flash[:alert]).to eq("Please select an image to upload.")
     end
 
+    it "rejects an oversized file BEFORE touching storage (no orphaned blob)" do
+      allow(AttachmentUploader).to receive(:attach)
+      oversized = Rack::Test::UploadedFile.new(
+        StringIO.new("x" * (UploadedImage::Model::IMAGE_MAX_SIZE + 1)), "image/png",
+        original_filename: "big.png"
+      )
+      sign_in(player)
+
+      expect {
+        post game_character_images_path(game, character), params: { image: { file: oversized } }
+      }.not_to change { character.character_images.count }
+
+      expect(AttachmentUploader).not_to have_received(:attach)
+      expect(flash[:alert]).to eq("Image must be less than 10MB.")
+    end
+
+    it "rejects a non-image file BEFORE touching storage" do
+      allow(AttachmentUploader).to receive(:attach)
+      pdf = Rack::Test::UploadedFile.new(
+        StringIO.new("not an image"), "application/pdf", original_filename: "doc.pdf"
+      )
+      sign_in(player)
+
+      post game_character_images_path(game, character), params: { image: { file: pdf } }
+
+      expect(AttachmentUploader).not_to have_received(:attach)
+      expect(flash[:alert]).to eq("Image must be a JPEG, PNG, GIF, or WebP image.")
+    end
+
     it "denies a player who does not own the character" do
       other = create(:user, :with_profile)
       create(:game_member, game: game, user: other)

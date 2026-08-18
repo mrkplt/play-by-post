@@ -91,8 +91,13 @@ export default class extends Controller {
   }
 
   async upload(blob) {
+    if (!blob) {
+      this.showError("Could not process that image. Please try another.")
+      return
+    }
+
     const body = new FormData()
-    body.append("image[file]", blob, "portrait.jpg")
+    body.append("image[file]", blob, "image.jpg")
 
     try {
       const response = await fetch(this.uploadUrlValue, {
