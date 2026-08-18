@@ -22,6 +22,14 @@ RSpec.describe DrawerMembershipPresenter do
     end
   end
 
+  describe "#game_slug" do
+    it "returns the game's slug (its to_param), the drawer's link target" do
+      game_with_slug = build_stubbed(:game, name: "Sunken Archive", slug: "sunken-archive-9f3k2a")
+      member = build_stubbed(:game_member, game: game_with_slug, user: user, role: "player", status: "active")
+      expect(present(member).game_slug).to eq("sunken-archive-9f3k2a")
+    end
+  end
+
   describe "#active?" do
     let(:member) { build_stubbed(:game_member, game: game, user: user, role: "player", status: "active") }
 
