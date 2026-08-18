@@ -2,7 +2,7 @@
   <%= render Ui::SectionLabelComponent.new do %><%= title %><% end %>
 
   <% if any_images? %>
-    <div class="bg-card border border-card-border rounded-card p-4 flex flex-col gap-4">
+    <div class="<%= populated_card_class %>">
       <% if (current = current_image) %>
         <div class="flex justify-center">
           <%= image_tag current[:display_url],
@@ -35,7 +35,7 @@
       </div>
     </div>
   <% else %>
-    <div class="bg-card border border-card-border rounded-card p-4">
+    <div class="<%= Shared::ImageLibraryComponent::CARD_CLASS %>">
       <p class="text-muted-2 m-0 text-sm"><%= empty_text %></p>
     </div>
   <% end %>

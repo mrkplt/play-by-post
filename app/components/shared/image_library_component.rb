@@ -62,12 +62,22 @@ class Shared::ImageLibraryComponent < ApplicationComponent
     images.any?
   end
 
+  # The card shell both the populated and empty states share, declared once so
+  # the class string isn't spelled out twice (bin/quality-metrics dedup ceiling).
+  CARD_CLASS = "bg-card border border-card-border rounded-card p-4"
+
   # The thumbnail's CSS: a shared base, ringed when this image is the current
   # one so the grid shows which is selected. Kept here (not the template) so the
   # ternary is out of the output tag, per the no-logic-in-templates rule.
   THUMB_BASE = "w-16 h-16 rounded-control object-cover border"
   CURRENT_RING = "border-accent ring-2 ring-accent"
   IDLE_BORDER = "border-card-border"
+
+  # The populated card adds column layout to the shared shell.
+  sig { returns(String) }
+  def populated_card_class
+    "#{CARD_CLASS} flex flex-col gap-4"
+  end
 
   sig { params(image: Item).returns(String) }
   def image_thumb_class(image)

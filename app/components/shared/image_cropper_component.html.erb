@@ -30,10 +30,11 @@
           <img data-image-cropper-target="image" class="max-w-full block" alt="Crop preview">
         </div>
         <div class="flex flex-wrap gap-2 justify-center">
-          <button type="button" data-action="image-cropper#zoomIn" class="px-3 py-1.5 text-sm border border-card-border rounded-control bg-card cursor-pointer" aria-label="Zoom in">+</button>
-          <button type="button" data-action="image-cropper#zoomOut" class="px-3 py-1.5 text-sm border border-card-border rounded-control bg-card cursor-pointer" aria-label="Zoom out">&minus;</button>
-          <button type="button" data-action="image-cropper#rotateLeft" class="px-3 py-1.5 text-sm border border-card-border rounded-control bg-card cursor-pointer" aria-label="Rotate left">&#8634;</button>
-          <button type="button" data-action="image-cropper#rotateRight" class="px-3 py-1.5 text-sm border border-card-border rounded-control bg-card cursor-pointer" aria-label="Rotate right">&#8635;</button>
+          <% crop_controls.each do |control| %>
+            <button type="button" data-action="<%= control[:action] %>"
+                    class="<%= Shared::ImageCropperComponent::CONTROL_BUTTON_CLASS %>"
+                    aria-label="<%= control[:label] %>"><%= control[:symbol] %></button>
+          <% end %>
         </div>
       </div>
 
