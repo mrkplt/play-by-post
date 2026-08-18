@@ -1,13 +1,5 @@
 <section class="flex flex-col gap-3" data-testid="image-library">
-  <div class="flex items-center gap-2">
-    <%= render Ui::SectionLabelComponent.new do %><%= title %><% end %>
-    <% if can_manage %>
-      <button type="button"
-              class="ml-auto text-xs font-bold text-accent cursor-pointer"
-              data-action="image-cropper#open"
-              data-testid="add-image">Add image</button>
-    <% end %>
-  </div>
+  <%= render Ui::SectionLabelComponent.new do %><%= title %><% end %>
 
   <% if any_images? %>
     <div class="bg-card border border-card-border rounded-card p-4 flex flex-col gap-4">

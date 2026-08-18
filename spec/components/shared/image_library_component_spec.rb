@@ -51,10 +51,6 @@ RSpec.describe Shared::ImageLibraryComponent, type: :component do
       ))
     end
 
-    it "shows the add-image button" do
-      expect(rendered).to have_css("[data-testid='add-image']")
-    end
-
     it "offers Use on non-current images only" do
       expect(rendered).to have_css("[data-testid='use-image']", count: 1)
     end
@@ -70,10 +66,6 @@ RSpec.describe Shared::ImageLibraryComponent, type: :component do
         images: [ item(id: 1, current: true) ],
         can_manage: false
       ))
-    end
-
-    it "hides the add-image button" do
-      expect(rendered).to have_no_css("[data-testid='add-image']")
     end
 
     it "shows no Use or Delete controls" do

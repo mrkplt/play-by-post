@@ -1,6 +1,11 @@
 <div data-controller="image-cropper"
      data-image-cropper-upload-url-value="<%= upload_url %>"
      data-testid="image-cropper">
+  <button type="button"
+          class="text-xs font-bold text-accent cursor-pointer"
+          data-action="image-cropper#open"
+          data-testid="add-image"><%= add_label %></button>
+
   <div data-image-cropper-target="modal"
        class="fixed inset-0 z-[1000] flex items-center justify-center p-4 hidden"
        data-action="click->image-cropper#closeOnBackdrop">

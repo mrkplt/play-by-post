@@ -19,7 +19,8 @@
         empty_text: "No avatar yet.") %>
   <%= render Shared::ImageCropperComponent.new(
         upload_url: @user_presenter.avatar_upload_url,
-        title: "Add an avatar") %>
+        title: "Add an avatar",
+        add_label: "Add avatar") %>
 
   <%# Email + Preferences %>
   <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do %>Account<% end %>

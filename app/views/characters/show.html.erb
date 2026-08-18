@@ -30,7 +30,8 @@
   <% if @character_show_presenter.can_manage_portraits? %>
     <%= render Shared::ImageCropperComponent.new(
           upload_url: @character_show_presenter.portrait_upload_url,
-          title: "Add a portrait") %>
+          title: "Add a portrait",
+          add_label: "Add portrait") %>
   <% end %>
 
   <div class="bg-card border border-card-border rounded-card p-4">

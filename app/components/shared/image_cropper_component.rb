@@ -10,10 +10,11 @@
 class Shared::ImageCropperComponent < ApplicationComponent
   extend T::Sig
 
-  sig { params(upload_url: String, title: String).void }
-  def initialize(upload_url:, title:)
+  sig { params(upload_url: String, title: String, add_label: String).void }
+  def initialize(upload_url:, title:, add_label:)
     @upload_url = T.let(upload_url, String)
     @title = T.let(title, String)
+    @add_label = T.let(add_label, String)
   end
 
   sig { returns(String) }
@@ -21,4 +22,7 @@ class Shared::ImageCropperComponent < ApplicationComponent
 
   sig { returns(String) }
   attr_reader :title
+
+  sig { returns(String) }
+  attr_reader :add_label
 end
