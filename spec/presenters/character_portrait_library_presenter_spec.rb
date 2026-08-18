@@ -9,9 +9,12 @@ RSpec.describe CharacterPortraitLibraryPresenter, :db do
   let(:helpers) do
     double("helpers").tap do |h|
       allow(h).to receive(:url_for) { |variant| "/blob/#{variant.object_id}" }
+      # Constrain the receivers to the exact (game, character[, image]) args so a
+      # mutant swapping @game/@character for nil fails the stub instead of
+      # returning the same string.
       allow(h).to receive(:game_character_images_path).with(game, character)
         .and_return("/games/#{game.slug}/characters/#{character.id}/images")
-      allow(h).to receive(:game_character_image_path) do |_g, _c, image|
+      allow(h).to receive(:game_character_image_path).with(game, character, anything) do |_g, _c, image|
         "/games/#{game.slug}/characters/#{character.id}/images/#{image.id}"
       end
     end
@@ -36,6 +39,16 @@ RSpec.describe CharacterPortraitLibraryPresenter, :db do
 
     it "is empty when the library is empty" do
       expect(presenter.items).to eq([])
+    end
+
+    it "eager-loads the attachments so the blobs are not an N+1" do
+      create(:character_image, :with_file, character: character)
+      create(:character_image, :with_file, character: character)
+
+      # with_attached_file preloads the attachment+blob; dropping it would issue
+      # a per-image blob query. Assert the attachment association is loaded.
+      images = presenter.send(:images).to_a
+      expect(images).to all(satisfy { |img| img.file.attachment.association(:blob).loaded? })
     end
 
     it "points the set-current and delete URLs at the nested image route" do

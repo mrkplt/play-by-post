@@ -8,7 +8,7 @@ RSpec.describe UserAvatarLibraryPresenter, :db do
     double("helpers").tap do |h|
       allow(h).to receive(:url_for) { |variant| "/blob/#{variant.object_id}" }
       allow(h).to receive(:profile_images_path).and_return("/profile/images")
-      allow(h).to receive(:profile_image_path) { |image| "/profile/images/#{image.id}" }
+      allow(h).to receive(:profile_image_path).with(anything) { |image| "/profile/images/#{image.id}" }
     end
   end
 
@@ -23,6 +23,14 @@ RSpec.describe UserAvatarLibraryPresenter, :db do
 
       expect(items.map { |i| i[:id] }).to eq([ newer.id, older.id ])
       expect(items.first[:current]).to be(true)
+    end
+
+    it "eager-loads the attachments so the blobs are not an N+1" do
+      create(:user_image, :with_file, user: user)
+      create(:user_image, :with_file, user: user)
+
+      images = presenter.send(:images).to_a
+      expect(images).to all(satisfy { |img| img.file.attachment.association(:blob).loaded? })
     end
 
     it "points the URLs at the profile image route" do

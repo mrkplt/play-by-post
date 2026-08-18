@@ -17,16 +17,16 @@ RSpec.describe CharacterImagePolicy do
   end
 
   describe "CRUD predicates delegate to #manage?" do
-    it "create? follows manage? for the owner" do
-      expect(described_class.new(owner, image).create?).to be(true)
-    end
+    # Both states per predicate, so the delegation is pinned against a `super`
+    # (false) mutant and a hard-coded-true mutant alike.
+    %i[create? update? destroy?].each do |predicate|
+      it "#{predicate} is true for the owning player" do
+        expect(described_class.new(owner, image).public_send(predicate)).to be(true)
+      end
 
-    it "update? follows manage? for a non-owner" do
-      expect(described_class.new(other, image).update?).to be(false)
-    end
-
-    it "destroy? follows manage? for the owner" do
-      expect(described_class.new(owner, image).destroy?).to be(true)
+      it "#{predicate} is false for a non-owner" do
+        expect(described_class.new(other, image).public_send(predicate)).to be(false)
+      end
     end
   end
 end
