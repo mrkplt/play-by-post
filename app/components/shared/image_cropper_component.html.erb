@@ -1,0 +1,53 @@
+<div data-controller="image-cropper"
+     data-image-cropper-upload-url-value="<%= upload_url %>"
+     data-testid="image-cropper">
+  <button type="button"
+          class="text-xs font-bold text-accent cursor-pointer"
+          data-action="image-cropper#open"
+          data-testid="add-image"><%= add_label %></button>
+
+  <div data-image-cropper-target="modal"
+       class="fixed inset-0 z-[1000] flex items-center justify-center p-4 hidden"
+       data-action="click->image-cropper#closeOnBackdrop">
+    <div class="absolute inset-0 bg-black/60"></div>
+
+    <div class="relative bg-card border border-card-border rounded-card p-5 w-full max-w-md max-h-[90vh] overflow-y-auto flex flex-col gap-3">
+      <div class="flex items-center">
+        <h2 class="text-sm font-bold text-ink m-0"><%= title %></h2>
+        <button type="button" class="ml-auto text-muted-2 cursor-pointer text-lg leading-none"
+                data-action="image-cropper#close" aria-label="Close">&times;</button>
+      </div>
+
+      <label class="text-[11px] font-bold text-muted uppercase tracking-[0.05em]">Choose an image</label>
+      <input type="file"
+             accept="image/jpeg,image/png,image/gif,image/webp"
+             data-image-cropper-target="fileInput"
+             data-action="change->image-cropper#fileChosen"
+             class="block w-full text-[13px] text-body-ink border border-input-border rounded-control px-3 py-2.5 bg-card file:mr-3 file:py-1 file:px-3 file:rounded-control file:border-0 file:text-xs file:font-semibold file:bg-pill-idle file:text-ink">
+
+      <div data-image-cropper-target="cropArea" class="hidden flex flex-col gap-3">
+        <div class="max-h-[50vh]">
+          <img data-image-cropper-target="image" class="max-w-full block" alt="Crop preview">
+        </div>
+        <div class="flex flex-wrap gap-2 justify-center">
+          <% crop_controls.each do |control| %>
+            <button type="button" data-action="<%= control[:action] %>"
+                    class="<%= Shared::ImageCropperComponent::CONTROL_BUTTON_CLASS %>"
+                    aria-label="<%= control[:label] %>"><%= control[:symbol] %></button>
+          <% end %>
+        </div>
+      </div>
+
+      <p data-image-cropper-target="error" class="hidden text-danger text-xs m-0"></p>
+
+      <div class="flex justify-end gap-2 mt-1">
+        <button type="button" data-action="image-cropper#close"
+                class="bg-card text-ink border border-card-border rounded-control px-4 py-2 text-[13px] font-bold cursor-pointer">Cancel</button>
+        <button type="button" data-action="image-cropper#save"
+                data-image-cropper-target="saveButton"
+                class="bg-accent text-accent-ink border-0 rounded-control px-4 py-2 text-[13px] font-extrabold cursor-pointer disabled:opacity-50"
+                disabled data-testid="crop-save">Save portrait</button>
+      </div>
+    </div>
+  </div>
+</div>

@@ -27,6 +27,8 @@ matcher:
     - GameFile
     - Character
     - CharacterVersion
+    - CharacterImage
+    - UserImage
     - PageVersion
     - NotebookEntryVersion
     - Scene
@@ -45,11 +47,15 @@ matcher:
     - Draftable::Model
     - Draftable::Presentation
     - Versionable::Model
+    - UploadedImage::Model
     # Presenters
     - BannedMemberPresenter
     - CharacterPresenter
     - CharacterShowPresenter
     - CharacterVersionPresenter
+    - ImageLibraryPresenter
+    - CharacterPortraitLibraryPresenter
+    - UserAvatarLibraryPresenter
     - GameDashboardItemPresenter
     - GameDashboardPresenter
     - DrawerMembershipPresenter
@@ -104,11 +110,12 @@ matcher:
     - UserProfilePresenter
     # Components
     - Shared::RecordBackedForm
+    - Shared::ImageLibraryComponent
+    - Shared::ImageCropperComponent
     - Ui::FormErrorsComponent
     - Ui::SecretFieldComponent
     - Shared::TokenSectionComponent
     - Shared::AiSummariesToggleComponent
-    - Shared::ImagesToggleComponent
     - Shared::SheetsToggleComponent
     - Shared::ProfileFormComponent
     - Shared::SceneSummaryComponent
@@ -283,9 +290,11 @@ matcher:
     - PlayerManagementController
     - FeedbackController
     - Users::SessionsController
+    - CharacterImagesController
+    - UserImagesController
     - TurnstileVerification
     - CharacterScoped
-    - ImageAttachable
+    - ImageLibrary
     - PostScoped
     - RequestMemo
     - ProfileScoped
@@ -339,6 +348,8 @@ matcher:
     - UserProfilePolicy
     - FeedbackPolicy
     - ApiTokenPolicy
+    - CharacterImagePolicy
+    - UserImagePolicy
 
 mutation:
   timeout: 20.0

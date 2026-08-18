@@ -25,4 +25,38 @@ class CharacterShowPresenter < BasePresenter
     @model.character_versions.order(created_at: :desc).includes(:edited_by)
       .map { |version| CharacterVersionPresenter.new(version) }
   end
+
+  # The character's portrait library as component-ready Item hashes.
+  sig { returns(T::Array[Shared::ImageLibraryComponent::Item]) }
+  def portrait_items
+    portrait_library.items
+  end
+
+  # Whether the viewer may manage this character's portraits — the owning player
+  # only (CharacterImagePolicy), threaded in from the controller.
+  sig { returns(T::Boolean) }
+  def can_manage_portraits?
+    portrait_library.can_manage?
+  end
+
+  # Where the cropper posts a new portrait.
+  sig { returns(String) }
+  def portrait_upload_url
+    portrait_library.upload_url
+  end
+
+  private
+
+  sig { returns(CharacterPortraitLibraryPresenter) }
+  def portrait_library
+    @portrait_library ||= T.let(
+      CharacterPortraitLibraryPresenter.new(
+        character: @model,
+        game: @options.fetch(:game),
+        can_manage: @options.fetch(:can_manage_portraits),
+        helpers: @options.fetch(:helpers)
+      ),
+      T.nilable(CharacterPortraitLibraryPresenter)
+    )
+  end
 end

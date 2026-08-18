@@ -28,6 +28,7 @@ Rails.application.routes.draw do
       post :toggle_hide_ooc, on: :collection
       post :export_all, on: :collection
       resources :api_tokens, only: %i[create destroy], module: :profiles
+      resources :images, only: %i[create update destroy], controller: "user_images"
     end
     resources :games, only: %i[index new create show edit update destroy] do
       # Kept as toggle_*_game_path on the game itself — the setting switches
@@ -35,7 +36,6 @@ Rails.application.routes.draw do
       # controller so GamesController stays about games.
       member do
         patch :toggle_sheets_hidden, to: "games/settings#sheets_hidden"
-        patch :toggle_images_disabled, to: "games/settings#images_disabled"
         patch :toggle_ai_summaries_enabled, to: "games/settings#ai_summaries_enabled"
       end
       resources :scenes, only: %i[index new create show] do
@@ -104,6 +104,7 @@ Rails.application.routes.draw do
           patch :restore
         end
         resources :character_versions, only: %i[show], path: "versions"
+        resources :images, only: %i[create update destroy], controller: "character_images"
       end
     end
   end

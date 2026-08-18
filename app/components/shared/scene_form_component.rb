@@ -4,7 +4,7 @@
 # component system. A "quick" scene inherits participants and parent from the
 # scene it was launched from, so it collapses to just a title field with the
 # inherited context carried in hidden fields; the full form additionally offers
-# participant selection, a parent scene, a private flag, and a banner image.
+# participant selection, a parent scene, and a private flag.
 # Everything but the two domain subjects (game, scene) travels as one
 # Selection (see scene_form_component/selection.rb).
 class Shared::SceneFormComponent < ApplicationComponent

@@ -170,4 +170,36 @@ RSpec.describe Character, type: :model do
       expect(described_class.first_active_name_by_user([])).to eq({})
     end
   end
+
+  describe "#current_portrait", :db do
+    it "is the character's current library image" do
+      character = create(:character)
+      create(:character_image, character: character)
+      current = create(:character_image, :current, character: character)
+
+      expect(character.current_portrait).to eq(current)
+    end
+
+    it "is nil when no image is current" do
+      character = create(:character)
+      create(:character_image, character: character)
+
+      expect(character.current_portrait).to be_nil
+    end
+  end
+
+  describe "#portrait_variant", :db do
+    it "is the display variant of the current portrait" do
+      character = create(:character)
+      create(:character_image, :current, :with_file, character: character)
+
+      expect(character.portrait_variant).to be_a(ActiveStorage::VariantWithRecord)
+    end
+
+    it "is nil when there is no current portrait" do
+      character = create(:character)
+
+      expect(character.portrait_variant).to be_nil
+    end
+  end
 end

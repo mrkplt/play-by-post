@@ -418,6 +418,20 @@ class Character
     def build_user(*args, &blk); end
 
     sig { returns(T::Array[T.untyped]) }
+    def character_image_ids; end
+
+    sig { params(ids: T::Array[T.untyped]).returns(T::Array[T.untyped]) }
+    def character_image_ids=(ids); end
+
+    # This method is created by ActiveRecord on the `Character` class because it declared `has_many :character_images`.
+    # 🔗 [Rails guide for `has_many` association](https://guides.rubyonrails.org/association_basics.html#the-has-many-association)
+    sig { returns(::CharacterImage::PrivateCollectionProxy) }
+    def character_images; end
+
+    sig { params(value: T::Enumerable[::CharacterImage]).void }
+    def character_images=(value); end
+
+    sig { returns(T::Array[T.untyped]) }
     def character_version_ids; end
 
     sig { params(ids: T::Array[T.untyped]).returns(T::Array[T.untyped]) }

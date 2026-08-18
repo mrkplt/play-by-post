@@ -34,17 +34,6 @@ RSpec.describe Games::SettingsController, type: :request do
     end
   end
 
-  describe "PATCH /games/:id/toggle_images_disabled" do
-    it "flips the flag and returns to the edit screen" do
-      sign_in gm
-
-      patch toggle_images_disabled_game_path(game)
-
-      expect(game.reload.images_disabled?).to be(true)
-      expect(response).to redirect_to(edit_game_path(game))
-    end
-  end
-
   describe "PATCH /games/:id/toggle_ai_summaries_enabled" do
     it "flips the flag and returns to player management" do
       sign_in gm

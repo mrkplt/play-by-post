@@ -7,6 +7,7 @@ class Character < ApplicationRecord
   belongs_to :game
   belongs_to :user
   has_many :character_versions, dependent: :destroy
+  has_many :character_images, dependent: :destroy
 
   validates :name, presence: true
 
@@ -26,6 +27,20 @@ class Character < ApplicationRecord
   sig { returns(T::Boolean) }
   def archived?
     archived_at.present?
+  end
+
+  # The library image currently serving as this character's portrait, or nil
+  # when the library is empty / none is marked current.
+  sig { returns(T.nilable(CharacterImage)) }
+  def current_portrait
+    character_images.current.first
+  end
+
+  # The display variant of the current portrait, or nil when there is none —
+  # the character screen's portrait <img>.
+  sig { returns(T.untyped) }
+  def portrait_variant
+    current_portrait&.display_variant
   end
 
   sig { void }

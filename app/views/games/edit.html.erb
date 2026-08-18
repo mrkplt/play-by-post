@@ -12,11 +12,6 @@
         game: @game_presenter,
         submission: Shared::GameFormComponent::Submission.new(label: "Save Changes", cancel_href: game_path(@game_presenter))) %>
 
-  <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do %>Post Images<% end %>
-  <%= render Ui::CardComponent.new do %>
-    <%= render Shared::ImagesToggleComponent.new(game: @game_presenter) %>
-  <% end %>
-
   <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do %>Character Sheets<% end %>
   <%= render Ui::CardComponent.new do %>
     <%= render Shared::SheetsToggleComponent.new(game: @game_presenter) %>

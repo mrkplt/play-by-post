@@ -14,11 +14,6 @@ module Games
     end
 
     sig { void }
-    def images_disabled
-      toggle(:images_disabled) { |target| edit_game_path(target) }
-    end
-
-    sig { void }
     def ai_summaries_enabled
       toggle(:ai_summaries_enabled) { |target| game_player_management_path(target) }
     end

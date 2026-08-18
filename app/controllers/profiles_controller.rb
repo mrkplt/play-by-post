@@ -10,7 +10,7 @@ class ProfilesController < ApplicationController
   def show
     current_profile = profile
     authorize current_profile
-    @user_presenter = T.let(UserPresenter.new(current_user), T.nilable(UserPresenter))
+    @user_presenter = T.let(UserPresenter.new(current_user, helpers: helpers), T.nilable(UserPresenter))
     @feed_rows = T.let(T.must(@user_presenter).feed_rows(urls: self), T.nilable(T::Array[GameFeedRowPresenter]))
     assign_profile_presenter(current_profile)
   end

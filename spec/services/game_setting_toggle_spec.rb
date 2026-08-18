@@ -18,18 +18,6 @@ RSpec.describe GameSettingToggle, :db do
       expect(game.reload.sheets_hidden?).to be(false)
     end
 
-    it "words the images setting for its own flag" do
-      game.update!(images_disabled: false)
-
-      expect(described_class.new(game, :images_disabled).call).to eq("Image attachments are now disabled.")
-    end
-
-    it "words the images setting when switched back on" do
-      game.update!(images_disabled: true)
-
-      expect(described_class.new(game, :images_disabled).call).to eq("Image attachments are now enabled.")
-    end
-
     it "words the AI summaries setting for its own flag" do
       game.update!(ai_summaries_enabled: false)
 

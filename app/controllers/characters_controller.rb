@@ -36,7 +36,13 @@ class CharactersController < ApplicationController
   def show
     authorize character
     @character_show_presenter = T.let(
-      CharacterShowPresenter.new(character), T.nilable(CharacterShowPresenter)
+      CharacterShowPresenter.new(
+        character,
+        game: game,
+        can_manage_portraits: policy(character.character_images.new).manage?,
+        helpers: helpers
+      ),
+      T.nilable(CharacterShowPresenter)
     )
     assign_presenters(character)
   end

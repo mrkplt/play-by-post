@@ -42,12 +42,6 @@
       </p>
     <% end %>
 
-    <% if @scene_screen.navigation.image_attached? %>
-      <div>
-        <%= image_tag @scene_screen.navigation.banner_image, class: "max-w-full rounded-card" %>
-      </div>
-    <% end %>
-
     <%= render Shared::ChildSceneListComponent.new(game: @scene_screen.game, child_scenes: @scene_screen.show.visible_child_scenes) %>
 
     <%= render Shared::ControlRowComponent.new(label: "Participants: #{@scene_screen.scene.participant_names}") do %>

@@ -100,6 +100,7 @@ class GamePurgeScope
   sig { void }
   def delete_characters_and_versions
     CharacterVersion.where(character_id: character_ids).in_batches.delete_all
+    CharacterImage.where(character_id: character_ids).in_batches.delete_all
     Character.where(id: character_ids).in_batches.delete_all
   end
 

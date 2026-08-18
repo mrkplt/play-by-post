@@ -28,4 +28,36 @@ RSpec.describe CharacterShowPresenter do
       expect(result.map(&:__getobj__)).to eq([ version ])
     end
   end
+
+  describe "portrait library", :db do
+    let(:game) { create(:game) }
+    let(:character) { create(:character, game: game) }
+    let(:helpers) do
+      double("helpers").tap do |h|
+        allow(h).to receive(:url_for) { |variant| "/blob/#{variant.object_id}" }
+        allow(h).to receive(:game_character_images_path)
+          .and_return("/games/#{game.slug}/characters/#{character.id}/images")
+        allow(h).to receive(:game_character_image_path) do |_g, _c, image|
+          "/games/#{game.slug}/characters/#{character.id}/images/#{image.id}"
+        end
+      end
+    end
+
+    subject(:presenter) do
+      described_class.new(character, game: game, can_manage_portraits: true, helpers: helpers)
+    end
+
+    it "#portrait_items exposes the library's items" do
+      create(:character_image, :with_file, :current, character: character)
+      expect(presenter.portrait_items.map { |i| i[:current] }).to eq([ true ])
+    end
+
+    it "#can_manage_portraits? reflects the injected capability" do
+      expect(presenter.can_manage_portraits?).to be(true)
+    end
+
+    it "#portrait_upload_url is the nested images path" do
+      expect(presenter.portrait_upload_url).to eq("/games/#{game.slug}/characters/#{character.id}/images")
+    end
+  end
 end

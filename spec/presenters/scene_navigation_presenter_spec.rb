@@ -8,36 +8,6 @@ RSpec.describe SceneNavigationPresenter do
 
   subject(:presenter) { described_class.new(scene_presenter, game: game, urls: urls) }
 
-  describe "#image_attached?" do
-    it "is false when the scene has no image" do
-      scene = build(:scene)
-      presenter = described_class.new(ScenePresenter.new(scene), game: game, urls: urls)
-      expect(presenter.image_attached?).to be(false)
-    end
-
-    it "is true once an image is attached" do
-      scene = build(:scene)
-      scene.image.attach(io: File.open(Rails.root.join("spec/fixtures/files/test_image.png")),
-                          filename: "banner.png", content_type: "image/png")
-      presenter = described_class.new(ScenePresenter.new(scene), game: game, urls: urls)
-      expect(presenter.image_attached?).to be(true)
-    end
-  end
-
-  describe "#banner_image" do
-    it "returns a variant with correct transformations" do
-      scene = build(:scene)
-      scene.image.attach(io: File.open(Rails.root.join("spec/fixtures/files/test_image.png")),
-                         filename: "banner.png", content_type: "image/png")
-      presenter = described_class.new(ScenePresenter.new(scene), game: game, urls: urls)
-      result = presenter.banner_image
-      expect(result).to be_a(ActiveStorage::VariantWithRecord)
-      expect(result.variation.transformations).to eq(
-        resize_to_limit: [ 1200, nil ], format: :jpeg, quality: 85
-      )
-    end
-  end
-
   describe "#parent_scene?" do
     it "is false when the scene has no parent" do
       allow(scene).to receive(:parent_scene).and_return(nil)

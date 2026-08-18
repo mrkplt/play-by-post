@@ -20,12 +20,6 @@
         content_class: "post-content text-body-ink leading-[1.65] #{ooc? ? 'text-sm' : 'text-base'}",
         content_attributes: { data: { testid: "post-content" } }) %>
 
-  <% if @post.image_attached? %>
-    <div class="mt-2 clear-left">
-      <%= image_tag @post.display_image, class: "max-w-full rounded" %>
-    </div>
-  <% end %>
-
   <div class="clear-both"></div>
 
   <div class="text-[11px] text-muted-2 mt-2 flex items-center gap-2">

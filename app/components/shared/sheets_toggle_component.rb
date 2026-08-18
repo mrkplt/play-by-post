@@ -3,7 +3,7 @@
 # The "Sheet visibility" settings row on the Edit Game screen: a text-link
 # control that flips whether character sheets are hidden from players. Owns
 # the full row (label, sub-label, toggle link) — same pattern as
-# Shared::ImagesToggleComponent / Shared::AiSummariesToggleComponent.
+# Shared::AiSummariesToggleComponent.
 class Shared::SheetsToggleComponent < ApplicationComponent
   extend T::Sig
 
