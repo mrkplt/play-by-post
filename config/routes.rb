@@ -1,52 +1,54 @@
 Rails.application.routes.draw do
   # Runtime modes (RUNTIME_MODE, read only through RuntimeMode): unset draws
-  # everything; "web" draws the session/Devise surface; "api" draws the /api +
-  # machine-auth surface. The gate is here at route-drawing — an undrawn route
-  # is the boundary — never at controller/eager load. See lib/runtime_mode.rb.
+  # everything; "api" draws ONLY the JSON /api namespace; "web" draws everything
+  # else. The gate is here at route-drawing — an undrawn route is the boundary —
+  # never at controller/eager load. See lib/runtime_mode.rb.
   #
-  # Shared infra routes below are drawn in EVERY mode on purpose:
-  #   - GET /up  — the health check MUST answer in every mode, or an api-only
-  #     (or web-only) container is reported unhealthy and never receives traffic.
-  #   - POST /mail/inbound  — ActionMailbox ingress (Svix-signed, no session):
-  #     a machine surface an api-mode process legitimately serves.
-  #   - POST /webhooks/deploy  — deploy relay (bearer-secret, no session):
-  #     likewise machine-auth, and any mode's container may receive the callback.
+  # The boundary is "is this the Cloudflare-bypassing JSON data API?", not "does
+  # this use a session?". The `api` process exists solely to serve the bearer-
+  # token /api namespace on an api.* host that bypasses the Cloudflare proxy
+  # 403ing writes; it draws nothing else. Every other surface — including the
+  # machine-auth ones (mail ingress, deploy relay, RSS feed) and the human-facing
+  # Swagger docs — belongs to the web process. Only the health check is shared,
+  # because every container must answer /up or it is reported unhealthy and
+  # receives no traffic.
 
   # Shared: the health check answers in every mode.
   get "up" => "rails/health#show", as: :rails_health_check
 
-  # Shared: machine-auth ingress/relay (no session) — drawn in every mode.
-  # Resend inbound email webhook (custom ActionMailbox ingress).
-  post "/mail/inbound" =>
-    "action_mailbox/ingresses/resend/inbound_emails#create",
-    as: :rails_resend_inbound_emails
-
-  # Deploy relay: GitHub Actions posts here after a new image is built; we
-  # forward the trigger to Coolify over the internal network (Coolify is not
-  # exposed to the internet).
-  post "/webhooks/deploy" => "webhooks/deploy#create", as: :deploy_webhook
-
   if RuntimeMode.api?
-    # API-only surface. The docs mounts describe /api; the machine-auth RSS feed
-    # and JSON data API are the api process's whole reason to exist.
-    mount Rswag::Ui::Engine => "/api-docs"
-    mount Rswag::Api::Engine => "/api-docs"
-
-    # Machine-auth surface (bearer ApiToken, no session). The token carries the
-    # game, so no :game_id in the path.
-    get "/rss/feed", to: "rss#feed", defaults: { format: :rss }
-
-    # JSON data API (bearer api-scoped ApiToken). CRU over the token's game's
-    # pages and notebook entries, addressed by slug; no delete.
+    # The api process's whole reason to exist: the JSON data API (bearer
+    # api-scoped ApiToken). CRU over the token's game's pages and notebook
+    # entries, addressed by slug; no delete. The token carries the game, so no
+    # :game_id in the path.
     namespace :api, defaults: { format: :json } do
       resources :pages, only: %i[index show create update], param: :slug
       resources :notebook_entries, only: %i[index show create update], param: :slug
     end
   end
 
-  # Everything below is the web (session/Devise) surface — drawn only in web mode
-  # (or when unset). An api-mode process draws none of it.
+  # Everything that is not the JSON data API is the web surface — drawn only in
+  # web mode (or when unset). An api-mode process draws none of it.
   if RuntimeMode.web?
+    # Resend inbound email webhook (custom ActionMailbox ingress, Svix-signed).
+    post "/mail/inbound" =>
+      "action_mailbox/ingresses/resend/inbound_emails#create",
+      as: :rails_resend_inbound_emails
+
+    # Deploy relay: GitHub Actions posts here after a new image is built; we
+    # forward the trigger to Coolify over the internal network (Coolify is not
+    # exposed to the internet).
+    post "/webhooks/deploy" => "webhooks/deploy#create", as: :deploy_webhook
+
+    # Swagger UI / OpenAPI docs — human-facing HTML describing the /api surface.
+    mount Rswag::Ui::Engine => "/api-docs"
+    mount Rswag::Api::Engine => "/api-docs"
+
+    # Machine-auth RSS feed (bearer ApiToken via query param, for feed readers
+    # that cannot send a header). Consumed by feed-reader clients, not the JSON
+    # API client, so it lives with the web surface.
+    get "/rss/feed", to: "rss#feed", defaults: { format: :rss }
+
     if Rails.env.development?
       mount LetterOpenerWeb::Engine, at: "/letter_opener"
     end
