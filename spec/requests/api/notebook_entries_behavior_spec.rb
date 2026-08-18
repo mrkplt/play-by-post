@@ -156,6 +156,41 @@ RSpec.describe Api::NotebookEntriesController, :db, type: :request do
       expect(json).to have_key("errors")
     end
 
+    it "defaults a status-less create to the `new` lane" do
+      post "/api/notebook_entries", params: { notebook_entry: { title: "Fresh", body: "x" } }.to_json,
+        headers: auth(gm_token).merge("Content-Type" => "application/json")
+
+      expect(response).to have_http_status(:created)
+      expect(json["status"]).to eq("new")
+    end
+
+    it "creates in a chosen lane when a valid status is supplied" do
+      post "/api/notebook_entries", params: { notebook_entry: { title: "Fresh", body: "x", status: "expand" } }.to_json,
+        headers: auth(gm_token).merge("Content-Type" => "application/json")
+
+      expect(response).to have_http_status(:created)
+      expect(json["status"]).to eq("expand")
+      expect(NotebookEntry.find_by!(slug: json["slug"]).status).to eq("expand")
+    end
+
+    it "routes a create's status through NotebookLaneMove rather than a raw permit" do
+      allow(NotebookLaneMove).to receive(:new).and_call_original
+
+      post "/api/notebook_entries", params: { notebook_entry: { title: "Fresh", body: "x", status: "done" } }.to_json,
+        headers: auth(gm_token).merge("Content-Type" => "application/json")
+
+      expect(NotebookLaneMove).to have_received(:new)
+    end
+
+    it "does not consult NotebookLaneMove when no status is supplied" do
+      allow(NotebookLaneMove).to receive(:new).and_call_original
+
+      post "/api/notebook_entries", params: { notebook_entry: { title: "Fresh", body: "x" } }.to_json,
+        headers: auth(gm_token).merge("Content-Type" => "application/json")
+
+      expect(NotebookLaneMove).not_to have_received(:new)
+    end
+
     it "forbids a non-GM member from creating" do
       post "/api/notebook_entries", params: { notebook_entry: { title: "X", body: "y" } }.to_json,
         headers: auth(member_token).merge("Content-Type" => "application/json")
@@ -177,6 +212,80 @@ RSpec.describe Api::NotebookEntriesController, :db, type: :request do
       patch "/api/notebook_entries/#{entry.slug}", params: { notebook_entry: { body: "x" } }.to_json,
         headers: auth(member_token).merge("Content-Type" => "application/json")
       expect(response).to have_http_status(:forbidden)
+    end
+
+    it "moves the entry to another lane when a valid status is supplied" do
+      patch "/api/notebook_entries/#{entry.slug}", params: { notebook_entry: { status: "done" } }.to_json,
+        headers: auth(gm_token).merge("Content-Type" => "application/json")
+
+      expect(response).to have_http_status(:ok)
+      expect(entry.reload.status).to eq("done")
+    end
+
+    it "updates prose and status together in one request" do
+      patch "/api/notebook_entries/#{entry.slug}",
+        params: { notebook_entry: { body: "moved and edited", status: "expand" } }.to_json,
+        headers: auth(gm_token).merge("Content-Type" => "application/json")
+
+      expect(response).to have_http_status(:ok)
+      entry.reload
+      expect(entry.body).to eq("moved and edited")
+      expect(entry.status).to eq("expand")
+    end
+
+    it "leaves status unchanged when a status-less update edits prose" do
+      entry.update_column(:status, "expand")
+
+      patch "/api/notebook_entries/#{entry.slug}", params: { notebook_entry: { body: "rewritten" } }.to_json,
+        headers: auth(gm_token).merge("Content-Type" => "application/json")
+
+      expect(response).to have_http_status(:ok)
+      expect(entry.reload.status).to eq("expand")
+    end
+
+    it "routes an update's status through NotebookLaneMove rather than a raw permit" do
+      allow(NotebookLaneMove).to receive(:new).and_call_original
+
+      patch "/api/notebook_entries/#{entry.slug}", params: { notebook_entry: { status: "done" } }.to_json,
+        headers: auth(gm_token).merge("Content-Type" => "application/json")
+
+      expect(NotebookLaneMove).to have_received(:new)
+    end
+  end
+
+  describe "an out-of-range status" do
+    it "is rejected before the controller with a uniform 400 on create (schema middleware)" do
+      expect {
+        post "/api/notebook_entries", params: { notebook_entry: { title: "X", body: "y", status: "sideways" } }.to_json,
+          headers: auth(gm_token).merge("Content-Type" => "application/json")
+      }.not_to change(NotebookEntry, :count)
+
+      expect(response).to have_http_status(:bad_request)
+      expect(json).to have_key("errors")
+    end
+
+    it "is rejected with a uniform 400 on update (schema middleware)" do
+      patch "/api/notebook_entries/#{entry.slug}", params: { notebook_entry: { status: "sideways" } }.to_json,
+        headers: auth(gm_token).merge("Content-Type" => "application/json")
+
+      expect(response).to have_http_status(:bad_request)
+      expect(json).to have_key("errors")
+      expect(entry.reload.status).to eq("new")
+    end
+
+    # Defense in depth: if the schema middleware is ever bypassed, NotebookLaneMove
+    # still raises ActionController::BadRequest on an unknown lane, which the base
+    # controller renders as the same uniform 400 shape — never a 500 or a bare 400.
+    it "renders a uniform 400 (not a 500) when the service is reached directly" do
+      allow_any_instance_of(Api::SchemaValidation).to receive(:call) do |instance, env|
+        instance.instance_variable_get(:@app).call(env)
+      end
+
+      patch "/api/notebook_entries/#{entry.slug}", params: { notebook_entry: { status: "sideways" } }.to_json,
+        headers: auth(gm_token).merge("Content-Type" => "application/json")
+
+      expect(response).to have_http_status(:bad_request)
+      expect(json["errors"]).to include(a_string_matching(/invalid status/))
     end
   end
 

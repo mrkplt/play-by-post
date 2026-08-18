@@ -69,11 +69,17 @@ paths:
       parameters: []
       responses:
         '201':
-          description: notebook entry created
+          description: notebook entry created in a chosen lane
           content:
             application/json:
               schema:
                 "$ref": "#/components/schemas/notebook_entry"
+        '400':
+          description: an out-of-range status is rejected
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/errors"
         '401':
           description: no token
         '403':
@@ -133,11 +139,17 @@ paths:
           type: string
       responses:
         '200':
-          description: notebook entry updated
+          description: notebook entry moved to another lane
           content:
             application/json:
               schema:
                 "$ref": "#/components/schemas/notebook_entry"
+        '400':
+          description: an out-of-range status is rejected
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/errors"
         '401':
           description: no token
         '403':
@@ -408,6 +420,16 @@ components:
             body:
               type: string
               description: Raw markdown
+            status:
+              type: string
+              enum:
+              - new
+              - expand
+              - done
+              - discard
+              description: 'Kanban lane. Optional: omit to keep `new` on create or
+                leave unchanged on update. A status change is validated through the
+                shared lane-move path.'
       required:
       - notebook_entry
     errors:

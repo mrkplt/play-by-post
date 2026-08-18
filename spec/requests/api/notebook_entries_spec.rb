@@ -91,7 +91,26 @@ RSpec.describe "api/notebook_entries", type: :request do
 
           expect(version).to be_present
           expect(version.edited_by_id).to eq(gm_user.id)
+          # No status supplied: the entry lands in the default `new` lane.
+          expect(body["status"]).to eq("new")
         end
+      end
+
+      response "201", "notebook entry created in a chosen lane" do
+        let(:notebook_entry) { { notebook_entry: { title: "New Idea", body: "# Body", status: "expand" } } }
+        let(:Authorization) { "Bearer #{gm_token.token}" }
+        schema "$ref" => "#/components/schemas/notebook_entry"
+
+        run_test! do |response|
+          expect(JSON.parse(response.body)["status"]).to eq("expand")
+        end
+      end
+
+      response "400", "an out-of-range status is rejected" do
+        let(:notebook_entry) { { notebook_entry: { title: "New Idea", body: "# Body", status: "nonsense" } } }
+        let(:Authorization) { "Bearer #{gm_token.token}" }
+        schema "$ref" => "#/components/schemas/errors"
+        run_test!
       end
 
       response "401", "no token" do
@@ -186,6 +205,25 @@ RSpec.describe "api/notebook_entries", type: :request do
           expect(version).to be_present
           expect(version.edited_by_id).to eq(gm_user.id)
         end
+      end
+
+      response "200", "notebook entry moved to another lane" do
+        let(:slug) { existing_entry.slug }
+        let(:notebook_entry) { { notebook_entry: { status: "done" } } }
+        let(:Authorization) { "Bearer #{gm_token.token}" }
+        schema "$ref" => "#/components/schemas/notebook_entry"
+
+        run_test! do |response|
+          expect(JSON.parse(response.body)["status"]).to eq("done")
+        end
+      end
+
+      response "400", "an out-of-range status is rejected" do
+        let(:slug) { existing_entry.slug }
+        let(:notebook_entry) { { notebook_entry: { status: "nonsense" } } }
+        let(:Authorization) { "Bearer #{gm_token.token}" }
+        schema "$ref" => "#/components/schemas/errors"
+        run_test!
       end
 
       response "401", "no token" do

@@ -22,6 +22,7 @@ module Api
     after_action :verify_authorized
 
     rescue_from ActiveRecord::RecordNotFound, with: :not_found
+    rescue_from ActionController::BadRequest, with: :bad_request
 
     private
 
@@ -56,6 +57,16 @@ module Api
     sig { params(_error: ActiveRecord::RecordNotFound).void }
     def not_found(_error)
       render json: { errors: [ "Not found" ] }, status: :not_found
+    end
+
+    # A malformed request the controller could not act on — currently only an
+    # out-of-range notebook status reaching NotebookLaneMove directly (the schema
+    # middleware rejects a documented-enum violation with its own uniform 400
+    # first). Rendered in the same { errors: [...] } shape as every other API
+    # error so the response is never a bare 400 or a 500.
+    sig { params(error: ActionController::BadRequest).void }
+    def bad_request(error)
+      render json: { errors: [ error.message ] }, status: :bad_request
     end
   end
 end

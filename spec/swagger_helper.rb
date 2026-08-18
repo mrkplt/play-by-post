@@ -90,7 +90,11 @@ RSpec.configure do |config|
                 type: :object,
                 properties: {
                   title: { type: :string },
-                  body: { type: :string, description: "Raw markdown" }
+                  body: { type: :string, description: "Raw markdown" },
+                  status: {
+                    type: :string, enum: %w[new expand done discard],
+                    description: "Kanban lane. Optional: omit to keep `new` on create or leave unchanged on update. A status change is validated through the shared lane-move path."
+                  }
                 }
               }
             },
