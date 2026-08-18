@@ -103,6 +103,7 @@ Safe defaults exist; set only to override.
 
 | Variable | Read at | Default |
 |---|---|---|
+| `RUNTIME_MODE` | `lib/runtime_mode.rb` (`RuntimeMode`), read at route-draw time in `config/routes.rb` | unset — draws **every** route (default all-in-one process). `web` draws only the session/Devise surface; `api` draws only the `/api` + machine-auth + shared-infra surface. Lets the **same image** run a dedicated API-only process on an `api.*` host that bypasses the Cloudflare proxy. The gate is at route-drawing (an undrawn route is the boundary); eager-load is unchanged. Shared infra (`/up` health check, `/mail/inbound`, `/webhooks/deploy`) is drawn in every mode. Coolify container wiring for the `api.*` process is a follow-up |
 | `APP_NAME` | `app/models/branding.rb` (`Branding.display_name`); `config/initializers/rswag_ui.rb`, `rswag_api.rb` read `ENV` directly (pre-autoload) | `Play by Post` — the deployment's display name, shown in the layout title, sidebar wordmark, invitation emails, PWA manifest, and API docs. This instance sets `flailwhale.com` |
 | `STORAGE_REGION` | `config/storage.yml` | `auto` — correct for R2. Prefer `storage.region` in credentials |
 | `OPENROUTER_MODEL` | `app/services/scene_summary_service.rb` | `openai/gpt-4o`. Not a secret, so env var is fine |

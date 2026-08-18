@@ -1,7 +1,22 @@
 Rails.application.routes.draw do
-  mount Rswag::Ui::Engine => "/api-docs"
-  mount Rswag::Api::Engine => "/api-docs"
-  # Resend inbound email webhook (custom ActionMailbox ingress)
+  # Runtime modes (RUNTIME_MODE, read only through RuntimeMode): unset draws
+  # everything; "web" draws the session/Devise surface; "api" draws the /api +
+  # machine-auth surface. The gate is here at route-drawing — an undrawn route
+  # is the boundary — never at controller/eager load. See lib/runtime_mode.rb.
+  #
+  # Shared infra routes below are drawn in EVERY mode on purpose:
+  #   - GET /up  — the health check MUST answer in every mode, or an api-only
+  #     (or web-only) container is reported unhealthy and never receives traffic.
+  #   - POST /mail/inbound  — ActionMailbox ingress (Svix-signed, no session):
+  #     a machine surface an api-mode process legitimately serves.
+  #   - POST /webhooks/deploy  — deploy relay (bearer-secret, no session):
+  #     likewise machine-auth, and any mode's container may receive the callback.
+
+  # Shared: the health check answers in every mode.
+  get "up" => "rails/health#show", as: :rails_health_check
+
+  # Shared: machine-auth ingress/relay (no session) — drawn in every mode.
+  # Resend inbound email webhook (custom ActionMailbox ingress).
   post "/mail/inbound" =>
     "action_mailbox/ingresses/resend/inbound_emails#create",
     as: :rails_resend_inbound_emails
@@ -11,18 +26,38 @@ Rails.application.routes.draw do
   # exposed to the internet).
   post "/webhooks/deploy" => "webhooks/deploy#create", as: :deploy_webhook
 
-  if Rails.env.development?
-    mount LetterOpenerWeb::Engine, at: "/letter_opener"
+  if RuntimeMode.api?
+    # API-only surface. The docs mounts describe /api; the machine-auth RSS feed
+    # and JSON data API are the api process's whole reason to exist.
+    mount Rswag::Ui::Engine => "/api-docs"
+    mount Rswag::Api::Engine => "/api-docs"
+
+    # Machine-auth surface (bearer ApiToken, no session). The token carries the
+    # game, so no :game_id in the path.
+    get "/rss/feed", to: "rss#feed", defaults: { format: :rss }
+
+    # JSON data API (bearer api-scoped ApiToken). CRU over the token's game's
+    # pages and notebook entries, addressed by slug; no delete.
+    namespace :api, defaults: { format: :json } do
+      resources :pages, only: %i[index show create update], param: :slug
+      resources :notebook_entries, only: %i[index show create update], param: :slug
+    end
   end
 
-  devise_for :users, controllers: {
-    sessions: "users/sessions"
-  }
+  # Everything below is the web (session/Devise) surface — drawn only in web mode
+  # (or when unset). An api-mode process draws none of it.
+  if RuntimeMode.web?
+    if Rails.env.development?
+      mount LetterOpenerWeb::Engine, at: "/letter_opener"
+    end
 
-  get "up" => "rails/health#show", as: :rails_health_check
-  get "invitations/:token/accept", to: "invitations#accept", as: :accept_invitation
+    devise_for :users, controllers: {
+      sessions: "users/sessions"
+    }
 
-  authenticate :user do
+    get "invitations/:token/accept", to: "invitations#accept", as: :accept_invitation
+
+    authenticate :user do
     resource :feedback, only: %i[create]
     resource :profile, only: %i[show edit update], controller: "profiles" do
       post :toggle_hide_ooc, on: :collection
@@ -107,18 +142,8 @@ Rails.application.routes.draw do
         resources :images, only: %i[create update destroy], controller: "character_images"
       end
     end
+    end
+
+    root "games#index"
   end
-
-  # Machine-auth surface (bearer ApiToken, no session). The token carries the
-  # game, so no :game_id in the path.
-  get "/rss/feed", to: "rss#feed", defaults: { format: :rss }
-
-  # JSON data API (bearer api-scoped ApiToken). CRU over the token's game's pages
-  # and notebook entries, addressed by slug; no delete.
-  namespace :api, defaults: { format: :json } do
-    resources :pages, only: %i[index show create update], param: :slug
-    resources :notebook_entries, only: %i[index show create update], param: :slug
-  end
-
-  root "games#index"
 end
