@@ -108,7 +108,6 @@ matcher:
     - Ui::SecretFieldComponent
     - Shared::TokenSectionComponent
     - Shared::AiSummariesToggleComponent
-    - Shared::ImagesToggleComponent
     - Shared::SheetsToggleComponent
     - Shared::ProfileFormComponent
     - Shared::SceneSummaryComponent

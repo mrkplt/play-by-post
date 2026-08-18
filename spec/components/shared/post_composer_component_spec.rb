@@ -46,22 +46,6 @@ RSpec.describe Shared::PostComposerComponent, type: :component do
     end
   end
 
-  context "when images are enabled" do
-    before { allow(raw_game).to receive(:images_disabled?).and_return(false) }
-
-    it "renders the image file field" do
-      expect(rendered_component).to have_css("input[type='file'][name='post[image]']")
-    end
-  end
-
-  context "when images are disabled" do
-    before { allow(raw_game).to receive(:images_disabled?).and_return(true) }
-
-    it "does not render the image file field" do
-      expect(rendered_component).not_to have_css("input[type='file'][name='post[image]']")
-    end
-  end
-
   context "with a draft" do
     let(:draft_record) { build_stubbed(:post, :draft, scene: raw_scene, content: "Half-written") }
     let(:draft_presenter) { PostPresenter.new(draft_record) }

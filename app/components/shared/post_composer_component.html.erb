@@ -1,5 +1,4 @@
 <%= form_with model: [  @game, @scene, @post  ],
-    multipart: true,
     data: {
       controller: "draft",
       draft_save_url_value: @scene.routes.save_draft_url,
@@ -22,15 +21,6 @@
           draft_target: "content",
           action: "input->markdown-preview#update input->draft#scheduleSave"
         }, wrapper_class: "mb-3")) %>
-
-  <% unless @game.images_disabled? %>
-    <div class="mb-2">
-      <%= f.label :image, "Image (optional)", class: "block font-medium mb-1 text-sm text-row-ink" %>
-      <%= f.file_field :image, accept: "image/jpeg,image/png,image/gif,image/webp",
-          class: "block max-w-md text-sm text-row-ink border border-input-border rounded-control px-3 py-2 cursor-pointer bg-white file:mr-3 file:py-1 file:px-3 file:rounded file:border-0 file:text-sm file:font-medium file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200" %>
-      <p class="text-xs text-muted-2 mt-0.5">JPEG, PNG, GIF, or WebP. Max 10MB.</p>
-    </div>
-  <% end %>
 
   <div class="flex justify-between items-center flex-wrap gap-2" data-testid="composer-actions">
     <div class="flex gap-2 items-center">

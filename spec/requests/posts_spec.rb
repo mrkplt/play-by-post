@@ -111,68 +111,6 @@ RSpec.describe PostsController, type: :request do
     end
   end
 
-  describe "image attachment on create" do
-    let(:image) do
-      Rack::Test::UploadedFile.new(
-        Rails.root.join("spec/fixtures/files/test_image.png"), "image/png"
-      )
-    end
-
-    it "attaches the image via AttachmentUploader with post context" do
-      allow(AttachmentUploader).to receive(:attach)
-      sign_in(player)
-
-      post game_scene_posts_path(game, scene), params: { post: { content: "Look", image: image } }
-
-      expect(AttachmentUploader).to have_received(:attach).with(
-        hash_including(
-          context: have_attributes(
-            kind: "post_image",
-            owner: have_attributes(user: player, game: game),
-            naming: have_attributes(original_filename: "test_image.png")
-          )
-        )
-      )
-    end
-
-    it "attaches to the created post's image attachment" do
-      captured = nil
-      allow(AttachmentUploader).to receive(:attach) { |args| captured = args[:attachment] }
-      sign_in(player)
-
-      post game_scene_posts_path(game, scene), params: { post: { content: "Look", image: image } }
-
-      expect(captured).to be_a(ActiveStorage::Attached::One)
-      expect(captured.name).to eq("image")
-    end
-
-    it "actually stores the image on the post" do
-      sign_in(player)
-
-      post game_scene_posts_path(game, scene), params: { post: { content: "Look", image: image } }
-
-      expect(scene.posts.published.last.image).to be_attached
-    end
-
-    it "does not call AttachmentUploader when no image is provided" do
-      allow(AttachmentUploader).to receive(:attach)
-      sign_in(player)
-
-      post game_scene_posts_path(game, scene), params: { post: { content: "No image" } }
-
-      expect(AttachmentUploader).not_to have_received(:attach)
-    end
-
-    it "does not call AttachmentUploader when the image param is not a file" do
-      allow(AttachmentUploader).to receive(:attach)
-      sign_in(player)
-
-      post game_scene_posts_path(game, scene), params: { post: { content: "Bad", image: "not-a-file" } }
-
-      expect(AttachmentUploader).not_to have_received(:attach)
-    end
-  end
-
   describe "GET /games/:game_id/scenes/:scene_id/posts/:id/edit" do
     it "renders edit form for post within edit window" do
       post = create(:post, scene: scene, user: player)

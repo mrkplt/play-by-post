@@ -17,9 +17,7 @@ module AttachmentUploader
   # Object-key prefixes, one per kind.
   KEY_PREFIXES = T.let({
     "game_file" => "game_files",
-    "export" => "exports",
-    "scene_image" => "scene_images",
-    "post_image" => "post_images"
+    "export" => "exports"
   }.freeze, T::Hash[String, String])
 
   # Who the attachment belongs to. Grouped so callers pass one owner object

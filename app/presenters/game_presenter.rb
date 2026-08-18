@@ -71,15 +71,6 @@ class GamePresenter < BasePresenter
     @model.errors.full_messages
   end
 
-  # Whether image attachments are turned off for this game — the post
-  # composer's decision on whether to show its image field.
-  sig { returns(T::Boolean) }
-  def images_disabled?
-    @model.images_disabled? # mutant:disable
-  end
-
-
-
   # Whether character sheets are hidden from players — the Edit Game screen's
   # sheet-visibility toggle.
   sig { returns(T::Boolean) }

@@ -1,8 +1,8 @@
 # typed: strict
 
 # View model for a scene's thread/participant navigation links: the
-# "Continues from" parent link, the banner image, notification toggle, GM
-# scene-action links, and the Edit Participants screen's own routes. Wraps a
+# "Continues from" parent link, notification toggle, GM scene-action links,
+# and the Edit Participants screen's own routes. Wraps a
 # ScenePresenter — composition, not duplication — per the layering rule that
 # a presenter's subject may be a model or another presenter, and split out
 # from ScenePresenter purely to keep each presenter under the project's
@@ -14,16 +14,6 @@ class SceneNavigationPresenter < BasePresenter
   sig { params(model: ScenePresenter, options: T.untyped).void }
   def initialize(model, **options)
     super
-  end
-
-  sig { returns(T::Boolean) }
-  def image_attached?
-    @model.model.image.attached?
-  end
-
-  sig { returns(ActiveStorage::VariantWithRecord) }
-  def banner_image
-    @model.model.image.variant(resize_to_limit: [ 1200, nil ], format: :jpeg, quality: 85)
   end
 
   # Whether this scene continues from another — the "Continues from" thread

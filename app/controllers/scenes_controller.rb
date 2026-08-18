@@ -2,7 +2,6 @@
 
 class ScenesController < ApplicationController
   extend T::Sig
-  include ImageAttachable
   include SceneScoped
 
   before_action :require_game_access!
@@ -74,7 +73,6 @@ class ScenesController < ApplicationController
     new_scene = game.scenes.new
     authorize new_scene
     new_scene.assign_attributes(permitted_attributes(new_scene))
-    attach_uploaded_image(new_scene, game, param_key: :scene)
     new_scene
   end
 

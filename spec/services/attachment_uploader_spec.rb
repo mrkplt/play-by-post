@@ -268,7 +268,7 @@ RSpec.describe AttachmentUploader do
 
     it "omits nil values" do
       metadata = described_class.build_metadata(
-        described_class::Context.build(kind: "post_image")
+        described_class::Context.build(kind: "game_file")
       )
       expect(metadata.keys).to contain_exactly("kind", "uploaded-at")
     end

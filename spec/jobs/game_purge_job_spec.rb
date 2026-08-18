@@ -37,12 +37,10 @@ RSpec.describe GamePurgeJob, type: :job, db: true do
     records[:export] = create(:game_export_request, user: gm, game: game)
     records[:api_token] = create(:api_token, user: gm, game: game)
 
-    parent.image.attach(io: StringIO.new("s"), filename: "scene-#{suffix}.png", content_type: "image/png")
-    post.image.attach(io: StringIO.new("p"), filename: "post-#{suffix}.png", content_type: "image/png")
     records[:game_file].file.attach(io: StringIO.new("d"), filename: "doc-#{suffix}.txt", content_type: "text/plain")
     records[:export].archive.attach(io: StringIO.new("z"), filename: "export-#{suffix}.zip", content_type: "application/zip")
 
-    records[:blob_filenames] = %W[scene-#{suffix}.png post-#{suffix}.png doc-#{suffix}.txt export-#{suffix}.zip]
+    records[:blob_filenames] = %W[doc-#{suffix}.txt export-#{suffix}.zip]
     records
   end
 
@@ -64,7 +62,7 @@ RSpec.describe GamePurgeJob, type: :job, db: true do
       GameMember.where(id: r[:memberships].map(&:id)).count == 2 &&
       GameExportRequest.exists?(r[:export].id) &&
       ApiToken.exists?(r[:api_token].id) &&
-      ActiveStorage::Blob.where(filename: r[:blob_filenames]).count == 4
+      ActiveStorage::Blob.where(filename: r[:blob_filenames]).count == 2
   end
 
   describe "#perform" do

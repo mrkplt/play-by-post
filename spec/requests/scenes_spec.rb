@@ -718,68 +718,6 @@ RSpec.describe ScenesController, type: :request do
       expect(flash[:notice]).to eq("Scene created.")
     end
 
-    context "with an image attachment" do
-      let(:image) do
-        Rack::Test::UploadedFile.new(
-          Rails.root.join("spec/fixtures/files/test_image.png"), "image/png"
-        )
-      end
-
-      it "attaches the image via AttachmentUploader with scene context" do
-        allow(AttachmentUploader).to receive(:attach)
-        sign_in(gm)
-
-        post game_scenes_path(game), params: { scene: { title: "Scene", image: image } }
-
-        expect(AttachmentUploader).to have_received(:attach).with(
-          hash_including(
-            context: have_attributes(
-              kind: "scene_image",
-              owner: have_attributes(user: gm, game: game),
-              naming: have_attributes(original_filename: "test_image.png")
-            )
-          )
-        )
-      end
-
-      it "attaches to the created scene's image attachment" do
-        captured = nil
-        allow(AttachmentUploader).to receive(:attach) { |args| captured = args[:attachment] }
-        sign_in(gm)
-
-        post game_scenes_path(game), params: { scene: { title: "Scene", image: image } }
-
-        expect(captured).to be_a(ActiveStorage::Attached::One)
-        expect(captured.name).to eq("image")
-      end
-
-      it "actually stores the image on the scene" do
-        sign_in(gm)
-
-        post game_scenes_path(game), params: { scene: { title: "Scene", image: image } }
-
-        expect(Scene.last.image).to be_attached
-      end
-
-      it "does not call AttachmentUploader when no image is provided" do
-        allow(AttachmentUploader).to receive(:attach)
-        sign_in(gm)
-
-        post game_scenes_path(game), params: { scene: { title: "No image" } }
-
-        expect(AttachmentUploader).not_to have_received(:attach)
-      end
-
-      it "does not call AttachmentUploader when the image param is not a file" do
-        allow(AttachmentUploader).to receive(:attach)
-        sign_in(gm)
-
-        post game_scenes_path(game), params: { scene: { title: "Bad", image: "not-a-file" } }
-
-        expect(AttachmentUploader).not_to have_received(:attach)
-      end
-    end
-
     it "automatically adds the GM as a participant" do
       sign_in(gm)
       post game_scenes_path(game), params: { scene: { title: "New Scene" } }

@@ -6,11 +6,6 @@ class Scene < ApplicationRecord
   belongs_to :game
   belongs_to :parent_scene, class_name: "Scene", optional: true
 
-  has_one_attached :image
-
-  IMAGE_TYPES = %w[image/jpeg image/png image/gif image/webp].freeze
-  IMAGE_MAX_SIZE = 10.megabytes
-
   has_many :child_scenes, class_name: "Scene", foreign_key: :parent_scene_id, dependent: :nullify, inverse_of: :parent_scene
   has_many :scene_participants, dependent: :destroy
   has_many :users, through: :scene_participants
@@ -20,7 +15,6 @@ class Scene < ApplicationRecord
   before_validation :default_title
 
   validates :title, presence: true, length: { maximum: 200 }
-  validate :acceptable_image
 
   scope :active, -> { where(resolved_at: nil) }
   scope :resolved, -> { where.not(resolved_at: nil) }
@@ -49,17 +43,6 @@ class Scene < ApplicationRecord
   end
 
   private
-
-  def acceptable_image
-    return unless image.attached?
-
-    blob = image.blob
-    errors.add(:image, "must be less than 10MB") unless blob.byte_size <= IMAGE_MAX_SIZE
-
-    unless IMAGE_TYPES.include?(blob.content_type)
-      errors.add(:image, "must be a JPEG, PNG, GIF, or WebP image")
-    end
-  end
 
   def default_title
     self.title = Time.current.strftime("%b %-d, %Y %-I:%M %p") if title.blank?

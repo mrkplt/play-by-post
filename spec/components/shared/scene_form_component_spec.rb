@@ -98,7 +98,6 @@ RSpec.describe Shared::SceneFormComponent, type: :component do
       expect(page).to have_text("Seraphina Vex")
       expect(page).to have_select("Parent scene (optional)", with_options: [ "The Tavern" ])
       expect(page).to have_field("Private scene")
-      expect(page).to have_field("Scene image (optional)")
     end
 
     it "pre-checks selected characters" do

@@ -35,7 +35,6 @@ Rails.application.routes.draw do
       # controller so GamesController stays about games.
       member do
         patch :toggle_sheets_hidden, to: "games/settings#sheets_hidden"
-        patch :toggle_images_disabled, to: "games/settings#images_disabled"
         patch :toggle_ai_summaries_enabled, to: "games/settings#ai_summaries_enabled"
       end
       resources :scenes, only: %i[index new create show] do

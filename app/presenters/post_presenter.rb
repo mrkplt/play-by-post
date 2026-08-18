@@ -49,16 +49,6 @@ class PostPresenter < BasePresenter
     @options.fetch(:policy).update? # mutant:disable
   end
 
-  sig { returns(T.untyped) }
-  def display_image
-    @model.display_image # mutant:disable
-  end
-
-  sig { returns(T::Boolean) }
-  def image_attached?
-    @model.image.attached? # mutant:disable
-  end
-
   sig { returns(String) }
   def content
     @model.content.to_s # mutant:disable

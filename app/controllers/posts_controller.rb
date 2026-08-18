@@ -2,7 +2,6 @@
 
 class PostsController < ApplicationController
   extend T::Sig
-  include ImageAttachable
   include PostScoped
 
   before_action :require_participant!
@@ -58,7 +57,6 @@ class PostsController < ApplicationController
   sig { returns(Post) }
   def build_new_post
     new_post = PostDraft.new(scene, current_user).publish_target(post_params)
-    attach_uploaded_image(new_post, game, param_key: :post)
     assign_game_and_scene_presenters
     new_post
   end
