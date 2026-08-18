@@ -74,8 +74,33 @@ RSpec.describe Shared::ImageLibraryComponent, type: :component do
     end
   end
 
+  describe "#current_image" do
+    subject(:component) do
+      build_component(
+        images: [ item(id: 1, current: false), item(id: 2, current: true) ],
+        can_manage: true
+      )
+    end
+
+    # The current image is deliberately NOT first, so a mutant swapping find for
+    # first (which would return id 1) is caught.
+    it "returns the image whose current flag is set, not merely the first" do
+      expect(component.current_image[:id]).to eq(2)
+    end
+
+    it "is nil when no image is current" do
+      component = build_component(images: [ item(id: 1, current: false) ], can_manage: true)
+      expect(component.current_image).to be_nil
+    end
+  end
+
   describe "#image_thumb_class" do
     subject(:component) { build_component(images: [], can_manage: true) }
+
+    it "always includes the shared base classes" do
+      expect(component.image_thumb_class(item(id: 1, current: false)))
+        .to include("w-16", "h-16", "rounded-control", "object-cover")
+    end
 
     it "rings the current image" do
       expect(component.image_thumb_class(item(id: 1, current: true)))
