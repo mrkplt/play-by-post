@@ -4,6 +4,8 @@
 
 Play-by-Post TTRPG — Rails 8 app for asynchronous tabletop RPGs. GMs and players collaborate on scenes through threaded posts, with email notifications and reply-by-email.
 
+**Naming:** this app is also called **Flail Whale**. Its GM-only ideas board is a **micro-kanban** — the Campaign Notebook (`NotebookEntry`): title + markdown body cards a GM moves through four lanes (`new` → `expand` → `done` → `discard`, `NotebookEntry::STATUSES`) and can "promote" into a full game Page. It is driven both by the web UI (`notebook_entries/lanes#move`, `NotebookLaneMove`) and by the JSON data API (`/api/notebook_entries`, bearer `ApiToken`). Do **not** confuse it with **Fizzy** (the self-hosted kanban product on PiHost, `fizzy.10.0.0.233.sslip.io`) — that is a separate tool we file *our own* tickets on, not part of this codebase.
+
 ## Reference documents
 
 This file is the standing contract: how to work here, and the rules that apply on every
