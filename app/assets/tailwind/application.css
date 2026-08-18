@@ -6,6 +6,7 @@
 @import "../../components/ui/secret_field_component.css";
 @import "../../components/ui/toast_component.css";
 @import "../../components/shared/titled_card_component.css";
+@import "../../components/shared/cropper.css";
 
 /* Colour tokens are GENERATED from lib/palette.rb (the single source of
    truth). Edit colours there, not here — see bin/build-palette. */

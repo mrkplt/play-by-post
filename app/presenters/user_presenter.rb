@@ -97,7 +97,29 @@ class UserPresenter < BasePresenter
     end
   end
 
+  # The user's avatar library as component-ready Item hashes. `helpers` is
+  # supplied at construction (options[:helpers]) so the presenter builds the
+  # image URLs without the view reaching for a route.
+  sig { returns(T::Array[Shared::ImageLibraryComponent::Item]) }
+  def avatar_items
+    avatar_library.items
+  end
+
+  # Where the cropper posts a new avatar.
+  sig { returns(String) }
+  def avatar_upload_url
+    avatar_library.upload_url
+  end
+
   private
+
+  sig { returns(UserAvatarLibraryPresenter) }
+  def avatar_library
+    @avatar_library ||= T.let(
+      UserAvatarLibraryPresenter.new(user: @model, helpers: @options.fetch(:helpers)),
+      T.nilable(UserAvatarLibraryPresenter)
+    )
+  end
 
   sig { returns(T.untyped) }
   def feed_memberships

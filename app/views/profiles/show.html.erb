@@ -11,6 +11,16 @@
     <% end %>
   </div>
 
+  <%# Avatar %>
+  <%= render Shared::ImageLibraryComponent.new(
+        title: "Avatar",
+        images: @user_presenter.avatar_items,
+        can_manage: true,
+        empty_text: "No avatar yet.") %>
+  <%= render Shared::ImageCropperComponent.new(
+        upload_url: @user_presenter.avatar_upload_url,
+        title: "Add an avatar") %>
+
   <%# Email + Preferences %>
   <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do %>Account<% end %>
   <div class="bg-card border border-card-border rounded-card px-3.5">

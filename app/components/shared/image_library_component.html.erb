@@ -1,0 +1,50 @@
+<section class="flex flex-col gap-3" data-testid="image-library">
+  <div class="flex items-center gap-2">
+    <%= render Ui::SectionLabelComponent.new do %><%= title %><% end %>
+    <% if can_manage %>
+      <button type="button"
+              class="ml-auto text-xs font-bold text-accent cursor-pointer"
+              data-action="image-cropper#open"
+              data-testid="add-image">Add image</button>
+    <% end %>
+  </div>
+
+  <% if any_images? %>
+    <div class="bg-card border border-card-border rounded-card p-4 flex flex-col gap-4">
+      <% if (current = current_image) %>
+        <div class="flex justify-center">
+          <%= image_tag current[:display_url],
+                class: "w-40 h-40 rounded-card object-cover border border-card-border",
+                alt: "Current image", data: { testid: "current-image" } %>
+        </div>
+      <% end %>
+
+      <div class="flex flex-wrap gap-3">
+        <% images.each do |image| %>
+          <div class="flex flex-col items-center gap-1" data-testid="library-item">
+            <%= image_tag image[:thumb_url],
+                  class: image_thumb_class(image),
+                  alt: "Library image" %>
+            <% if can_manage %>
+              <div class="flex gap-2">
+                <% unless image[:current] %>
+                  <%= button_to "Use", image[:set_current_url], method: :patch,
+                        class: "text-[11px] font-bold text-accent cursor-pointer bg-transparent border-0 p-0",
+                        data: { testid: "use-image" } %>
+                <% end %>
+                <%= button_to "Delete", image[:delete_url], method: :delete,
+                      form: { data: { turbo_confirm: "Delete this image?" } },
+                      class: "text-[11px] font-bold text-danger cursor-pointer bg-transparent border-0 p-0",
+                      data: { testid: "delete-image" } %>
+              </div>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  <% else %>
+    <div class="bg-card border border-card-border rounded-card p-4">
+      <p class="text-muted-2 m-0 text-sm"><%= empty_text %></p>
+    </div>
+  <% end %>
+</section>

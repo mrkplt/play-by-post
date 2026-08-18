@@ -214,4 +214,26 @@ RSpec.describe UserPresenter do
       expect(rows).to all(be_a(ApiTokenRowPresenter))
     end
   end
+
+  describe "avatar library", :db do
+    let(:user) { create(:user) }
+    let(:helpers) do
+      double("helpers").tap do |h|
+        allow(h).to receive(:url_for) { |variant| "/blob/#{variant.object_id}" }
+        allow(h).to receive(:profile_images_path).and_return("/profile/images")
+        allow(h).to receive(:profile_image_path) { |image| "/profile/images/#{image.id}" }
+      end
+    end
+
+    subject(:presenter) { described_class.new(user, helpers: helpers) }
+
+    it "#avatar_items exposes the library's items" do
+      create(:user_image, :with_file, :current, user: user)
+      expect(presenter.avatar_items.map { |i| i[:current] }).to eq([ true ])
+    end
+
+    it "#avatar_upload_url is the profile images path" do
+      expect(presenter.avatar_upload_url).to eq("/profile/images")
+    end
+  end
 end

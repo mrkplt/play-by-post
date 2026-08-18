@@ -53,6 +53,9 @@ matcher:
     - CharacterPresenter
     - CharacterShowPresenter
     - CharacterVersionPresenter
+    - ImageLibraryPresenter
+    - CharacterPortraitLibraryPresenter
+    - UserAvatarLibraryPresenter
     - GameDashboardItemPresenter
     - GameDashboardPresenter
     - DrawerMembershipPresenter
@@ -107,6 +110,8 @@ matcher:
     - UserProfilePresenter
     # Components
     - Shared::RecordBackedForm
+    - Shared::ImageLibraryComponent
+    - Shared::ImageCropperComponent
     - Ui::FormErrorsComponent
     - Ui::SecretFieldComponent
     - Shared::TokenSectionComponent
