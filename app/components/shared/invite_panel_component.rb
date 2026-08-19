@@ -20,7 +20,7 @@ class Shared::InvitePanelComponent < ApplicationComponent
 
   sig { returns(T::Boolean) }
   def pending?
-    @pending_invitations.any?
+    pending_invitations.any?
   end
 
   sig { returns(String) }
@@ -30,6 +30,6 @@ class Shared::InvitePanelComponent < ApplicationComponent
 
   sig { params(index: Integer).returns(Symbol) }
   def row_position(index)
-    POSITIONS.fetch(index == @pending_invitations.length - 1)
+    POSITIONS.fetch(index == pending_invitations.length - 1)
   end
 end

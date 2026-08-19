@@ -23,7 +23,7 @@ class Shared::LinkFormComponent < ApplicationComponent
 
   sig { override.returns(GameLinkPresenter) }
   def record
-    @game_link
+    game_link
   end
 
   sig { returns(String) }
@@ -33,11 +33,11 @@ class Shared::LinkFormComponent < ApplicationComponent
 
   sig { returns(String) }
   def back_href
-    helpers.game_game_links_path(@game)
+    helpers.game_game_links_path(game)
   end
 
   sig { returns(String) }
   def form_id
-    new_record? ? "new_game_link_form" : "edit_game_link_#{@game_link.id}_form"
+    new_record? ? "new_game_link_form" : "edit_game_link_#{game_link.id}_form"
   end
 end

@@ -19,6 +19,6 @@ class Shared::StatusBadgeRowComponent < ApplicationComponent
 
   sig { returns(T::Boolean) }
   def any?
-    @badges.any?
+    badges.any?
   end
 end

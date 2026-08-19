@@ -75,7 +75,7 @@ class Shared::SceneFormComponent < ApplicationComponent
 
   sig { returns(T::Array[String]) }
   def error_messages
-    @scene.error_messages
+    scene.error_messages
   end
 
   # The parent scene carried into a quick scene, so it can round-trip through a

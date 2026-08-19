@@ -40,7 +40,7 @@ class Shared::GameFormComponent < ApplicationComponent
 
   sig { returns(T::Array[String]) }
   def error_messages
-    @game.error_messages
+    game.error_messages
   end
 
   # The submit button's data hash — carries a Turbo/UJS confirmation prompt only

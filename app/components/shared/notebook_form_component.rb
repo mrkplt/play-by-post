@@ -22,7 +22,7 @@ class Shared::NotebookFormComponent < ApplicationComponent
 
   sig { override.returns(NotebookEntryPresenter) }
   def record
-    @notebook_entry
+    notebook_entry
   end
 
   sig { returns(String) }
@@ -34,11 +34,11 @@ class Shared::NotebookFormComponent < ApplicationComponent
   # to the board.
   sig { returns(String) }
   def back_href
-    helpers.game_notebook_entries_path(@game)
+    helpers.game_notebook_entries_path(game)
   end
 
   sig { returns(String) }
   def form_id
-    new_record? ? "notebook_entry_new_form_element" : "notebook_entry_#{@notebook_entry.id}_edit_form_element"
+    new_record? ? "notebook_entry_new_form_element" : "notebook_entry_#{notebook_entry.id}_edit_form_element"
   end
 end
