@@ -112,6 +112,7 @@ matcher:
     - UserProfilePresenter
     # Components
     - Shared::RecordBackedForm
+    - Shared::GameFlagToggle
     - Shared::ImageLibraryComponent
     - Shared::ImageCropperComponent
     - Ui::FormErrorsComponent
