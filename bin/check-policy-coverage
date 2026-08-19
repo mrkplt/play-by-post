@@ -24,7 +24,9 @@ NON_AUTHORIZABLE = %w[
   AiUsage
   ApiToken
   Branding
+  ErrorTracking
   GameExportRequest
+  GlitchTipDsn
   NotificationPreference
   PostRead
   SceneParticipant
