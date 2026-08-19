@@ -12,14 +12,20 @@
 #      must be allowlisted here, so disabling the net is always an explicit,
 #      reviewed decision (never silent).
 #   3. A policy-governed controller (an ApplicationController descendant) must not
-#      answer an authorization question inline — a role/ownership predicate
-#      (game_master?, admin?, owner?, ...) called anywhere in the controller.
-#      "Is this user a GM/admin/owner?" is a policy's job whether the answer gates
-#      a deny (head :forbidden, raise NotAuthorized) OR merely feeds view data
-#      (`is_gm: membership.game_master?`) — the latter duplicates a predicate the
-#      policy already exposes (GamePolicy#gm?) and drifts from it. Route both
-#      through `policy(record).the_predicate?`. AST-based (Prism) so it fires on
-#      the actual call, not on the method name appearing in a comment or string.
+#      answer an authorization question inline. Two shapes are caught:
+#      (a) a role/ownership PREDICATE (game_master?, admin?, owner?, ...) called
+#          anywhere in the controller. "Is this user a GM/admin/owner?" is a
+#          policy's job whether the answer gates a deny (head :forbidden, raise
+#          NotAuthorized) OR merely feeds view data (`is_gm: membership.game_master?`)
+#          — the latter duplicates a predicate the policy already exposes
+#          (GamePolicy#gm?) and drifts from it.
+#      (b) an ownership COMPARISON against the current user — `==`/`!=` with
+#          current_user or current_user.<x> as an operand (`record.user ==
+#          current_user`, `current_user.id == game.user_id`). Same "is this the
+#          user's own record?" decision, expressed as a comparison so it slips
+#          past (a); it belongs in a policy just the same.
+#      Route both through `policy(record).the_predicate?`. AST-based (Prism) so it
+#      fires on the actual call, not on the name appearing in a comment or string.
 #
 # Controllers that intentionally sit outside the policy system inherit a
 # non-ApplicationController base (Devise sessions, the deploy webhook, the
@@ -72,6 +78,42 @@ def collect_role_predicate_lines(node, into)
   node.compact_child_nodes.each { |child| collect_role_predicate_lines(child, into) }
 end
 
+# Ownership authorization expressed as a comparison rather than a named
+# predicate — the other way "is this the user's own record?" sneaks inline past
+# the role-predicate scan. Flags `==` / `!=` where either operand is
+# `current_user` or `current_user.<x>` (e.g. `current_user.id`):
+#   head :forbidden unless record.user == current_user
+#   redirect_to root_path unless current_user.id == game.user_id
+# Legitimate uses of current_user (as an argument, a scoping receiver, or
+# attribution — `user: current_user`, `current_user.games`) are not comparisons
+# and so never match.
+def ownership_comparison_lines(root)
+  lines = []
+  collect_ownership_comparison_lines(root, lines)
+  lines.uniq.sort
+end
+
+# True when `node` references the current user's identity: `current_user` itself,
+# or a call whose receiver is `current_user` (`current_user.id`).
+def current_user_ref?(node)
+  return false unless node.is_a?(Prism::CallNode)
+  return true if node.name == :current_user && node.receiver.nil?
+
+  node.receiver.is_a?(Prism::CallNode) &&
+    node.receiver.name == :current_user &&
+    node.receiver.receiver.nil?
+end
+
+def collect_ownership_comparison_lines(node, into)
+  return if node.nil?
+  if node.is_a?(Prism::CallNode) && %i[== !=].include?(node.name) && node.arguments
+    lhs = node.receiver
+    rhs = node.arguments.arguments.first
+    into << node.location.start_line if current_user_ref?(lhs) || current_user_ref?(rhs)
+  end
+  node.compact_child_nodes.each { |child| collect_ownership_comparison_lines(child, into) }
+end
+
 missing_net = []
 unlisted_skips = []
 inline_authz = []
@@ -101,10 +143,11 @@ CONTROLLERS.each do |file|
   end
 
   # Rule 3: policy-governed controllers must not answer authorization questions
-  # inline — any role-predicate call belongs in a policy.
+  # inline — a role-predicate call OR an ownership comparison against
+  # current_user both belong in a policy.
   if policy_governed && !ALLOWED_INLINE_AUTHZ.key?(basename)
     root = Prism.parse(source).value
-    lines = role_predicate_lines(root)
+    lines = (role_predicate_lines(root) + ownership_comparison_lines(root)).uniq.sort
     inline_authz << [ rel, lines ] unless lines.empty?
   end
 end
@@ -134,7 +177,8 @@ end
 
 unless inline_authz.empty?
   puts "These policy-governed controllers answer an authorization question inline —"
-  puts "a role/ownership predicate (game_master?, admin?, owner?, ...) called in the"
+  puts "a role predicate (game_master?, admin?, owner?, ...) or an ownership"
+  puts "comparison against current_user (record.user == current_user) in the"
   puts "controller instead of delegating to a Pundit policy:\n\n"
   inline_authz.each { |rel, lines| puts "  #{rel} (line#{lines.length > 1 ? 's' : ''} #{lines.join(', ')})" }
   puts "\nRoute the check through the policy, whether it gates access or feeds view data:"
