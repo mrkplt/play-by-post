@@ -9,9 +9,15 @@ class Invitation < ApplicationRecord
   validates :email, presence: true, format: { with: URI::MailTo::EMAIL_REGEXP }
   validates :token, presence: true, uniqueness: true
 
-  before_validation :generate_token, on: :create
-
   scope :pending, -> { where(accepted_at: nil) }
+
+  # Assign the token before validation on a new record, in-band and visible here
+  # rather than behind a before_validation callback (bin/check-callbacks).
+  sig { params(context: T.untyped).returns(T::Boolean) }
+  def valid?(context = nil)
+    generate_token if new_record?
+    super
+  end
 
   sig { returns(T::Boolean) }
   def accepted?

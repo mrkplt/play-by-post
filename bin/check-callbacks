@@ -16,10 +16,11 @@
 #   3. If several parties must react, introduce an explicit synchronous pub/sub
 #      dispatch rather than stacking callbacks.
 #
-# Progressive by design: only models changed vs origin/master are inspected, and
-# a changed model may not INCREASE its callback count. Pre-existing callbacks are
-# grandfathered (the count can only go down); a new model must land at zero. The
-# ratchet is meant to be retired, enforcing zero everywhere.
+# Enforced tree-wide: every model under app/models/ must declare zero AR
+# callbacks. (This started as a diff-scoped ratchet that only forbade a changed
+# model from INCREASING its count, grandfathering pre-existing callbacks, so it
+# could land before the backlog was migrated. That migration is done — no model
+# declares a callback — so the scope is retired: any callback anywhere fails.)
 
 require "prism"
 
@@ -60,58 +61,36 @@ def collect_callbacks(node, into)
   node.compact_child_nodes.each { |child| collect_callbacks(child, into) }
 end
 
-def changed_model_files
-  tracked = `git -C #{ROOT} diff --name-only --diff-filter=AM origin/master`.lines.map(&:strip)
-  untracked = `git -C #{ROOT} ls-files --others --exclude-standard`.lines.map(&:strip)
-  (tracked + untracked)
-    .grep(%r{\Aapp/models/.*\.rb\z})
-    .uniq
-    .map { |relative| File.join(ROOT, relative) }
-    .select { |path| File.exist?(path) }
+def model_files
+  Dir.glob(File.join(ROOT, "app/models/**/*.rb")).sort
 end
 
 failures = []
-reported = false
 
-changed_model_files.each do |path|
+model_files.each do |path|
   relative = path.delete_prefix("#{ROOT}/")
-  new_callbacks = callback_registrations(File.read(path, encoding: "utf-8"))
+  callbacks = callback_registrations(File.read(path, encoding: "utf-8"))
+  next if callbacks.empty?
 
-  old_source = `git -C #{ROOT} show origin/master:#{relative} 2>/dev/null`.force_encoding("utf-8")
-  old_count = callback_registrations(old_source).length
-  new_count = new_callbacks.length
-  next if new_count.zero? && old_count.zero?
-
-  delta = new_count - old_count
-  reported = true
-  status = delta > 0 ? "FAIL" : "OK"
-  puts "  [#{status}] #{relative}: #{old_count} -> #{new_count} callback(s) (#{delta >= 0 ? '+' : ''}#{delta})"
-
-  if delta > 0
-    detail = new_callbacks.map { |name, line| "#{name} (line #{line})" }.join(", ")
-    failures << [ relative, detail ]
-  end
+  detail = callbacks.map { |name, line| "#{name} (line #{line})" }.join(", ")
+  failures << [ relative, detail ]
 end
 
-if !reported
-  puts "Callback check: OK (no changed models with callbacks)"
-  exit 0
-elsif failures.empty?
-  puts "\nCallback check: OK (no model increased its callback count)"
+if failures.empty?
+  puts "Callback check: OK (no model declares an ActiveRecord callback)"
   exit 0
 else
-  puts "\nCallback check: FAIL\n\n"
+  puts "Callback check: FAIL\n\n"
   failures.each { |relative, detail| puts "  #{relative}: #{detail}" }
   puts <<~REMEDY
 
-    A changed model added an ActiveRecord callback. This project is migrating off
-    callbacks — do not add new ones. Replace the callback with one of:
-      1. An explicit CRUD override (override #save/#save!, wrap super in a
-         transaction, do the work in-band) — visible at the call site.
+    A model declares an ActiveRecord callback. This project does not use
+    callbacks — replace each with one of:
+      1. An explicit CRUD override (override #save/#save!/#valid?, do the work
+         in-band) — visible at the call site.
       2. An async job enqueued by the caller, for out-of-band work.
       3. An explicit synchronous pub/sub dispatch, if several parties must react.
-    Grandfathered callbacks may remain; bring this model's count back to at most
-    its origin/master value. See CLAUDE.md and card #24.
+    See CLAUDE.md and card #24.
   REMEDY
   exit 1
 end

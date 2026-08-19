@@ -19,7 +19,14 @@ class ApiToken < ApplicationRecord
   validates :token, presence: true, uniqueness: true
   validates :user_id, uniqueness: { scope: %i[scope game_id] }
 
-  before_validation :generate_token, on: :create
+  # Assign the token before validation on a new record, in-band and visible here
+  # rather than behind a before_validation callback (bin/check-callbacks). A
+  # persisted token is never regenerated through this path (see #regenerate!).
+  sig { params(context: T.untyped).returns(T::Boolean) }
+  def valid?(context = nil)
+    generate_token if new_record?
+    super
+  end
 
   sig { void }
   def regenerate!

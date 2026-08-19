@@ -60,8 +60,14 @@ class Page < ApplicationRecord
   validates :slug, presence: true, uniqueness: true
 
   # The slug is assigned once on create and never editable thereafter, so the
-  # page's URL is stable for the life of the page.
-  before_validation :generate_slug, on: :create
+  # page's URL is stable for the life of the page. Assigned before validation on
+  # a new record, in-band and visible here rather than behind a
+  # before_validation callback (bin/check-callbacks).
+  sig { params(context: T.untyped).returns(T::Boolean) }
+  def valid?(context = nil)
+    generate_slug if new_record?
+    super
+  end
 
   # Route helpers address a page by its slug, not its numeric id.
   sig { returns(T.nilable(String)) }
