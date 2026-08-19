@@ -1,28 +1,65 @@
 Rails.application.routes.draw do
-  mount Rswag::Ui::Engine => "/api-docs"
-  mount Rswag::Api::Engine => "/api-docs"
-  # Resend inbound email webhook (custom ActionMailbox ingress)
-  post "/mail/inbound" =>
-    "action_mailbox/ingresses/resend/inbound_emails#create",
-    as: :rails_resend_inbound_emails
+  # Runtime modes (RUNTIME_MODE, read only through RuntimeMode): unset draws
+  # everything; "api" draws ONLY the JSON /api namespace; "web" draws everything
+  # else. The gate is here at route-drawing — an undrawn route is the boundary —
+  # never at controller/eager load. See lib/runtime_mode.rb.
+  #
+  # The boundary is "is this the Cloudflare-bypassing JSON data API?", not "does
+  # this use a session?". The `api` process exists solely to serve the bearer-
+  # token /api namespace on an api.* host that bypasses the Cloudflare proxy
+  # 403ing writes; it draws nothing else. Every other surface — including the
+  # machine-auth ones (mail ingress, deploy relay, RSS feed) and the human-facing
+  # Swagger docs — belongs to the web process. Only the health check is shared,
+  # because every container must answer /up or it is reported unhealthy and
+  # receives no traffic.
 
-  # Deploy relay: GitHub Actions posts here after a new image is built; we
-  # forward the trigger to Coolify over the internal network (Coolify is not
-  # exposed to the internet).
-  post "/webhooks/deploy" => "webhooks/deploy#create", as: :deploy_webhook
+  # Shared: the health check answers in every mode.
+  get "up" => "rails/health#show", as: :rails_health_check
 
-  if Rails.env.development?
-    mount LetterOpenerWeb::Engine, at: "/letter_opener"
+  if RuntimeMode.api?
+    # The api process's whole reason to exist: the JSON data API (bearer
+    # api-scoped ApiToken). CRU over the token's game's pages and notebook
+    # entries, addressed by slug; no delete. The token carries the game, so no
+    # :game_id in the path.
+    namespace :api, defaults: { format: :json } do
+      resources :pages, only: %i[index show create update], param: :slug
+      resources :notebook_entries, only: %i[index show create update], param: :slug
+    end
   end
 
-  devise_for :users, controllers: {
-    sessions: "users/sessions"
-  }
+  # Everything that is not the JSON data API is the web surface — drawn only in
+  # web mode (or when unset). An api-mode process draws none of it.
+  if RuntimeMode.web?
+    # Resend inbound email webhook (custom ActionMailbox ingress, Svix-signed).
+    post "/mail/inbound" =>
+      "action_mailbox/ingresses/resend/inbound_emails#create",
+      as: :rails_resend_inbound_emails
 
-  get "up" => "rails/health#show", as: :rails_health_check
-  get "invitations/:token/accept", to: "invitations#accept", as: :accept_invitation
+    # Deploy relay: GitHub Actions posts here after a new image is built; we
+    # forward the trigger to Coolify over the internal network (Coolify is not
+    # exposed to the internet).
+    post "/webhooks/deploy" => "webhooks/deploy#create", as: :deploy_webhook
 
-  authenticate :user do
+    # Swagger UI / OpenAPI docs — human-facing HTML describing the /api surface.
+    mount Rswag::Ui::Engine => "/api-docs"
+    mount Rswag::Api::Engine => "/api-docs"
+
+    # Machine-auth RSS feed (bearer ApiToken via query param, for feed readers
+    # that cannot send a header). Consumed by feed-reader clients, not the JSON
+    # API client, so it lives with the web surface.
+    get "/rss/feed", to: "rss#feed", defaults: { format: :rss }
+
+    if Rails.env.development?
+      mount LetterOpenerWeb::Engine, at: "/letter_opener"
+    end
+
+    devise_for :users, controllers: {
+      sessions: "users/sessions"
+    }
+
+    get "invitations/:token/accept", to: "invitations#accept", as: :accept_invitation
+
+    authenticate :user do
     resource :feedback, only: %i[create]
     resource :profile, only: %i[show edit update], controller: "profiles" do
       post :toggle_hide_ooc, on: :collection
@@ -107,18 +144,8 @@ Rails.application.routes.draw do
         resources :images, only: %i[create update destroy], controller: "character_images"
       end
     end
+    end
+
+    root "games#index"
   end
-
-  # Machine-auth surface (bearer ApiToken, no session). The token carries the
-  # game, so no :game_id in the path.
-  get "/rss/feed", to: "rss#feed", defaults: { format: :rss }
-
-  # JSON data API (bearer api-scoped ApiToken). CRU over the token's game's pages
-  # and notebook entries, addressed by slug; no delete.
-  namespace :api, defaults: { format: :json } do
-    resources :pages, only: %i[index show create update], param: :slug
-    resources :notebook_entries, only: %i[index show create update], param: :slug
-  end
-
-  root "games#index"
 end

@@ -326,6 +326,8 @@ matcher:
     # Palette (single source of truth for colour + its CSS generator)
     - Palette
     - PaletteCss
+    # Runtime mode (web/api route-gating, read from RUNTIME_MODE)
+    - RuntimeMode
     # Policies
     - ApplicationPolicy
     - ApplicationPolicy::Scope
