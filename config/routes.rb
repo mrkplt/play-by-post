@@ -40,6 +40,13 @@ Rails.application.routes.draw do
     # exposed to the internet).
     post "/webhooks/deploy" => "webhooks/deploy#create", as: :deploy_webhook
 
+    # Browser error-report tunnel: the Sentry browser SDK POSTs its event
+    # envelopes here (its `tunnel` option), and we forward them to the
+    # self-hosted GlitchTip over the internal network (GlitchTip, like Coolify,
+    # is not exposed to the internet). Unauthenticated by necessity — see
+    # ErrorTunnelController — but locked to our own DSN.
+    post "/errors/tunnel" => "error_tunnel#create", as: :error_tunnel
+
     # Swagger UI / OpenAPI docs — human-facing HTML describing the /api surface.
     mount Rswag::Ui::Engine => "/api-docs"
     mount Rswag::Api::Engine => "/api-docs"

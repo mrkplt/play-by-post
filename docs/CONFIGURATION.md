@@ -109,7 +109,7 @@ Safe defaults exist; set only to override.
 | `OPENROUTER_MODEL` | `app/services/scene_summary_service.rb` | `openai/gpt-4o`. Not a secret, so env var is fine |
 | `RAILS_MAX_THREADS` | `config/database.yml:2`, `config/puma.rb:27` | `5` (DB pool) / `3` (Puma). Compose sets `5` |
 | `RAILS_LOG_LEVEL` | `config/environments/production.rb:55` | `info` |
-| `GLITCHTIP_DSN` | `config/initializers/sentry.rb:6` | unset — falls back from the `glitchtip_dsn` credential; if both are unset, error reporting is disabled entirely |
+| `GLITCHTIP_DSN` | `config/initializers/sentry.rb` (backend Ruby SDK) and `app/models/error_tracking.rb` (`ErrorTracking.dsn`), which the browser SDK tunnel (`ErrorTunnelController` / `ErrorEnvelopeForwardJob`) and the layout read | unset — falls back from the `glitchtip.dsn` credential; if both are unset, error reporting is disabled on **all** surfaces (backend and browser). GlitchTip has no public ingress, so browser events are tunnelled same-origin through `/errors/tunnel` and forwarded to GlitchTip over the backplane — the DSN's own host is never contacted from the browser |
 | `RAILS_LOG_TO_STDOUT` | Rails default | Compose sets `1`; required for Coolify to capture logs |
 | `PORT` | `config/puma.rb:31` | `3000`. Thruster terminates HTTP on 80 in front of Puma |
 | `WEB_CONCURRENCY` | `config/puma.rb` | Puma worker count |
@@ -141,7 +141,7 @@ Stored in `config/credentials/production.yml.enc`. Edit with
 | `storage.endpoint` | `config/storage.yml` | Yes — `https://<account_id>.r2.cloudflarestorage.com` |
 | `storage.region` | `config/storage.yml` | Optional — defaults to `auto` |
 | `resend_inbound_domain` | `app/mailers/notification_mailer.rb:55` | Optional — falls back to `APP_HOST` |
-| `glitchtip.dsn` | `config/initializers/sentry.rb:6` | Optional — DSN for the self-hosted GlitchTip instance; falls back to `GLITCHTIP_DSN` env var; error reporting is disabled entirely if both are unset |
+| `glitchtip.dsn` | `config/initializers/sentry.rb` (backend) and `app/models/error_tracking.rb` (`ErrorTracking`, read by the browser SDK tunnel and the layout) | Optional — DSN for the self-hosted GlitchTip instance, used by **both** the Ruby SDK and the browser SDK; falls back to `GLITCHTIP_DSN` env var; error reporting is disabled entirely if both are unset. Browser events are tunnelled through the app (`/errors/tunnel`) since GlitchTip is not publicly reachable |
 | `deploy_webhook_secret` | `app/controllers/webhooks/deploy_controller.rb` | Optional — shared bearer secret GitHub Actions sends to `POST /webhooks/deploy`; must equal the `DEPLOY_WEBHOOK_SECRET` GitHub Actions secret. If unset, the deploy relay rejects all callers |
 | `coolify.deploy_url` | `app/jobs/coolify_deploy_job.rb` | Optional — Coolify's per-app deploy URL (`http://<internal-host>:<port>/api/v1/deploy?uuid=<app-uuid>`), reachable over the internal network; the job sends an authorized `POST`. Required for auto-deploy |
 | `coolify.token` | `app/jobs/coolify_deploy_job.rb` | Optional — Coolify API token sent as `Authorization: Bearer`. Required for auto-deploy |

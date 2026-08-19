@@ -20,6 +20,8 @@ matcher:
     - AiUsage
     - ApiToken
     - Branding
+    - ErrorTracking
+    - GlitchTipDsn
     - Game
     - SceneSummary
     - GameExportRequest
@@ -258,6 +260,7 @@ matcher:
     # Controllers
     - ActionMailbox::Ingresses::Resend::InboundEmailsController
     - Webhooks::DeployController
+    - ErrorTunnelController
     - SceneSummariesController
     - SceneSummaries::DraftsController
     - RssController
@@ -308,6 +311,7 @@ matcher:
     - ExportCleanupJob
     - SceneSummaryJob
     - CoolifyDeployJob
+    - ErrorEnvelopeForwardJob
     - CoolifyDeployResponse
     - GamePurgeSweepJob
     - GamePurgeJob
