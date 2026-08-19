@@ -6,6 +6,25 @@
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
     <%= stylesheet_link_tag "tailwind", "data-turbo-track": "reload" %>
+    <%# Browser error tracking (GlitchTip), loaded before app JS so early errors
+        are caught. Rendered only when a DSN is configured; dev/CI/test have none
+        and load nothing. GlitchTip has no public ingress, so events are tunnelled
+        same-origin through /errors/tunnel and forwarded server-side — the SDK's
+        DSN host is never contacted from the browser. Errors-only bundle (no
+        tracing/replay/sessions, which GlitchTip does not support). See Fizzy #83. %>
+    <% if ErrorTracking.enabled? %>
+      <meta name="glitchtip-dsn" content="<%= ErrorTracking.dsn %>">
+      <script
+        src="https://browser.sentry-cdn.com/10.70.0/bundle.min.js"
+        integrity="sha384-79FhSq4eaPA7rdWwXh1Jly3F3Wvgq7HChMpaIIx7feYEZicWt/LnwIfTFTXSJao5"
+        crossorigin="anonymous"></script>
+      <script>
+        Sentry.init({
+          dsn: document.querySelector('meta[name="glitchtip-dsn"]').content,
+          tunnel: "<%= error_tunnel_path %>"
+        });
+      </script>
+    <% end %>
     <%= javascript_importmap_tags %>
   </head>
   <body>
