@@ -4,11 +4,11 @@
 # Ratchets instance-variable hygiene toward: initializers assign ivars, methods
 # read through accessors, and no accessor is declared that nobody uses.
 #
-# Three violation kinds are counted per file, and this is a PROGRESSIVE ratchet:
-# a changed file may not INCREASE its total violation count vs origin/master.
-# Pre-existing violations are grandfathered (the number can only go down); a new
-# file must land at zero. The ratchet is meant to be retired, enforcing zero
-# everywhere.
+# Three violation kinds are checked per file, enforced tree-wide: every .rb file
+# under app/ and lib/ must have zero. (This started as a progressive ratchet that
+# only forbade a changed file from INCREASING its count vs origin/master, so it
+# could land before the backlog was swept. That sweep is done — the tree is at
+# zero — so the scope is retired: any violation anywhere fails.)
 #
 #   V1  ivar WRITE outside #initialize.
 #       An initializer sets up state; other methods should not reassign ivars.
@@ -25,9 +25,8 @@
 #       nothing calls is dead surface area; delete it (and, if it was the only
 #       reader for an ivar only set in initialize, keep the ivar).
 #
-# Only .rb files under app/ and lib/ that changed vs origin/master are inspected.
-# ERB is not Ruby-parsed here; it is only text-scanned to keep V3 from flagging a
-# reader that a template uses.
+# Every .rb file under app/ and lib/ is inspected. ERB is not Ruby-parsed here;
+# it is only text-scanned to keep V3 from flagging a reader that a template uses.
 
 require "prism"
 
@@ -41,6 +40,20 @@ IVAR_WRITE_NODES = [
 ].freeze
 # NB: InstanceVariableOrWriteNode (`@x ||= ...`) is deliberately absent — it is
 # exempt memoization, treated as lazy initialization rather than mutation.
+
+# V3 allowlist: readers that ARE used, but only from other files, so the
+# per-file V3 scan cannot see the use and would wrongly call them dead. Keyed by
+# "relative/path.rb" => [reader names], each with a stated reason. Keep this
+# empty unless a reader is genuinely consumed across a class boundary — an
+# in-file dead reader must still be deleted, not allowlisted.
+#
+#   app/policies/application_policy.rb — the Pundit base class exposes user,
+#   record (and scope, on the inner Scope base) as the contract every policy
+#   subclass reads as bare `record` / `user` / `scope`. The readers live on the
+#   base and every use is in a subclass file; deleting them breaks all policies.
+V3_ALLOWLIST = {
+  "app/policies/application_policy.rb" => %i[user record scope]
+}.freeze
 
 def each_def(node, &block)
   return if node.nil?
@@ -97,6 +110,19 @@ def bare_method_calls(node, into)
   node.compact_child_nodes.each { |child| bare_method_calls(child, into) }
 end
 
+# Every method-call NAME sent in the source, with any receiver. V2 wants
+# bare-receiver calls only (a bare `x` is the reader call), but V3's "is this
+# accessor used at all" question is answered by a call with any receiver too: a
+# reader exposed for external access is legitimately read as `obj.height`, not
+# only as a bare `height`. Collecting these keeps V3 from flagging a reader used
+# only through an explicit receiver — e.g. a nested Config's attr_reader read as
+# `@config.height` by the enclosing component in the same file.
+def all_call_names(node, into)
+  return if node.nil?
+  into << node.name if node.is_a?(Prism::CallNode)
+  node.compact_child_nodes.each { |child| all_call_names(child, into) }
+end
+
 # Names referenced in the paired ViewComponent template (app/.../x_component.rb
 # -> app/.../x_component.html.erb). Plain word scan: enough to see that a reader
 # is used from the template without parsing ERB.
@@ -114,16 +140,22 @@ def accessor_method_names(name, kinds)
 end
 
 # Returns the violation lines for one Ruby source file.
-# V1 does not apply to controllers. The rule reads "an initializer sets up
-# state; other methods should not reassign ivars", which presumes a class you
-# instantiate yourself. Rails instantiates a controller per request and there is
-# no #initialize to assign in — every action that hands data to its view writes
-# an ivar there by the framework's design, so V1 is unsatisfiable rather than
-# unmet. It also collides head-on with bin/check-view-layering, which requires
-# every view-facing ivar to be a presenter built in the action. V2 and V3 still
-# apply to controllers; only the write-location rule is exempt.
-def controller?(rb_path)
-  rb_path.to_s.include?("app/controllers/")
+# V1 does not apply to framework-instantiated action classes: controllers,
+# mailers, and mailboxes. The rule reads "an initializer sets up state; other
+# methods should not reassign ivars", which presumes a class you instantiate
+# yourself. Rails instantiates these per request / per message and there is no
+# #initialize to assign in — every action that hands data to its view or
+# processing writes an ivar there by the framework's design, so V1 is
+# unsatisfiable rather than unmet (a mailer action sets @ivars for the mail
+# view; a mailbox sets them across its processing helpers). For controllers it
+# also collides head-on with bin/check-view-layering, which requires every
+# view-facing ivar to be a presenter built in the action. V2 and V3 still apply
+# to all three; only the write-location rule is exempt.
+def framework_action_class?(rb_path)
+  path = rb_path.to_s
+  path.include?("app/controllers/") ||
+    path.include?("app/mailers/") ||
+    path.include?("app/mailboxes/")
 end
 
 def violations_for(source, rb_path)
@@ -131,6 +163,7 @@ def violations_for(source, rb_path)
   accessors = declared_accessors(root)
   reader_names = accessors.select { |_, kinds| kinds.include?(:attr_reader) || kinds.include?(:attr_accessor) }.keys
   calls = [].tap { |into| bare_method_calls(root, into) }
+  received_calls = [].tap { |into| all_call_names(root, into) }
   words = template_words(rb_path)
 
   found = []
@@ -140,7 +173,7 @@ def violations_for(source, rb_path)
     method_name = defn.name
 
     writes = [].tap { |into| ivar_writes(defn, into) }.uniq
-    unless method_name == :initialize || controller?(rb_path)
+    unless method_name == :initialize || framework_action_class?(rb_path)
       writes.each { |name| found << "V1 writes @#{name} in ##{method_name} (assign ivars in #initialize only)" }
     end
 
@@ -155,12 +188,19 @@ def violations_for(source, rb_path)
 
   accessors.each do |name, kinds|
     methods = accessor_method_names(name, kinds)
-    used = methods.any? { |m| calls.include?(m) || words.include?(m.to_s.delete_suffix("=")) }
+    used = methods.any? do |m|
+      calls.include?(m) ||
+        received_calls.include?(m) ||
+        words.include?(m.to_s.delete_suffix("="))
+    end
     # Don't call an accessor "unused" (V3) when the code reads @name directly:
     # that is the V2 case (the ivar IS wanted through the reader), and the fix is
     # to route through the accessor, not to delete it. Flagging both is
     # contradictory advice for the same declaration.
     next if used || ivars_read_directly.include?(name)
+
+    relative = rb_path.to_s.sub("#{ROOT}/", "")
+    next if V3_ALLOWLIST.fetch(relative, []).include?(name)
 
     decl = kinds.uniq.first
     found << "V3 #{decl} :#{name} is declared but never used (in a method or the template); remove it"
@@ -169,65 +209,35 @@ def violations_for(source, rb_path)
   found
 end
 
-def changed_ruby_files
-  tracked = `git -C #{ROOT} diff --name-only --diff-filter=AM origin/master`.lines.map(&:strip)
-  untracked = `git -C #{ROOT} ls-files --others --exclude-standard`.lines.map(&:strip)
-  (tracked + untracked)
-    .grep(%r{\A(?:app|lib)/.*\.rb\z})
-    .uniq
-    .map { |relative| File.join(ROOT, relative) }
-    .select { |path| File.exist?(path) }
+def ruby_files
+  Dir.glob(File.join(ROOT, "{app,lib}/**/*.rb")).sort
 end
 
 failures = []
-reported = false
 
-changed_ruby_files.each do |path|
+ruby_files.each do |path|
   relative = path.delete_prefix("#{ROOT}/")
-  new_violations = violations_for(File.read(path, encoding: "utf-8"), path)
-
-  old_source = `git -C #{ROOT} show origin/master:#{relative} 2>/dev/null`.force_encoding("utf-8")
-  old_count =
-    if old_source.strip.empty?
-      0
-    else
-      violations_for(old_source, path).length
-    end
-
-  new_count = new_violations.length
-  delta = new_count - old_count
-  next if new_count.zero? && old_count.zero?
-
-  reported = true
-  status = delta > 0 ? "FAIL" : "OK"
-  puts "  [#{status}] #{relative}: #{old_count} -> #{new_count} ivar-hygiene violation(s) (#{delta >= 0 ? '+' : ''}#{delta})"
-
-  if delta > 0
-    failures << [ relative, new_violations ]
-  end
+  violations = violations_for(File.read(path, encoding: "utf-8"), path)
+  failures << [ relative, violations ] unless violations.empty?
 end
 
-if !reported
-  puts "Ivar-hygiene check: OK (no changed Ruby files with violations)"
-  exit 0
-elsif failures.empty?
-  puts "\nIvar-hygiene check: OK (no file increased its ivar-hygiene violation count)"
+if failures.empty?
+  puts "Ivar-hygiene check: OK (no ivar-hygiene violations under app/ or lib/)"
   exit 0
 else
-  puts "\nIvar-hygiene check: FAIL\n\n"
+  puts "Ivar-hygiene check: FAIL\n\n"
   failures.each do |relative, list|
     puts "  #{relative}:"
     list.each { |line| puts "    - #{line}" }
     puts
   end
   puts <<~REMEDY
-    A changed file increased its ivar-hygiene violation count. Resolve by:
+    A file has an ivar-hygiene violation. Resolve by:
       V1  Move the assignment into #initialize (or, if it is lazy setup, use the
           `@x ||= ...` memoization form, which is exempt).
       V2  Declare/keep `attr_reader :x` and call `x` in the method instead of `@x`.
-      V3  Delete the unused accessor declaration.
-    Grandfathered violations may remain; you only need to not add new ones. Bring
-    the file's count back to at most its origin/master value.
+      V3  Delete the unused accessor declaration (or, if it is genuinely used
+          only from another file, add it to V3_ALLOWLIST with a stated reason).
   REMEDY
   exit 1
 end

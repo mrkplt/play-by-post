@@ -49,8 +49,14 @@ class NotebookEntry < ApplicationRecord
   scope :created_after, ->(time) { where("created_at >= ?", time) if time }
 
   # The slug is assigned once on create and never editable thereafter, so the
-  # entry's URL is stable for the life of the entry.
-  before_validation :generate_slug, on: :create
+  # entry's URL is stable for the life of the entry. Assigned before validation
+  # on a new record, in-band and visible here rather than behind a
+  # before_validation callback (bin/check-callbacks).
+  sig { params(context: T.untyped).returns(T::Boolean) }
+  def valid?(context = nil)
+    generate_slug if new_record?
+    super
+  end
 
   # Route helpers address an entry by its slug, not its numeric id.
   sig { returns(T.nilable(String)) }

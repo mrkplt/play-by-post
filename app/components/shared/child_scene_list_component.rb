@@ -19,6 +19,6 @@ class Shared::ChildSceneListComponent < ApplicationComponent
 
   sig { returns(T::Boolean) }
   def any?
-    @child_scenes.any?
+    child_scenes.any?
   end
 end

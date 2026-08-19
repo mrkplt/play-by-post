@@ -12,8 +12,6 @@ class Scene < ApplicationRecord
   has_many :posts, dependent: :destroy
   has_one :scene_summary, dependent: :destroy
 
-  before_validation :default_title
-
   validates :title, presence: true, length: { maximum: 200 }
 
   scope :active, -> { where(resolved_at: nil) }
@@ -40,6 +38,17 @@ class Scene < ApplicationRecord
   sig { params(user: User).returns(T::Boolean) }
   def participant?(user)
     scene_participants.exists?(user: user)
+  end
+
+  # Fill a blank title before validation, in-band and visible here rather than
+  # behind a before_validation callback (bin/check-callbacks). Unlike the slug
+  # generators this runs on every validation, not only create, matching the
+  # original callback which had no `on:` restriction — a title blanked on update
+  # is re-defaulted.
+  sig { params(context: T.untyped).returns(T::Boolean) }
+  def valid?(context = nil)
+    default_title
+    super
   end
 
   private

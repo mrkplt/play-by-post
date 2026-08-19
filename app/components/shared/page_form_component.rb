@@ -17,7 +17,7 @@ class Shared::PageFormComponent < ApplicationComponent
 
   sig { returns(Game) }
   def game
-    @page.game
+    page.game
   end
 
   sig { returns(PagePresenter) }
@@ -25,7 +25,7 @@ class Shared::PageFormComponent < ApplicationComponent
 
   sig { override.returns(PagePresenter) }
   def record
-    @page
+    page
   end
 
   sig { returns(String) }
@@ -37,13 +37,13 @@ class Shared::PageFormComponent < ApplicationComponent
   def back_href
     mode_value(
       new: -> { helpers.game_path(game, anchor: "pages") },
-      edit: -> { helpers.game_page_path(game, @page) }
+      edit: -> { helpers.game_page_path(game, page) }
     ).call
   end
 
   sig { returns(String) }
   def form_id
-    mode_value(new: "new_page_form", edit: "edit_page_#{@page.id}_form")
+    mode_value(new: "new_page_form", edit: "edit_page_#{page.id}_form")
   end
 
   # Live draft autosave applies only to a persisted page — a new page has no row

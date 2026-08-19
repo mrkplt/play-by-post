@@ -15,23 +15,17 @@
 #   2. A module that mixes in ActiveSupport::Concern (`include
 #      ActiveSupport::Concern`, or the `extend ActiveSupport::Concern` form).
 #
-# Incremental by design: only files added or modified relative to origin/master
-# are inspected, so this can land without first purging any pre-existing
-# concern. The diff scope is meant to be retired and the whole tree swept once
-# the backlog (if any) is clear.
+# Enforced tree-wide: every .rb file under app/ and lib/ is inspected, so a
+# concern cannot exist anywhere, not only in files changed on a branch. (This
+# started as a diff-scoped ratchet so it could land before the tree was known
+# clean; the tree is now concern-free and the scope has been retired.)
 
 require "prism"
 
 ROOT = File.expand_path("..", __dir__)
 
-def changed_ruby_files
-  tracked = `git -C #{ROOT} diff --name-only --diff-filter=AM origin/master`.lines.map(&:strip)
-  untracked = `git -C #{ROOT} ls-files --others --exclude-standard`.lines.map(&:strip)
-  (tracked + untracked)
-    .grep(%r{\A(?:app|lib)/.*\.rb\z})
-    .uniq
-    .map { |relative| File.join(ROOT, relative) }
-    .select { |path| File.exist?(path) }
+def ruby_files
+  Dir.glob(File.join(ROOT, "{app,lib}/**/*.rb")).sort
 end
 
 def in_concerns_dir?(relative)
@@ -75,7 +69,7 @@ end
 
 violations = []
 
-changed_ruby_files.each do |path|
+ruby_files.each do |path|
   relative = path.delete_prefix("#{ROOT}/")
 
   if in_concerns_dir?(relative)
@@ -90,12 +84,12 @@ changed_ruby_files.each do |path|
 end
 
 if violations.empty?
-  puts "Concerns check: OK (no concerns introduced in changed files)"
+  puts "Concerns check: OK (no concerns anywhere under app/ or lib/)"
   exit 0
 end
 
 puts "Concerns check: FAIL\n\n"
-puts "This project does not use concerns. The following changed files introduce one:\n\n"
+puts "This project does not use concerns. The following files introduce one:\n\n"
 violations.each { |relative, why| puts "  #{relative}  (#{why})" }
 puts <<~REMEDY
 

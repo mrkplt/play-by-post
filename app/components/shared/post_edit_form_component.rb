@@ -25,6 +25,6 @@ class Shared::PostEditFormComponent < ApplicationComponent
 
   sig { returns(String) }
   def form_id
-    "edit_post_#{@post.id}_form"
+    "edit_post_#{post.id}_form"
   end
 end

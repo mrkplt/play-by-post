@@ -29,7 +29,7 @@ class Shared::GameLinksListComponent < ApplicationComponent
 
   sig { returns(T::Boolean) }
   def any_links?
-    @game_links.any?
+    game_links.any?
   end
 
   ROW_BASE = T.let("flex items-center gap-2 px-4 py-3", String)

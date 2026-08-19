@@ -30,11 +30,11 @@ class Shared::ProfileFormComponent < ApplicationComponent
 
   sig { returns(T::Boolean) }
   def errors?
-    @profile.display_name_errors?
+    profile.display_name_errors?
   end
 
   sig { returns(T.nilable(String)) }
   def error_message
-    @profile.display_name_error_message
+    profile.display_name_error_message
   end
 end
