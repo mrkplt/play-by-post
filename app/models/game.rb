@@ -116,6 +116,15 @@ class Game < ApplicationRecord
     post_edit_window_minutes&.minutes
   end
 
+  # Whether this game has a BYOK OpenRouter key configured (the fallback
+  # funding source for a player-facing AI call when the acting player has
+  # none — see AiKeyResolver). ai_key_reference is only an opaque handle into
+  # the separate encrypted key store; this app never holds the key material.
+  sig { returns(T::Boolean) }
+  def ai_key_present?
+    ai_key_reference.present?
+  end
+
   private
 
   sig { void }

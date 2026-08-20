@@ -148,4 +148,21 @@ RSpec.describe User, type: :model do
       expect(user.avatar_variant).to be_nil
     end
   end
+
+  describe "#ai_key_present?" do
+    it "is true when ai_key_reference is set" do
+      user = build_stubbed(:user, ai_key_reference: "handle")
+      expect(user.ai_key_present?).to be(true)
+    end
+
+    it "is false when ai_key_reference is nil" do
+      user = build_stubbed(:user, ai_key_reference: nil)
+      expect(user.ai_key_present?).to be(false)
+    end
+
+    it "is false when ai_key_reference is blank" do
+      user = build_stubbed(:user, ai_key_reference: "")
+      expect(user.ai_key_present?).to be(false)
+    end
+  end
 end

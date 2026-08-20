@@ -53,6 +53,14 @@ class User < ApplicationRecord
     current_avatar&.display_variant
   end
 
+  # Whether this user has a BYOK OpenRouter key configured. ai_key_reference is
+  # only an opaque handle into the separate encrypted key store (see
+  # AiKeyResolver::KeySource) — this app never holds the key material itself.
+  sig { returns(T::Boolean) }
+  def ai_key_present?
+    ai_key_reference.present?
+  end
+
   # Deliver Devise mail (the passwordless magic link) through Active Job /
   # Solid Queue so it is sent by the worker, matching every other mailer in the
   # app (NotificationMailer, ExportMailer, InvitationMailer all use

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_17_130100) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_20_200100) do
   create_table "action_mailbox_inbound_emails", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "message_checksum", null: false
@@ -166,6 +166,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_17_130100) do
   end
 
   create_table "games", force: :cascade do |t|
+    t.string "ai_key_reference"
     t.boolean "ai_summaries_enabled", default: false, null: false
     t.datetime "created_at", null: false
     t.datetime "deleted_at"
@@ -347,6 +348,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_17_130100) do
   end
 
   create_table "users", force: :cascade do |t|
+    t.string "ai_key_reference"
     t.datetime "created_at", null: false
     t.string "email", default: "", null: false
     t.string "magic_link_token"
