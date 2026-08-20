@@ -21,6 +21,13 @@
 # web's. Leaving it undefined when the credential is absent would be a
 # NameError at eager-load time on web, not a controlled failure at the one
 # call site (worker) that actually needs it.
+#
+# Resolution is LAZY: KEY_PROVIDER is a wrapper that defers reading the
+# credential until an AiPrivateKey row is actually encrypted or decrypted —
+# matching how the rest of the app treats credentials (read on use, never
+# forced open at boot). This is what lets `web`, CI, and a fresh clone boot
+# with the credential absent (falling through to UnavailableKeyProvider only
+# if something truly touches ciphertext) instead of failing at eager-load.
 module AiPrivateKeyEncryption
   # Raises with a clear message instead of encrypting/decrypting with no key,
   # so a process without the credential (i.e. `web`) fails loudly and
@@ -63,6 +70,29 @@ module AiPrivateKeyEncryption
     attr_reader :key_derivation_salt
   end
 
+  # Defers building the real key provider until the first encrypt/decrypt call,
+  # so class-load/boot never reads the credential. Delegates the KeyProvider
+  # interface (encryption_key / decryption_keys) to the memoized real provider.
+  class LazyKeyProvider < ActiveRecord::Encryption::KeyProvider
+    def initialize
+      super([])
+    end
+
+    def encryption_key
+      resolved.encryption_key
+    end
+
+    def decryption_keys(encrypted_message)
+      resolved.decryption_keys(encrypted_message)
+    end
+
+    private
+
+    def resolved
+      @resolved ||= AiPrivateKeyEncryption.build_key_provider
+    end
+  end
+
   # Guarded for Docker's asset-precompile boot (SECRET_KEY_BASE_DUMMY): that
   # build has no credentials key material of any kind and must not attempt
   # to read one.
@@ -95,5 +125,7 @@ module AiPrivateKeyEncryption
     )
   end
 
-  KEY_PROVIDER = build_key_provider
+  # The provider handed to `encrypts` — lazy, so boot never forces a
+  # credential read (see the module comment above).
+  KEY_PROVIDER = LazyKeyProvider.new
 end

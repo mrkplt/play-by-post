@@ -20,7 +20,7 @@ RSpec.describe AiPrivateKey, type: :model do
       expect(private_key.errors[:encrypted_private_key]).to be_present
     end
 
-    it "requires a unique ai_keypair_id", db: true do
+    it "requires a unique ai_keypair_id", :ai_credential, db: true do
       keypair = create(:ai_keypair)
       create(:ai_private_key, ai_keypair_id: keypair.id)
       duplicate = build(:ai_private_key, ai_keypair_id: keypair.id)
@@ -29,7 +29,7 @@ RSpec.describe AiPrivateKey, type: :model do
     end
   end
 
-  describe "encryption at rest" do
+  describe "encryption at rest", :ai_credential do
     it "stores encrypted_private_key as ciphertext in the underlying column, not plaintext", db: true do
       plaintext = "-----BEGIN PRIVATE KEY-----\ntotally-real-private-key\n-----END PRIVATE KEY-----"
       private_key = create(:ai_private_key, encrypted_private_key: plaintext)
@@ -49,7 +49,7 @@ RSpec.describe AiPrivateKey, type: :model do
     end
   end
 
-  describe "#ai_keypair" do
+  describe "#ai_keypair", :ai_credential do
     it "returns the matching AiKeypair by ai_keypair_id", db: true do
       keypair = create(:ai_keypair)
       private_key = create(:ai_private_key, ai_keypair_id: keypair.id)
