@@ -43,6 +43,17 @@ class ProfilesController < ApplicationController
     head :ok
   end
 
+  # The per-user AI consent gate (AI Control Plane): generation for this
+  # user's games still requires the game's own ai_summaries_enabled toggle —
+  # see SceneResolution#call.
+  sig { void }
+  def toggle_ai_summaries_consent
+    current_profile = profile
+    authorize current_profile, :manage?
+    current_profile.update!(ai_summaries_consent: !current_profile.ai_summaries_consent?)
+    redirect_to profile_path, notice: ai_summaries_consent_notice(current_profile)
+  end
+
   sig { void }
   def export_all
     authorize profile, :manage?
@@ -56,5 +67,10 @@ class ProfilesController < ApplicationController
   sig { params(current_profile: UserProfile).void }
   def assign_profile_presenter(current_profile)
     @profile_presenter = T.let(UserProfilePresenter.new(current_profile), T.nilable(UserProfilePresenter))
+  end
+
+  sig { params(current_profile: UserProfile).returns(String) }
+  def ai_summaries_consent_notice(current_profile)
+    current_profile.ai_summaries_consent? ? "AI scene summaries enabled for your games." : "AI scene summaries disabled for your games."
   end
 end

@@ -215,6 +215,7 @@ matcher:
     - Ui::IconButtonComponent
     - Ui::SettingsRowComponent
     - Ui::ProfileOocToggleComponent
+    - Ui::ProfileAiConsentToggleComponent
     - Ui::PillTabsComponent
     - Ui::ToastComponent
     - Ui::IconComponent

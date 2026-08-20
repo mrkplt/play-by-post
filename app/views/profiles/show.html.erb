@@ -27,10 +27,16 @@
   <div class="bg-card border border-card-border rounded-card px-3.5">
     <%= render Ui::SettingsRowComponent.new(label: "Email", sub: current_user.email) do %>
     <% end %>
-    <%= render Ui::SettingsRowComponent.new(label: "Hide OOC by default", sub: "Collapse out-of-character posts", position: :last) do %>
+    <%= render Ui::SettingsRowComponent.new(label: "Hide OOC by default", sub: "Collapse out-of-character posts") do %>
       <%= render Ui::ProfileOocToggleComponent.new(
         hide_ooc: @profile_presenter.hide_ooc?,
         toggle_url: toggle_hide_ooc_profile_path
+      ) %>
+    <% end %>
+    <%= render Ui::SettingsRowComponent.new(label: "AI features", sub: "Allow AI scene summaries in your games", position: :last) do %>
+      <%= render Ui::ProfileAiConsentToggleComponent.new(
+        consented: @profile_presenter.ai_summaries_consent?,
+        toggle_url: toggle_ai_summaries_consent_profile_path
       ) %>
     <% end %>
   </div>

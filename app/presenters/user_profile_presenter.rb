@@ -25,6 +25,13 @@ class UserProfilePresenter < BasePresenter
     @model.hide_ooc?
   end
 
+  # The per-user half of the AI Control Plane's two-gate consent model — see
+  # UserProfile#ai_summaries_consent and SceneResolution#call.
+  sig { returns(T::Boolean) }
+  def ai_summaries_consent?
+    @model.ai_summaries_consent?
+  end
+
   sig { returns(T::Boolean) }
   def display_name_errors?
     @model.errors[:display_name].any?
