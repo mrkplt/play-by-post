@@ -86,5 +86,14 @@ RSpec.describe SceneSummaryJob, type: :job do
 
       expect { described_class.new.perform(scene.id) }.not_to raise_error
     end
+
+    it "logs and swallows a BYOK refuse (no key available), which the service maps to ConfigurationError" do
+      allow(SceneSummaryService).to receive(:new).and_raise(
+        SceneSummaryService::ConfigurationError, "No BYOK OpenRouter key available for user=1 game=1"
+      )
+      expect(Rails.logger).to receive(:error).with(/No BYOK OpenRouter key available/)
+
+      expect { described_class.new.perform(scene.id) }.not_to raise_error
+    end
   end
 end

@@ -1,48 +1,62 @@
 require "rails_helper"
 
 RSpec.describe SceneSummaryService do
+  # A real implementer of the KeySource interface, not a plain double:
+  # AiKeyResolver#initialize sig-types `key_source:` to AiKeyResolver::KeySource,
+  # and sorbet-runtime rejects an RSpec double against a concrete interface
+  # type (see docs/TESTING_NOTES.md, "Sorbet + sorbet-runtime + specs"; same
+  # pattern as spec/services/ai_key_resolver_spec.rb). Its methods are still
+  # stubbed per-example via allow/have_received.
+  class SceneSummaryFakeKeySource
+    include AiKeyResolver::KeySource
+
+    def for_user(user) = "unstubbed-user-key"
+    def for_game(game) = "unstubbed-game-key"
+  end
+
   let(:game) { create(:game) }
   let(:gm) { create(:user, :with_profile) }
   let(:scene) { create(:scene, :resolved, game: game, title: "The Dungeon", description: "Dark and spooky") }
+  # AiKeyResolver's own decision logic (player key -> game key -> refuse) is
+  # covered by its own spec; here it is real, backed by a stubbed KeySource,
+  # so SceneSummaryService is only exercised on "whose identity does it pass
+  # to #resolve" and "how does it react to NoKeyAvailable".
+  let(:key_source) { SceneSummaryFakeKeySource.new }
+  let(:key_resolver) { AiKeyResolver.new(key_source: key_source) }
 
   before do
     create(:game_member, :game_master, game: game, user: gm)
   end
 
   describe "#call" do
-    context "when no OpenRouter key is configured" do
-      it "raises ConfigurationError with a message about the key" do
-        allow(Rails.application.credentials).to receive(:openrouter_api_key).and_return(nil)
-        allow(ENV).to receive(:fetch).and_call_original
-        allow(ENV).to receive(:fetch).with("OPENROUTER_API_KEY", "").and_return("")
-        expect { SceneSummaryService.new(scene).call }.to raise_error(
-          SceneSummaryService::ConfigurationError, /openrouter_api_key/
+    context "when the game has no game master" do
+      let(:gmless_game) { create(:game) }
+      let(:gmless_scene) { create(:scene, :resolved, game: gmless_game) }
+
+      it "raises ConfigurationError naming the gm-less game, without asking the resolver" do
+        allow(key_source).to receive(:for_user).and_call_original
+        allow(key_source).to receive(:for_game).and_call_original
+
+        expect { described_class.new(gmless_scene, key_resolver: key_resolver).call }.to raise_error(
+          SceneSummaryService::ConfigurationError,
+          "Game ##{gmless_game.id} has no game master to resolve a BYOK key for"
         )
+        expect(key_source).not_to have_received(:for_user)
+        expect(key_source).not_to have_received(:for_game)
       end
     end
 
-    context "when the key is in encrypted credentials" do
-      let(:client_double) { instance_double(OpenAI::Client) }
-
-      before do
-        allow(Rails.application.credentials).to receive(:openrouter_api_key).and_return("cred-key")
-        allow(ENV).to receive(:fetch).and_call_original
-        allow(OpenAI::Client).to receive(:new).and_return(client_double)
-        allow(client_double).to receive(:chat).and_return(
-          { "choices" => [ { "message" => { "content" => "Summary." } } ], "usage" => {} }
-        )
-      end
-
-      it "prefers the credential over the environment variable" do
-        allow(ENV).to receive(:fetch).with("OPENROUTER_API_KEY", "").and_return("env-key")
-        expect(OpenAI::Client).to receive(:new).with(
-          hash_including(access_token: "cred-key")
-        ).and_return(client_double)
-        SceneSummaryService.new(scene).call
+    context "when the resolver has no BYOK key for the GM or the game" do
+      it "raises ConfigurationError carrying the resolver's own message as a String" do
+        expect { described_class.new(scene, key_resolver: key_resolver).call }.to raise_error do |error|
+          expect(error).to be_a(SceneSummaryService::ConfigurationError)
+          expect(error.message).to be_a(String)
+          expect(error.message).to include("No BYOK OpenRouter key")
+        end
       end
     end
 
-    context "with a valid API key" do
+    context "with a resolvable BYOK key" do
       let(:client_double) { instance_double(OpenAI::Client) }
       let(:api_response) do
         {
@@ -52,24 +66,33 @@ RSpec.describe SceneSummaryService do
       end
 
       before do
-        # Credential absent, so the service falls back to the env var.
-        allow(Rails.application.credentials).to receive(:openrouter_api_key).and_return(nil)
-        allow(ENV).to receive(:fetch).with("OPENROUTER_API_KEY", "").and_return("test-key")
+        # game.game_master re-queries the DB, returning a distinct User
+        # instance from `gm`, so the key must be present in the database
+        # rather than stubbed on the `gm` object.
+        gm.update!(ai_key_reference: "user-handle")
+        allow(key_source).to receive(:for_user).and_return("byok-key")
         allow(ENV).to receive(:fetch).with("OPENROUTER_MODEL", SceneSummaryService::DEFAULT_MODEL).and_return("openai/gpt-4o")
         allow(OpenAI::Client).to receive(:new).and_return(client_double)
         allow(client_double).to receive(:chat).and_return(api_response)
       end
 
-      it "creates an OpenAI client pointing at the OpenRouter API base" do
+      it "resolves the key via the GM (the acting user) and the scene's game" do
+        described_class.new(scene, key_resolver: key_resolver).call
+        # ActiveRecord equality is by class+id, so this also proves the
+        # re-queried game_master (not some other user) was resolved.
+        expect(key_source).to have_received(:for_user).with(gm).once
+      end
+
+      it "creates an OpenAI client pointing at the OpenRouter API base with the resolved key" do
         expect(OpenAI::Client).to receive(:new).with(
-          access_token: "test-key",
+          access_token: "byok-key",
           uri_base: SceneSummaryService::OPENROUTER_API_BASE
         ).and_return(client_double)
-        SceneSummaryService.new(scene).call
+        described_class.new(scene, key_resolver: key_resolver).call
       end
 
       it "returns a Result with body and token counts" do
-        result = SceneSummaryService.new(scene).call
+        result = described_class.new(scene, key_resolver: key_resolver).call
         expect(result.body).to eq("A great adventure unfolded.")
         expect(result.model_used).to eq("openai/gpt-4o")
         expect(result.input_tokens).to eq(200)
@@ -82,9 +105,8 @@ RSpec.describe SceneSummaryService do
           expect(content).to include("The Dungeon")
           api_response
         end
-        SceneSummaryService.new(scene).call
+        described_class.new(scene, key_resolver: key_resolver).call
       end
-
 
       it "excludes draft posts" do
         player = create(:user, :with_profile)
@@ -95,7 +117,7 @@ RSpec.describe SceneSummaryService do
           expect(content).not_to include("draft content")
           api_response
         end
-        SceneSummaryService.new(scene).call
+        described_class.new(scene, key_resolver: key_resolver).call
       end
 
       it "includes the scene description when present" do
@@ -104,7 +126,7 @@ RSpec.describe SceneSummaryService do
           expect(content).to include("Dark and spooky")
           api_response
         end
-        SceneSummaryService.new(scene).call
+        described_class.new(scene, key_resolver: key_resolver).call
       end
 
       it "omits the description section when absent" do
@@ -114,10 +136,8 @@ RSpec.describe SceneSummaryService do
           expect(content).not_to include("Scene description:")
           api_response
         end
-        SceneSummaryService.new(scene_no_desc).call
+        described_class.new(scene_no_desc, key_resolver: key_resolver).call
       end
-
-
 
       it "does NOT label in-character posts with [OOC]" do
         player = create(:user, :with_profile)
@@ -130,14 +150,14 @@ RSpec.describe SceneSummaryService do
           expect(line).not_to start_with("[OOC]")
           api_response
         end
-        SceneSummaryService.new(scene).call
+        described_class.new(scene, key_resolver: key_resolver).call
       end
 
       it "handles missing usage data gracefully" do
         allow(client_double).to receive(:chat).and_return(
           "choices" => [ { "message" => { "content" => "A story." } } ]
         )
-        result = SceneSummaryService.new(scene).call
+        result = described_class.new(scene, key_resolver: key_resolver).call
         expect(result.input_tokens).to be_nil
         expect(result.output_tokens).to be_nil
       end
@@ -147,16 +167,31 @@ RSpec.describe SceneSummaryService do
           "choices" => [ { "message" => { "content" => nil } } ],
           "usage" => {}
         )
-        result = SceneSummaryService.new(scene).call
+        result = described_class.new(scene, key_resolver: key_resolver).call
         expect(result.body).to eq("")
       end
+    end
+  end
+
+  describe "#initialize" do
+    it "defaults the key resolver to AiKeyResolver backed by AiKeypairs::StoredKeySource" do
+      service = described_class.new(scene)
+      resolver = service.instance_variable_get(:@key_resolver)
+
+      expect(resolver).to be_a(AiKeyResolver)
+    end
+
+    it "stores the given scene" do
+      service = described_class.new(scene, key_resolver: key_resolver)
+
+      expect(service.instance_variable_get(:@scene)).to eq(scene)
     end
   end
 
   # Prompt rendering over a post list; #posts_for_prompt is the only read.
   describe "#prompt" do
     let(:prompt_scene) { build_stubbed(:scene, description: "A dark tavern") }
-    let(:service) { described_class.new(prompt_scene) }
+    let(:service) { described_class.new(prompt_scene, key_resolver: key_resolver) }
 
     def post_double(content:, author: "Dana", ooc: false)
       double(user: double(display_name: author, email: "d@example.com"), is_ooc?: ooc, content: content)
@@ -191,7 +226,7 @@ RSpec.describe SceneSummaryService do
 
     it "renders the full prompt template byte for byte" do
       titled_scene = build_stubbed(:scene, title: "The Sunken Tavern", description: "A dark tavern")
-      titled_service = described_class.new(titled_scene)
+      titled_service = described_class.new(titled_scene, key_resolver: key_resolver)
       posts = [ post_double(content: "dice roll", ooc: true), post_double(content: "sword drawn") ]
       allow(titled_service).to receive(:posts_for_prompt).and_return(posts)
 
@@ -223,7 +258,7 @@ RSpec.describe SceneSummaryService do
 
     it "renders the full prompt template byte for byte with no description and no posts" do
       bare_scene = build_stubbed(:scene, title: "The Sunken Tavern", description: "")
-      bare_service = described_class.new(bare_scene)
+      bare_service = described_class.new(bare_scene, key_resolver: key_resolver)
       allow(bare_service).to receive(:posts_for_prompt).and_return([])
 
       expected = <<~PROMPT
@@ -259,7 +294,7 @@ RSpec.describe SceneSummaryService do
       allow(chain).to receive(:to_a).and_return([])
       allow(scene).to receive(:posts).and_return(double(published: chain))
 
-      described_class.new(scene).send(:posts_for_prompt)
+      described_class.new(scene, key_resolver: key_resolver).send(:posts_for_prompt)
 
       expect(chain).to have_received(:includes).with(:user)
       expect(chain).to have_received(:order).with(:created_at)
