@@ -50,9 +50,9 @@ class GameFilePresenter < BasePresenter
       attachment_image_html(thumb, css_class: "max-w-full", loading: nil)
     else
       tag = @options.fetch(:helpers).tag
-      tag.div(class: "flex flex-col items-center justify-center gap-3 p-8 text-slate-500", data: { testid: "lightbox-placeholder" }) do
-        tag.div(file_extension, class: "text-5xl font-bold text-slate-400", data: { testid: "lightbox-placeholder-ext" }) +
-        tag.div(media.human_file_size, class: "text-sm text-slate-400")
+      tag.div(class: "flex flex-col items-center justify-center gap-3 p-8 text-meta-500", data: { testid: "lightbox-placeholder" }) do
+        tag.div(file_extension, class: "text-5xl font-bold text-meta-400", data: { testid: "lightbox-placeholder-ext" }) +
+        tag.div(media.human_file_size, class: "text-sm text-meta-400")
       end.to_s
     end
   end

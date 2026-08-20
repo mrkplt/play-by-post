@@ -24,7 +24,7 @@ RSpec.describe PaletteCss do
     end
 
     it "reproduces each group heading as a comment" do
-      Palette::GROUPS.each do |heading, _tokens|
+      Palette::Groups::ALL.each do |heading, _tokens|
         expect(css).to include("  /* #{heading} */")
       end
     end

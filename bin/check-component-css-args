@@ -1,0 +1,128 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Component CSS-argument check (self-contained; owns its own pass/fail).
+#
+# THE RULE (the advice this gate exists to give):
+#
+#   Do not pass CSS classes into a component call site. Pass domain and state
+#   configuration — `crown: true`, `active: false`, a `variant:`, a `size:` —
+#   and let the component decode how to render it. A component that receives
+#   `name_class: "text-tint-blue-strong"` is a styled <div> with its styling
+#   hoisted out to every caller: the same colour decision is re-spelled at each
+#   site, the component owns nothing, and changing how the thing looks means
+#   editing N call sites instead of one. That is the parameter-soup anti-pattern
+#   the conventions doc names ("wrapping a primitive only to add a container is
+#   not extraction"). The fix is always the same shape: replace the class
+#   argument with a named state/variant the component maps to classes itself
+#   (see Ui::IdentityBlockComponent's `variant:`/`size:`/`crown:`/`active:`).
+#
+# WHAT IT FLAGS: a `render SomeComponent.new(...)` call site that passes a
+# `*_class:` / `*_classes:` keyword argument whose value is a string literal
+# carrying a COLOUR or TYPOGRAPHY utility (text-*, bg-*, font-*, border colour,
+# leading-*, tracking-*, etc.). Those are visual-identity decisions that belong
+# inside the component.
+#
+# WHAT IT DELIBERATELY ALLOWS: spacing/positioning-only `html_class:` (e.g.
+# `html_class: "mt-2"`) — placing a component within its container is the
+# caller's job, not the component's identity. A class arg with only margin /
+# padding / width / flex-position utilities passes.
+#
+# This is a flat ratchet: it fails on ANY offending site. It reached zero when
+# Ui::IdentityBlockComponent absorbed the roster/post/nav identity styling; keep
+# it there.
+#
+# Exits 0 when clean, 1 when any violation is found.
+
+PROJECT_ROOT = File.expand_path("..", __dir__)
+
+# A component render call site opening: `render Foo::BarComponent.new(`. We then
+# read its (possibly multi-line) argument list up to the matching close.
+RENDER_CALL_RE = /render\s+[A-Z][A-Za-z0-9:]*Component\.new\(/
+
+# A class-carrying keyword argument: class:, name_class:, subtitle_classes:,
+# content_class:, html_class:, ... with a double-quoted or single-quoted string.
+CLASS_KWARG_RE = /\b([a-z_]*class(?:es)?):\s*(["'])(.*?)\2/
+
+# Colour / typography utilities — the visual-identity classes a component must
+# own. Spacing/positioning utilities (m*, p*, w-, h-, gap-, flex, grid, items-,
+# justify-, self-, order-, inset-, top/right/bottom/left) are intentionally
+# NOT matched here, so a container-placement class arg (e.g. "mt-2") passes.
+# Alignment text-utilities (text-center/left/right/justify) are excluded via the
+# negative lookahead; text-<colour>/<size> is caught.
+IDENTITY_UTILITY_RE = Regexp.union(
+  /\btext-(?!center\b|left\b|right\b|justify\b)[a-z0-9\[\]#._-]+/,
+  /\bbg-[a-z0-9\[\]#._-]+/,
+  /\bfont-(?:bold|semibold|medium|light|extrabold|black|thin|normal)\b/,
+  /\b(?:border|ring|from|via|to|fill|stroke|decoration|divide)-[a-z0-9._-]*(?:strong|soft|ink|accent|muted|blue|red|slate|white|black)\b/,
+  /\bleading-[a-z0-9\[\].-]+/,
+  /\btracking-[a-z0-9\[\].-]+/,
+  /\b(?:italic|uppercase|lowercase|capitalize)\b/
+)
+
+scanned = Dir.glob(File.join(PROJECT_ROOT, "app/views/**/*.html.erb")) +
+          Dir.glob(File.join(PROJECT_ROOT, "app/components/**/*.html.erb"))
+
+violations = []
+
+scanned.each do |file|
+  content = File.read(file, encoding: "utf-8")
+  # Flatten to a single logical string per render-call so multi-line arg lists
+  # are inspected whole, but keep line numbers by scanning line-by-line for the
+  # opening and then reading forward to a balanced close.
+  lines = content.lines
+  i = 0
+  while i < lines.length
+    line = lines[i]
+    if line =~ RENDER_CALL_RE
+      # Gather the argument text from here until parens balance.
+      buffer = +""
+      depth = 0
+      started = false
+      j = i
+      while j < lines.length
+        lines[j].each_char do |c|
+          depth += 1 if c == "("
+          depth -= 1 if c == ")"
+          started ||= (c == "(")
+        end
+        buffer << lines[j]
+        break if started && depth <= 0
+        j += 1
+      end
+
+      buffer.scan(CLASS_KWARG_RE) do |kw, _q, value|
+        next unless value =~ IDENTITY_UTILITY_RE
+
+        violations << {
+          file: file.delete_prefix("#{PROJECT_ROOT}/"),
+          line: i + 1,
+          kwarg: kw,
+          value: value
+        }
+      end
+      i = j
+    end
+    i += 1
+  end
+rescue Encoding::InvalidByteSequenceError, Encoding::UndefinedConversionError
+  # skip non-UTF-8 files
+end
+
+if violations.empty?
+  puts "[OK] component CSS args: no colour/typography classes passed into component call sites"
+  exit 0
+end
+
+warn "[FAIL] component CSS args: #{violations.size} call site(s) pass CSS into a component."
+warn ""
+warn "  Pass domain/state configuration, not CSS classes. Replace the class"
+warn "  argument with a named state the component maps to classes itself —"
+warn "  e.g. `variant: :blue` / `size: :sm` / `crown: true` / `active: false`,"
+warn "  the way Ui::IdentityBlockComponent does. The component owns the CSS;"
+warn "  the caller says what the thing *is*, not how it looks."
+warn ""
+violations.each do |v|
+  warn "  #{v[:file]}:#{v[:line]}  #{v[:kwarg]}: \"#{v[:value]}\""
+end
+exit 1

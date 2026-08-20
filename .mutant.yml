@@ -135,6 +135,11 @@ matcher:
     - Shared::SaveAsDraftToggleComponent
     - Shared::ChildSceneListComponent
     - Shared::ControlRowComponent
+    - Shared::GameTabsComponent
+    - Shared::GameTabsComponent::PanelComponent
+    - Shared::RosterFilterComponent
+    - Shared::ResolveToggleComponent
+    - Shared::UnreadAuraComponent
     - Shared::PostItemComponent
     - Shared::CharacterFormComponent
     - Shared::MarkdownToolbarComponent
@@ -191,6 +196,8 @@ matcher:
     - Ui::ButtonComponent::Link
     - Ui::GlowComponent
     - Ui::AvatarComponent
+    - Ui::IdentityBlockComponent
+    - Ui::IdentityBlockComponent::Config
     - Ui::CardComponent
     - Ui::SectionLabelComponent
     - Ui::ToggleSwitchComponent

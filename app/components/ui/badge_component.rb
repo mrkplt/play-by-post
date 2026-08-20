@@ -3,10 +3,10 @@
 class Ui::BadgeComponent < ApplicationComponent
   VARIANTS = T.let({
     # Light-page tints (existing callers)
-    yellow: "bg-yellow-100 text-yellow-800",
-    gray:   "bg-slate-100 text-slate-600",
-    green:  "bg-green-100 text-green-800",
-    blue:   "bg-blue-100 text-blue-800",
+    yellow: "bg-status-warn-bg text-status-warn-text",
+    gray:   "bg-status-neutral-bg text-status-neutral-text",
+    green:  "bg-status-ok-bg text-status-ok-text",
+    blue:   "bg-status-info-bg text-status-info-text",
     # Dark-surface tints from the mobile redesign (Removed / Banned pills on
     # dark headers and roster rows). Uppercase, letter-spaced.
     slate:  "bg-sidebar-bg text-muted-2 border border-sidebar-border uppercase tracking-[0.03em]",

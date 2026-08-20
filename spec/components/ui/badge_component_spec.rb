@@ -7,7 +7,7 @@ RSpec.describe Ui::BadgeComponent, type: :component do
   end
 
   it "renders gray variant by default" do
-    expect(rendered { "Former" }).to have_css("span.bg-slate-100.text-slate-600", text: "Former")
+    expect(rendered { "Former" }).to have_css("span.bg-status-neutral-bg.text-status-neutral-text", text: "Former")
   end
 
   it "defaults the variant to :gray" do
@@ -37,19 +37,19 @@ RSpec.describe Ui::BadgeComponent, type: :component do
 
   describe "variant classes" do
     it "yellow applies yellow background and text" do
-      expect(rendered(variant: :yellow) { "Private" }).to have_css("span.bg-yellow-100.text-yellow-800")
+      expect(rendered(variant: :yellow) { "Private" }).to have_css("span.bg-status-warn-bg.text-status-warn-text")
     end
 
     it "gray applies slate background and text" do
-      expect(rendered(variant: :gray) { "Resolved" }).to have_css("span.bg-slate-100.text-slate-600")
+      expect(rendered(variant: :gray) { "Resolved" }).to have_css("span.bg-status-neutral-bg.text-status-neutral-text")
     end
 
     it "green applies green background and text" do
-      expect(rendered(variant: :green) { "Active" }).to have_css("span.bg-green-100.text-green-800")
+      expect(rendered(variant: :green) { "Active" }).to have_css("span.bg-status-ok-bg.text-status-ok-text")
     end
 
     it "blue applies blue background and text" do
-      expect(rendered(variant: :blue) { "GM" }).to have_css("span.bg-blue-100.text-blue-800")
+      expect(rendered(variant: :blue) { "GM" }).to have_css("span.bg-status-info-bg.text-status-info-text")
     end
 
     it "slate applies the dark-surface slate tint" do

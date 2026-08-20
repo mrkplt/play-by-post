@@ -1,14 +1,15 @@
 <div class="w-[270px] max-w-[85vw] h-full bg-drawer-bg flex flex-col py-4 overflow-hidden">
   <%# Profile chip — fixed %>
-  <%= link_to profile_path, class: "flex items-center gap-2.5 px-[18px] pb-3.5 mb-1.5 border-b border-sidebar-bg no-underline flex-shrink-0" do %>
-    <%= render Ui::AvatarComponent.new(name: display_name, size: :lg) %>
-    <span class="flex flex-col">
-      <span class="text-white text-[13px] font-bold"><%= display_name %></span>
-      <span class="text-muted text-[11px]">View Profile</span>
-    </span>
+  <%= link_to profile_path, class: "px-[18px] pb-3.5 mb-1.5 border-b border-sidebar-bg no-underline flex-shrink-0" do %>
+    <%= render Ui::IdentityBlockComponent.new(
+          name: display_name,
+          primary: display_name,
+          secondary: "View Profile",
+          config: Ui::IdentityBlockComponent::Config.new(
+            orientation: :inline, size: :md, variant: :on_dark)) %>
   <% end %>
 
-  <%= render Ui::SectionLabelComponent.new(html_class: "px-[18px] mb-0.5 flex-shrink-0 !text-[10px] tracking-[0.06em]") do %>
+  <%= render Ui::SectionLabelComponent.new(size: :sm, html_class: "px-[18px] mb-0.5 flex-shrink-0") do %>
     Your Games
   <% end %>
 

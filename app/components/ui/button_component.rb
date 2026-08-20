@@ -14,11 +14,19 @@
 class Ui::ButtonComponent < ApplicationComponent
   extend T::Sig
 
+  # `text` is the borderless link-styled button; `text_danger` / `text_muted`
+  # are the same shape in an alternate semantic colour (a destructive or a
+  # de-emphasized inline action) — callers pick the variant rather than passing
+  # a `text-danger` / `text-row-ink` class override.
+  TEXT_BASE = T.let("bg-transparent border-0 p-0 cursor-pointer", String)
+
   VARIANTS = T.let({
-    primary:   "bg-accent text-accent-ink",
-    secondary: "border border-card-border text-ink bg-transparent",
-    danger:    "border border-card-border text-danger bg-transparent",
-    text:      "bg-transparent border-0 p-0 cursor-pointer text-accent"
+    primary:     "bg-accent text-accent-ink",
+    secondary:   "border border-card-border text-ink bg-transparent",
+    danger:      "border border-card-border text-danger bg-transparent",
+    text:        "#{TEXT_BASE} text-accent",
+    text_danger: "#{TEXT_BASE} text-danger",
+    text_muted:  "#{TEXT_BASE} text-row-ink"
   }.freeze, T::Hash[Symbol, String])
 
   SIZES = T.let({

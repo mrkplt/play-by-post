@@ -1,0 +1,37 @@
+<div data-controller="roster-filter">
+  <div class="flex items-center gap-1.5 border border-input-border rounded-control px-2.5 py-2 bg-card mb-3">
+    <span class="text-[13px] text-muted-2">&#128269;</span>
+    <input type="text" placeholder="Search characters or players"
+           data-roster-filter-target="query" data-action="input->roster-filter#filter"
+           class="flex-1 text-[13px] text-ink bg-transparent border-0 outline-none placeholder:text-muted-2">
+  </div>
+
+  <div class="flex items-center justify-between">
+    <%= render Ui::SectionLabelComponent.new do %>Characters<% end %>
+    <%= link_to "New Character", new_character_path, class: "text-[11px] font-bold text-accent no-underline" %>
+  </div>
+  <% unless roster.roster_characters? %>
+    <p class="text-muted-2 text-sm">No characters yet.</p>
+  <% else %>
+    <div class="bg-card border border-card-border rounded-card overflow-hidden mt-1">
+      <% roster.roster_characters.each_with_index do |row, i| %>
+        <div data-roster-filter-target="row" data-roster-name="<%= row.filter_key %>">
+          <%= render Shared::RosterRowComponent.new(
+                row: { name: row.character_name, subtitle: "Played by #{row.owner_name}",
+                       avatar_tone: row.avatar_tone, active: !row.removed? },
+                position: roster.roster_character_position(i)) do %>
+            <% if row.removed? %>
+              <%= render(Ui::BadgeComponent.new(variant: :slate)) { "Removed" } %>
+            <% end %>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
+
+  <% if roster.inactive_characters? %>
+    <p class="text-[11px] text-muted-2 text-center mt-3">
+      <%= pluralize(roster.inactive_character_count, "inactive character") %> hidden
+    </p>
+  <% end %>
+</div>

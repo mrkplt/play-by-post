@@ -45,6 +45,20 @@ class Shared::PostItemComponent < ApplicationComponent
     @post.author_is_gm? ? :dark : :gold
   end
 
+  # Post body typography: OOC posts read a touch smaller than in-character ones.
+  sig { returns(Symbol) }
+  def body_variant
+    ooc? ? :post_body_ooc : :post_body
+  end
+
+  # The byline timestamp as a semantic <time> element, passed to the identity
+  # block as its (HTML) secondary label. `data-local-time` lets the client
+  # localize the displayed value.
+  sig { returns(String) }
+  def byline_time
+    content_tag(:time, @post.formatted_created_at, data: { local_time: @post.created_at.iso8601 })
+  end
+
   private
 
   sig { returns(String) }

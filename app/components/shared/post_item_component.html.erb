@@ -6,10 +6,13 @@
      <% if ooc? %>data-testid="ooc-post"<% end %>>
 
   <%# Floated author block — body text wraps around it, illuminated-manuscript style %>
-  <div class="float-left mr-3 flex flex-col items-center gap-[3px] w-16">
-    <%= render Ui::AvatarComponent.new(name: @post.author_display_name, tone: avatar_tone, size: :lg) %>
-    <span class="font-bold text-[11px] text-ink text-center leading-tight"><%= @post.author_display_name %></span>
-    <time class="text-[9px] text-muted-2" data-local-time="<%= @post.created_at.iso8601 %>"><%= @post.formatted_created_at %></time>
+  <div class="float-left mr-3 w-16">
+    <%= render Ui::IdentityBlockComponent.new(
+          name: @post.author_display_name,
+          primary: @post.author_display_name,
+          secondary: byline_time,
+          config: Ui::IdentityBlockComponent::Config.new(
+            orientation: :stacked, size: :sm, avatar_tone: avatar_tone)) %>
   </div>
 
   <% if ooc? %>
@@ -17,7 +20,7 @@
   <% end %>
 
   <%= render Ui::MarkdownRenderComponent.new(text: @post.content,
-        content_class: "post-content text-body-ink leading-[1.65] #{ooc? ? 'text-sm' : 'text-base'}",
+        variant: body_variant,
         content_attributes: { data: { testid: "post-content" } }) %>
 
   <div class="clear-both"></div>

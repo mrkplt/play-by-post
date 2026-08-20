@@ -1,6 +1,6 @@
 <% content_for :active_game_id, @game_screen.game.id %>
 
-<div data-controller="game-tabs">
+<%= render Shared::GameTabsComponent.new do %>
   <%= render Shared::MobileFrameComponent.new do |frame| %>
     <% frame.with_header do %>
       <%= render Shared::HeaderComponent.new(
@@ -10,7 +10,7 @@
     <% end %>
 
     <%# ===== Scenes panel ===== %>
-    <section data-game-tabs-target="panel" data-panel="scenes" class="flex flex-col gap-3">
+    <%= render Shared::GameTabsComponent::PanelComponent.new(name: "scenes", visibility: :shown) do %>
       <%= render Ui::SectionLabelComponent.new do %>Active Scenes<% end %>
       <% unless @game_screen.scenes.active_scenes? %>
         <p class="text-muted-2 text-sm">No active scenes.</p>
@@ -44,73 +44,38 @@
                 position: @game_screen.scenes.roster_preview_position(i)) %>
         <% end %>
       </div>
-    </section>
+    <% end %>
 
     <%# ===== Roster panel ===== %>
-    <section data-game-tabs-target="panel" data-panel="roster" class="flex flex-col gap-3" hidden>
-      <div data-controller="roster-filter">
-        <div class="flex items-center gap-1.5 border border-input-border rounded-control px-2.5 py-2 bg-card mb-3">
-          <span class="text-[13px] text-muted-2">&#128269;</span>
-          <input type="text" placeholder="Search characters or players"
-                 data-roster-filter-target="query" data-action="input->roster-filter#filter"
-                 class="flex-1 text-[13px] text-ink bg-transparent border-0 outline-none placeholder:text-muted-2">
-        </div>
+    <%= render Shared::GameTabsComponent::PanelComponent.new(name: "roster") do %>
+      <%= render Shared::RosterFilterComponent.new(
+            roster: @game_screen.roster,
+            new_character_path: new_game_character_path(@game_screen.game)) %>
 
-        <div class="flex items-center justify-between">
-          <%= render Ui::SectionLabelComponent.new do %>Characters<% end %>
-          <%= link_to "New Character", new_game_character_path(@game_screen.game), class: "text-[11px] font-bold text-accent no-underline" %>
-        </div>
-        <% unless @game_screen.roster.roster_characters? %>
-          <p class="text-muted-2 text-sm">No characters yet.</p>
-        <% else %>
-          <div class="bg-card border border-card-border rounded-card overflow-hidden mt-1">
-            <% @game_screen.roster.roster_characters.each_with_index do |row, i| %>
-              <div data-roster-filter-target="row" data-roster-name="<%= row.filter_key %>">
-                <%= render Shared::RosterRowComponent.new(
-                      row: { name: row.character_name, subtitle: "Played by #{row.owner_name}",
-                             avatar_tone: row.avatar_tone, dimmed: row.removed? },
-                      position: @game_screen.roster.roster_character_position(i)) do %>
-                  <% if row.removed? %>
-                    <%= render(Ui::BadgeComponent.new(variant: :slate)) { "Removed" } %>
-                  <% end %>
-                <% end %>
-              </div>
-            <% end %>
-          </div>
-        <% end %>
-
-        <% if @game_screen.roster.inactive_characters? %>
-          <p class="text-[11px] text-muted-2 text-center mt-3">
-            <%= pluralize(@game_screen.roster.inactive_character_count, "inactive character") %> hidden
-          </p>
-        <% end %>
-
-        <% if @game_screen.roster.banned_members_section? %>
-          <%= render Ui::SectionLabelComponent.new(html_class: "mt-3") do %>Banned &middot; GM only<% end %>
-          <div class="bg-tint-blue-bg border border-tint-blue-border rounded-card overflow-hidden opacity-85 mt-1">
-            <% @game_screen.roster.banned_members.each_with_index do |banned, i| %>
-              <%= render Shared::RosterRowComponent.new(
-                    row: { name: banned.display_name, subtitle: "Played by #{banned.display_name}",
-                           avatar_tone: :blue, name_class: "text-tint-blue-strong",
-                           subtitle_class: "text-tint-blue-soft" },
-                    position: @game_screen.roster.banned_member_position(i)) do %>
-                <%= form_with url: banned.unban_path, method: :patch, class: "inline" do |f| %>
-                  <%= f.hidden_field :status, value: "active" %>
-                  <%= f.submit "Unban", class: "text-[11px] font-bold text-danger-soft bg-transparent border-0 cursor-pointer p-0" %>
-                <% end %>
+      <% if @game_screen.roster.banned_members_section? %>
+        <%= render Ui::SectionLabelComponent.new(html_class: "mt-3") do %>Banned &middot; GM only<% end %>
+        <div class="bg-tint-blue-bg border border-tint-blue-border rounded-card overflow-hidden opacity-85 mt-1">
+          <% @game_screen.roster.banned_members.each_with_index do |banned, i| %>
+            <%= render Shared::RosterRowComponent.new(
+                  row: { name: banned.display_name, subtitle: "Played by #{banned.display_name}",
+                         avatar_tone: :blue, variant: :blue },
+                  position: @game_screen.roster.banned_member_position(i)) do %>
+              <%= form_with url: banned.unban_path, method: :patch, class: "inline" do |f| %>
+                <%= f.hidden_field :status, value: "active" %>
+                <%= f.submit "Unban", class: "text-[11px] font-bold text-danger-soft bg-transparent border-0 cursor-pointer p-0" %>
               <% end %>
             <% end %>
-          </div>
-        <% end %>
+          <% end %>
+        </div>
+      <% end %>
 
-        <% if @game_screen.game.can_manage? %>
-          <%= render Shared::InvitePanelComponent.new(game: @game_screen.game, pending_invitations: @game_screen.show.pending_invitations) %>
-        <% end %>
-      </div>
-    </section>
+      <% if @game_screen.game.can_manage? %>
+        <%= render Shared::InvitePanelComponent.new(game: @game_screen.game, pending_invitations: @game_screen.show.pending_invitations) %>
+      <% end %>
+    <% end %>
 
     <%# ===== Files panel ===== %>
-    <section data-game-tabs-target="panel" data-panel="files" class="flex flex-col gap-3" hidden>
+    <%= render Shared::GameTabsComponent::PanelComponent.new(name: "files") do %>
       <% if @game_screen.game.can_manage? %>
         <%= render Shared::FileUploadFormComponent.new(game: @game_screen.game, game_file: @game_screen.show.new_game_file) %>
       <% end %>
@@ -120,23 +85,23 @@
         <%= render Ui::SectionLabelComponent.new do %>Newest first<% end %>
         <%= render Shared::GalleryComponent.new(game_files: @game_screen.show.game_files) %>
       <% end %>
-    </section>
+    <% end %>
 
     <%# ===== Pages panel ===== %>
-    <section data-game-tabs-target="panel" data-panel="pages" hidden>
+    <%= render Shared::GameTabsComponent::PanelComponent.new(name: "pages") do %>
       <%= render Shared::GamePagesListComponent.new(game: @game_screen.game, pages: @game_screen.show.pages, can_manage: @game_screen.game.can_manage?) %>
-    </section>
+    <% end %>
 
     <%# ===== Links panel ===== %>
-    <section data-game-tabs-target="panel" data-panel="links" hidden>
+    <%= render Shared::GameTabsComponent::PanelComponent.new(name: "links") do %>
       <%= render Shared::GameLinksListComponent.new(game: @game_screen.game, game_links: @game_screen.show.links, can_manage: @game_screen.game.can_manage?) %>
-    </section>
+    <% end %>
 
     <%# ===== Notebook panel (GM only) ===== %>
     <% if @game_screen.game.can_manage? %>
-      <section data-game-tabs-target="panel" data-panel="notebook" hidden>
+      <%= render Shared::GameTabsComponent::PanelComponent.new(name: "notebook") do %>
         <%= render Shared::NotebookBoardComponent.new(game: @game_screen.game, board: @game_screen.game.notebook_board) %>
-      </section>
+      <% end %>
     <% end %>
   <% end %>
-</div>
+<% end %>

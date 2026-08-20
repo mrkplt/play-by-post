@@ -32,6 +32,12 @@ bin/rubocop || exit 1
 echo "==> Design-token adherence (no raw hex in ERB)"
 bin/check-design-tokens || exit 1
 
+echo "==> Component CSS args (pass domain/state config, not CSS classes)"
+bin/check-component-css-args || exit 1
+
+echo "==> Palette utilities (colours live in lib/palette.rb, not raw Tailwind palette utils)"
+bin/check-palette-utilities || exit 1
+
 echo "==> Palette sync (_palette.css matches lib/palette.rb)"
 bin/check-palette-sync || exit 1
 

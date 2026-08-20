@@ -14,12 +14,20 @@ RSpec.describe Ui::SectionLabelComponent, type: :component do
     expect(rendered { "Characters" }).to have_css("div.uppercase.text-muted.font-bold")
   end
 
-  it "returns only the base classes when no html_class given" do
-    expect(described_class.new.classes).to eq(Ui::SectionLabelComponent::BASE)
+  it "returns the md base classes by default" do
+    expect(described_class.new.classes).to eq("text-[11px] tracking-[0.05em] font-bold text-muted uppercase")
+  end
+
+  it "uses the smaller type scale for size :sm" do
+    expect(described_class.new(size: :sm).classes).to include("text-[10px]").and include("tracking-[0.06em]")
+  end
+
+  it "rejects an unknown size" do
+    expect { described_class.new(size: :xl) }.to raise_error(ArgumentError, /Unknown size/)
   end
 
   it "appends an extra html_class" do
-    expect(described_class.new(html_class: "mt-4").classes).to eq("#{Ui::SectionLabelComponent::BASE} mt-4")
+    expect(described_class.new(html_class: "mt-4").classes).to end_with(" mt-4")
   end
 
   it "renders the extra html_class in the DOM" do

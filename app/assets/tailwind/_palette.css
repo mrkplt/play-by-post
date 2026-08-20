@@ -65,6 +65,46 @@
   --color-toggle-on: #16a34a;
   --color-toggle-off: #94a3b8;
 
+  /* Neutral slate scale — collected from raw Tailwind slate-* utilities (surfaces, borders, and meta text on forms/galleries/breadcrumbs) pending design-system dispensation */
+  --color-surface-50: #f8fafc;
+  --color-surface-100: #f1f5f9;
+  --color-surface-200: #e2e8f0;
+  --color-line-200: #e2e8f0;
+  --color-line-300: #cbd5e1;
+  --color-meta-400: #94a3b8;
+  --color-meta-500: #64748b;
+  --color-meta-600: #475569;
+  --color-meta-700: #334155;
+
+  /* Error/danger form states — collected from raw Tailwind red-* utilities (inline validation on forms) pending design-system dispensation */
+  --color-error-bg: #fef2f2;
+  --color-error-border: #fecaca;
+  --color-error-border-strong: #fca5a5;
+  --color-error-text: #dc2626;
+  --color-error-text-strong: #991b1b;
+
+  /* Status-badge light tones — collected from raw Tailwind *-100/*-800 utilities on Ui::BadgeComponent pending design-system dispensation */
+  --color-status-warn-bg: #fef9c3;
+  --color-status-warn-text: #854d0e;
+  --color-status-neutral-bg: #f1f5f9;
+  --color-status-neutral-text: #475569;
+  --color-status-ok-bg: #dcfce7;
+  --color-status-ok-text: #166534;
+  --color-status-info-bg: #dbeafe;
+  --color-status-info-text: #1e40af;
+
+  /* Scene summary surfaces — collected from raw Tailwind utilities pending design-system dispensation (see Fizzy: detokenize summaries) */
+  --color-summary-amber-bg: #fffbeb;
+  --color-summary-amber-border: #fde68a;
+  --color-summary-amber-heading: #78350f;
+  --color-summary-amber-meta: #b45309;
+  --color-summary-amber-body: #451a03;
+  --color-summary-slate-border: #e2e8f0;
+  --color-summary-slate-meta: #94a3b8;
+  --color-summary-slate-body: #334155;
+  --color-summary-delete: #dc2626;
+  --color-summary-delete-hover: #991b1b;
+
   /* Email — inline styles in mailer views (mail clients can't use Tailwind) */
   --color-mail-meta: #64748b;
   --color-mail-action: #1e40af;

@@ -1,27 +1,27 @@
-<div class="bg-amber-50 border border-amber-200 rounded-lg p-5 mt-6">
+<div class="bg-summary-amber-bg border border-summary-amber-border rounded-lg p-5 mt-6">
   <div class="flex justify-between items-start mb-3">
-    <h3 class="m-0 text-base font-semibold text-amber-900">Scene Summary</h3>
+    <h3 class="m-0 text-base font-semibold text-summary-amber-heading">Scene Summary</h3>
     <div class="flex gap-2 items-center">
       <%= render(Ui::BadgeComponent.new(variant: status_badge_variant.to_sym)) { @summary.status_label } %>
       <% if can_manage? %>
         <% if draft? %>
           <%= render(Ui::BadgeComponent.new(variant: :slate)) { "Draft" } %>
           <%= button_to "Publish", publish_path, method: :patch,
-              class: "text-xs text-amber-700 hover:text-amber-900 bg-transparent border-none cursor-pointer p-0" %>
+              class: "text-xs text-summary-amber-meta hover:text-summary-amber-heading bg-transparent border-none cursor-pointer p-0" %>
         <% end %>
         <%= link_to "Edit", @summary.routes.edit_path,
-            class: "text-xs text-amber-700 hover:text-amber-900 no-underline" %>
+            class: "text-xs text-summary-amber-meta hover:text-summary-amber-heading no-underline" %>
         <%= button_to "Delete", @summary.routes.submit_path,
             method: :delete,
-            class: "text-xs text-red-600 hover:text-red-800 bg-transparent border-none cursor-pointer p-0",
+            class: "text-xs text-summary-delete hover:text-summary-delete-hover bg-transparent border-none cursor-pointer p-0",
             data: { confirm: "Delete this summary?" } %>
       <% end %>
     </div>
   </div>
-  <%= render Ui::MarkdownRenderComponent.new(text: @summary.body, content_class: "prose prose-sm max-w-none text-amber-950") %>
+  <%= render Ui::MarkdownRenderComponent.new(text: @summary.body, variant: :summary_amber) %>
   <% if @summary.formatted_edited_at %>
-    <p class="text-xs text-amber-700 mt-2 mb-0">Last edited <%= @summary.formatted_edited_at %></p>
+    <p class="text-xs text-summary-amber-meta mt-2 mb-0">Last edited <%= @summary.formatted_edited_at %></p>
   <% elsif @summary.formatted_generated_at %>
-    <p class="text-xs text-amber-700 mt-2 mb-0">Generated <%= @summary.formatted_generated_at %></p>
+    <p class="text-xs text-summary-amber-meta mt-2 mb-0">Generated <%= @summary.formatted_generated_at %></p>
   <% end %>
 </div>

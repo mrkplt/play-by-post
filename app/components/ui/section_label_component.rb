@@ -1,22 +1,31 @@
 # typed: strict
 
 # Uppercase muted section label — the small "ACTIVE SCENES" / "CHARACTERS"
-# heading that groups content on every screen.
+# heading that groups content on every screen. Two size steps: :md (the default
+# body-screen label) and :sm (the tighter, smaller label the nav drawer uses).
+# `html_class` remains for caller-owned spacing/positioning only — never
+# typography or colour (bin/check-component-css-args enforces this).
 class Ui::SectionLabelComponent < ApplicationComponent
   extend T::Sig
 
-  BASE = T.let(
-    "text-[11px] font-bold text-muted uppercase tracking-[0.05em]",
-    String
-  )
+  COLOUR = T.let("font-bold text-muted uppercase", String)
 
-  sig { params(html_class: String).void }
-  def initialize(html_class: "")
+  SIZES = T.let({
+    md: "text-[11px] tracking-[0.05em]",
+    sm: "text-[10px] tracking-[0.06em]"
+  }.freeze, T::Hash[Symbol, String])
+
+  sig { params(size: Symbol, html_class: String).void }
+  def initialize(size: :md, html_class: "")
+    raise ArgumentError, "Unknown size: #{size}" unless SIZES.key?(size)
+
+    @size = size
     @html_class = html_class
   end
 
   sig { returns(String) }
   def classes
-    @html_class.empty? ? BASE : "#{BASE} #{@html_class}"
+    base = "#{SIZES.fetch(@size)} #{COLOUR}"
+    @html_class.empty? ? base : "#{base} #{@html_class}"
   end
 end
