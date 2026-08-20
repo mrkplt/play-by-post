@@ -12,14 +12,18 @@ RSpec.describe AiKeypairs::Blob do
       expect(blob.ciphertext).to eq("c")
     end
 
-    it "raises DecryptionError on invalid JSON" do
-      expect { described_class.from_json("not json") }.to raise_error(AiKeypairs::DecryptionError)
+    it "raises DecryptionError, with the parser's message, on invalid JSON" do
+      expect { described_class.from_json("not json") }.to raise_error(
+        AiKeypairs::DecryptionError, /malformed BYOK key blob/
+      )
     end
 
-    it "raises DecryptionError when a required field is missing" do
+    it "raises DecryptionError, naming the missing field, when a required field is missing" do
       json = { wrapped_key: "a", iv: "b" }.to_json
 
-      expect { described_class.from_json(json) }.to raise_error(AiKeypairs::DecryptionError)
+      expect { described_class.from_json(json) }.to raise_error(
+        AiKeypairs::DecryptionError, /malformed BYOK key blob.*ciphertext/
+      )
     end
   end
 end
