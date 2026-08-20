@@ -3,9 +3,11 @@
 # The "Sheet visibility" settings row on the Edit Game screen: a text-link
 # control that flips whether character sheets are hidden from players. Owns
 # the full row (label, sub-label, toggle link) — same pattern as
-# Shared::AiSummariesToggleComponent.
+# Shared::AiSummariesToggleComponent, which shares the label-flip logic through
+# Shared::GameFlagToggle.
 class Shared::SheetsToggleComponent < ApplicationComponent
   extend T::Sig
+  include Shared::GameFlagToggle
 
   sig { params(game: GamePresenter).void }
   def initialize(game:)
@@ -17,9 +19,19 @@ class Shared::SheetsToggleComponent < ApplicationComponent
     @game.sheets_hidden?
   end
 
-  sig { returns(String) }
-  def toggle_label
-    hidden? ? "Show Character Sheets" : "Hide Character Sheets"
+  sig { override.returns(T::Boolean) }
+  def on?
+    hidden?
+  end
+
+  sig { override.returns(String) }
+  def on_label
+    "Show Character Sheets"
+  end
+
+  sig { override.returns(String) }
+  def off_label
+    "Hide Character Sheets"
   end
 
   sig { returns(String) }
