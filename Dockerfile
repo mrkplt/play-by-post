@@ -98,13 +98,13 @@ FROM base AS worker-final
 COPY --from=build "${BUNDLE_PATH}" "${BUNDLE_PATH}"
 COPY --from=build /rails /rails
 
-# /data holds the shared SQLite volume (same as web); /keys is a dedicated,
+# /data holds the shared SQLite volume (same as web); /ai-keys-data is a
 # worker-only volume mount point for the private-key SQLite database — see
 # docker-compose.yml's `worker-keys` volume. Only the worker container ever
 # mounts it, so the private-key database never coexists with the web tier.
 RUN useradd rails --create-home --shell /bin/bash && \
-    mkdir -p /data /keys && \
-    chown -R rails:rails db log storage tmp /data /keys
+    mkdir -p /data /ai-keys-data && \
+    chown -R rails:rails db log storage tmp /data /ai-keys-data
 USER rails:rails
 
 ENTRYPOINT ["/rails/bin/docker-entrypoint"]

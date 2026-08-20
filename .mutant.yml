@@ -18,6 +18,8 @@ matcher:
   subjects:
     # Models
     - AiUsage
+    - AiKeypair
+    - AiPrivateKey
     - ApiToken
     - Branding
     - ErrorTracking
@@ -220,6 +222,11 @@ matcher:
     # Services
     - AiKeyResolver
     - AiKeyResolver::KeySource
+    - AiKeypairs::CryptoService
+    - AiKeypairs::Blob
+    - AiKeypairs::DecryptionError
+    - AiKeypairs::KeypairGenerator
+    - AiKeypairs::KeypairGenerator::GeneratedKeypair
     - AttachmentUploader
     - AttachmentUploader::Owner
     - AttachmentUploader::Naming

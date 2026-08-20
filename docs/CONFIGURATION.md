@@ -97,6 +97,19 @@ Active Storage uses the `:cloudflare_r2` service in production
 (`config/environments/production.rb:39`), so the `storage:` credential block is mandatory
 for uploads.
 
+### Worker-only: BYOK private-key custody
+
+| Variable | Read at | Notes |
+|---|---|---|
+| `AI_PRIVATE_KEYS_KEY` | `config/initializers/ai_private_key_encryption.rb` | Contents of `config/ai_private_keys.key`. **Required on `worker`, must NOT be set on `web`.** Decrypts `config/ai_private_keys.yml.enc` — a bespoke credential, separate from `RAILS_MASTER_KEY` — which supplies the Active Record Encryption keys for `AiPrivateKey`. Without it, `AiPrivateKey` reads/writes raise `ActiveRecord::Encryption::Errors::Configuration` (`AiPrivateKeyEncryption::UnavailableKeyProvider`) instead of silently no-oping |
+| `AI_KEYS_DATABASE_PATH` | `config/database.yml` (`production.ai_keys`) | **Required on `worker`, must NOT be set on `web`.** Mount point for the `ai_keys` SQLite database (BYOK private keys). `docker-compose.yml` gives `worker` its own volume (`aikeysdata:/ai-keys-data`) distinct from `web`'s `dbdata:/data` — `web` has no volume mounted at this path at all, so even a code bug reaching for `AiPrivateKey` on `web` has no file to open |
+
+This is a second, independent isolation layer on top of the database split itself — see
+`app/models/ai_private_key.rb` and `config/initializers/ai_private_key_encryption.rb` for
+the full custody model (`AiKeypairs::CryptoService` does the actual browser-envelope
+decryption). Losing `config/ai_private_keys.key` makes every stored BYOK private key
+unrecoverable — back it up separately from `RAILS_MASTER_KEY`.
+
 ## 2. Environment variables — optional
 
 Safe defaults exist; set only to override.
@@ -163,6 +176,26 @@ without exposing values:
 ActionMailbox uses **no ingress password**; the Resend inbound webhook is authenticated by
 Svix HMAC-SHA256 signature verification in the controller
 (`config/initializers/action_mailbox.rb`).
+
+### A second, separate encrypted credential: `config/ai_private_keys.yml.enc`
+
+Deliberately **not** part of `config/credentials/production.yml.enc` above — a different
+file, decrypted by a different key (`config/ai_private_keys.key` / `AI_PRIVATE_KEYS_KEY`,
+not `RAILS_MASTER_KEY`), read only by `config/initializers/ai_private_key_encryption.rb`.
+It supplies Active Record Encryption's `primary_key` / `deterministic_key` /
+`key_derivation_salt` for `AiPrivateKey` specifically (BYOK private keys), not the app-wide
+`ActiveRecord::Encryption.config`. See "Worker-only: BYOK private-key custody" above —
+this key must reach the `worker` container and must NOT reach `web`. Generate a fresh one
+with `ActiveSupport::EncryptedConfiguration.generate_key`; there is no
+`bin/rails credentials:edit` shortcut for it (it isn't a Rails `credentials:` file), edit
+it by constructing `ActiveSupport::EncryptedConfiguration.new(config_path:, key_path:,
+env_key: "AI_PRIVATE_KEYS_KEY", raise_if_missing_key: true)` directly.
+
+| Key | Read at | Required? |
+|---|---|---|
+| `active_record_encryption.primary_key` | `config/initializers/ai_private_key_encryption.rb` | Yes — without it `AiPrivateKey` falls back to `AiPrivateKeyEncryption::UnavailableKeyProvider`, which raises on any encrypt/decrypt |
+| `active_record_encryption.deterministic_key` | Generated alongside the others; not currently read (no deterministic `encrypts` column exists yet) | Reserved for a future deterministic (searchable) encrypted column |
+| `active_record_encryption.key_derivation_salt` | `config/initializers/ai_private_key_encryption.rb` (`AiPrivateKeyEncryption::KeyGenerator`) | Yes — this credential's own salt, not the app-wide `ActiveRecord::Encryption.config.key_derivation_salt` (which stays unset; nothing else in this app uses `encrypts`) |
 
 ---
 

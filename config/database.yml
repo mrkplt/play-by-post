@@ -4,15 +4,25 @@ default: &default
   timeout: 5000
 
 development:
-  <<: *default
-  database: storage/development.sqlite3
+  primary:
+    <<: *default
+    database: storage/development.sqlite3
+  ai_keys:
+    <<: *default
+    database: storage/development_ai_keys.sqlite3
+    migrations_paths: db/ai_keys_migrate
 
 test:
-  <<: *default
-  database: storage/test.sqlite3
+  primary:
+    <<: *default
+    database: storage/test.sqlite3
+  ai_keys:
+    <<: *default
+    database: storage/test_ai_keys.sqlite3
+    migrations_paths: db/ai_keys_migrate
 
 # Production runs SQLite from a mounted volume shared by the web and worker
-# containers (see docker-compose.coolify.yml). DATABASE_PATH is the mount point.
+# containers (see docker-compose.yml). DATABASE_PATH is the mount point.
 # Rails 8 defaults the sqlite3 adapter to WAL, which is what makes concurrent
 # access from both containers safe.
 production:
@@ -33,3 +43,15 @@ production:
     database: <%= ENV.fetch("DATABASE_PATH") { "storage" } %>/production_queue.sqlite3
     migrations_paths: db/queue_migrate
     schema_dump: queue_schema.rb
+  # Private half of the BYOK keypair custody model. Mounted on a SEPARATE,
+  # worker-only volume (see docker-compose.yml `worker.volumes` — `aikeysdata`
+  # is not mounted into `web` at all), so the web container has no filesystem
+  # path to this database regardless of any application-level bug. Rows are
+  # additionally encrypted at rest via Active Record Encryption keyed by
+  # config/ai_private_keys.yml.enc (config/initializers/ai_private_key_encryption.rb),
+  # a bespoke credential distinct from RAILS_MASTER_KEY — so even a copy of
+  # this file is useless without a second, separately-held secret.
+  ai_keys:
+    <<: *default
+    database: <%= ENV.fetch("AI_KEYS_DATABASE_PATH") { ENV.fetch("DATABASE_PATH") { "storage" } } %>/production_ai_keys.sqlite3
+    migrations_paths: db/ai_keys_migrate
