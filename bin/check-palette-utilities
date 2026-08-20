@@ -1,0 +1,104 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Raw-Tailwind-palette-utility check (self-contained; owns its own pass/fail).
+#
+# THE RULE: colours live in ONE place — lib/palette.rb. Every colour used in the
+# app is a named @theme token derived from that file (bg-accent, text-muted,
+# text-summary-amber-body, …). A raw Tailwind palette utility — bg-amber-50,
+# text-slate-400, border-red-200 — declares a colour OUTSIDE the constants file.
+# It bypasses the single source of truth: the value can't be found, changed, or
+# reused by name, and it drifts from the rest of the app (this is exactly how
+# the scene-summary components ended up on an off-system amber/slate palette
+# nobody else shares).
+#
+# THE FIX (the advice this gate exists to give): do not name a Tailwind palette
+# colour at the call site. Add the colour to lib/palette.rb (pick or create the
+# right group), run bin/build-palette, and use the generated token utility
+# instead — e.g. bg-amber-50 -> add `"summary-amber-bg" => "#fffbeb"` to
+# lib/palette.rb, then use `bg-summary-amber-bg`.
+#
+# This gate is FLAT ZERO-TOLERANCE: the whole app was detokenized onto
+# lib/palette.rb, so no raw palette utility may appear anywhere in app source.
+# A baseline mechanism remains (an optional bin/palette-utilities-baseline.json
+# mapping file => allowed count) in case a future bulk import must stage debt,
+# but it is absent by default and the standing expectation is zero.
+#
+# Exits 0 when no file exceeds its baseline (zero by default), 1 otherwise.
+
+require "json"
+
+PROJECT_ROOT = File.expand_path("..", __dir__)
+BASELINE_PATH = File.join(PROJECT_ROOT, "bin/palette-utilities-baseline.json")
+
+# A Tailwind default-palette colour utility: a colour property prefix, a palette
+# family, and a numeric step. Named @theme tokens (bg-accent, text-summary-*)
+# never match — they have no numeric step. Arbitrary hex (bg-[#…]) is covered by
+# bin/check-design-tokens, not here.
+FAMILIES = %w[
+  slate gray zinc neutral stone red orange amber yellow lime green emerald teal
+  cyan sky blue indigo violet purple fuchsia pink rose
+].freeze
+
+PALETTE_UTILITY_RE = /\b(?:bg|text|border|ring|from|via|to|divide|fill|stroke|outline|shadow|decoration|accent|caret)-(?:#{FAMILIES.join('|')})-\d{2,3}\b/
+
+scanned = Dir.glob(File.join(PROJECT_ROOT, "app/**/*.html.erb")) +
+          Dir.glob(File.join(PROJECT_ROOT, "app/**/*.rb")) +
+          Dir.glob(File.join(PROJECT_ROOT, "app/**/*.js"))
+
+counts = {}
+hits_by_file = {}
+scanned.each do |file|
+  content = File.read(file, encoding: "utf-8")
+  hits = content.scan(PALETTE_UTILITY_RE)
+  next if hits.empty?
+
+  rel = file.delete_prefix("#{PROJECT_ROOT}/")
+  counts[rel] = hits.size
+  hits_by_file[rel] = hits.tally
+rescue Encoding::InvalidByteSequenceError, Encoding::UndefinedConversionError
+  # skip non-UTF-8 files
+end
+
+baseline = File.exist?(BASELINE_PATH) ? JSON.parse(File.read(BASELINE_PATH)) : {}
+
+regressions = []
+counts.each do |file, count|
+  allowed = baseline[file].to_i
+  regressions << { file: file, count: count, allowed: allowed, hits: hits_by_file[file] } if count > allowed
+end
+
+# Also flag baseline entries that are now stale (file dropped below its allowance
+# or to zero) so the baseline is kept honest and only shrinks.
+stale = baseline.keys.reject { |f| counts[f].to_i >= baseline[f].to_i && baseline[f].to_i.positive? }
+                     .select { |f| counts[f].to_i < baseline[f].to_i }
+
+if regressions.empty? && stale.empty?
+  total = counts.values.sum
+  summary = total.zero? ? "app is fully tokenised" : "#{total} baselined, ratcheting down"
+  puts "[OK] palette utilities: no raw Tailwind palette colours outside lib/palette.rb (#{summary})"
+  exit 0
+end
+
+unless regressions.empty?
+  warn "[FAIL] palette utilities: #{regressions.size} file(s) added raw Tailwind palette colours."
+  warn ""
+  warn "  Colours belong in lib/palette.rb — the single source of truth. Add the"
+  warn "  colour there (into the right group), run bin/build-palette, and use the"
+  warn "  generated token utility instead of naming a Tailwind palette colour:"
+  warn "    bg-amber-50  ->  add \"summary-amber-bg\" => \"#fffbeb\"  ->  bg-summary-amber-bg"
+  warn ""
+  regressions.each do |r|
+    detail = r[:hits].map { |util, n| n > 1 ? "#{util}×#{n}" : util }.join(", ")
+    warn "  #{r[:file]}: #{r[:count]} (baseline #{r[:allowed]}) — #{detail}"
+  end
+end
+
+unless stale.empty?
+  warn ""
+  warn "[FAIL] palette utilities: baseline is stale — these files improved; lower their"
+  warn "       counts in bin/palette-utilities-baseline.json (the baseline only shrinks):"
+  stale.each { |f| warn "  #{f}: now #{counts[f].to_i}, baseline #{baseline[f]}" }
+end
+
+exit 1

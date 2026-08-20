@@ -31,8 +31,18 @@ RSpec.describe Ui::ButtonComponent, type: :component do
   end
 
   it "appends an html_options class rather than replacing the variant/size classes" do
-    button = rendered(style: style(variant: :text), html_options: { class: "text-danger" }) { "Ban" }.find("button")
+    button = rendered(style: style(variant: :text), html_options: { class: "mt-2" }) { "X" }.find("button")
+    expect(button[:class]).to include("mt-2", "cursor-pointer", "bg-transparent")
+  end
+
+  it "styles a text_danger button with the danger colour it owns" do
+    button = rendered(style: style(variant: :text_danger)) { "Ban" }.find("button")
     expect(button[:class]).to include("text-danger", "cursor-pointer", "bg-transparent")
+  end
+
+  it "styles a text_muted button with the muted colour it owns" do
+    button = rendered(style: style(variant: :text_muted)) { "Remove" }.find("button")
+    expect(button[:class]).to include("text-row-ink", "cursor-pointer", "bg-transparent")
   end
 
   describe "all variants render without error" do
@@ -106,9 +116,9 @@ RSpec.describe Ui::ButtonComponent, type: :component do
     end
 
     it "appends an html_options class rather than replacing the variant/size classes" do
-      result = rendered(link: link(url: "/games/1"), style: style(variant: :text), html_options: { class: "text-danger" }) { "Ban" }
+      result = rendered(link: link(url: "/games/1"), style: style(variant: :text), html_options: { class: "mt-2" }) { "X" }
       link_el = result.find("a")
-      expect(link_el[:class]).to include("text-danger", "cursor-pointer", "bg-transparent")
+      expect(link_el[:class]).to include("mt-2", "cursor-pointer", "bg-transparent")
     end
   end
 end

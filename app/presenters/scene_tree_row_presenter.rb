@@ -68,7 +68,7 @@ class SceneTreeRowPresenter < BasePresenter
 
   sig { params(active_class: String).returns(String) }
   def resolved_text_class(active_class)
-    resolved ? "text-slate-500" : active_class
+    resolved ? "text-meta-500" : active_class
   end
 
   sig { returns(Symbol) }

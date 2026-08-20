@@ -20,7 +20,7 @@ RSpec.describe SceneTreeRowPresenter do
     context "when resolved" do
       let(:scene) { build(:scene, :resolved) }
 
-      it { expect(presenter.tree_row_css_class).to eq("text-slate-500") }
+      it { expect(presenter.tree_row_css_class).to eq("text-meta-500") }
     end
   end
 
@@ -32,7 +32,7 @@ RSpec.describe SceneTreeRowPresenter do
     context "when resolved" do
       let(:scene) { build(:scene, :resolved) }
 
-      it { expect(presenter.tree_link_css_class).to eq("text-slate-500") }
+      it { expect(presenter.tree_link_css_class).to eq("text-meta-500") }
     end
   end
 

@@ -11,7 +11,7 @@ RSpec.describe Ui::BreadcrumbComponent, type: :component do
   end
 
   it "applies breadcrumb Tailwind classes" do
-    expect(rendered { "Games" }).to have_css("nav.text-sm.mb-4.text-slate-500")
+    expect(rendered { "Games" }).to have_css("nav.text-sm.mb-4.text-meta-500")
   end
 
   it "renders block content" do

@@ -128,8 +128,8 @@ RSpec.describe Shared::GalleryComponent, type: :component do
     expect(lightbox_data).to include('data-testid="lightbox-placeholder"')
     expect(lightbox_data).to include('data-testid="lightbox-placeholder-ext"')
     expect(lightbox_data).to include('class="flex flex-col items-center justify-center')
-    expect(lightbox_data).to include('class="text-5xl font-bold text-slate-400"')
-    expect(lightbox_data).to include('class="text-sm text-slate-400"')
+    expect(lightbox_data).to include('class="text-5xl font-bold text-meta-400"')
+    expect(lightbox_data).to include('class="text-sm text-meta-400"')
   end
 
   context "when the file has a thumbnail" do

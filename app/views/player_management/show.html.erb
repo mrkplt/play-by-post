@@ -23,8 +23,8 @@
                 sub: member.character_name,
                 position: i == @roster.length - 1 ? :last : :middle) do %>
             <% if member.active? %>
-              <%= render Ui::ButtonComponent.new(style: Ui::ButtonComponent::Style.new(variant: :text), link: Ui::ButtonComponent::Link.new(url: game_player_management_game_member_path(@game_presenter, member, status: "removed"), method: :patch, confirm: "Remove this player? They keep read-only access."), html_options: { class: "text-row-ink" }) do %>Remove<% end %>
-              <%= render Ui::ButtonComponent.new(style: Ui::ButtonComponent::Style.new(variant: :text), link: Ui::ButtonComponent::Link.new(url: game_player_management_game_member_path(@game_presenter, member, status: "banned"), method: :patch, confirm: "Ban this player? This permanently revokes all access and cannot be undone easily."), html_options: { class: "text-danger" }) do %>Ban<% end %>
+              <%= render Ui::ButtonComponent.new(style: Ui::ButtonComponent::Style.new(variant: :text_muted), link: Ui::ButtonComponent::Link.new(url: game_player_management_game_member_path(@game_presenter, member, status: "removed"), method: :patch, confirm: "Remove this player? They keep read-only access.")) do %>Remove<% end %>
+              <%= render Ui::ButtonComponent.new(style: Ui::ButtonComponent::Style.new(variant: :text_danger), link: Ui::ButtonComponent::Link.new(url: game_player_management_game_member_path(@game_presenter, member, status: "banned"), method: :patch, confirm: "Ban this player? This permanently revokes all access and cannot be undone easily.")) do %>Ban<% end %>
             <% elsif member.removed? %>
               <%= render Ui::ButtonComponent.new(style: Ui::ButtonComponent::Style.new(variant: :text), link: Ui::ButtonComponent::Link.new(url: game_player_management_game_member_path(@game_presenter, member, status: "active"), method: :patch)) do %>Reinstate<% end %>
             <% end %>

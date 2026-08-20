@@ -36,7 +36,7 @@ RSpec.describe Shared::FileUploadFormComponent, type: :component do
 
     it "does not render an error message" do
       render_inline(component)
-      expect(page).not_to have_css("p.bg-red-50")
+      expect(page).not_to have_css("p.bg-error-bg")
     end
   end
 
@@ -60,7 +60,7 @@ RSpec.describe Shared::FileUploadFormComponent, type: :component do
 
     it "renders the error message" do
       render_inline(component)
-      expect(page).to have_css("p.bg-red-50", text: "must be less than 50MB")
+      expect(page).to have_css("p.bg-error-bg", text: "must be less than 50MB")
     end
   end
 

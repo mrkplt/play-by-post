@@ -1,0 +1,9 @@
+<div data-controller="resolve-toggle">
+  <%= render Shared::ControlRowComponent.new do %>
+    <%= render Ui::ButtonComponent.new(style: Ui::ButtonComponent::Style.new(variant: :text), link: Ui::ButtonComponent::Link.new(url: quick_scene_path)) do %>Quick Scene<% end %>
+    <%= render Ui::ButtonComponent.new(style: Ui::ButtonComponent::Style.new(variant: :text), link: Ui::ButtonComponent::Link.new(url: new_scene_path)) do %>New Scene<% end %>
+    <%= render Ui::ButtonComponent.new(style: Ui::ButtonComponent::Style.new(variant: :text), link: Ui::ButtonComponent::Link.new(url: edit_participants_path)) do %>Edit Participants<% end %>
+    <%= render Ui::ButtonComponent.new(style: Ui::ButtonComponent::Style.new(variant: :text_danger), html_options: { data: { action: "click->resolve-toggle#toggle" } }) do %>End Scene<% end %>
+  <% end %>
+  <%= render Shared::SceneResolveFormComponent.new(resolve_path: resolve_path) %>
+</div>

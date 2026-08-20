@@ -45,9 +45,11 @@ RSpec.describe GameFilePresenter do
       expect(described_class.new(game_file, helpers: helpers).download_url).to eq("#")
     end
 
-    it "returns the blob path when a file is attached" do
-      allow(game_file).to receive(:file).and_return(double(attached?: true))
-      helpers = double("helpers", rails_blob_path: "/blob/path")
+    it "returns the attachment blob path with attachment disposition when a file is attached" do
+      attachment = double("blob", attached?: true)
+      allow(game_file).to receive(:file).and_return(attachment)
+      helpers = double("helpers")
+      expect(helpers).to receive(:rails_blob_path).with(attachment, disposition: "attachment").and_return("/blob/path")
       expect(described_class.new(game_file, helpers: helpers).download_url).to eq("/blob/path")
     end
   end
@@ -60,27 +62,96 @@ RSpec.describe GameFilePresenter do
       expect(described_class.new(game_file, game: game, helpers: helpers, can_manage: false).delete_url).to be_nil
     end
 
-    it "returns the game file's delete route when the viewer can manage" do
-      helpers = double("helpers", game_game_file_path: "/games/1/game_files/2")
+    it "is nil when no can_manage option is supplied at all" do
+      helpers = double("helpers")
+      expect(described_class.new(game_file, game: game, helpers: helpers).delete_url).to be_nil
+    end
+
+    it "returns the game file's delete route for this game and file when the viewer can manage" do
+      helpers = double("helpers")
+      expect(helpers).to receive(:game_game_file_path).with(game, game_file).and_return("/games/1/game_files/2")
       expect(described_class.new(game_file, game: game, helpers: helpers, can_manage: true).delete_url)
         .to eq("/games/1/game_files/2")
     end
   end
 
+  # The image branches of thumb_html/lightbox_html run one attachment through
+  # helpers.tag.img; asserting the exact <img> (src from url_for, alt from the
+  # filename, and the branch-specific class/loading) pins the markup down.
   describe "#thumb_html" do
     it "is nil when there is no thumbnail" do
       allow_any_instance_of(GameFileMediaPresenter).to receive(:thumbnail).and_return(nil)
       expect(presenter.thumb_html).to be_nil
     end
+
+    it "renders a lazy-loaded, class-free img for the thumbnail" do
+      thumb = double("thumb")
+      allow(game_file).to receive(:filename).and_return("map.png")
+      allow_any_instance_of(GameFileMediaPresenter).to receive(:thumbnail).and_return(thumb)
+      helpers = ApplicationController.helpers
+      allow(helpers).to receive(:url_for).with(thumb).and_return("/thumb.jpg")
+
+      html = described_class.new(game_file, helpers: helpers).thumb_html
+
+      expect(html).to eq(%(<img src="/thumb.jpg" alt="map.png" loading="lazy">))
+    end
   end
 
   describe "#lightbox_html" do
-    it "renders a placeholder card when there is no image or thumbnail" do
+    let(:helpers) { ApplicationController.helpers }
+
+    it "renders the full display image (no lazy load, no class) when this is an image with a display image" do
+      display = double("display")
+      allow(game_file).to receive(:filename).and_return("hero.jpg")
+      allow_any_instance_of(GameFileMediaPresenter).to receive(:image?).and_return(true)
+      allow_any_instance_of(GameFileMediaPresenter).to receive(:display_image).and_return(display)
+      allow(helpers).to receive(:url_for).with(display).and_return("/display.jpg")
+
+      html = described_class.new(game_file, helpers: helpers).lightbox_html
+
+      expect(html).to eq(%(<img src="/display.jpg" alt="hero.jpg">))
+    end
+
+    it "falls back to the constrained thumbnail when there is no display image" do
+      thumb = double("thumb")
+      allow(game_file).to receive(:filename).and_return("scan.pdf")
+      allow_any_instance_of(GameFileMediaPresenter).to receive(:image?).and_return(false)
+      allow_any_instance_of(GameFileMediaPresenter).to receive(:thumbnail).and_return(thumb)
+      allow(helpers).to receive(:url_for).with(thumb).and_return("/thumb.jpg")
+
+      html = described_class.new(game_file, helpers: helpers).lightbox_html
+
+      expect(html).to eq(%(<img src="/thumb.jpg" alt="scan.pdf" class="max-w-full">))
+    end
+
+    it "does not use the display image for a non-image even when one exists (falls back to thumbnail)" do
+      thumb = double("thumb")
+      display = double("display")
+      allow(game_file).to receive(:filename).and_return("scan.pdf")
+      allow_any_instance_of(GameFileMediaPresenter).to receive(:image?).and_return(false)
+      allow_any_instance_of(GameFileMediaPresenter).to receive(:display_image).and_return(display)
+      allow_any_instance_of(GameFileMediaPresenter).to receive(:thumbnail).and_return(thumb)
+      allow(helpers).to receive(:url_for).with(thumb).and_return("/thumb.jpg")
+
+      html = described_class.new(game_file, helpers: helpers).lightbox_html
+
+      expect(html).to eq(%(<img src="/thumb.jpg" alt="scan.pdf" class="max-w-full">))
+    end
+
+    it "renders a placeholder card with the extension and file size when there is no image or thumbnail" do
       allow_any_instance_of(GameFileMediaPresenter).to receive(:image?).and_return(false)
       allow_any_instance_of(GameFileMediaPresenter).to receive(:thumbnail).and_return(nil)
-      helpers = ApplicationController.helpers
+      allow_any_instance_of(GameFileMediaPresenter).to receive(:file_extension).and_return("PDF")
+      allow_any_instance_of(GameFileMediaPresenter).to receive(:human_file_size).and_return("2.1 MB")
+
       html = described_class.new(game_file, helpers: helpers).lightbox_html
-      expect(html).to include("lightbox-placeholder")
+
+      expect(html).to include('data-testid="lightbox-placeholder"')
+      expect(html).to include('data-testid="lightbox-placeholder-ext"')
+      expect(html).to include(">PDF<")
+      expect(html).to include(">2.1 MB<")
+      expect(html).to include("text-meta-500")
+      expect(html).to include("text-5xl")
     end
   end
 end

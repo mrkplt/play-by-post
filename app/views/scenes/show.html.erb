@@ -54,28 +54,18 @@
 
     <%# GM scene actions %>
     <% if @scene_screen.gm_actions? %>
-      <div data-controller="resolve-toggle">
-        <%= render Shared::ControlRowComponent.new do %>
-          <%= render Ui::ButtonComponent.new(style: Ui::ButtonComponent::Style.new(variant: :text), link: Ui::ButtonComponent::Link.new(url: @scene_screen.navigation.quick_child_scene_path)) do %>Quick Scene<% end %>
-          <%= render Ui::ButtonComponent.new(style: Ui::ButtonComponent::Style.new(variant: :text), link: Ui::ButtonComponent::Link.new(url: @scene_screen.navigation.new_child_scene_path)) do %>New Scene<% end %>
-          <%= render Ui::ButtonComponent.new(style: Ui::ButtonComponent::Style.new(variant: :text), link: Ui::ButtonComponent::Link.new(url: @scene_screen.navigation.edit_participants_path)) do %>Edit Participants<% end %>
-          <%= render Ui::ButtonComponent.new(style: Ui::ButtonComponent::Style.new(variant: :text), html_options: { class: "text-danger", data: { action: "click->resolve-toggle#toggle" } }) do %>End Scene<% end %>
-        <% end %>
-        <%= render Shared::SceneResolveFormComponent.new(resolve_path: @scene_screen.scene.routes.resolve_path) %>
-      </div>
+      <%= render Shared::ResolveToggleComponent.new(
+            quick_scene_path: @scene_screen.navigation.quick_child_scene_path,
+            new_scene_path: @scene_screen.navigation.new_child_scene_path,
+            edit_participants_path: @scene_screen.navigation.edit_participants_path,
+            resolve_path: @scene_screen.scene.routes.resolve_path) %>
     <% end %>
 
     <%# Posts %>
-    <div id="posts" data-controller="unread-aura">
-      <% if @scene_screen.posts.posts_empty? %>
-        <p id="no_posts_message" class="text-muted-2 m-0 text-sm">No posts yet. Be the first!</p>
-      <% else %>
-        <% @scene_screen.posts.post_presenters.each do |post_presenter| %>
-          <%= render Shared::PostItemComponent.new(
-                post: post_presenter, scene: @scene_screen.scene, read_post_ids: @scene_screen.posts.read_post_ids) %>
-        <% end %>
-      <% end %>
-    </div>
+    <%= render Shared::UnreadAuraComponent.new(
+          post_presenters: @scene_screen.posts.post_presenters,
+          scene: @scene_screen.scene,
+          read_post_ids: @scene_screen.posts.read_post_ids) %>
 
     <%# Scene summary %>
     <% if @scene_screen.summary? %>

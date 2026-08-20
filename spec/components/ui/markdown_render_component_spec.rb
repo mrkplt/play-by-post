@@ -27,10 +27,30 @@ RSpec.describe Ui::MarkdownRenderComponent, type: :component do
     expect(page.find("div.markdown-base").text).to eq("")
   end
 
-  it "applies extra content classes" do
-    render_component(content_class: "prose prose-sm text-slate-700")
+  it "applies a named content class (a semantic style hook)" do
+    render_component(content_class: "post-content")
     region = page.find("div.markdown-base")
-    expect(region["class"]).to eq("markdown-base prose prose-sm text-slate-700")
+    expect(region["class"]).to eq("markdown-base post-content")
+  end
+
+  it "applies the classes a named variant owns" do
+    render_component(variant: :description)
+    region = page.find("div.markdown-base")
+    expect(region["class"]).to include("text-[13px]").and include("text-muted-2")
+  end
+
+  it "combines a variant and a named content class, space-separated" do
+    render_component(variant: :draft, content_class: "extra-hook")
+    region = page.find("div.markdown-base")
+    expect(region["class"]).to eq(
+      "markdown-base post-content text-sm text-body-ink mb-3 " \
+      "border border-tint-blue-border rounded-control p-3 bg-card extra-hook"
+    )
+  end
+
+  it "rejects an unknown variant, naming it" do
+    expect { described_class.new(text: "x", variant: :bogus) }
+      .to raise_error(ArgumentError, "Unknown variant: bogus")
   end
 
   it "adds content attributes" do

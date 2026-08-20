@@ -6,7 +6,7 @@ require "rails_helper"
 RSpec.describe Palette do
   describe "COLORS" do
     it "is the flat merge of every group's tokens" do
-      expected = described_class::GROUPS.each_with_object({}) do |(_heading, tokens), acc|
+      expected = described_class::Groups::ALL.each_with_object({}) do |(_heading, tokens), acc|
         acc.merge!(tokens)
       end
       expect(described_class::COLORS).to eq(expected)

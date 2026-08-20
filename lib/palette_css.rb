@@ -1,7 +1,7 @@
 # typed: true
 # frozen_string_literal: true
 
-# Renders the generated `_palette.css` `@theme` block from Palette::GROUPS.
+# Renders the generated `_palette.css` `@theme` block from Palette::Groups::ALL.
 #
 # Depends on Palette. Under Rails both autoload from lib/; the generator bins run
 # outside Rails and require both explicitly (see bin/build-palette), so this file
@@ -16,7 +16,7 @@ module PaletteCss
   CSS
 
   def self.render
-    groups = Palette::GROUPS.map { |heading, tokens| render_group(heading, tokens) }
+    groups = Palette::Groups::ALL.map { |heading, tokens| render_group(heading, tokens) }
     body = "@theme {\n#{groups.join("\n\n")}\n}"
     "#{HEADER}\n#{body}\n"
   end

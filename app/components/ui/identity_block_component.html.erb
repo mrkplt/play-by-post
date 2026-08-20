@@ -1,0 +1,14 @@
+<div class="<%= config.wrapper_classes %>">
+  <%= render Ui::AvatarComponent.new(name: name, tone: config.avatar_tone, size: config.avatar_size) %>
+  <div class="<%= config.labels_classes %>">
+    <span class="<%= config.primary_classes %>">
+      <% if crown? %>
+        <%= helpers.icon "crown-03", class: "w-[13px] h-[13px] text-accent flex-shrink-0" %>
+        <span class="truncate"><%= primary %></span>
+      <% else %>
+        <%= primary %>
+      <% end %>
+    </span>
+    <span class="<%= config.secondary_classes %>"><%= secondary %></span>
+  </div>
+</div>
