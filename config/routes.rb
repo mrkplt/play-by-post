@@ -70,6 +70,7 @@ Rails.application.routes.draw do
     resource :feedback, only: %i[create]
     resource :profile, only: %i[show edit update], controller: "profiles" do
       post :toggle_hide_ooc, on: :collection
+      post :toggle_ai_summaries_consent, on: :collection
       post :export_all, on: :collection
       resources :api_tokens, only: %i[create destroy], module: :profiles
       resources :images, only: %i[create update destroy], controller: "user_images"
