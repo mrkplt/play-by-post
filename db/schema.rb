@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_20_203025) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_20_210000) do
   create_table "action_mailbox_inbound_emails", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "message_checksum", null: false
@@ -51,11 +51,13 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_20_203025) do
   create_table "ai_keypairs", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "fingerprint", null: false
+    t.integer "owner_id", null: false
+    t.string "owner_type", null: false
     t.text "public_key", null: false
+    t.text "sealed_key"
     t.datetime "updated_at", null: false
-    t.integer "user_id", null: false
     t.index ["fingerprint"], name: "index_ai_keypairs_on_fingerprint", unique: true
-    t.index ["user_id"], name: "index_ai_keypairs_on_user_id", unique: true
+    t.index ["owner_type", "owner_id"], name: "index_ai_keypairs_on_owner", unique: true
   end
 
   create_table "ai_usages", force: :cascade do |t|
@@ -373,7 +375,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_20_203025) do
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
-  add_foreign_key "ai_keypairs", "users"
   add_foreign_key "api_tokens", "games"
   add_foreign_key "api_tokens", "users"
   add_foreign_key "character_images", "characters"

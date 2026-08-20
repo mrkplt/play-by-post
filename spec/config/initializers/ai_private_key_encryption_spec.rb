@@ -52,8 +52,20 @@ RSpec.describe "AiPrivateKeyEncryption" do
       expect(AiPrivateKeyEncryption.build_key_provider).to be_a(AiPrivateKeyEncryption::UnavailableKeyProvider)
     end
 
-    it "returns a DerivedSecretKeyProvider when the credential is available" do
-      expect(AiPrivateKeyEncryption::KEY_PROVIDER).to be_a(ActiveRecord::Encryption::DerivedSecretKeyProvider)
+    it "returns a DerivedSecretKeyProvider when the credential is available", :ai_credential do
+      expect(AiPrivateKeyEncryption.build_key_provider).to be_a(ActiveRecord::Encryption::DerivedSecretKeyProvider)
+    end
+  end
+
+  describe "KEY_PROVIDER (lazy)" do
+    it "is a LazyKeyProvider so class-load never forces a credential read" do
+      expect(AiPrivateKeyEncryption::KEY_PROVIDER).to be_a(AiPrivateKeyEncryption::LazyKeyProvider)
+    end
+
+    it "delegates to the resolved provider on use", :ai_credential do
+      # With a working credential stubbed, the lazy wrapper resolves to a real
+      # provider and returns a usable encryption key rather than raising.
+      expect(AiPrivateKeyEncryption::KEY_PROVIDER.encryption_key).to be_present
     end
   end
 end

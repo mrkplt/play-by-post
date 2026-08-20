@@ -5,33 +5,8 @@ RSpec.describe AiKeypairs::CryptoService do
   let(:service) { described_class.new(keypair.private_key_pem) }
   let(:plaintext) { "sk-or-v1-fake-openrouter-key-1234567890" }
 
-  # Encrypts the way a browser using WebCrypto SubtleCrypto is documented to
-  # (see the class comment on AiKeypairs::CryptoService): random AES-256-GCM
-  # key + 12-byte IV, ciphertext with the GCM tag appended, AES key wrapped
-  # with RSA-OAEP-256.
-  def encrypt_like_a_browser(plaintext, public_key_pem)
-    aes_key = OpenSSL::Random.random_bytes(32)
-    iv = OpenSSL::Random.random_bytes(12)
-
-    cipher = OpenSSL::Cipher.new("aes-256-gcm")
-    cipher.encrypt
-    cipher.key = aes_key
-    cipher.iv = iv
-    cipher.auth_data = ""
-    ciphertext = cipher.update(plaintext) + cipher.final
-    ciphertext_and_tag = ciphertext + cipher.auth_tag
-
-    public_key = OpenSSL::PKey::RSA.new(public_key_pem)
-    wrapped_key = public_key.encrypt(
-      aes_key, { rsa_padding_mode: "oaep", rsa_oaep_md: "SHA256", rsa_mgf1_md: "SHA256" }
-    )
-
-    {
-      wrapped_key: Base64.strict_encode64(wrapped_key),
-      iv: Base64.strict_encode64(iv),
-      ciphertext: Base64.strict_encode64(ciphertext_and_tag)
-    }.to_json
-  end
+  # encrypt_like_a_browser lives in spec/support/browser_seal_helper.rb — shared
+  # with StoredKeySource's spec so the browser-side envelope format has one home.
 
   describe "#decrypt" do
     it "decrypts a well-formed envelope back to the original plaintext" do

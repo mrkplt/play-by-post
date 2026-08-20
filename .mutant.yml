@@ -227,6 +227,8 @@ matcher:
     - AiKeypairs::DecryptionError
     - AiKeypairs::KeypairGenerator
     - AiKeypairs::KeypairGenerator::GeneratedKeypair
+    - AiKeypairs::StoredKeySource
+    - AiKeypairs::StoredKeySource::UnresolvableKey
     - AttachmentUploader
     - AttachmentUploader::Owner
     - AttachmentUploader::Naming
