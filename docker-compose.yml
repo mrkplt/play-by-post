@@ -27,11 +27,18 @@ services:
     environment:
       RAILS_ENV: production
       DATABASE_PATH: /data
+      AI_KEYS_DATABASE_PATH: /ai-keys-data
       RAILS_MASTER_KEY: ${RAILS_MASTER_KEY}
+      AI_PRIVATE_KEYS_KEY: ${AI_PRIVATE_KEYS_KEY}
       APP_HOST: ${APP_HOST}
       RAILS_LOG_TO_STDOUT: "1"
     volumes:
       - dbdata:/data
+      # Worker-only: holds the ai_keys database (encrypted BYOK private keys).
+      # Not mounted into `web` at all — the web container has no filesystem
+      # path to this data regardless of any application-level bug. See
+      # config/database.yml `production.ai_keys` and docs/CONFIGURATION.md.
+      - aikeysdata:/ai-keys-data
     depends_on:
       web:
         condition: service_healthy
@@ -40,3 +47,4 @@ services:
 
 volumes:
   dbdata:
+  aikeysdata:

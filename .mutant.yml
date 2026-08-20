@@ -18,6 +18,8 @@ matcher:
   subjects:
     # Models
     - AiUsage
+    - AiKeypair
+    - AiPrivateKey
     - ApiToken
     - Branding
     - ErrorTracking
@@ -218,6 +220,11 @@ matcher:
     - Ui::IconComponent
     - Ui::TurnstileWidgetComponent
     # Services
+    - AiKeypairs::CryptoService
+    - AiKeypairs::Blob
+    - AiKeypairs::DecryptionError
+    - AiKeypairs::KeypairGenerator
+    - AiKeypairs::KeypairGenerator::GeneratedKeypair
     - AttachmentUploader
     - AttachmentUploader::Owner
     - AttachmentUploader::Naming
