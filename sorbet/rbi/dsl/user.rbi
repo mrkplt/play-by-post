@@ -659,6 +659,51 @@ class User
   end
 
   module GeneratedAttributeMethods
+    sig { returns(T.nilable(::String)) }
+    def ai_key_reference; end
+
+    sig { params(value: T.nilable(::String)).returns(T.nilable(::String)) }
+    def ai_key_reference=(value); end
+
+    sig { returns(T::Boolean) }
+    def ai_key_reference?; end
+
+    sig { returns(T.nilable(::String)) }
+    def ai_key_reference_before_last_save; end
+
+    sig { returns(T.untyped) }
+    def ai_key_reference_before_type_cast; end
+
+    sig { returns(T::Boolean) }
+    def ai_key_reference_came_from_user?; end
+
+    sig { returns(T.nilable([T.nilable(::String), T.nilable(::String)])) }
+    def ai_key_reference_change; end
+
+    sig { returns(T.nilable([T.nilable(::String), T.nilable(::String)])) }
+    def ai_key_reference_change_to_be_saved; end
+
+    sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
+    def ai_key_reference_changed?(from: T.unsafe(nil), to: T.unsafe(nil)); end
+
+    sig { returns(T.nilable(::String)) }
+    def ai_key_reference_in_database; end
+
+    sig { returns(T.nilable([T.nilable(::String), T.nilable(::String)])) }
+    def ai_key_reference_previous_change; end
+
+    sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
+    def ai_key_reference_previously_changed?(from: T.unsafe(nil), to: T.unsafe(nil)); end
+
+    sig { returns(T.nilable(::String)) }
+    def ai_key_reference_previously_was; end
+
+    sig { returns(T.nilable(::String)) }
+    def ai_key_reference_was; end
+
+    sig { void }
+    def ai_key_reference_will_change!; end
+
     sig { returns(::ActiveSupport::TimeWithZone) }
     def created_at; end
 
@@ -1020,6 +1065,9 @@ class User
     def remember_token_will_change!; end
 
     sig { void }
+    def restore_ai_key_reference!; end
+
+    sig { void }
     def restore_created_at!; end
 
     sig { void }
@@ -1045,6 +1093,12 @@ class User
 
     sig { void }
     def restore_updated_at!; end
+
+    sig { returns(T.nilable([T.nilable(::String), T.nilable(::String)])) }
+    def saved_change_to_ai_key_reference; end
+
+    sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
+    def saved_change_to_ai_key_reference?(from: T.unsafe(nil), to: T.unsafe(nil)); end
 
     sig { returns(T.nilable([::ActiveSupport::TimeWithZone, ::ActiveSupport::TimeWithZone])) }
     def saved_change_to_created_at; end
@@ -1144,6 +1198,9 @@ class User
 
     sig { void }
     def updated_at_will_change!; end
+
+    sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
+    def will_save_change_to_ai_key_reference?(from: T.unsafe(nil), to: T.unsafe(nil)); end
 
     sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
     def will_save_change_to_created_at?(from: T.unsafe(nil), to: T.unsafe(nil)); end

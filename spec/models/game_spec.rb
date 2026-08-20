@@ -186,4 +186,21 @@ RSpec.describe Game, type: :model do
       expect(game.viewable_by?(user)).to be false
     end
   end
+
+  describe "#ai_key_present?" do
+    it "is true when ai_key_reference is set" do
+      game = build_stubbed(:game, ai_key_reference: "handle")
+      expect(game.ai_key_present?).to be(true)
+    end
+
+    it "is false when ai_key_reference is nil" do
+      game = build_stubbed(:game, ai_key_reference: nil)
+      expect(game.ai_key_present?).to be(false)
+    end
+
+    it "is false when ai_key_reference is blank" do
+      game = build_stubbed(:game, ai_key_reference: "")
+      expect(game.ai_key_present?).to be(false)
+    end
+  end
 end

@@ -218,6 +218,8 @@ matcher:
     - Ui::IconComponent
     - Ui::TurnstileWidgetComponent
     # Services
+    - AiKeyResolver
+    - AiKeyResolver::KeySource
     - AttachmentUploader
     - AttachmentUploader::Owner
     - AttachmentUploader::Naming
