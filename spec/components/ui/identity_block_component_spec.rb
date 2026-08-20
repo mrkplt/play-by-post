@@ -105,4 +105,88 @@ RSpec.describe Ui::IdentityBlockComponent, type: :component do
       expect(r).to have_text("<b>plain</b>")
     end
   end
+
+  # The Config value object owns every state→CSS decision. Asserting the exact
+  # class string each method emits (rather than a substring of rendered HTML)
+  # pins the whole mapping down.
+  describe Ui::IdentityBlockComponent::Config do
+    describe "#wrapper_classes" do
+      it "is the stacked orientation classes when active and :stacked" do
+        expect(Config.new(orientation: :stacked, active: true).wrapper_classes)
+          .to eq("flex flex-col items-center gap-[3px]")
+      end
+
+      it "is the inline orientation classes when active and :inline" do
+        expect(Config.new(orientation: :inline, active: true).wrapper_classes)
+          .to eq("flex items-center gap-2.5")
+      end
+
+      it "appends opacity-70 when inactive" do
+        expect(Config.new(orientation: :inline, active: false).wrapper_classes)
+          .to eq("flex items-center gap-2.5 opacity-70")
+      end
+    end
+
+    describe "#labels_classes" do
+      it "shrinks a beside-avatar column when :inline" do
+        expect(Config.new(orientation: :inline).labels_classes).to eq("flex flex-col flex-1 min-w-0")
+      end
+
+      it "centers a stacked column when :stacked" do
+        expect(Config.new(orientation: :stacked).labels_classes).to eq("flex flex-col items-center")
+      end
+    end
+
+    describe "#primary_classes" do
+      it "combines layout, size and colour, squished, for the inline default" do
+        expect(Config.new(orientation: :inline, size: :md, variant: :default).primary_classes)
+          .to eq("text-[13px] font-semibold text-ink")
+      end
+
+      it "centers the text for a stacked, uncrowned block" do
+        expect(Config.new(orientation: :stacked, size: :sm, variant: :blue, crown: false).primary_classes)
+          .to eq("text-center font-bold text-[11px] leading-tight text-tint-blue-strong")
+      end
+
+      it "lays the label as a flex row for a crowned block" do
+        expect(Config.new(orientation: :stacked, size: :md, variant: :on_dark, crown: true).primary_classes)
+          .to eq("flex items-center gap-1.5 text-[13px] font-semibold text-white")
+      end
+    end
+
+    describe "#secondary_classes" do
+      it "combines the secondary size and colour for :sm/:default" do
+        expect(Config.new(size: :sm, variant: :default).secondary_classes).to eq("text-[11px] text-muted-2")
+      end
+
+      it "uses the blue-soft colour for :blue" do
+        expect(Config.new(size: :md, variant: :blue).secondary_classes).to eq("text-[11px] text-tint-blue-soft")
+      end
+
+      it "uses the muted colour for :on_dark" do
+        expect(Config.new(size: :md, variant: :on_dark).secondary_classes).to eq("text-[11px] text-muted")
+      end
+    end
+
+    describe "#validate!" do
+      it "names the offending orientation" do
+        expect { Config.new(orientation: :sideways).validate! }
+          .to raise_error(ArgumentError, "Unknown orientation: sideways")
+      end
+
+      it "names the offending variant" do
+        expect { Config.new(variant: :neon).validate! }
+          .to raise_error(ArgumentError, "Unknown variant: neon")
+      end
+
+      it "names the offending size" do
+        expect { Config.new(size: :xl).validate! }
+          .to raise_error(ArgumentError, "Unknown size: xl")
+      end
+
+      it "accepts a valid config" do
+        expect { Config.new.validate! }.not_to raise_error
+      end
+    end
+  end
 end

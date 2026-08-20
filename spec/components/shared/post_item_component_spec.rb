@@ -64,6 +64,26 @@ RSpec.describe Shared::PostItemComponent, type: :component do
     end
   end
 
+  describe "#body_variant" do
+    it "is :post_body for an in-character post" do
+      expect(component.body_variant).to eq(:post_body)
+    end
+
+    it "is :post_body_ooc for an OOC post" do
+      ooc_post = build_stubbed(:post, :ooc, user: user, scene: raw_scene, content: "OOC",
+        created_at: Time.current).tap { |p| allow(p).to receive(:game).and_return(game) }
+      expect(described_class.new(post: build_post_presenter(ooc_post)).body_variant).to eq(:post_body_ooc)
+    end
+  end
+
+  describe "#byline_time" do
+    it "wraps the formatted time in a <time> element carrying the iso8601 local-time data attr" do
+      expect(component.byline_time).to eq(
+        %(<time data-local-time="2024-06-15T14:30:00Z">Jun 15, 2024 2:30 PM</time>)
+      )
+    end
+  end
+
   describe "#avatar_tone" do
     it "is gold when the author is not the GM" do
       allow(game).to receive(:game_master?).with(user).and_return(false)

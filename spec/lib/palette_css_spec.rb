@@ -34,6 +34,16 @@ RSpec.describe PaletteCss do
       expect(body).to start_with("@theme {\n  /*")
     end
 
+    it "puts a blank line between one group's last declaration and the next group's heading" do
+      first_heading, first_tokens = Palette::Groups::ALL.first
+      second_heading = Palette::Groups::ALL[1].first
+      last_token, last_hex = first_tokens.to_a.last
+      # The trailing declaration of the first group, a blank line, then the
+      # second group's heading — the "\n\n" separator join produces exactly this.
+      expect(css).to include("  --color-#{last_token}: #{last_hex};\n\n  /* #{second_heading} */")
+      expect(first_heading).to be_present
+    end
+
     it "is deterministic" do
       expect(described_class.render).to eq(css)
     end

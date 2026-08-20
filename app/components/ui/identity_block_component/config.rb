@@ -70,7 +70,7 @@ class Ui::IdentityBlockComponent::Config < T::Struct
 
   sig { returns(String) }
   def primary_classes
-    "#{primary_layout} #{PRIMARY_SIZE.fetch(size)} #{PRIMARY_COLOUR.fetch(variant)}".squish
+    [ primary_layout, PRIMARY_SIZE.fetch(size), PRIMARY_COLOUR.fetch(variant) ].compact.join(" ")
   end
 
   sig { returns(String) }
@@ -81,11 +81,12 @@ class Ui::IdentityBlockComponent::Config < T::Struct
   private
 
   # A crown seats an icon beside the text, so the label becomes a flex row;
-  # otherwise stacked labels center and inline labels stay left-aligned.
-  sig { returns(String) }
+  # otherwise stacked labels center and inline labels get no layout class at all
+  # (nil, which primary_classes compacts away).
+  sig { returns(T.nilable(String)) }
   def primary_layout
     return "flex items-center gap-1.5" if crown
 
-    orientation == :stacked ? "text-center" : ""
+    "text-center" if orientation == :stacked
   end
 end

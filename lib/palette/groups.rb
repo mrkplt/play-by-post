@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 # The colour data for Palette, split out so lib/palette.rb stays under the

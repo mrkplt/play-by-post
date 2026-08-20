@@ -39,15 +39,18 @@ RSpec.describe Ui::MarkdownRenderComponent, type: :component do
     expect(region["class"]).to include("text-[13px]").and include("text-muted-2")
   end
 
-  it "combines a variant and a named content class" do
+  it "combines a variant and a named content class, space-separated" do
     render_component(variant: :draft, content_class: "extra-hook")
     region = page.find("div.markdown-base")
-    expect(region["class"]).to include("post-content").and include("extra-hook")
+    expect(region["class"]).to eq(
+      "markdown-base post-content text-sm text-body-ink mb-3 " \
+      "border border-tint-blue-border rounded-control p-3 bg-card extra-hook"
+    )
   end
 
-  it "rejects an unknown variant" do
+  it "rejects an unknown variant, naming it" do
     expect { described_class.new(text: "x", variant: :bogus) }
-      .to raise_error(ArgumentError, /Unknown variant/)
+      .to raise_error(ArgumentError, "Unknown variant: bogus")
   end
 
   it "adds content attributes" do
