@@ -14,3 +14,15 @@ README*
 *.md
 app/assets/builds/*
 public/assets
+
+# Deliberately NOT excluded: config/ai_private_keys.key and
+# config/ai_private_keys.yml.enc (the AI Control Plane's AR-encryption key
+# file and encrypted credentials). Unlike config/master.key /
+# config/credentials/*.key — which are gitignored and never enter the build
+# context at all, because RAILS_MASTER_KEY is supplied at runtime instead —
+# ai_private_keys.key must be baked into the worker image, so it has to
+# reach the build context via COPY . . in the `build` stage. Confinement to
+# the worker happens in the Dockerfile (web-final copies from the
+# `app-export` stage, which deletes the key before web-final ever sees it;
+# worker-final copies from `build` unmodified), not here. Do not add an
+# ignore rule for it — that would silently break the worker image instead.

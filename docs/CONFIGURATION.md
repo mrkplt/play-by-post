@@ -236,6 +236,29 @@ re-test uploads after any `aws-sdk-s3` upgrade.
 untracked by design. If lost, `production.yml.enc` is unrecoverable and every secret in it
 must be reissued from Resend, Cloudflare, and OpenRouter. Back it up to a password manager.
 
+**The image is split in two: `web` and `worker` no longer run the same image.** The
+Dockerfile builds two final stages — `web-final` and `worker-final` — both derived from
+the same `base`/`build` stages, so they share one bundle install and one asset
+precompile. They diverge only in what lands in `/rails`: `worker-final` copies straight
+from `build`; `web-final` copies from an intermediate `app-export` stage that deletes
+`config/ai_private_keys.key` and `config/ai_private_keys.yml.enc` (the AI Control
+Plane's AR-encryption key file and its encrypted credentials) right after copying. That
+means the secret is absent from every layer of the `web-final` image, not filtered out
+at runtime — `web` has no code path that could ever read it, by construction. CI
+publishes the two stages as separate tags from the same GHCR repository
+(`ghcr.io/mrkplt/play-by-post`): `web-latest` / `web-sha-<sha>` from `web-final`,
+`worker-latest` / `worker-sha-<sha>` from `worker-final`. `docker-compose.yml` pins
+`web` to `web-latest` and `worker` to `worker-latest`. **"Enable always pull image" in
+Coolify applies to both services** — the stale-cache trap described above under "There
+is no `IMAGE_TAG`" now applies twice.
+
+**`worker-keys` is a worker-only volume, separate from `dbdata`.** It holds the AI
+Control Plane's private-key SQLite database, mounted at `/keys` only in the `worker`
+service. `web` does not mount it and the `web-final` image has no `/keys` directory —
+so even an attacker with full control of the web container has no volume through which
+to reach the private-key database, on top of the image never holding the decryption
+key. Back it up the same way as `dbdata` (`sqlite3 …  ".backup"`, not `cp`).
+
 ---
 
 ## The data API
