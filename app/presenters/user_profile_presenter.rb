@@ -32,6 +32,13 @@ class UserProfilePresenter < BasePresenter
     @model.ai_summaries_consent?
   end
 
+  # The per-user AI DISPLAY preference (AI Control Plane) — shown/tagged/hidden,
+  # independent of ai_summaries_consent. See UserProfile#ai_display_preference.
+  sig { returns(String) }
+  def ai_display_preference
+    @model.ai_display_preference
+  end
+
   sig { returns(T::Boolean) }
   def display_name_errors?
     @model.errors[:display_name].any?

@@ -5,17 +5,17 @@ RSpec.describe Shared::SceneSummaryComponent, type: :component do
   let(:scene) { build_stubbed(:scene, game: game) }
   let(:summary) { build_stubbed(:scene_summary, scene: scene, body: "A tale of **glory**.") }
 
-  def presenter_for(summary_record: summary, can_manage:)
+  def presenter_for(summary_record: summary, can_manage:, viewer: nil)
     policy = instance_double(SceneSummaryPolicy, manage?: can_manage)
     urls = double("urls",
       edit_game_scene_scene_summary_path: "/edit",
       game_scene_scene_summary_path: "/summary",
       publish_game_scene_scene_summary_path: "/summary/publish")
-    SceneSummaryPresenter.new(summary_record, game: game, urls: urls, policy: policy)
+    SceneSummaryPresenter.new(summary_record, game: game, urls: urls, policy: policy, viewer: viewer)
   end
 
-  def rendered(summary_record: summary, can_manage: false)
-    render_inline(described_class.new(summary: presenter_for(summary_record: summary_record, can_manage: can_manage)))
+  def rendered(summary_record: summary, can_manage: false, viewer: nil)
+    render_inline(described_class.new(summary: presenter_for(summary_record: summary_record, can_manage: can_manage, viewer: viewer)))
     page
   end
 
@@ -89,6 +89,39 @@ RSpec.describe Shared::SceneSummaryComponent, type: :component do
     it "status_badge_variant returns 'yellow'" do
       component = described_class.new(summary: presenter_for(can_manage: false))
       expect(component.status_badge_variant).to eq("yellow")
+    end
+  end
+
+  describe "AI display preference (AI Control Plane)" do
+    let(:summary) { build_stubbed(:scene_summary, :ai_generated, scene: scene, body: "A tale of **glory**.") }
+
+    it "shows the AI-generated badge when the viewer has no profile" do
+      viewer = build_stubbed(:user, user_profile: nil)
+      expect(rendered(viewer: viewer)).to have_text("AI-generated")
+    end
+
+    it "shows the AI-generated badge when the viewer prefers tagged" do
+      viewer = build_stubbed(:user, user_profile: build_stubbed(:user_profile, ai_display_preference: :tagged))
+      expect(rendered(viewer: viewer)).to have_text("AI-generated")
+    end
+
+    it "suppresses the AI-generated badge when the viewer prefers shown" do
+      viewer = build_stubbed(:user, user_profile: build_stubbed(:user_profile, ai_display_preference: :shown))
+      expect(rendered(viewer: viewer)).not_to have_text("AI-generated")
+    end
+
+    it "still renders the summary body when the badge is suppressed" do
+      viewer = build_stubbed(:user, user_profile: build_stubbed(:user_profile, ai_display_preference: :shown))
+      expect(rendered(viewer: viewer)).to have_css("strong", text: "glory")
+    end
+
+    context "when edited (not the loud AI badge)" do
+      let(:summary) { build_stubbed(:scene_summary, :ai_generated, :edited, scene: scene) }
+
+      it "still shows the Edited badge even when the viewer prefers shown" do
+        viewer = build_stubbed(:user, user_profile: build_stubbed(:user_profile, ai_display_preference: :shown))
+        expect(rendered(viewer: viewer)).to have_text("Edited")
+      end
     end
   end
 end

@@ -16,12 +16,20 @@ class Ui::PillTabsComponent < ApplicationComponent
     const :panel, T.nilable(Symbol), default: nil
   end
 
+  # The gold-active / muted-idle tone pair used by every pill-shaped control in
+  # the dark game header — shared (not duplicated) with
+  # Ui::ProfileAiDisplayPreferenceControlComponent, which renders the same
+  # pill visual language for a settings control rather than navigation.
   ACTIVE = T.let("bg-accent text-accent-ink", String)
   IDLE = T.let("bg-pill-idle text-sidebar-text", String)
   BASE = T.let(
     "text-[11px] font-bold px-3 py-1.5 rounded-[20px] no-underline cursor-pointer border-0",
     String
   )
+
+  # The row-of-pills wrapper, shared with
+  # Ui::ProfileAiDisplayPreferenceControlComponent for the same reason.
+  WRAPPER_CLASSES = T.let("flex gap-1.5 items-center flex-wrap", String)
 
   sig { params(tabs: T::Array[Tab], active: Symbol, mode: Symbol).void }
   def initialize(tabs:, active:, mode: :link)

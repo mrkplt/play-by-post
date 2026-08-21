@@ -44,6 +44,13 @@ RSpec.describe UserProfilePresenter do
     end
   end
 
+  describe "#ai_display_preference" do
+    it "delegates to the model" do
+      allow(profile).to receive(:ai_display_preference).and_return("shown")
+      expect(described_class.new(profile).ai_display_preference).to eq("shown")
+    end
+  end
+
   describe "#display_name_errors?" do
     it "is false with no errors" do
       expect(described_class.new(profile).display_name_errors?).to be(false)

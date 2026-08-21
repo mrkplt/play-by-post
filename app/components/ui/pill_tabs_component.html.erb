@@ -1,4 +1,4 @@
-<nav class="flex gap-1.5 items-center flex-wrap">
+<nav class="<%= Ui::PillTabsComponent::WRAPPER_CLASSES %>">
   <% tabs.each do |tab| %>
     <% if switch? %>
       <button type="button" class="<%= tab_classes(tab) %>"

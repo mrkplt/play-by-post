@@ -118,6 +118,48 @@ RSpec.describe ProfilesController, type: :request do
     end
   end
 
+  describe "POST /profile/update_ai_display_preference" do
+    it "updates the preference to shown and redirects with a notice" do
+      sign_in(user)
+      post update_ai_display_preference_profile_path, params: { ai_display_preference: "shown" }
+      expect(response).to redirect_to(profile_path)
+      expect(flash[:notice]).to eq("AI display preference updated.")
+      expect(user.user_profile.reload.ai_display_preference).to eq("shown")
+    end
+
+    it "updates the preference to hidden" do
+      sign_in(user)
+      post update_ai_display_preference_profile_path, params: { ai_display_preference: "hidden" }
+      expect(user.user_profile.reload.ai_display_preference).to eq("hidden")
+    end
+
+    it "updates the preference to tagged" do
+      sign_in(user)
+      user.user_profile.update!(ai_display_preference: :shown)
+      post update_ai_display_preference_profile_path, params: { ai_display_preference: "tagged" }
+      expect(user.user_profile.reload.ai_display_preference).to eq("tagged")
+    end
+
+    it "rejects an unrecognized value" do
+      sign_in(user)
+      expect {
+        post update_ai_display_preference_profile_path, params: { ai_display_preference: "invisible" }
+      }.to raise_error(ArgumentError)
+    end
+
+    it "redirects with a bad-request alert when the param is missing" do
+      sign_in(user)
+      post update_ai_display_preference_profile_path
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to eq("Bad request.")
+    end
+
+    it "unauthenticated user is redirected" do
+      post update_ai_display_preference_profile_path, params: { ai_display_preference: "shown" }
+      expect(response).to have_http_status(:redirect)
+    end
+  end
+
   describe "POST /profile/export_all" do
     around do |example|
       original_adapter = ActiveJob::Base.queue_adapter

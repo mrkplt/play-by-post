@@ -28,4 +28,9 @@ class Ui::ProfileAiConsentToggleComponent < ApplicationComponent
   def aria_label
     consented? ? "Disable AI features for your games" : "Enable AI features for your games"
   end
+
+  sig { returns(Symbol) }
+  def toggle_state
+    consented? ? :on : :off
+  end
 end

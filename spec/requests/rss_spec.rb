@@ -49,6 +49,29 @@ RSpec.describe RssController, type: :request do
       expect(response.body).not_to include("A summary from the other game.")
     end
 
+    it "excludes AI-generated summaries when the token user's AI display preference is hidden", :db do
+      resolved = create(:scene, :resolved, game: game, private: false)
+      ai_summary = create(:scene_summary, :ai_generated, scene: resolved, body: "AI-written recap.")
+      hand_scene = create(:scene, :resolved, game: game, private: false)
+      hand_written = create(:scene_summary, scene: hand_scene, body: "Hand-written recap.")
+      player.user_profile.update!(ai_display_preference: :hidden)
+
+      get "/rss/feed", params: { token: token.token }
+
+      expect(response.body).to include(hand_written.body)
+      expect(response.body).not_to include(ai_summary.body)
+    end
+
+    it "includes AI-generated summaries when the token user's AI display preference is tagged", :db do
+      resolved = create(:scene, :resolved, game: game, private: false)
+      ai_summary = create(:scene_summary, :ai_generated, scene: resolved, body: "AI-written recap.")
+      player.user_profile.update!(ai_display_preference: :tagged)
+
+      get "/rss/feed", params: { token: token.token }
+
+      expect(response.body).to include(ai_summary.body)
+    end
+
     it "does not include summaries of private scenes", :db do
       private_scene = create(:scene, :resolved, game: game, private: true)
       summary = create(:scene_summary, scene: private_scene)

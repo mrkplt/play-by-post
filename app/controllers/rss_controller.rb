@@ -24,9 +24,11 @@ class RssController < DataApplicationController
 
   sig { params(game: Game).void }
   def assign_feed_presenters(game)
+    viewer = T.must(current_data_user)
     @game_presenter = T.let(GamePresenter.new(game, policy: policy(game)), T.nilable(GamePresenter))
     @summaries = T.let(
-      SceneSummary.public_for_game(game).limit(20).map { |summary| SceneSummaryPresenter.new(summary, game: game, urls: self) },
+      SceneSummary.visible_to(SceneSummary.public_for_game(game), viewer).limit(20)
+        .map { |summary| SceneSummaryPresenter.new(summary, game: game, urls: self, viewer: viewer) },
       T.nilable(T::Array[SceneSummaryPresenter])
     )
   end

@@ -35,6 +35,21 @@ class SceneSummaryPresenter < BasePresenter
     @model.ai_generated?
   end
 
+  # The AI Control Plane's per-viewer DISPLAY preference: whether the
+  # prominent "AI-generated" badge should render for the viewer supplied at
+  # construction (options[:viewer]). Provenance (#status_label/#ai_generated?)
+  # is always available regardless — this only controls loudness. A viewer
+  # with no profile yet (never visited Profile) gets the enum's own default,
+  # "tagged", via UserProfile#ai_display_preference; a nil viewer (no options
+  # threaded through, e.g. specs that don't care) also defaults to tagged so
+  # the badge shows unless a caller opts a real viewer into something quieter.
+  sig { returns(T::Boolean) }
+  def show_ai_badge?
+    return true unless ai_generated?
+
+    !@options.fetch(:viewer, nil)&.user_profile&.shown?
+  end
+
   sig { returns(T::Boolean) }
   # mutant:disable
   def edited?

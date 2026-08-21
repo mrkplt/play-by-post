@@ -2,7 +2,9 @@
   <div class="flex justify-between items-start mb-3">
     <h3 class="m-0 text-base font-semibold text-summary-amber-heading">Scene Summary</h3>
     <div class="flex gap-2 items-center">
-      <%= render(Ui::BadgeComponent.new(variant: status_badge_variant.to_sym)) { @summary.status_label } %>
+      <% if show_status_badge? %>
+        <%= render(Ui::BadgeComponent.new(variant: status_badge_variant.to_sym)) { @summary.status_label } %>
+      <% end %>
       <% if can_manage? %>
         <% if draft? %>
           <%= render(Ui::BadgeComponent.new(variant: :slate)) { "Draft" } %>

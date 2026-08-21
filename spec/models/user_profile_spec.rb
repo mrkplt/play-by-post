@@ -29,6 +29,31 @@ RSpec.describe UserProfile, type: :model do
     end
   end
 
+  describe "#ai_display_preference" do
+    it "defaults to tagged" do
+      expect(build(:user_profile).ai_display_preference).to eq("tagged")
+    end
+
+    it "accepts shown" do
+      profile = build(:user_profile, ai_display_preference: :shown)
+      expect(profile.shown?).to be true
+    end
+
+    it "accepts tagged" do
+      profile = build(:user_profile, ai_display_preference: :tagged)
+      expect(profile.tagged?).to be true
+    end
+
+    it "accepts hidden" do
+      profile = build(:user_profile, ai_display_preference: :hidden)
+      expect(profile.hidden?).to be true
+    end
+
+    it "rejects an unrecognized value" do
+      expect { build(:user_profile, ai_display_preference: :invisible) }.to raise_error(ArgumentError)
+    end
+  end
+
   describe "#update_display_name" do
     it "assigns and persists the new display name, returning true on success" do
       profile = create(:user_profile, display_name: "Old Name")

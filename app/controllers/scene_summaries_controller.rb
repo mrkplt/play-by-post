@@ -11,9 +11,9 @@ class SceneSummariesController < ApplicationController
 
   sig { void }
   def index
-    pagy, summaries = pagy(SceneSummary.public_for_game(game), limit: 20)
+    pagy, summaries = pagy(SceneSummary.visible_to(SceneSummary.public_for_game(game), current_user), limit: 20)
     @summaries_presenter = T.let(
-      SceneSummaryCollectionPresenter.new(summaries, game: game, urls: self, pagy: pagy),
+      SceneSummaryCollectionPresenter.new(summaries, game: game, urls: self, pagy: pagy, viewer: current_user),
       T.nilable(SceneSummaryCollectionPresenter)
     )
     @game_presenter = T.let(GamePresenter.new(game, policy: policy(game), urls: self), T.nilable(GamePresenter))
@@ -83,7 +83,7 @@ class SceneSummariesController < ApplicationController
   def assign_presenters(found_summary)
     @game_presenter = T.let(GamePresenter.new(game, policy: policy(game), urls: self), T.nilable(GamePresenter))
     @summary_presenter = T.let(
-      SceneSummaryPresenter.new(found_summary, game: game, urls: self, policy: policy(found_summary)),
+      SceneSummaryPresenter.new(found_summary, game: game, urls: self, policy: policy(found_summary), viewer: current_user),
       T.nilable(SceneSummaryPresenter)
     )
   end
