@@ -32,20 +32,15 @@ class SceneSummaryJob < ApplicationJob
   def upsert_attributes(scene, result)
     now = Time.current
 
-    {
+    result.to_summary_attributes.merge(
       scene_id: scene.id,
-      body: result.body,
-      model_used: result.model_used,
       generated_at: now,
-      input_tokens: result.input_tokens,
-      output_tokens: result.output_tokens,
       generated_by_id: generating_user(scene)&.id,
-      cost: result.cost,
       edited_at: nil,
       edited_by_id: nil,
       created_at: now,
       updated_at: now
-    }
+    )
   end
 
   # The user who triggered this generation: the game's GM, same acting

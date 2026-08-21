@@ -63,43 +63,52 @@ module AiKeypairs
     sig { params(blob: Blob).returns(String) }
     def decrypt(blob)
       aes_key = unwrap_aes_key(blob.wrapped_key)
-      decrypt_payload(aes_key: aes_key, iv: decode64(blob.iv), ciphertext_and_tag: decode64(blob.ciphertext))
-    rescue ArgumentError, TypeError, OpenSSL::PKey::PKeyError, OpenSSL::Cipher::CipherError => e
-      raise DecryptionError, "failed to decrypt BYOK key blob: #{e.message}"
+      decrypt_payload(aes_key: aes_key, iv: Base64.strict_decode64(blob.iv), ciphertext_and_tag: Base64.strict_decode64(blob.ciphertext))
+    rescue ArgumentError, TypeError, OpenSSL::PKey::PKeyError, OpenSSL::Cipher::CipherError => error
+      raise DecryptionError, "failed to decrypt BYOK key blob: #{error.message}"
     end
 
     private
 
-    sig { params(wrapped_key_b64: String).returns(String) }
-    def unwrap_aes_key(wrapped_key_b64)
+    sig { params(wrapped_key: String).returns(String) }
+    def unwrap_aes_key(wrapped_key)
       # T.unsafe: Sorbet's bundled openssl RBI only knows the legacy
       # #private_decrypt(data, padding) signature, which cannot select
       # SHA-256 for OAEP (it hardcodes SHA-1). #decrypt(data, options) is a
       # real, documented OpenSSL::PKey::RSA method (verified against the
       # installed openssl gem) with no RBI-covered equivalent for OAEP-256.
-      T.unsafe(@rsa_key).decrypt(decode64(wrapped_key_b64), OAEP_ENCRYPT_OPTIONS)
+      T.unsafe(@rsa_key).decrypt(Base64.strict_decode64(wrapped_key), OAEP_ENCRYPT_OPTIONS)
     end
 
     sig { params(aes_key: String, iv: String, ciphertext_and_tag: String).returns(String) }
     def decrypt_payload(aes_key:, iv:, ciphertext_and_tag:)
+      split_at = -AES_GCM_TAG_BYTES
       raise ArgumentError, "ciphertext too short to contain a GCM tag" if ciphertext_and_tag.bytesize < AES_GCM_TAG_BYTES
 
-      ciphertext = T.must(ciphertext_and_tag[0...-AES_GCM_TAG_BYTES])
-      tag = T.must(ciphertext_and_tag[-AES_GCM_TAG_BYTES..])
+      cipher = gcm_decipher(aes_key: aes_key, iv: iv, tag: T.must(ciphertext_and_tag[split_at..]))
+      run(cipher, T.must(ciphertext_and_tag[0...split_at]))
+    end
 
-      cipher = OpenSSL::Cipher.new(AES_GCM_CIPHER)
-      cipher.decrypt
-      cipher.key = aes_key
-      cipher.iv = iv
-      cipher.auth_tag = tag
+    # Runs the primed cipher over the ciphertext. Sets the (empty) additional
+    # authenticated data here, immediately before update as OpenSSL requires,
+    # which also keeps gcm_decipher to a single configuration concern.
+    sig { params(cipher: OpenSSL::Cipher, ciphertext: String).returns(String) }
+    def run(cipher, ciphertext)
       cipher.auth_data = ""
-
       cipher.update(ciphertext) + cipher.final
     end
 
-    sig { params(value: String).returns(String) }
-    def decode64(value)
-      Base64.strict_decode64(value)
+    # An AES-GCM decipher primed with key, IV and tag, built with tap so the
+    # block (not this method) references the cipher — same shape as the
+    # repo's EmailContentExtraction::OpenrouterRequest.build_request.
+    sig { params(aes_key: String, iv: String, tag: String).returns(OpenSSL::Cipher) }
+    def gcm_decipher(aes_key:, iv:, tag:)
+      OpenSSL::Cipher.new(AES_GCM_CIPHER).tap do |cipher|
+        cipher.decrypt
+        cipher.key = aes_key
+        cipher.iv = iv
+        cipher.auth_tag = tag
+      end
     end
   end
 end

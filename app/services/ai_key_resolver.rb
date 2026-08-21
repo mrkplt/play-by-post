@@ -41,11 +41,15 @@ class AiKeyResolver
 
     interface!
 
-    sig { abstract.params(user: User).returns(String) }
-    def for_user(user); end
+    # Params are underscored (in both sig and def, as Sorbet requires them to
+    # match): these are abstract interface methods with no body, so the type is
+    # the contract — implementations (AiKeypairs::StoredKeySource) name and use
+    # the arguments.
+    sig { abstract.params(_user: User).returns(String) }
+    def for_user(_user); end
 
-    sig { abstract.params(game: Game).returns(String) }
-    def for_game(game); end
+    sig { abstract.params(_game: Game).returns(String) }
+    def for_game(_game); end
   end
 
   sig { params(key_source: KeySource).void }

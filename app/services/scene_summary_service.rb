@@ -28,6 +28,13 @@ class SceneSummaryService
         cost: usage["cost"]
       )
     end
+
+    # The subset of scene_summaries columns this result supplies, so the job
+    # doesn't reach across into each field individually (FeatureEnvy).
+    def to_summary_attributes
+      { body: body, model_used: model_used, input_tokens: input_tokens,
+        output_tokens: output_tokens, cost: cost }
+    end
   end
 
   sig { params(scene: Scene, key_resolver: AiKeyResolver).void }
@@ -68,13 +75,15 @@ class SceneSummaryService
   sig { returns(String) }
   def api_key
     game = T.must(@scene.game)
-    gm = game.game_master
-
-    raise ConfigurationError, "Game ##{game.id} has no game master to resolve a BYOK key for" if gm.nil?
-
+    gm = game.game_master || raise(ConfigurationError, no_game_master_message)
     @key_resolver.resolve(user: gm, game: game)
   rescue AiKeyResolver::NoKeyAvailable => error
     raise ConfigurationError, error.message
+  end
+
+  sig { returns(String) }
+  def no_game_master_message
+    "Game ##{T.must(@scene.game).id} has no game master to resolve a BYOK key for"
   end
 
   sig { returns(String) }
