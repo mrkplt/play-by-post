@@ -219,6 +219,8 @@ matcher:
     - Ui::ProfileOocToggleComponent
     - Ui::ProfileAiConsentToggleComponent
     - Ui::ByokKeyFormComponent
+    - Ui::ProfileAiDisplayPreferenceControlComponent
+    - Ui::ProfileAiDisplayPreferenceControlComponent::Option
     - Ui::PillTabsComponent
     - Ui::ToastComponent
     - Ui::IconComponent

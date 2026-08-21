@@ -102,6 +102,46 @@ RSpec.describe SceneShowBuilder, :db do
 
       expect(gm_builder.summary_presenter).to be_a(SceneSummaryPresenter)
     end
+
+    it "hides an AI-generated summary from a viewer whose AI display preference is hidden" do
+      create(:scene_summary, :ai_generated, scene: scene)
+      viewer.user_profile.update!(ai_display_preference: :hidden)
+
+      expect(builder.summary_presenter).to be_nil
+    end
+
+    it "shows an AI-generated summary to a viewer whose AI display preference is tagged" do
+      create(:scene_summary, :ai_generated, scene: scene)
+      viewer.user_profile.update!(ai_display_preference: :tagged)
+
+      expect(builder.summary_presenter).to be_a(SceneSummaryPresenter)
+    end
+
+    it "shows a hand-written summary even to a viewer whose AI display preference is hidden" do
+      create(:scene_summary, scene: scene)
+      viewer.user_profile.update!(ai_display_preference: :hidden)
+
+      expect(builder.summary_presenter).to be_a(SceneSummaryPresenter)
+    end
+
+    it "threads the viewer through to the summary presenter's AI badge preference" do
+      create(:scene_summary, :ai_generated, scene: scene)
+      viewer.user_profile.update!(ai_display_preference: :shown)
+
+      expect(builder.summary_presenter.show_ai_badge?).to be(false)
+    end
+
+    it "shows an AI-generated summary to a viewer who has no profile yet" do
+      profileless_viewer = create(:user)
+      create(:game_member, game: game, user: profileless_viewer)
+      create(:scene_summary, :ai_generated, scene: scene)
+      profileless_context = described_class::Context.new(
+        current_user: profileless_viewer, urls: urls, policies: ->(record) { PostPolicy.new(profileless_viewer, record) }
+      )
+      profileless_builder = described_class.new(scene, game: game, context: profileless_context)
+
+      expect(profileless_builder.summary_presenter).to be_a(SceneSummaryPresenter)
+    end
   end
 
   describe "#screen" do

@@ -33,7 +33,7 @@ class Ui::ProfileAiConsentToggleComponent < ApplicationComponent
   # extracted so the ERB template has no ternary in its output tag
   # (bin/quality-metrics' ERB-logic check).
   sig { returns(Symbol) }
-  def toggle_switch_state
+  def toggle_state
     consented? ? :on : :off
   end
 end

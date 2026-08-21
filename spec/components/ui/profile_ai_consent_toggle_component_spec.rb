@@ -31,4 +31,14 @@ RSpec.describe Ui::ProfileAiConsentToggleComponent, type: :component do
     view = rendered(consented: true, toggle_url: "/profile/toggle_ai_summaries_consent")
     expect(view).to have_css("button[aria-label='Disable AI features for your games']")
   end
+
+  describe "#toggle_state" do
+    it "returns :on when consented" do
+      expect(described_class.new(consented: true, toggle_url: "/x").toggle_state).to eq(:on)
+    end
+
+    it "returns :off when not consented" do
+      expect(described_class.new(consented: false, toggle_url: "/x").toggle_state).to eq(:off)
+    end
+  end
 end

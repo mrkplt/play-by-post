@@ -30,4 +30,18 @@ class SceneSummary < ApplicationRecord
       .includes(:scene)
       .order("scenes.resolved_at DESC")
   end
+
+  # The AI Control Plane's per-viewer DISPLAY filter: a user whose
+  # ai_display_preference is "hidden" does not see AI-generated summaries at
+  # all — composed with .public_for_game (or any other relation) rather than
+  # duplicated at each call site, so the HTML index, the scene view, and the
+  # RSS feed can never diverge on what "hidden" excludes. Independent of
+  # ai_summaries_consent (producing, gates generation) — this gates viewing.
+  # ai_generated?/edited?/apply_manual_edit now come from AiGenerated::Model.
+  sig { params(relation: T.untyped, user: User).returns(T.untyped) }
+  def self.visible_to(relation, user)
+    return relation unless user.user_profile&.hidden?
+
+    relation.where(generated_at: nil)
+  end
 end

@@ -54,6 +54,18 @@ class ProfilesController < ApplicationController
     redirect_to profile_path, notice: ai_summaries_consent_notice(current_profile)
   end
 
+  # The per-user AI DISPLAY preference (AI Control Plane): independent of
+  # ai_summaries_consent — this controls how the viewer's own client renders
+  # AI-generated assets they encounter, not whether their games may generate
+  # them. See UserProfile#ai_display_preference and SceneSummary.visible_to.
+  sig { void }
+  def update_ai_display_preference
+    current_profile = profile
+    authorize current_profile, :manage?
+    current_profile.update!(ai_display_preference: ai_display_preference_param)
+    redirect_to profile_path, notice: "AI display preference updated."
+  end
+
   sig { void }
   def export_all
     authorize profile, :manage?
@@ -72,5 +84,12 @@ class ProfilesController < ApplicationController
   sig { params(current_profile: UserProfile).returns(String) }
   def ai_summaries_consent_notice(current_profile)
     current_profile.ai_summaries_consent? ? "AI scene summaries enabled for your games." : "AI scene summaries disabled for your games."
+  end
+
+  # UserProfile#update! raises ArgumentError on an unrecognized enum value —
+  # no separate inclusion check needed here.
+  sig { returns(String) }
+  def ai_display_preference_param
+    params.require(:ai_display_preference)
   end
 end

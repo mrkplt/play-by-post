@@ -74,17 +74,24 @@ class SceneShowBuilder
     return nil unless summary && summary_visible?(summary)
 
     SceneSummaryPresenter.new(
-      summary, game: @game, urls: @context.urls, policy: summary_policy(summary)
+      summary, game: @game, urls: @context.urls, policy: summary_policy(summary), viewer: @context.current_user
     )
   end
 
   private
 
   # A draft summary is visible only to a GM (its author); everyone else sees it
-  # as absent until it is published.
+  # as absent until it is published. An AI-generated summary is additionally
+  # absent for a viewer whose ai_display_preference is "hidden" (AI Control
+  # Plane) — the same per-viewer filter SceneSummary.visible_to applies to the
+  # index/RSS, expressed here as a predicate since the scene only ever has one
+  # summary to check rather than a relation to filter.
   sig { params(summary: SceneSummary).returns(T::Boolean) }
   def summary_visible?(summary)
-    !summary.draft? || summary_policy(summary).manage?
+    return false if summary.draft? && !summary_policy(summary).manage?
+    return false if summary.ai_generated? && @context.current_user.user_profile&.hidden?
+
+    true
   end
 
   sig { params(summary: SceneSummary).returns(SceneSummaryPolicy) }

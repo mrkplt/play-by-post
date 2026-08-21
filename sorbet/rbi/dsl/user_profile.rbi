@@ -8,6 +8,7 @@
 class UserProfile
   include GeneratedAssociationMethods
   include GeneratedAttributeMethods
+  include EnumMethodsModule
   extend CommonRelationMethods
   extend GeneratedRelationMethods
 
@@ -17,6 +18,9 @@ class UserProfile
   def to_ary; end
 
   class << self
+    sig { returns(T::Hash[T.any(String, Symbol), Integer]) }
+    def ai_display_preferences; end
+
     sig do
       params(
         attributes: T.untyped,
@@ -410,6 +414,26 @@ class UserProfile
     def third_to_last!; end
   end
 
+  module EnumMethodsModule
+    sig { void }
+    def hidden!; end
+
+    sig { returns(T::Boolean) }
+    def hidden?; end
+
+    sig { void }
+    def shown!; end
+
+    sig { returns(T::Boolean) }
+    def shown?; end
+
+    sig { void }
+    def tagged!; end
+
+    sig { returns(T::Boolean) }
+    def tagged?; end
+  end
+
   module GeneratedAssociationMethods
     sig { params(args: T.untyped, blk: T.untyped).returns(::User) }
     def build_user(*args, &blk); end
@@ -483,6 +507,9 @@ class UserProfile
     def having(*args, &blk); end
 
     sig { params(args: T.untyped, blk: T.untyped).returns(PrivateAssociationRelation) }
+    def hidden(*args, &blk); end
+
+    sig { params(args: T.untyped, blk: T.untyped).returns(PrivateAssociationRelation) }
     def in_order_of(*args, &blk); end
 
     sig { params(args: T.untyped, blk: T.untyped).returns(PrivateAssociationRelation) }
@@ -511,6 +538,15 @@ class UserProfile
 
     sig { params(args: T.untyped, blk: T.untyped).returns(PrivateAssociationRelation) }
     def none(*args, &blk); end
+
+    sig { params(args: T.untyped, blk: T.untyped).returns(PrivateAssociationRelation) }
+    def not_hidden(*args, &blk); end
+
+    sig { params(args: T.untyped, blk: T.untyped).returns(PrivateAssociationRelation) }
+    def not_shown(*args, &blk); end
+
+    sig { params(args: T.untyped, blk: T.untyped).returns(PrivateAssociationRelation) }
+    def not_tagged(*args, &blk); end
 
     sig { params(args: T.untyped, blk: T.untyped).returns(PrivateAssociationRelation) }
     def null_relation?(*args, &blk); end
@@ -559,10 +595,16 @@ class UserProfile
     def select(*args, &blk); end
 
     sig { params(args: T.untyped, blk: T.untyped).returns(PrivateAssociationRelation) }
+    def shown(*args, &blk); end
+
+    sig { params(args: T.untyped, blk: T.untyped).returns(PrivateAssociationRelation) }
     def strict_loading(*args, &blk); end
 
     sig { params(args: T.untyped, blk: T.untyped).returns(PrivateAssociationRelation) }
     def structurally_compatible?(*args, &blk); end
+
+    sig { params(args: T.untyped, blk: T.untyped).returns(PrivateAssociationRelation) }
+    def tagged(*args, &blk); end
 
     sig { params(args: T.untyped, blk: T.untyped).returns(PrivateAssociationRelation) }
     def uniq!(*args, &blk); end
@@ -589,6 +631,51 @@ class UserProfile
   end
 
   module GeneratedAttributeMethods
+    sig { returns(::String) }
+    def ai_display_preference; end
+
+    sig { params(value: T.any(::String, ::Symbol, ::Integer)).returns(T.any(::String, ::Symbol, ::Integer)) }
+    def ai_display_preference=(value); end
+
+    sig { returns(T::Boolean) }
+    def ai_display_preference?; end
+
+    sig { returns(T.nilable(::String)) }
+    def ai_display_preference_before_last_save; end
+
+    sig { returns(T.untyped) }
+    def ai_display_preference_before_type_cast; end
+
+    sig { returns(T::Boolean) }
+    def ai_display_preference_came_from_user?; end
+
+    sig { returns(T.nilable([::String, ::String])) }
+    def ai_display_preference_change; end
+
+    sig { returns(T.nilable([::String, ::String])) }
+    def ai_display_preference_change_to_be_saved; end
+
+    sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
+    def ai_display_preference_changed?(from: T.unsafe(nil), to: T.unsafe(nil)); end
+
+    sig { returns(T.nilable(::String)) }
+    def ai_display_preference_in_database; end
+
+    sig { returns(T.nilable([::String, ::String])) }
+    def ai_display_preference_previous_change; end
+
+    sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
+    def ai_display_preference_previously_changed?(from: T.unsafe(nil), to: T.unsafe(nil)); end
+
+    sig { returns(T.nilable(::String)) }
+    def ai_display_preference_previously_was; end
+
+    sig { returns(T.nilable(::String)) }
+    def ai_display_preference_was; end
+
+    sig { void }
+    def ai_display_preference_will_change!; end
+
     sig { returns(T::Boolean) }
     def ai_summaries_consent; end
 
@@ -905,6 +992,9 @@ class UserProfile
     def last_login_at_will_change!; end
 
     sig { void }
+    def restore_ai_display_preference!; end
+
+    sig { void }
     def restore_ai_summaries_consent!; end
 
     sig { void }
@@ -930,6 +1020,12 @@ class UserProfile
 
     sig { void }
     def restore_user_id!; end
+
+    sig { returns(T.nilable([::String, ::String])) }
+    def saved_change_to_ai_display_preference; end
+
+    sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
+    def saved_change_to_ai_display_preference?(from: T.unsafe(nil), to: T.unsafe(nil)); end
 
     sig { returns(T.nilable([T::Boolean, T::Boolean])) }
     def saved_change_to_ai_summaries_consent; end
@@ -1076,6 +1172,9 @@ class UserProfile
     def user_id_will_change!; end
 
     sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
+    def will_save_change_to_ai_display_preference?(from: T.unsafe(nil), to: T.unsafe(nil)); end
+
+    sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
     def will_save_change_to_ai_summaries_consent?(from: T.unsafe(nil), to: T.unsafe(nil)); end
 
     sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
@@ -1147,6 +1246,9 @@ class UserProfile
     def having(*args, &blk); end
 
     sig { params(args: T.untyped, blk: T.untyped).returns(PrivateRelation) }
+    def hidden(*args, &blk); end
+
+    sig { params(args: T.untyped, blk: T.untyped).returns(PrivateRelation) }
     def in_order_of(*args, &blk); end
 
     sig { params(args: T.untyped, blk: T.untyped).returns(PrivateRelation) }
@@ -1175,6 +1277,15 @@ class UserProfile
 
     sig { params(args: T.untyped, blk: T.untyped).returns(PrivateRelation) }
     def none(*args, &blk); end
+
+    sig { params(args: T.untyped, blk: T.untyped).returns(PrivateRelation) }
+    def not_hidden(*args, &blk); end
+
+    sig { params(args: T.untyped, blk: T.untyped).returns(PrivateRelation) }
+    def not_shown(*args, &blk); end
+
+    sig { params(args: T.untyped, blk: T.untyped).returns(PrivateRelation) }
+    def not_tagged(*args, &blk); end
 
     sig { params(args: T.untyped, blk: T.untyped).returns(PrivateRelation) }
     def null_relation?(*args, &blk); end
@@ -1223,10 +1334,16 @@ class UserProfile
     def select(*args, &blk); end
 
     sig { params(args: T.untyped, blk: T.untyped).returns(PrivateRelation) }
+    def shown(*args, &blk); end
+
+    sig { params(args: T.untyped, blk: T.untyped).returns(PrivateRelation) }
     def strict_loading(*args, &blk); end
 
     sig { params(args: T.untyped, blk: T.untyped).returns(PrivateRelation) }
     def structurally_compatible?(*args, &blk); end
+
+    sig { params(args: T.untyped, blk: T.untyped).returns(PrivateRelation) }
+    def tagged(*args, &blk); end
 
     sig { params(args: T.untyped, blk: T.untyped).returns(PrivateRelation) }
     def uniq!(*args, &blk); end
