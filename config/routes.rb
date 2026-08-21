@@ -74,6 +74,11 @@ Rails.application.routes.draw do
       post :export_all, on: :collection
       resources :api_tokens, only: %i[create destroy], module: :profiles
       resources :images, only: %i[create update destroy], controller: "user_images"
+      # BYOK custody keypair (AI Control Plane): create generates the keypair
+      # (server-side, via AiKeypairGenerationJob), update seals/replaces the
+      # stored key with a browser-encrypted envelope. Singleton — one keypair
+      # per user.
+      resource :ai_keypair, only: %i[create update], module: :profiles
     end
     resources :games, only: %i[index new create show edit update destroy] do
       # Kept as toggle_*_game_path on the game itself — the setting switches
