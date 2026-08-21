@@ -111,6 +111,13 @@ class UserPresenter < BasePresenter
     avatar_library.upload_url
   end
 
+  # The BYOK (bring-your-own OpenRouter key) facts the Profile screen's
+  # Ui::ByokKeyFormComponent needs — see UserByokKeyPresenter.
+  sig { returns(UserByokKeyPresenter) }
+  def byok_key
+    @byok_key ||= T.let(UserByokKeyPresenter.new(@model), T.nilable(UserByokKeyPresenter))
+  end
+
   private
 
   sig { returns(UserAvatarLibraryPresenter) }

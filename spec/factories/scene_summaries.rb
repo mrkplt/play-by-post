@@ -6,6 +6,8 @@ FactoryBot.define do
     generated_at { nil }
     input_tokens { nil }
     output_tokens { nil }
+    generated_by { nil }
+    cost { nil }
     edited_at { nil }
     edited_by { nil }
 
@@ -14,6 +16,8 @@ FactoryBot.define do
       generated_at { Time.current }
       input_tokens { 500 }
       output_tokens { 150 }
+      cost { 0.0123 }
+      association :generated_by, factory: :user
     end
 
     trait :edited do

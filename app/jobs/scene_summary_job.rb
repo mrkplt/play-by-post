@@ -18,7 +18,8 @@ class SceneSummaryJob < ApplicationJob
   private
 
   UPDATE_ONLY_COLUMNS = T.let(
-    %i[body model_used generated_at input_tokens output_tokens edited_at edited_by_id updated_at].freeze,
+    %i[body model_used generated_at input_tokens output_tokens generated_by_id cost
+       edited_at edited_by_id updated_at].freeze,
     T::Array[Symbol]
   )
 
@@ -31,17 +32,24 @@ class SceneSummaryJob < ApplicationJob
   def upsert_attributes(scene, result)
     now = Time.current
 
-    {
+    result.to_summary_attributes.merge(
       scene_id: scene.id,
-      body: result.body,
-      model_used: result.model_used,
       generated_at: now,
-      input_tokens: result.input_tokens,
-      output_tokens: result.output_tokens,
+      generated_by_id: generating_user(scene)&.id,
       edited_at: nil,
       edited_by_id: nil,
       created_at: now,
       updated_at: now
-    }
+    )
+  end
+
+  # The user who triggered this generation: the game's GM, same acting
+  # identity SceneSummaryService resolves a BYOK key for (see its #api_key).
+  # Nil only if the game has no GM assigned — the same edge case the service
+  # already treats as unfundable and rescues via ConfigurationError before
+  # this job ever gets a result to upsert.
+  sig { params(scene: Scene).returns(T.nilable(User)) }
+  def generating_user(scene)
+    scene.game&.game_master
   end
 end

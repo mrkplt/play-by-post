@@ -215,6 +215,16 @@ RSpec.describe UserPresenter do
     end
   end
 
+  describe "#byok_key" do
+    it "returns a UserByokKeyPresenter for the model" do
+      expect(presenter.byok_key).to be_a(UserByokKeyPresenter)
+    end
+
+    it "memoizes across calls" do
+      expect(presenter.byok_key).to equal(presenter.byok_key)
+    end
+  end
+
   describe "avatar library", :db do
     let(:user) { create(:user) }
     let(:helpers) do

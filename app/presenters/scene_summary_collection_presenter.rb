@@ -20,7 +20,9 @@ class SceneSummaryCollectionPresenter < BasePresenter
   sig { returns(T::Array[SceneSummaryPresenter]) }
   def entries
     @model.map do |summary|
-      SceneSummaryPresenter.new(summary, game: @options.fetch(:game), urls: @options.fetch(:urls))
+      SceneSummaryPresenter.new(
+        summary, game: @options.fetch(:game), urls: @options.fetch(:urls), viewer: @options.fetch(:viewer, nil)
+      )
     end
   end
 

@@ -20,7 +20,15 @@ NOT_A_MODEL = %w[application_record.rb current.rb].freeze
 # record (usage/receipt/read/token), a join row managed through its parent's
 # policy (SceneParticipant → ScenePolicy#manage_participants?), or the auth
 # entity (User — created via invitations/sessions, never a managed resource).
+# PublicKey/PrivateKey/KeysRecord (abstract)/EncryptedValue are never
+# id-addressed by a controller — Profiles::ByokKeysController authorizes on
+# the acting user's UserProfile (already covered by UserProfilePolicy), the
+# same capability that gates every other Profile action.
 NON_AUTHORIZABLE = %w[
+  EncryptedValue
+  KeysRecord
+  PrivateKey
+  PublicKey
   AiUsage
   ApiToken
   Branding

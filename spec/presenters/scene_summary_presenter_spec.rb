@@ -140,6 +140,42 @@ RSpec.describe SceneSummaryPresenter do
     end
   end
 
+  describe "#show_ai_badge?" do
+    context "when hand-written" do
+      it "returns true regardless of viewer preference" do
+        viewer = build_stubbed(:user, user_profile: build_stubbed(:user_profile, ai_display_preference: :shown))
+        presenter = described_class.new(summary, viewer: viewer)
+        expect(presenter.show_ai_badge?).to be(true)
+      end
+    end
+
+    context "when AI-generated" do
+      let(:summary) { build_stubbed(:scene_summary, :ai_generated) }
+
+      it "returns true when no viewer is supplied" do
+        expect(described_class.new(summary).show_ai_badge?).to be(true)
+      end
+
+      it "returns true when the viewer's profile prefers tagged" do
+        viewer = build_stubbed(:user, user_profile: build_stubbed(:user_profile, ai_display_preference: :tagged))
+        presenter = described_class.new(summary, viewer: viewer)
+        expect(presenter.show_ai_badge?).to be(true)
+      end
+
+      it "returns true when the viewer has no profile yet" do
+        viewer = build_stubbed(:user, user_profile: nil)
+        presenter = described_class.new(summary, viewer: viewer)
+        expect(presenter.show_ai_badge?).to be(true)
+      end
+
+      it "returns false when the viewer's profile prefers shown" do
+        viewer = build_stubbed(:user, user_profile: build_stubbed(:user_profile, ai_display_preference: :shown))
+        presenter = described_class.new(summary, viewer: viewer)
+        expect(presenter.show_ai_badge?).to be(false)
+      end
+    end
+  end
+
   describe "#scene_resolved_at_pub_date" do
     it "returns nil when the scene has no resolved_at" do
       scene = build_stubbed(:scene, resolved_at: nil)

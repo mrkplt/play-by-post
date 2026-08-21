@@ -35,6 +35,7 @@ BASE_FILENAMES = %w[
   application_mailer.rb
   application_mailbox.rb
   application_record.rb
+  keys_record.rb
   base_presenter.rb
   current.rb
 ].freeze

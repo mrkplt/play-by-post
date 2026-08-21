@@ -78,3 +78,8 @@ node_modules
 # Ignore key files for decrypting credentials and more.
 /config/credentials/*.key
 
+# Bespoke encrypted credential for the AI private-key database (worker-only;
+# NOT RAILS_MASTER_KEY). Back this up separately — losing it makes every
+# stored BYOK private key unrecoverable.
+/config/ai_private_keys.key
+

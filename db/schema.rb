@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_17_130100) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_21_000300) do
   create_table "action_mailbox_inbound_emails", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "message_checksum", null: false
@@ -46,6 +46,18 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_17_130100) do
     t.bigint "blob_id", null: false
     t.string "variation_digest", null: false
     t.index ["blob_id", "variation_digest"], name: "index_active_storage_variant_records_uniqueness", unique: true
+  end
+
+  create_table "ai_keypairs", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "fingerprint", null: false
+    t.integer "owner_id", null: false
+    t.string "owner_type", null: false
+    t.text "public_key", null: false
+    t.text "sealed_key"
+    t.datetime "updated_at", null: false
+    t.index ["fingerprint"], name: "index_ai_keypairs_on_fingerprint", unique: true
+    t.index ["owner_type", "owner_id"], name: "index_ai_keypairs_on_owner", unique: true
   end
 
   create_table "ai_usages", force: :cascade do |t|
@@ -111,6 +123,19 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_17_130100) do
     t.index ["game_id"], name: "index_content_templates_on_game_id"
   end
 
+  create_table "encrypted_values", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.integer "owner_id", null: false
+    t.string "owner_type", null: false
+    t.integer "public_key_id", null: false
+    t.text "sealed_value"
+    t.datetime "updated_at", null: false
+    t.string "value_type", null: false
+    t.index ["owner_type", "owner_id", "value_type"], name: "index_encrypted_values_on_owner_and_type", unique: true
+    t.index ["owner_type", "owner_id"], name: "index_encrypted_values_on_owner"
+    t.index ["public_key_id"], name: "index_encrypted_values_on_public_key_id", unique: true
+  end
+
   create_table "feedback", force: :cascade do |t|
     t.text "body", null: false
     t.datetime "created_at", null: false
@@ -166,6 +191,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_17_130100) do
   end
 
   create_table "games", force: :cascade do |t|
+    t.string "ai_key_reference"
     t.boolean "ai_summaries_enabled", default: false, null: false
     t.datetime "created_at", null: false
     t.datetime "deleted_at"
@@ -275,6 +301,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_17_130100) do
     t.index ["user_id"], name: "index_posts_on_user_id"
   end
 
+  create_table "public_keys", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "fingerprint", null: false
+    t.text "public_key", null: false
+    t.datetime "updated_at", null: false
+    t.index ["fingerprint"], name: "index_public_keys_on_fingerprint", unique: true
+  end
+
   create_table "scene_participants", force: :cascade do |t|
     t.integer "character_id"
     t.datetime "created_at", null: false
@@ -290,17 +324,20 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_17_130100) do
 
   create_table "scene_summaries", force: :cascade do |t|
     t.text "body", null: false
+    t.decimal "cost", precision: 10, scale: 6
     t.datetime "created_at", null: false
     t.boolean "draft", default: false, null: false
     t.datetime "edited_at"
     t.integer "edited_by_id"
     t.datetime "generated_at"
+    t.integer "generated_by_id"
     t.integer "input_tokens"
     t.string "model_used"
     t.integer "output_tokens"
     t.integer "scene_id", null: false
     t.datetime "updated_at", null: false
     t.index ["edited_by_id"], name: "index_scene_summaries_on_edited_by_id"
+    t.index ["generated_by_id"], name: "index_scene_summaries_on_generated_by_id"
     t.index ["scene_id"], name: "index_scene_summaries_on_scene_id", unique: true
   end
 
@@ -337,6 +374,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_17_130100) do
   end
 
   create_table "user_profiles", force: :cascade do |t|
+    t.integer "ai_display_preference", default: 1, null: false
+    t.boolean "ai_summaries_consent", default: false, null: false
     t.datetime "created_at", null: false
     t.string "display_name"
     t.boolean "hide_ooc", default: false, null: false
@@ -347,6 +386,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_17_130100) do
   end
 
   create_table "users", force: :cascade do |t|
+    t.string "ai_key_reference"
     t.datetime "created_at", null: false
     t.string "email", default: "", null: false
     t.string "magic_link_token"
@@ -369,6 +409,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_17_130100) do
   add_foreign_key "characters", "games"
   add_foreign_key "characters", "users"
   add_foreign_key "content_templates", "games"
+  add_foreign_key "encrypted_values", "public_keys"
   add_foreign_key "feedback", "users"
   add_foreign_key "game_export_requests", "games"
   add_foreign_key "game_export_requests", "users"
@@ -396,6 +437,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_17_130100) do
   add_foreign_key "scene_participants", "users"
   add_foreign_key "scene_summaries", "scenes"
   add_foreign_key "scene_summaries", "users", column: "edited_by_id"
+  add_foreign_key "scene_summaries", "users", column: "generated_by_id"
   add_foreign_key "scenes", "games"
   add_foreign_key "scenes", "scenes", column: "parent_scene_id"
   add_foreign_key "user_images", "users"

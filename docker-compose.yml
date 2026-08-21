@@ -1,6 +1,12 @@
 services:
+  # Built from the Dockerfile's `web-final` target, published as the
+  # `web-latest` tag. This image structurally cannot contain
+  # config/ai_private_keys.key or the private-key database — see
+  # docs/CONFIGURATION.md and the Dockerfile's app-export stage — so the web
+  # tier has no way to read the AI Control Plane's decryption key even if this
+  # container were compromised.
   web:
-    image: ghcr.io/mrkplt/play-by-post:latest
+    image: ghcr.io/mrkplt/play-by-post:web-latest
     pull_policy: always
     environment:
       RAILS_ENV: production
@@ -20,18 +26,29 @@ services:
       retries: 5
       start_period: 180s
 
+  # Built from the Dockerfile's `worker-final` target, published as the
+  # `worker-latest` tag. Only this service mounts `worker-keys`, the volume
+  # holding the AI Control Plane's private-key SQLite database — `web` must
+  # never gain that mount.
   worker:
-    image: ghcr.io/mrkplt/play-by-post:latest
+    image: ghcr.io/mrkplt/play-by-post:worker-latest
     pull_policy: always
     command: ["bundle", "exec", "rake", "solid_queue:start"]
     environment:
       RAILS_ENV: production
       DATABASE_PATH: /data
+      AI_KEYS_DATABASE_PATH: /ai-keys-data
       RAILS_MASTER_KEY: ${RAILS_MASTER_KEY}
+      AI_PRIVATE_KEYS_KEY: ${AI_PRIVATE_KEYS_KEY}
       APP_HOST: ${APP_HOST}
       RAILS_LOG_TO_STDOUT: "1"
     volumes:
       - dbdata:/data
+      # Worker-only: holds the ai_keys database (encrypted BYOK private keys).
+      # Not mounted into `web` at all — the web container has no filesystem
+      # path to this data regardless of any application-level bug. See
+      # config/database.yml `production.ai_keys` and docs/CONFIGURATION.md.
+      - aikeysdata:/ai-keys-data
     depends_on:
       web:
         condition: service_healthy
@@ -40,3 +57,4 @@ services:
 
 volumes:
   dbdata:
+  aikeysdata:

@@ -1,8 +1,9 @@
 require "rails_helper"
 
 RSpec.describe SceneSummaryJob, type: :job do
-  let(:game) { build_stubbed(:game) }
-  let(:scene) { build_stubbed(:scene, :resolved, game: game) }
+  let(:game) { create(:game) }
+  let(:gm) { create(:user, :with_profile) }
+  let(:scene) { create(:scene, :resolved, game: game) }
 
   around do |example|
     original_adapter = ActiveJob::Base.queue_adapter
@@ -17,11 +18,13 @@ RSpec.describe SceneSummaryJob, type: :job do
         body: "A heroic tale.",
         model_used: "openai/gpt-4o",
         input_tokens: 100,
-        output_tokens: 40
+        output_tokens: 40,
+        cost: 0.0055
       )
     end
 
     before do
+      create(:game_member, :game_master, game: game, user: gm)
       service_double = instance_double(SceneSummaryService, call: service_result)
       allow(SceneSummaryService).to receive(:new).with(scene).and_return(service_double)
       allow(Scene).to receive(:find_by).with(id: scene.id).and_return(scene)
@@ -37,10 +40,31 @@ RSpec.describe SceneSummaryJob, type: :job do
           body: "A heroic tale.",
           model_used: "openai/gpt-4o",
           input_tokens: 100,
-          output_tokens: 40
+          output_tokens: 40,
+          cost: 0.0055
         ),
         hash_including(unique_by: :scene_id)
       )
+    end
+
+    it "stamps generated_by_id with the game's GM — the acting identity the service resolved a key for" do
+      described_class.new.perform(scene.id)
+
+      expect(SceneSummary).to have_received(:upsert)
+        .with(hash_including(generated_by_id: gm.id), anything)
+    end
+
+    it "leaves generated_by_id nil when the game has no GM" do
+      gmless_scene = create(:scene, :resolved, game: create(:game))
+      allow(SceneSummaryService).to receive(:new).with(gmless_scene).and_return(
+        instance_double(SceneSummaryService, call: service_result)
+      )
+      allow(Scene).to receive(:find_by).with(id: gmless_scene.id).and_return(gmless_scene)
+
+      described_class.new.perform(gmless_scene.id)
+
+      expect(SceneSummary).to have_received(:upsert)
+        .with(hash_including(generated_by_id: nil), anything)
     end
 
     it "clears any previous manual edit when it upserts" do
@@ -66,7 +90,8 @@ RSpec.describe SceneSummaryJob, type: :job do
         expect(SceneSummary).to have_received(:upsert).with(
           hash_including(created_at: Time.current, updated_at: Time.current),
           hash_including(
-            update_only: %i[body model_used generated_at input_tokens output_tokens edited_at edited_by_id updated_at]
+            update_only: %i[body model_used generated_at input_tokens output_tokens generated_by_id cost
+                             edited_at edited_by_id updated_at]
           )
         )
       end
@@ -83,6 +108,15 @@ RSpec.describe SceneSummaryJob, type: :job do
     it "logs and swallows ConfigurationError" do
       allow(SceneSummaryService).to receive(:new).and_raise(SceneSummaryService::ConfigurationError, "no key")
       expect(Rails.logger).to receive(:error).with(/no key/)
+
+      expect { described_class.new.perform(scene.id) }.not_to raise_error
+    end
+
+    it "logs and swallows a BYOK refuse (no key available), which the service maps to ConfigurationError" do
+      allow(SceneSummaryService).to receive(:new).and_raise(
+        SceneSummaryService::ConfigurationError, "No BYOK OpenRouter key available for user=1 game=1"
+      )
+      expect(Rails.logger).to receive(:error).with(/No BYOK OpenRouter key available/)
 
       expect { described_class.new.perform(scene.id) }.not_to raise_error
     end

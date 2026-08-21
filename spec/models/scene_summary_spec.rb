@@ -12,6 +12,11 @@ RSpec.describe SceneSummary, type: :model do
       summary = build(:scene_summary, edited_by: nil)
       expect(summary).to be_valid
     end
+
+    it "belongs to generated_by (optional)" do
+      summary = build(:scene_summary, generated_by: nil)
+      expect(summary).to be_valid
+    end
   end
 
   describe "validations" do
@@ -79,6 +84,65 @@ RSpec.describe SceneSummary, type: :model do
       older_summary = create(:scene_summary, scene: older)
       newer_summary = create(:scene_summary, scene: newer)
       expect(described_class.public_for_game(game).to_a).to eq([ newer_summary, older_summary ])
+    end
+  end
+
+  # ai_generated?/edited?/apply_manual_edit are AiGenerated::Model's shared
+  # behaviour, covered by spec/models/ai_generated/model_spec.rb. SceneSummary
+  # includes it (see app/models/scene_summary.rb) but does not re-test it here.
+
+  describe ".visible_to" do
+    it "returns the relation unchanged when the viewer has no profile" do
+      user = build_stubbed(:user, user_profile: nil)
+      relation = described_class.all
+      expect(described_class.visible_to(relation, user)).to equal(relation)
+    end
+
+    it "returns the relation unchanged when the viewer's preference is not hidden" do
+      profile = build_stubbed(:user_profile, ai_display_preference: :tagged)
+      user = build_stubbed(:user, user_profile: profile)
+      relation = described_class.all
+      expect(described_class.visible_to(relation, user)).to equal(relation)
+    end
+
+    it "excludes AI-generated rows when the viewer's preference is hidden" do
+      profile = build_stubbed(:user_profile, ai_display_preference: :hidden)
+      user = build_stubbed(:user, user_profile: profile)
+      expect(described_class.visible_to(described_class.all, user).where_values_hash).to eq("generated_at" => nil)
+    end
+
+    it "filters the injected relation itself, not the bare class scope" do
+      profile = build_stubbed(:user_profile, ai_display_preference: :hidden)
+      user = build_stubbed(:user, user_profile: profile)
+      relation = described_class.published
+
+      expect(described_class.visible_to(relation, user).where_values_hash)
+        .to eq("draft" => false, "generated_at" => nil)
+    end
+
+    it "excludes AI-generated summaries end to end when hidden", :db do
+      game = create(:game)
+      scene = create(:scene, :resolved, game: game, private: false)
+      ai_summary = create(:scene_summary, :ai_generated, scene: scene)
+      other_scene = create(:scene, :resolved, game: game, private: false)
+      hand_written = create(:scene_summary, scene: other_scene)
+      profile = create(:user_profile, ai_display_preference: :hidden)
+
+      visible = described_class.visible_to(described_class.public_for_game(game), profile.user)
+
+      expect(visible).to include(hand_written)
+      expect(visible).not_to include(ai_summary)
+    end
+
+    it "includes AI-generated summaries when tagged", :db do
+      game = create(:game)
+      scene = create(:scene, :resolved, game: game, private: false)
+      ai_summary = create(:scene_summary, :ai_generated, scene: scene)
+      profile = create(:user_profile, ai_display_preference: :tagged)
+
+      visible = described_class.visible_to(described_class.public_for_game(game), profile.user)
+
+      expect(visible).to include(ai_summary)
     end
   end
 

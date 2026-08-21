@@ -18,6 +18,9 @@ matcher:
   subjects:
     # Models
     - AiUsage
+    - PublicKey
+    - PrivateKey
+    - EncryptedValue
     - ApiToken
     - Branding
     - ErrorTracking
@@ -50,6 +53,7 @@ matcher:
     - Draftable::Presentation
     - Versionable::Model
     - UploadedImage::Model
+    - AiGenerated::Model
     # Presenters
     - BannedMemberPresenter
     - CharacterPresenter
@@ -58,6 +62,7 @@ matcher:
     - ImageLibraryPresenter
     - CharacterPortraitLibraryPresenter
     - UserAvatarLibraryPresenter
+    - UserByokKeyPresenter
     - GameDashboardItemPresenter
     - GameDashboardPresenter
     - DrawerMembershipPresenter
@@ -213,11 +218,24 @@ matcher:
     - Ui::IconButtonComponent
     - Ui::SettingsRowComponent
     - Ui::ProfileOocToggleComponent
+    - Ui::ProfileAiConsentToggleComponent
+    - Ui::ByokKeyFormComponent
+    - Ui::ProfileAiDisplayPreferenceControlComponent
+    - Ui::ProfileAiDisplayPreferenceControlComponent::Option
     - Ui::PillTabsComponent
     - Ui::ToastComponent
     - Ui::IconComponent
     - Ui::TurnstileWidgetComponent
     # Services
+    - AiKeyResolver
+    - AiKeyResolver::KeySource
+    - Crypto::CryptoService
+    - Crypto::Blob
+    - Crypto::DecryptionError
+    - Crypto::KeypairGenerator
+    - Crypto::KeypairGenerator::GeneratedKeypair
+    - Crypto::StoredKeySource
+    - Crypto::StoredKeySource::UnresolvableKey
     - AttachmentUploader
     - AttachmentUploader::Owner
     - AttachmentUploader::Naming
@@ -276,6 +294,7 @@ matcher:
     - Api::NotebookEntriesController
     - Api::PagesController
     - Profiles::ApiTokensController
+    - Profiles::ByokKeysController
     - GameExportsController
     - ScenesController
     - CharactersController
@@ -324,6 +343,7 @@ matcher:
     - GamePurgeSweepJob
     - GamePurgeJob
     - FeedbackSweepJob
+    - KeypairGenerationJob
     # Mailers
     - NotificationMailer
     - NotificationMailer::Delivery

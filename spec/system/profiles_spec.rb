@@ -49,7 +49,7 @@ RSpec.describe "Profiles", type: :feature do
     it "toggles the hide-OOC default from the profile" do
       visit profile_path
 
-      toggle = find("[role='switch']")
+      toggle = find("[data-controller='ooc-filter'] [role='switch']")
       expect(toggle["aria-checked"]).to eq("false")
 
       page.execute_script(%q{document.querySelector('[data-controller="ooc-filter"] button').click()})
@@ -72,6 +72,60 @@ RSpec.describe "Profiles", type: :feature do
 
       expect(page).not_to have_css('[data-testid="ooc-post"]', visible: true)
       expect(page).to have_text("In character action.")
+    end
+  end
+
+  describe "AI summaries consent (AI Control Plane)" do
+    it "profile shows the AI consent toggle, off by default" do
+      visit profile_path
+      expect(page).to have_text("AI features")
+      expect(page).to have_css("[role='switch'][aria-checked='false']")
+    end
+
+    it "toggles AI consent on from the profile" do
+      visit profile_path
+
+      find("button[aria-label='Enable AI features for your games']").click
+
+      expect(page).to have_text("AI scene summaries enabled for your games.")
+      expect(user.user_profile.reload.ai_summaries_consent).to be(true)
+    end
+
+    it "toggles AI consent back off from the profile" do
+      user.user_profile.update!(ai_summaries_consent: true)
+      visit profile_path
+
+      find("button[aria-label='Disable AI features for your games']").click
+
+      expect(page).to have_text("AI scene summaries disabled for your games.")
+      expect(user.user_profile.reload.ai_summaries_consent).to be(false)
+    end
+  end
+
+  describe "AI display preference (AI Control Plane)" do
+    it "profile shows the AI display control, tagged by default" do
+      visit profile_path
+      expect(page).to have_text("AI display")
+      expect(page).to have_css("button[aria-pressed='true']", text: "Tagged")
+    end
+
+    it "switches the preference to shown from the profile" do
+      visit profile_path
+
+      click_on "Shown"
+
+      expect(page).to have_text("AI display preference updated.")
+      expect(user.user_profile.reload.ai_display_preference).to eq("shown")
+      expect(page).to have_css("button[aria-pressed='true']", text: "Shown")
+    end
+
+    it "switches the preference to hidden from the profile" do
+      visit profile_path
+
+      click_on "Hidden"
+
+      expect(page).to have_text("AI display preference updated.")
+      expect(user.user_profile.reload.ai_display_preference).to eq("hidden")
     end
   end
 

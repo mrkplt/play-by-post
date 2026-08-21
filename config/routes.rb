@@ -70,9 +70,17 @@ Rails.application.routes.draw do
     resource :feedback, only: %i[create]
     resource :profile, only: %i[show edit update], controller: "profiles" do
       post :toggle_hide_ooc, on: :collection
+      post :toggle_ai_summaries_consent, on: :collection
+      post :update_ai_display_preference, on: :collection
       post :export_all, on: :collection
       resources :api_tokens, only: %i[create destroy], module: :profiles
       resources :images, only: %i[create update destroy], controller: "user_images"
+      # BYOK OpenRouter key (AI Control Plane): create generates the
+      # EncryptedValue's dedicated keypair (server-side, via
+      # KeypairGenerationJob), update seals/replaces the stored key with a
+      # browser-encrypted envelope. Singleton — one "openrouter_key"
+      # EncryptedValue per user.
+      resource :byok_key, only: %i[create update], module: :profiles
     end
     resources :games, only: %i[index new create show edit update destroy] do
       # Kept as toggle_*_game_path on the game itself — the setting switches

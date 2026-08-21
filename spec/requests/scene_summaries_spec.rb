@@ -44,6 +44,29 @@ RSpec.describe SceneSummariesController, type: :request do
       expect(response.body).to include(summary.body)
     end
 
+    it "excludes AI-generated summaries when the viewer's AI display preference is hidden" do
+      ai_summary = create(:scene_summary, :ai_generated, scene: resolved_scene, body: "AI-written recap.")
+      hand_scene = create(:scene, :resolved, game: game)
+      hand_written = create(:scene_summary, scene: hand_scene, body: "Hand-written recap.")
+      player.user_profile.update!(ai_display_preference: :hidden)
+
+      sign_in(player)
+      get game_scene_summaries_path(game)
+
+      expect(response.body).to include(hand_written.body)
+      expect(response.body).not_to include(ai_summary.body)
+    end
+
+    it "shows AI-generated summaries when the viewer's AI display preference is tagged" do
+      ai_summary = create(:scene_summary, :ai_generated, scene: resolved_scene, body: "AI-written recap.")
+      player.user_profile.update!(ai_display_preference: :tagged)
+
+      sign_in(player)
+      get game_scene_summaries_path(game)
+
+      expect(response.body).to include(ai_summary.body)
+    end
+
     it "does not show summaries for private scenes" do
       private_scene = create(:scene, :resolved, game: game, private: true)
       summary = create(:scene_summary, scene: private_scene)

@@ -148,4 +148,32 @@ RSpec.describe User, type: :model do
       expect(user.avatar_variant).to be_nil
     end
   end
+
+  describe "#ai_key_present?" do
+    it "is true when the user's openrouter_key EncryptedValue has a sealed value", db: true do
+      user = create(:user)
+      create(:encrypted_value, :sealed, owner: user, value_type: "openrouter_key")
+
+      expect(user.ai_key_present?).to be(true)
+    end
+
+    it "is false when no EncryptedValue exists for this user", db: true do
+      user = create(:user)
+      expect(user.ai_key_present?).to be(false)
+    end
+
+    it "is false when the EncryptedValue exists but has no sealed value yet (keypair generated, nothing pasted)", db: true do
+      user = create(:user)
+      create(:encrypted_value, owner: user, value_type: "openrouter_key", sealed_value: nil)
+
+      expect(user.ai_key_present?).to be(false)
+    end
+
+    it "is false when the user has a sealed EncryptedValue of a different value_type", db: true do
+      user = create(:user)
+      create(:encrypted_value, :sealed, owner: user, value_type: "something_else")
+
+      expect(user.ai_key_present?).to be(false)
+    end
+  end
 end

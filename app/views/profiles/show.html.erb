@@ -27,13 +27,33 @@
   <div class="bg-card border border-card-border rounded-card px-3.5">
     <%= render Ui::SettingsRowComponent.new(label: "Email", sub: current_user.email) do %>
     <% end %>
-    <%= render Ui::SettingsRowComponent.new(label: "Hide OOC by default", sub: "Collapse out-of-character posts", position: :last) do %>
+    <%= render Ui::SettingsRowComponent.new(label: "Hide OOC by default", sub: "Collapse out-of-character posts") do %>
       <%= render Ui::ProfileOocToggleComponent.new(
         hide_ooc: @profile_presenter.hide_ooc?,
         toggle_url: toggle_hide_ooc_profile_path
       ) %>
     <% end %>
+    <%= render Ui::SettingsRowComponent.new(label: "AI features", sub: "Allow AI scene summaries in your games") do %>
+      <%= render Ui::ProfileAiConsentToggleComponent.new(
+        consented: @profile_presenter.ai_summaries_consent?,
+        toggle_url: toggle_ai_summaries_consent_profile_path
+      ) %>
+    <% end %>
+    <%= render Ui::SettingsRowComponent.new(label: "AI display", sub: "How AI-generated content appears to you", position: :last) do %>
+      <%= render Ui::ProfileAiDisplayPreferenceControlComponent.new(
+        preference: @profile_presenter.ai_display_preference,
+        update_url: update_ai_display_preference_profile_path
+      ) %>
+    <% end %>
   </div>
+
+  <%# BYOK OpenRouter key (AI Control Plane) %>
+  <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do %>AI<% end %>
+  <%= render Ui::ByokKeyFormComponent.new(
+        key_present: @user_presenter.byok_key.present?,
+        public_key_pem: @user_presenter.byok_key.public_key_pem,
+        generate_url: profile_byok_key_path,
+        seal_url: profile_byok_key_path) %>
 
   <%# RSS Feeds %>
   <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do %>RSS Feeds<% end %>

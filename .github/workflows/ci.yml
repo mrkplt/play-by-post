@@ -478,11 +478,20 @@ jobs:
   # caught before merge — not only after a master push. It never pushes an
   # image; publishing is the separate `publish` job below.
   #
+  # Matrixed over both final stages: `web-final` (never receives
+  # config/ai_private_keys.key — see the Dockerfile's app-export stage) and
+  # `worker-final` (the only image holding that key and the private-key
+  # database). Building both here catches a broken Dockerfile in either
+  # target before merge, not just the one that happened to be built before.
+  #
   # Builds a linux/arm64 production image (arm64 is required: the deploy target
   # is a Raspberry Pi 4 / aarch64; an amd64-only image will not run there).
   # Uses ubuntu-24.04-arm runners for native builds — no QEMU emulation.
   build:
     runs-on: ubuntu-24.04-arm
+    strategy:
+      matrix:
+        target: [web-final, worker-final]
 
     steps:
       - name: Checkout code
@@ -504,20 +513,32 @@ jobs:
         uses: docker/build-push-action@v7
         with:
           context: .
+          target: ${{ matrix.target }}
           platforms: linux/arm64
           push: false
           # Warm the shared cache from master pushes only, so PR builds don't
-          # thrash it; every build reads from it.
-          cache-from: type=gha
-          cache-to: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/master') && 'type=gha,mode=max' || '' }}
+          # thrash it; every build reads from it. Keyed per target so the two
+          # stages don't evict each other's cache.
+          cache-from: type=gha,scope=${{ matrix.target }}
+          cache-to: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/master') && format('type=gha,mode=max,scope={0}', matrix.target) || '' }}
 
   # Publish + deploy. Only after EVERY gate and the build have passed, and only
   # for master pushes / version tags — never for pull requests. Reuses the gha
   # cache warmed by `build`, so this rebuild is fast.
+  #
+  # Matrixed over both final stages, publishing two distinct image tags from
+  # one repository (ghcr.io/mrkplt/play-by-post): `web-*` tags built from
+  # `web-final`, `worker-*` tags built from `worker-final`. docker-compose.yml
+  # pins `web` to `web-latest` and `worker` to `worker-latest`. Only the
+  # `worker-*` image contains config/ai_private_keys.key — see the
+  # Dockerfile's app-export stage and docs/CONFIGURATION.md.
   publish:
     runs-on: ubuntu-24.04-arm
     needs: [scan_ruby, scan_js, lint, typecheck, outdated_gems, test, mutation, quality_gate, build]
     if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/v'))
+    strategy:
+      matrix:
+        target: [web-final, worker-final]
 
     permissions:
       contents: read
@@ -546,12 +567,20 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # `flavor: suffix=-web`/`-worker` (with onlatest so the bare `latest`
+      # tag also gets suffixed) turns every generated tag into its
+      # target-specific variant: web-latest / worker-latest,
+      # web-sha-<sha> / worker-sha-<sha>, etc. Both matrix legs push to the
+      # SAME image repository, distinguished only by tag — there is no
+      # separate GHCR package per image.
       - name: Extract metadata
         id: meta
         if: steps.docs.outputs.skip != 'true'
         uses: docker/metadata-action@v6
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          flavor: |
+            suffix=-${{ matrix.target == 'web-final' && 'web' || 'worker' }},onlatest=true
           tags: |
             type=sha,format=long
             type=ref,event=branch
@@ -563,28 +592,47 @@ jobs:
         uses: docker/build-push-action@v7
         with:
           context: .
+          target: ${{ matrix.target }}
           platforms: linux/arm64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=${{ matrix.target }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.target }}
 
       - name: Summary
         if: steps.docs.outputs.skip != 'true'
         run: |
-          echo "### Image pushed" >> "$GITHUB_STEP_SUMMARY"
+          echo "### Image pushed (${{ matrix.target }})" >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
           echo "${{ steps.meta.outputs.tags }}" >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
           echo "Platform: linux/arm64" >> "$GITHUB_STEP_SUMMARY"
 
+  # Trigger the Coolify deploy once both images (web + worker) have published,
+  # not per matrix leg — `publish` builds two images in parallel, and this
+  # step must fire exactly once after both are available, not twice.
+  deploy:
+    runs-on: ubuntu-24.04-arm
+    needs: publish
+    if: github.ref == 'refs/heads/master'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Detect docs-only change
+        id: docs
+        run: |
+          if bin/docs-only; then echo "skip=true" >> "$GITHUB_OUTPUT"; else echo "skip=false" >> "$GITHUB_OUTPUT"; fi
+
       # Coolify is not exposed to the internet, so we trigger the deploy through
       # the app's internet-facing relay endpoint, which forwards to Coolify over
-      # the internal network. Only on master pushes (not tags / manual runs), and
-      # never for a docs-only change (nothing new to deploy).
+      # the internal network. Never for a docs-only change (nothing new to deploy).
       - name: Trigger deploy
-        if: github.ref == 'refs/heads/master' && steps.docs.outputs.skip != 'true'
+        if: steps.docs.outputs.skip != 'true'
         run: |
           curl --fail --silent --show-error \
             --request POST "${{ secrets.DEPLOY_WEBHOOK_URL }}" \

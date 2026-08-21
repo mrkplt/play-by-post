@@ -186,4 +186,32 @@ RSpec.describe Game, type: :model do
       expect(game.viewable_by?(user)).to be false
     end
   end
+
+  describe "#ai_key_present?" do
+    it "is true when the game's openrouter_key EncryptedValue has a sealed value", db: true do
+      game = create(:game)
+      create(:encrypted_value, :sealed, owner: game, value_type: "openrouter_key")
+
+      expect(game.ai_key_present?).to be(true)
+    end
+
+    it "is false when no EncryptedValue exists for this game", db: true do
+      game = create(:game)
+      expect(game.ai_key_present?).to be(false)
+    end
+
+    it "is false when the EncryptedValue exists but has no sealed value yet (keypair generated, nothing pasted)", db: true do
+      game = create(:game)
+      create(:encrypted_value, owner: game, value_type: "openrouter_key", sealed_value: nil)
+
+      expect(game.ai_key_present?).to be(false)
+    end
+
+    it "is false when the game has a sealed EncryptedValue of a different value_type", db: true do
+      game = create(:game)
+      create(:encrypted_value, :sealed, owner: game, value_type: "something_else")
+
+      expect(game.ai_key_present?).to be(false)
+    end
+  end
 end
