@@ -52,6 +52,7 @@ matcher:
     - Draftable::Presentation
     - Versionable::Model
     - UploadedImage::Model
+    - AiGenerated::Model
     # Presenters
     - BannedMemberPresenter
     - CharacterPresenter

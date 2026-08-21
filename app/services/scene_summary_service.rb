@@ -7,10 +7,16 @@ class SceneSummaryService
   DEFAULT_MODEL = "openai/gpt-4o"
   MAX_POSTS = 500
 
-  Result = Struct.new(:body, :model_used, :input_tokens, :output_tokens, keyword_init: true) do
+  Result = Struct.new(:body, :model_used, :input_tokens, :output_tokens, :cost, keyword_init: true) do
     # Parses an OpenRouter chat-completion response into a Result. Owned by
     # Result (not SceneSummaryService) since every field it reads comes from
     # the response, not from the caller's own state.
+    #
+    # `cost` reads OpenRouter's usage-accounting `usage.cost` field, which
+    # OpenRouter includes in every chat-completion response with no opt-in
+    # parameter required (their "Usage Accounting" cookbook: the deprecated
+    # `usage: { include: true }` request flag is no longer needed). Left nil
+    # if a response ever omits it rather than inventing a figure.
     def self.from_response(response, model_used:)
       usage = response["usage"] || {}
 
@@ -18,7 +24,8 @@ class SceneSummaryService
         body: response.dig("choices", 0, "message", "content").to_s.strip,
         model_used: model_used,
         input_tokens: usage["prompt_tokens"],
-        output_tokens: usage["completion_tokens"]
+        output_tokens: usage["completion_tokens"],
+        cost: usage["cost"]
       )
     end
   end

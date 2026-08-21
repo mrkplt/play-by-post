@@ -61,7 +61,7 @@ RSpec.describe SceneSummaryService do
       let(:api_response) do
         {
           "choices" => [ { "message" => { "content" => "A great adventure unfolded." } } ],
-          "usage" => { "prompt_tokens" => 200, "completion_tokens" => 50 }
+          "usage" => { "prompt_tokens" => 200, "completion_tokens" => 50, "cost" => 0.0042 }
         }
       end
 
@@ -91,12 +91,13 @@ RSpec.describe SceneSummaryService do
         described_class.new(scene, key_resolver: key_resolver).call
       end
 
-      it "returns a Result with body and token counts" do
+      it "returns a Result with body, token counts, and cost" do
         result = described_class.new(scene, key_resolver: key_resolver).call
         expect(result.body).to eq("A great adventure unfolded.")
         expect(result.model_used).to eq("openai/gpt-4o")
         expect(result.input_tokens).to eq(200)
         expect(result.output_tokens).to eq(50)
+        expect(result.cost).to eq(0.0042)
       end
 
       it "includes the scene title in the prompt" do
@@ -160,6 +161,7 @@ RSpec.describe SceneSummaryService do
         result = described_class.new(scene, key_resolver: key_resolver).call
         expect(result.input_tokens).to be_nil
         expect(result.output_tokens).to be_nil
+        expect(result.cost).to be_nil
       end
 
       it "returns empty string when API returns nil content" do

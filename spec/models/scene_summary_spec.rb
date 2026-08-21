@@ -12,6 +12,11 @@ RSpec.describe SceneSummary, type: :model do
       summary = build(:scene_summary, edited_by: nil)
       expect(summary).to be_valid
     end
+
+    it "belongs to generated_by (optional)" do
+      summary = build(:scene_summary, generated_by: nil)
+      expect(summary).to be_valid
+    end
   end
 
   describe "validations" do
@@ -82,59 +87,7 @@ RSpec.describe SceneSummary, type: :model do
     end
   end
 
-  describe "#ai_generated?" do
-    it "returns true when generated_at is present" do
-      expect(build(:scene_summary, :ai_generated).ai_generated?).to be true
-    end
-
-    it "returns false when generated_at is nil" do
-      expect(build(:scene_summary).ai_generated?).to be false
-    end
-  end
-
-  describe "#edited?" do
-    it "returns true when edited_at is present" do
-      expect(build(:scene_summary, :edited).edited?).to be true
-    end
-
-    it "returns false when edited_at is nil" do
-      expect(build(:scene_summary).edited?).to be false
-    end
-  end
-
-  describe "#apply_manual_edit" do
-    it "updates the body, editor, and edited_at", :db do
-      editor = create(:user)
-      summary = create(:scene_summary, body: "Old body")
-
-      Timecop.freeze do
-        summary.apply_manual_edit(body: "New body", editor: editor)
-        expect(summary.body).to eq("New body")
-        expect(summary.edited_by).to eq(editor)
-        expect(summary.edited_at).to be_within(1.second).of(Time.current)
-      end
-    end
-
-    it "clears AI generation metadata so a manually-edited summary is no longer AI-generated", :db do
-      summary = create(:scene_summary, :ai_generated, input_tokens: 10, output_tokens: 20)
-      editor = create(:user)
-
-      summary.apply_manual_edit(body: "Hand-written", editor: editor)
-
-      expect(summary.ai_generated?).to be(false)
-      expect(summary.model_used).to be_nil
-      expect(summary.input_tokens).to be_nil
-      expect(summary.output_tokens).to be_nil
-    end
-
-    it "returns false and does not clear AI metadata when the body is blank", :db do
-      summary = create(:scene_summary, :ai_generated)
-      editor = create(:user)
-
-      result = summary.apply_manual_edit(body: "", editor: editor)
-
-      expect(result).to be(false)
-      expect(summary.reload.ai_generated?).to be(true)
-    end
-  end
+  # ai_generated?/edited?/apply_manual_edit are AiGenerated::Model's shared
+  # behaviour, covered by spec/models/ai_generated/model_spec.rb. SceneSummary
+  # includes it (see app/models/scene_summary.rb) but does not re-test it here.
 end

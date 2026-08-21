@@ -419,6 +419,9 @@ class SceneSummary
     sig { params(args: T.untyped, blk: T.untyped).returns(::User) }
     def build_edited_by(*args, &blk); end
 
+    sig { params(args: T.untyped, blk: T.untyped).returns(::User) }
+    def build_generated_by(*args, &blk); end
+
     sig { params(args: T.untyped, blk: T.untyped).returns(::Scene) }
     def build_scene(*args, &blk); end
 
@@ -427,6 +430,12 @@ class SceneSummary
 
     sig { params(args: T.untyped, blk: T.untyped).returns(::User) }
     def create_edited_by!(*args, &blk); end
+
+    sig { params(args: T.untyped, blk: T.untyped).returns(::User) }
+    def create_generated_by(*args, &blk); end
+
+    sig { params(args: T.untyped, blk: T.untyped).returns(::User) }
+    def create_generated_by!(*args, &blk); end
 
     sig { params(args: T.untyped, blk: T.untyped).returns(::Scene) }
     def create_scene(*args, &blk); end
@@ -447,13 +456,31 @@ class SceneSummary
     def edited_by_previously_changed?; end
 
     sig { returns(T.nilable(::User)) }
+    def generated_by; end
+
+    sig { params(value: T.nilable(::User)).void }
+    def generated_by=(value); end
+
+    sig { returns(T::Boolean) }
+    def generated_by_changed?; end
+
+    sig { returns(T::Boolean) }
+    def generated_by_previously_changed?; end
+
+    sig { returns(T.nilable(::User)) }
     def reload_edited_by; end
+
+    sig { returns(T.nilable(::User)) }
+    def reload_generated_by; end
 
     sig { returns(T.nilable(::Scene)) }
     def reload_scene; end
 
     sig { void }
     def reset_edited_by; end
+
+    sig { void }
+    def reset_generated_by; end
 
     sig { void }
     def reset_scene; end
@@ -671,6 +698,51 @@ class SceneSummary
 
     sig { void }
     def body_will_change!; end
+
+    sig { returns(T.nilable(::BigDecimal)) }
+    def cost; end
+
+    sig { params(value: T.nilable(::BigDecimal)).returns(T.nilable(::BigDecimal)) }
+    def cost=(value); end
+
+    sig { returns(T::Boolean) }
+    def cost?; end
+
+    sig { returns(T.nilable(::BigDecimal)) }
+    def cost_before_last_save; end
+
+    sig { returns(T.untyped) }
+    def cost_before_type_cast; end
+
+    sig { returns(T::Boolean) }
+    def cost_came_from_user?; end
+
+    sig { returns(T.nilable([T.nilable(::BigDecimal), T.nilable(::BigDecimal)])) }
+    def cost_change; end
+
+    sig { returns(T.nilable([T.nilable(::BigDecimal), T.nilable(::BigDecimal)])) }
+    def cost_change_to_be_saved; end
+
+    sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
+    def cost_changed?(from: T.unsafe(nil), to: T.unsafe(nil)); end
+
+    sig { returns(T.nilable(::BigDecimal)) }
+    def cost_in_database; end
+
+    sig { returns(T.nilable([T.nilable(::BigDecimal), T.nilable(::BigDecimal)])) }
+    def cost_previous_change; end
+
+    sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
+    def cost_previously_changed?(from: T.unsafe(nil), to: T.unsafe(nil)); end
+
+    sig { returns(T.nilable(::BigDecimal)) }
+    def cost_previously_was; end
+
+    sig { returns(T.nilable(::BigDecimal)) }
+    def cost_was; end
+
+    sig { void }
+    def cost_will_change!; end
 
     sig { returns(::ActiveSupport::TimeWithZone) }
     def created_at; end
@@ -896,6 +968,51 @@ class SceneSummary
 
     sig { void }
     def generated_at_will_change!; end
+
+    sig { returns(T.nilable(::Integer)) }
+    def generated_by_id; end
+
+    sig { params(value: T.nilable(::Integer)).returns(T.nilable(::Integer)) }
+    def generated_by_id=(value); end
+
+    sig { returns(T::Boolean) }
+    def generated_by_id?; end
+
+    sig { returns(T.nilable(::Integer)) }
+    def generated_by_id_before_last_save; end
+
+    sig { returns(T.untyped) }
+    def generated_by_id_before_type_cast; end
+
+    sig { returns(T::Boolean) }
+    def generated_by_id_came_from_user?; end
+
+    sig { returns(T.nilable([T.nilable(::Integer), T.nilable(::Integer)])) }
+    def generated_by_id_change; end
+
+    sig { returns(T.nilable([T.nilable(::Integer), T.nilable(::Integer)])) }
+    def generated_by_id_change_to_be_saved; end
+
+    sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
+    def generated_by_id_changed?(from: T.unsafe(nil), to: T.unsafe(nil)); end
+
+    sig { returns(T.nilable(::Integer)) }
+    def generated_by_id_in_database; end
+
+    sig { returns(T.nilable([T.nilable(::Integer), T.nilable(::Integer)])) }
+    def generated_by_id_previous_change; end
+
+    sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
+    def generated_by_id_previously_changed?(from: T.unsafe(nil), to: T.unsafe(nil)); end
+
+    sig { returns(T.nilable(::Integer)) }
+    def generated_by_id_previously_was; end
+
+    sig { returns(T.nilable(::Integer)) }
+    def generated_by_id_was; end
+
+    sig { void }
+    def generated_by_id_will_change!; end
 
     sig { returns(::Integer) }
     def id; end
@@ -1126,6 +1243,9 @@ class SceneSummary
     def restore_body!; end
 
     sig { void }
+    def restore_cost!; end
+
+    sig { void }
     def restore_created_at!; end
 
     sig { void }
@@ -1139,6 +1259,9 @@ class SceneSummary
 
     sig { void }
     def restore_generated_at!; end
+
+    sig { void }
+    def restore_generated_by_id!; end
 
     sig { void }
     def restore_id!; end
@@ -1166,6 +1289,12 @@ class SceneSummary
 
     sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
     def saved_change_to_body?(from: T.unsafe(nil), to: T.unsafe(nil)); end
+
+    sig { returns(T.nilable([T.nilable(::BigDecimal), T.nilable(::BigDecimal)])) }
+    def saved_change_to_cost; end
+
+    sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
+    def saved_change_to_cost?(from: T.unsafe(nil), to: T.unsafe(nil)); end
 
     sig { returns(T.nilable([::ActiveSupport::TimeWithZone, ::ActiveSupport::TimeWithZone])) }
     def saved_change_to_created_at; end
@@ -1196,6 +1325,12 @@ class SceneSummary
 
     sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
     def saved_change_to_generated_at?(from: T.unsafe(nil), to: T.unsafe(nil)); end
+
+    sig { returns(T.nilable([T.nilable(::Integer), T.nilable(::Integer)])) }
+    def saved_change_to_generated_by_id; end
+
+    sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
+    def saved_change_to_generated_by_id?(from: T.unsafe(nil), to: T.unsafe(nil)); end
 
     sig { returns(T.nilable([::Integer, ::Integer])) }
     def saved_change_to_id; end
@@ -1333,6 +1468,9 @@ class SceneSummary
     def will_save_change_to_body?(from: T.unsafe(nil), to: T.unsafe(nil)); end
 
     sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
+    def will_save_change_to_cost?(from: T.unsafe(nil), to: T.unsafe(nil)); end
+
+    sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
     def will_save_change_to_created_at?(from: T.unsafe(nil), to: T.unsafe(nil)); end
 
     sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
@@ -1346,6 +1484,9 @@ class SceneSummary
 
     sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
     def will_save_change_to_generated_at?(from: T.unsafe(nil), to: T.unsafe(nil)); end
+
+    sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
+    def will_save_change_to_generated_by_id?(from: T.unsafe(nil), to: T.unsafe(nil)); end
 
     sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
     def will_save_change_to_id?(from: T.unsafe(nil), to: T.unsafe(nil)); end
