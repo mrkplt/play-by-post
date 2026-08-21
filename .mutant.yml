@@ -60,6 +60,7 @@ matcher:
     - ImageLibraryPresenter
     - CharacterPortraitLibraryPresenter
     - UserAvatarLibraryPresenter
+    - UserByokKeyPresenter
     - GameDashboardItemPresenter
     - GameDashboardPresenter
     - DrawerMembershipPresenter
@@ -216,6 +217,7 @@ matcher:
     - Ui::SettingsRowComponent
     - Ui::ProfileOocToggleComponent
     - Ui::ProfileAiConsentToggleComponent
+    - Ui::ByokKeyFormComponent
     - Ui::PillTabsComponent
     - Ui::ToastComponent
     - Ui::IconComponent
@@ -288,6 +290,7 @@ matcher:
     - Api::NotebookEntriesController
     - Api::PagesController
     - Profiles::ApiTokensController
+    - Profiles::AiKeypairsController
     - GameExportsController
     - ScenesController
     - CharactersController
@@ -336,6 +339,7 @@ matcher:
     - GamePurgeSweepJob
     - GamePurgeJob
     - FeedbackSweepJob
+    - AiKeypairGenerationJob
     # Mailers
     - NotificationMailer
     - NotificationMailer::Delivery

@@ -20,8 +20,22 @@ module AiKeypairs
         iv: T.cast(parsed.fetch("iv"), String),
         ciphertext: T.cast(parsed.fetch("ciphertext"), String)
       )
-    rescue JSON::ParserError, KeyError => e
-      raise DecryptionError, "malformed BYOK key blob: #{e.message}"
+    rescue JSON::ParserError, KeyError => error
+      raise DecryptionError, "malformed BYOK key blob: #{error.message}"
+    end
+
+    # Builds a Blob from an ActionController::Parameters already permitted to
+    # exactly these three keys (Profiles::AiKeypairsController's seal/replace
+    # endpoint) — the strong-parameters counterpart to .from_json's raw-JSON
+    # constructor. Raises KeyError (same as .from_json) on a missing field, so
+    # callers handle both the same way.
+    sig { params(permitted_params: ActionController::Parameters).returns(Blob) }
+    def self.from_params(permitted_params)
+      new(
+        wrapped_key: T.cast(permitted_params.fetch(:wrapped_key), String),
+        iv: T.cast(permitted_params.fetch(:iv), String),
+        ciphertext: T.cast(permitted_params.fetch(:ciphertext), String)
+      )
     end
   end
 end

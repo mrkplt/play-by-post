@@ -28,4 +28,12 @@ class Ui::ProfileAiConsentToggleComponent < ApplicationComponent
   def aria_label
     consented? ? "Disable AI features for your games" : "Enable AI features for your games"
   end
+
+  # The switch's on/off state as Ui::ToggleSwitchComponent expects it —
+  # extracted so the ERB template has no ternary in its output tag
+  # (bin/quality-metrics' ERB-logic check).
+  sig { returns(Symbol) }
+  def toggle_switch_state
+    consented? ? :on : :off
+  end
 end

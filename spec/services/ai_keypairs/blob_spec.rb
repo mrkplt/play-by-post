@@ -26,4 +26,22 @@ RSpec.describe AiKeypairs::Blob do
       )
     end
   end
+
+  describe ".from_params" do
+    it "builds a Blob from already-permitted ActionController::Parameters" do
+      permitted = ActionController::Parameters.new(wrapped_key: "a", iv: "b", ciphertext: "c").permit!
+
+      blob = described_class.from_params(permitted)
+
+      expect(blob.wrapped_key).to eq("a")
+      expect(blob.iv).to eq("b")
+      expect(blob.ciphertext).to eq("c")
+    end
+
+    it "raises KeyError when a required field is missing" do
+      permitted = ActionController::Parameters.new(wrapped_key: "a", iv: "b").permit!
+
+      expect { described_class.from_params(permitted) }.to raise_error(KeyError)
+    end
+  end
 end

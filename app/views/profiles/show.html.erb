@@ -41,6 +41,14 @@
     <% end %>
   </div>
 
+  <%# BYOK OpenRouter key (AI Control Plane) %>
+  <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do %>AI<% end %>
+  <%= render Ui::ByokKeyFormComponent.new(
+        key_present: @user_presenter.byok_key.present?,
+        public_key_pem: @user_presenter.byok_key.public_key_pem,
+        generate_url: profile_ai_keypair_path,
+        seal_url: profile_ai_keypair_path) %>
+
   <%# RSS Feeds %>
   <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do %>RSS Feeds<% end %>
   <%= render Shared::TokenSectionComponent.new(

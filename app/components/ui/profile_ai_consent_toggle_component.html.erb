@@ -1,5 +1,5 @@
 <%= button_to toggle_url, method: :post,
       class: "bg-transparent border-0 p-0 cursor-pointer",
       aria: { label: aria_label } do %>
-  <%= render Ui::ToggleSwitchComponent.new(state: consented? ? :on : :off) %>
+  <%= render Ui::ToggleSwitchComponent.new(state: toggle_switch_state) %>
 <% end %>
