@@ -39,16 +39,21 @@ module AiKeypairs
     # typed public methods above, which pin the caller-facing contract.
     sig { params(owner: T.untyped).returns(String) }
     def decrypt_for(owner)
-      keypair = AiKeypair.find_by(owner: owner)
-      raise UnresolvableKey, "no AiKeypair for #{owner.class}##{owner.id}" if keypair.nil?
-
-      blob = keypair.sealed_blob
-      raise UnresolvableKey, "no sealed key for #{owner.class}##{owner.id}" if blob.nil?
-
-      private_key = keypair.private_key
-      raise UnresolvableKey, "no private key for #{owner.class}##{owner.id}" if private_key.nil?
+      label = "#{owner.class}##{owner.id}"
+      keypair = present_or_raise(AiKeypair.find_by(owner: owner), "no AiKeypair for #{label}")
+      blob = present_or_raise(keypair.sealed_blob, "no sealed key for #{label}")
+      private_key = present_or_raise(keypair.private_key, "no private key for #{label}")
 
       CryptoService.new(private_key.encrypted_private_key).decrypt(blob)
+    end
+
+    # Returns value if present, else raises UnresolvableKey with message — keeps
+    # decrypt_for a short sequence of resolve-or-fail steps.
+    sig { params(value: T.untyped, message: String).returns(T.untyped) }
+    def present_or_raise(value, message)
+      raise UnresolvableKey, message if value.nil?
+
+      value
     end
   end
 end
