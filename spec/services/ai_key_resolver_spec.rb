@@ -16,10 +16,18 @@ RSpec.describe AiKeyResolver do
   let(:key_source) { FakeKeySource.new }
   let(:resolver) { described_class.new(key_source: key_source) }
 
+  # ai_key_present? is now derived from EncryptedValue's existence rather than
+  # a plain attribute (see User#ai_key_present?/Game#ai_key_present?), so
+  # AiKeyResolver's decision is exercised here by stubbing the predicate
+  # directly instead of a factory attribute.
+  def stub_key_present(record, present)
+    allow(record).to receive(:ai_key_present?).and_return(present)
+  end
+
   describe "#resolve" do
     it "uses the player's key when the player has one" do
-      user = build_stubbed(:user, ai_key_reference: "user-handle")
-      game = build_stubbed(:game, ai_key_reference: "game-handle")
+      user = build_stubbed(:user).tap { |u| stub_key_present(u, true) }
+      game = build_stubbed(:game).tap { |g| stub_key_present(g, true) }
       allow(key_source).to receive(:for_game).and_call_original
 
       expect(resolver.resolve(user: user, game: game)).to eq("player-key")
@@ -27,15 +35,15 @@ RSpec.describe AiKeyResolver do
     end
 
     it "falls back to the game's key when the player has none" do
-      user = build_stubbed(:user, ai_key_reference: nil)
-      game = build_stubbed(:game, ai_key_reference: "game-handle")
+      user = build_stubbed(:user).tap { |u| stub_key_present(u, false) }
+      game = build_stubbed(:game).tap { |g| stub_key_present(g, true) }
 
       expect(resolver.resolve(user: user, game: game)).to eq("game-key")
     end
 
     it "asks the key source for the player's key, not the game's, when the player has one" do
-      user = build_stubbed(:user, ai_key_reference: "user-handle")
-      game = build_stubbed(:game, ai_key_reference: "game-handle")
+      user = build_stubbed(:user).tap { |u| stub_key_present(u, true) }
+      game = build_stubbed(:game).tap { |g| stub_key_present(g, true) }
       allow(key_source).to receive(:for_user).and_call_original
 
       resolver.resolve(user: user, game: game)
@@ -44,8 +52,8 @@ RSpec.describe AiKeyResolver do
     end
 
     it "asks the key source for the game's key when falling back" do
-      user = build_stubbed(:user, ai_key_reference: nil)
-      game = build_stubbed(:game, ai_key_reference: "game-handle")
+      user = build_stubbed(:user).tap { |u| stub_key_present(u, false) }
+      game = build_stubbed(:game).tap { |g| stub_key_present(g, true) }
       allow(key_source).to receive(:for_game).and_call_original
 
       resolver.resolve(user: user, game: game)
@@ -54,16 +62,16 @@ RSpec.describe AiKeyResolver do
     end
 
     it "raises NoKeyAvailable when neither the player nor the game has a key" do
-      user = build_stubbed(:user, ai_key_reference: nil)
-      game = build_stubbed(:game, ai_key_reference: nil)
+      user = build_stubbed(:user).tap { |u| stub_key_present(u, false) }
+      game = build_stubbed(:game).tap { |g| stub_key_present(g, false) }
 
       expect { resolver.resolve(user: user, game: game) }
         .to raise_error(AiKeyResolver::NoKeyAvailable)
     end
 
     it "does not call the key source at all on refusal" do
-      user = build_stubbed(:user, ai_key_reference: nil)
-      game = build_stubbed(:game, ai_key_reference: nil)
+      user = build_stubbed(:user).tap { |u| stub_key_present(u, false) }
+      game = build_stubbed(:game).tap { |g| stub_key_present(g, false) }
       allow(key_source).to receive(:for_user).and_call_original
       allow(key_source).to receive(:for_game).and_call_original
 

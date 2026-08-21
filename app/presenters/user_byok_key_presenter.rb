@@ -10,6 +10,8 @@
 class UserByokKeyPresenter < BasePresenter
   extend T::Sig
 
+  VALUE_TYPE = Crypto::StoredKeySource::OPENROUTER_KEY_VALUE_TYPE
+
   sig { params(model: User, options: T.untyped).void }
   def initialize(model, **options)
     super
@@ -23,18 +25,20 @@ class UserByokKeyPresenter < BasePresenter
     @model.ai_key_present?
   end
 
-  # The PEM public half of this user's BYOK keypair, once
-  # AiKeypairGenerationJob has created it — nil until then (the "Set up
+  # The PEM public half of this user's BYOK EncryptedValue's keypair, once
+  # KeypairGenerationJob has created it — nil until then (the "Set up
   # encryption" step hasn't run, or its job hasn't completed yet).
   sig { returns(T.nilable(String)) }
   def public_key_pem
-    keypair&.public_key
+    encrypted_value&.public_key&.public_key
   end
 
   private
 
-  sig { returns(T.nilable(AiKeypair)) }
-  def keypair
-    @keypair ||= T.let(AiKeypair.find_by(owner: @model), T.nilable(AiKeypair))
+  sig { returns(T.nilable(EncryptedValue)) }
+  def encrypted_value
+    @encrypted_value ||= T.let(
+      EncryptedValue.find_by(owner: @model, value_type: VALUE_TYPE), T.nilable(EncryptedValue)
+    )
   end
 end

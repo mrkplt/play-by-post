@@ -7,8 +7,8 @@
 # passes plain values):
 #
 #   1. No keypair yet: a "Set up encryption" button that POSTs to
-#      `generate_url` (Profiles::AiKeypairsController#create), which enqueues
-#      AiKeypairGenerationJob and redirects back here once it exists.
+#      `generate_url` (Profiles::ByokKeysController#create), which enqueues
+#      KeypairGenerationJob and redirects back here once it exists.
 #   2. Keypair exists, `public_key_pem` present: the paste-a-key form, wired
 #      to the `byok-key-seal` Stimulus controller, which encrypts the pasted
 #      key client-side (WebCrypto) to `public_key_pem` and submits only the

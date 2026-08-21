@@ -9,7 +9,7 @@ RSpec.describe Ui::ByokKeyFormComponent, type: :component do
   describe "no keypair yet" do
     it "shows the set-up-encryption action, not the paste form" do
       view = rendered(key_present: false, public_key_pem: nil,
-        generate_url: "/profile/ai_keypair", seal_url: "/profile/ai_keypair")
+        generate_url: "/profile/byok_key", seal_url: "/profile/byok_key")
 
       expect(view).to have_button("Set up encryption")
       expect(view).not_to have_css("[data-controller='byok-key-seal']")
@@ -17,14 +17,14 @@ RSpec.describe Ui::ByokKeyFormComponent, type: :component do
 
     it "#keypair_ready? is false" do
       component = described_class.new(key_present: false, public_key_pem: nil,
-        generate_url: "/profile/ai_keypair", seal_url: "/profile/ai_keypair")
+        generate_url: "/profile/byok_key", seal_url: "/profile/byok_key")
 
       expect(component.keypair_ready?).to be(false)
     end
 
     it "#public_key_pem raises rather than silently returning nil — callers must check #keypair_ready? first" do
       component = described_class.new(key_present: false, public_key_pem: nil,
-        generate_url: "/profile/ai_keypair", seal_url: "/profile/ai_keypair")
+        generate_url: "/profile/byok_key", seal_url: "/profile/byok_key")
 
       expect { component.public_key_pem }.to raise_error(TypeError)
     end
@@ -35,24 +35,24 @@ RSpec.describe Ui::ByokKeyFormComponent, type: :component do
 
     it "renders the paste-and-seal form wired to the byok-key-seal controller" do
       view = rendered(key_present: false, public_key_pem: pem,
-        generate_url: "/profile/ai_keypair", seal_url: "/profile/ai_keypair")
+        generate_url: "/profile/byok_key", seal_url: "/profile/byok_key")
 
       expect(view).not_to have_button("Set up encryption")
       expect(view).to have_css("[data-controller='byok-key-seal']")
-      expect(view).to have_css("form[action='/profile/ai_keypair'][method='post']")
+      expect(view).to have_css("form[action='/profile/byok_key'][method='post']")
       expect(view).to have_button("Save key")
     end
 
     it "carries the public key PEM as the Stimulus value, not as a submitted field" do
       view = rendered(key_present: false, public_key_pem: pem,
-        generate_url: "/profile/ai_keypair", seal_url: "/profile/ai_keypair")
+        generate_url: "/profile/byok_key", seal_url: "/profile/byok_key")
 
       expect(view).to have_css("[data-byok-key-seal-public-key-value='#{pem}']")
     end
 
     it "never gives the plaintext input a name attribute" do
       view = rendered(key_present: false, public_key_pem: pem,
-        generate_url: "/profile/ai_keypair", seal_url: "/profile/ai_keypair")
+        generate_url: "/profile/byok_key", seal_url: "/profile/byok_key")
 
       plaintext_input = view.find("[data-byok-key-seal-target='plaintext']")
       expect(plaintext_input[:name]).to be_nil
@@ -60,16 +60,16 @@ RSpec.describe Ui::ByokKeyFormComponent, type: :component do
 
     it "includes hidden envelope fields for the Stimulus controller to populate" do
       view = rendered(key_present: false, public_key_pem: pem,
-        generate_url: "/profile/ai_keypair", seal_url: "/profile/ai_keypair")
+        generate_url: "/profile/byok_key", seal_url: "/profile/byok_key")
 
-      expect(view).to have_css("input[type='hidden'][name='ai_keypair[wrapped_key]']", visible: false)
-      expect(view).to have_css("input[type='hidden'][name='ai_keypair[iv]']", visible: false)
-      expect(view).to have_css("input[type='hidden'][name='ai_keypair[ciphertext]']", visible: false)
+      expect(view).to have_css("input[type='hidden'][name='byok_key[wrapped_key]']", visible: false)
+      expect(view).to have_css("input[type='hidden'][name='byok_key[iv]']", visible: false)
+      expect(view).to have_css("input[type='hidden'][name='byok_key[ciphertext]']", visible: false)
     end
 
     it "#keypair_ready? is true and #public_key_pem returns the PEM" do
       component = described_class.new(key_present: false, public_key_pem: pem,
-        generate_url: "/profile/ai_keypair", seal_url: "/profile/ai_keypair")
+        generate_url: "/profile/byok_key", seal_url: "/profile/byok_key")
 
       expect(component.keypair_ready?).to be(true)
       expect(component.public_key_pem).to eq(pem)
@@ -77,7 +77,7 @@ RSpec.describe Ui::ByokKeyFormComponent, type: :component do
 
     it "#heading, #submit_label and #status_text carry the not-yet-configured copy" do
       component = described_class.new(key_present: false, public_key_pem: pem,
-        generate_url: "/profile/ai_keypair", seal_url: "/profile/ai_keypair")
+        generate_url: "/profile/byok_key", seal_url: "/profile/byok_key")
 
       expect(component.heading).to eq("Bring your own OpenRouter key")
       expect(component.submit_label).to eq("Save key")
@@ -90,7 +90,7 @@ RSpec.describe Ui::ByokKeyFormComponent, type: :component do
 
     it "uses replace copy instead of save copy" do
       view = rendered(key_present: true, public_key_pem: pem,
-        generate_url: "/profile/ai_keypair", seal_url: "/profile/ai_keypair")
+        generate_url: "/profile/byok_key", seal_url: "/profile/byok_key")
 
       expect(view).to have_button("Replace key")
       expect(view).to have_text(/key is configured/i)
@@ -98,7 +98,7 @@ RSpec.describe Ui::ByokKeyFormComponent, type: :component do
 
     it "#heading, #submit_label and #status_text carry the already-configured copy" do
       component = described_class.new(key_present: true, public_key_pem: pem,
-        generate_url: "/profile/ai_keypair", seal_url: "/profile/ai_keypair")
+        generate_url: "/profile/byok_key", seal_url: "/profile/byok_key")
 
       expect(component.heading).to eq("OpenRouter key")
       expect(component.submit_label).to eq("Replace key")

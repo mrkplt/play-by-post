@@ -8,7 +8,7 @@
   <% end %>
 
   <% if keypair_ready? %>
-    <%= form_with url: seal_url, method: :patch, scope: :ai_keypair,
+    <%= form_with url: seal_url, method: :patch, scope: :byok_key,
           data: {
             controller: "byok-key-seal",
             "byok-key-seal-public-key-value": public_key_pem,

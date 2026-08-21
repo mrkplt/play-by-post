@@ -1,9 +1,9 @@
 # typed: false
 
 # Seals a plaintext to a public key exactly as a browser using WebCrypto
-# SubtleCrypto is documented to (see AiKeypairs::CryptoService's class comment):
+# SubtleCrypto is documented to (see Crypto::CryptoService's class comment):
 # random AES-256-GCM key + 12-byte IV, ciphertext with the GCM tag appended,
-# the AES key wrapped with RSA-OAEP-256. Returns the AiKeypairs::Blob JSON.
+# the AES key wrapped with RSA-OAEP-256. Returns the Crypto::Blob JSON.
 #
 # Shared by every spec that needs to produce a decryptable envelope
 # (CryptoService, StoredKeySource) so the browser-side format lives in one place.

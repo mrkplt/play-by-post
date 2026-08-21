@@ -20,12 +20,12 @@ RSpec.describe UserByokKeyPresenter do
   describe "#public_key_pem", :db do
     let(:user) { create(:user) }
 
-    it "returns the public key PEM when a keypair exists" do
-      keypair = create(:ai_keypair, owner: user)
-      expect(described_class.new(user).public_key_pem).to eq(keypair.public_key)
+    it "returns the public key PEM when an EncryptedValue and keypair exist" do
+      encrypted_value = create(:encrypted_value, owner: user, value_type: "openrouter_key")
+      expect(described_class.new(user).public_key_pem).to eq(encrypted_value.public_key.public_key)
     end
 
-    it "returns nil when no keypair has been generated yet" do
+    it "returns nil when no EncryptedValue has been generated yet" do
       expect(described_class.new(user).public_key_pem).to be_nil
     end
   end

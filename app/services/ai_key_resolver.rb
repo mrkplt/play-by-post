@@ -9,9 +9,10 @@
 # This class owns only the *decision* of whose key wins. It does not know how
 # a key is stored, encrypted, or decrypted — that is the injected KeySource's
 # job, built and owned separately (see KeySource below). AiKeyResolver reads
-# only the presence seam on User/Game (#ai_key_present?, backed by the opaque
-# `ai_key_reference` handle column) to decide *whose* key to ask for, then
-# asks the KeySource to actually resolve that handle to a usable key.
+# only the presence seam on User/Game (#ai_key_present?, backed by the
+# existence of an "openrouter_key" EncryptedValue) to decide *whose* key to
+# ask for, then asks the KeySource to actually resolve that owner to a usable
+# key.
 class AiKeyResolver
   extend T::Sig
 
@@ -25,11 +26,11 @@ class AiKeyResolver
   # (built separately — see AiKeyResolver's class comment):
   #
   #   for_user(user) -> String  — the decrypted OpenRouter key for this user's
-  #                                ai_key_reference. Only called when
-  #                                user.ai_key_present? is true.
+  #                                "openrouter_key" EncryptedValue. Only
+  #                                called when user.ai_key_present? is true.
   #   for_game(game) -> String  — the decrypted OpenRouter key for this game's
-  #                                ai_key_reference. Only called when
-  #                                game.ai_key_present? is true.
+  #                                "openrouter_key" EncryptedValue. Only
+  #                                called when game.ai_key_present? is true.
   #
   # Both methods are expected to return a non-empty key string when the
   # corresponding *_present? predicate was true; AiKeyResolver does not
@@ -43,7 +44,7 @@ class AiKeyResolver
 
     # Params are underscored (in both sig and def, as Sorbet requires them to
     # match): these are abstract interface methods with no body, so the type is
-    # the contract — implementations (AiKeypairs::StoredKeySource) name and use
+    # the contract — implementations (Crypto::StoredKeySource) name and use
     # the arguments.
     sig { abstract.params(_user: User).returns(String) }
     def for_user(_user); end

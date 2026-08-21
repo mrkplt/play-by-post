@@ -69,7 +69,7 @@ RSpec.describe SceneSummaryService do
         # game.game_master re-queries the DB, returning a distinct User
         # instance from `gm`, so the key must be present in the database
         # rather than stubbed on the `gm` object.
-        gm.update!(ai_key_reference: "user-handle")
+        create(:encrypted_value, :sealed, owner: gm, value_type: "openrouter_key")
         allow(key_source).to receive(:for_user).and_return("byok-key")
         allow(ENV).to receive(:fetch).with("OPENROUTER_MODEL", SceneSummaryService::DEFAULT_MODEL).and_return("openai/gpt-4o")
         allow(OpenAI::Client).to receive(:new).and_return(client_double)
@@ -176,7 +176,7 @@ RSpec.describe SceneSummaryService do
   end
 
   describe "#initialize" do
-    it "defaults the key resolver to AiKeyResolver backed by AiKeypairs::StoredKeySource" do
+    it "defaults the key resolver to AiKeyResolver backed by Crypto::StoredKeySource" do
       service = described_class.new(scene)
       resolver = service.instance_variable_get(:@key_resolver)
 

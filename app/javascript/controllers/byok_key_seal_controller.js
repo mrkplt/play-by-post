@@ -4,7 +4,7 @@ import { Controller } from "@hotwired/stimulus"
 // with WebCrypto SubtleCrypto, to the keypair's RSA public key, and submits
 // only the resulting sealed envelope — the plaintext key never has a `name`
 // attribute and is never sent to the server. See
-// AiKeypairs::CryptoService's class comment (app/services/ai_keypairs/crypto_service.rb)
+// Crypto::CryptoService's class comment (app/services/crypto/crypto_service.rb)
 // for the exact envelope format this must produce; the server-side decrypt
 // counterpart is that class.
 //

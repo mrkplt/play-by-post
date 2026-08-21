@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_20_230100) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_21_000300) do
   create_table "action_mailbox_inbound_emails", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "message_checksum", null: false
@@ -121,6 +121,19 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_20_230100) do
     t.datetime "updated_at", null: false
     t.index ["game_id", "content_type"], name: "index_content_templates_on_game_id_and_content_type", unique: true
     t.index ["game_id"], name: "index_content_templates_on_game_id"
+  end
+
+  create_table "encrypted_values", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.integer "owner_id", null: false
+    t.string "owner_type", null: false
+    t.integer "public_key_id", null: false
+    t.text "sealed_value"
+    t.datetime "updated_at", null: false
+    t.string "value_type", null: false
+    t.index ["owner_type", "owner_id", "value_type"], name: "index_encrypted_values_on_owner_and_type", unique: true
+    t.index ["owner_type", "owner_id"], name: "index_encrypted_values_on_owner"
+    t.index ["public_key_id"], name: "index_encrypted_values_on_public_key_id", unique: true
   end
 
   create_table "feedback", force: :cascade do |t|
@@ -288,6 +301,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_20_230100) do
     t.index ["user_id"], name: "index_posts_on_user_id"
   end
 
+  create_table "public_keys", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "fingerprint", null: false
+    t.text "public_key", null: false
+    t.datetime "updated_at", null: false
+    t.index ["fingerprint"], name: "index_public_keys_on_fingerprint", unique: true
+  end
+
   create_table "scene_participants", force: :cascade do |t|
     t.integer "character_id"
     t.datetime "created_at", null: false
@@ -388,6 +409,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_20_230100) do
   add_foreign_key "characters", "games"
   add_foreign_key "characters", "users"
   add_foreign_key "content_templates", "games"
+  add_foreign_key "encrypted_values", "public_keys"
   add_foreign_key "feedback", "users"
   add_foreign_key "game_export_requests", "games"
   add_foreign_key "game_export_requests", "users"

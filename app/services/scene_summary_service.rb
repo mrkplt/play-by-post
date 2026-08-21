@@ -38,7 +38,7 @@ class SceneSummaryService
   end
 
   sig { params(scene: Scene, key_resolver: AiKeyResolver).void }
-  def initialize(scene, key_resolver: AiKeyResolver.new(key_source: AiKeypairs::StoredKeySource.new))
+  def initialize(scene, key_resolver: AiKeyResolver.new(key_source: Crypto::StoredKeySource.new))
     @scene = scene
     @key_resolver = key_resolver
   end

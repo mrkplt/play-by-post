@@ -18,8 +18,9 @@ matcher:
   subjects:
     # Models
     - AiUsage
-    - AiKeypair
-    - AiPrivateKey
+    - PublicKey
+    - PrivateKey
+    - EncryptedValue
     - ApiToken
     - Branding
     - ErrorTracking
@@ -228,13 +229,13 @@ matcher:
     # Services
     - AiKeyResolver
     - AiKeyResolver::KeySource
-    - AiKeypairs::CryptoService
-    - AiKeypairs::Blob
-    - AiKeypairs::DecryptionError
-    - AiKeypairs::KeypairGenerator
-    - AiKeypairs::KeypairGenerator::GeneratedKeypair
-    - AiKeypairs::StoredKeySource
-    - AiKeypairs::StoredKeySource::UnresolvableKey
+    - Crypto::CryptoService
+    - Crypto::Blob
+    - Crypto::DecryptionError
+    - Crypto::KeypairGenerator
+    - Crypto::KeypairGenerator::GeneratedKeypair
+    - Crypto::StoredKeySource
+    - Crypto::StoredKeySource::UnresolvableKey
     - AttachmentUploader
     - AttachmentUploader::Owner
     - AttachmentUploader::Naming
@@ -293,7 +294,7 @@ matcher:
     - Api::NotebookEntriesController
     - Api::PagesController
     - Profiles::ApiTokensController
-    - Profiles::AiKeypairsController
+    - Profiles::ByokKeysController
     - GameExportsController
     - ScenesController
     - CharactersController
@@ -342,7 +343,7 @@ matcher:
     - GamePurgeSweepJob
     - GamePurgeJob
     - FeedbackSweepJob
-    - AiKeypairGenerationJob
+    - KeypairGenerationJob
     # Mailers
     - NotificationMailer
     - NotificationMailer::Delivery

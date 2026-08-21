@@ -118,11 +118,15 @@ class Game < ApplicationRecord
 
   # Whether this game has a BYOK OpenRouter key configured (the fallback
   # funding source for a player-facing AI call when the acting player has
-  # none — see AiKeyResolver). ai_key_reference is only an opaque handle into
-  # the separate encrypted key store; this app never holds the key material.
+  # none — see AiKeyResolver). Backed by the owner's "openrouter_key"
+  # EncryptedValue actually having a sealed value — not merely existing (see
+  # User#ai_key_present? for why); this app never holds the key material.
   sig { returns(T::Boolean) }
   def ai_key_present?
-    ai_key_reference.present?
+    EncryptedValue
+      .where(owner: self, value_type: Crypto::StoredKeySource::OPENROUTER_KEY_VALUE_TYPE)
+      .where.not(sealed_value: nil)
+      .exists?
   end
 
   private

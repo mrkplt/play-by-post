@@ -53,12 +53,18 @@ class User < ApplicationRecord
     current_avatar&.display_variant
   end
 
-  # Whether this user has a BYOK OpenRouter key configured. ai_key_reference is
-  # only an opaque handle into the separate encrypted key store (see
-  # AiKeyResolver::KeySource) — this app never holds the key material itself.
+  # Whether this user has a BYOK OpenRouter key configured. Backed by the
+  # owner's "openrouter_key" EncryptedValue actually having a sealed value —
+  # not merely existing: the EncryptedValue row (and its keypair) is created
+  # before the owner has pasted/sealed anything, so existence alone would
+  # read "present" one step too early (see AiKeyResolver::KeySource /
+  # Crypto::StoredKeySource) — this app never holds the key material itself.
   sig { returns(T::Boolean) }
   def ai_key_present?
-    ai_key_reference.present?
+    EncryptedValue
+      .where(owner: self, value_type: Crypto::StoredKeySource::OPENROUTER_KEY_VALUE_TYPE)
+      .where.not(sealed_value: nil)
+      .exists?
   end
 
   # Deliver Devise mail (the passwordless magic link) through Active Job /

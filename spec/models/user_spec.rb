@@ -150,18 +150,29 @@ RSpec.describe User, type: :model do
   end
 
   describe "#ai_key_present?" do
-    it "is true when ai_key_reference is set" do
-      user = build_stubbed(:user, ai_key_reference: "handle")
+    it "is true when the user's openrouter_key EncryptedValue has a sealed value", db: true do
+      user = create(:user)
+      create(:encrypted_value, :sealed, owner: user, value_type: "openrouter_key")
+
       expect(user.ai_key_present?).to be(true)
     end
 
-    it "is false when ai_key_reference is nil" do
-      user = build_stubbed(:user, ai_key_reference: nil)
+    it "is false when no EncryptedValue exists for this user", db: true do
+      user = create(:user)
       expect(user.ai_key_present?).to be(false)
     end
 
-    it "is false when ai_key_reference is blank" do
-      user = build_stubbed(:user, ai_key_reference: "")
+    it "is false when the EncryptedValue exists but has no sealed value yet (keypair generated, nothing pasted)", db: true do
+      user = create(:user)
+      create(:encrypted_value, owner: user, value_type: "openrouter_key", sealed_value: nil)
+
+      expect(user.ai_key_present?).to be(false)
+    end
+
+    it "is false when the user has a sealed EncryptedValue of a different value_type", db: true do
+      user = create(:user)
+      create(:encrypted_value, :sealed, owner: user, value_type: "something_else")
+
       expect(user.ai_key_present?).to be(false)
     end
   end
