@@ -70,6 +70,12 @@
     <%# Scene summary %>
     <% if @scene_screen.summary? %>
       <%= render Shared::SceneSummaryComponent.new(summary: @scene_screen.summary) %>
+    <% elsif @scene_screen.summary_pending? %>
+      <%= render Shared::AsyncPendingComponent.new(
+            frame_id: "scene_summary_pending",
+            poll_path: @scene_screen.summary_status_path,
+            ready: false,
+            message: Shared::SceneSummaryComponent::PENDING_MESSAGE) %>
     <% end %>
 
     <%= render Shared::DraftRecoveryComponent.new(

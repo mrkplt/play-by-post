@@ -44,4 +44,19 @@ class SceneSummary < ApplicationRecord
 
     relation.where(generated_at: nil)
   end
+
+  # Whether this one summary is visible to a specific viewer — the per-record
+  # counterpart of .visible_to, folding in the draft rule. A draft is visible
+  # only to a manager (its author); an AI-generated summary is hidden from a
+  # viewer whose ai_display_preference is "hidden". The single source of the
+  # scene view's visibility: SceneShowBuilder gates the summary block with it,
+  # and the async poll endpoint decides "ready" with it, so the frame swaps in
+  # exactly when the summary becomes visible on the page.
+  sig { params(policy: SceneSummaryPolicy, viewer: User).returns(T::Boolean) }
+  def visible_to?(policy, viewer)
+    return false if draft? && !policy.manage?
+    return false if ai_generated? && viewer.user_profile&.hidden?
+
+    true
+  end
 end

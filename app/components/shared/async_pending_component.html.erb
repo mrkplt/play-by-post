@@ -1,0 +1,16 @@
+<%# A self-referential Turbo Frame: while pending it carries a poll `src` and
+    the job-status controller reloads it on an interval; the poll response is
+    another pending frame (keeps polling) until the item exists, when it returns
+    the ready content with no `src`/controller — Turbo swaps it in and Stimulus
+    tears the poller down. On that same completion response the toast layer is
+    replaced (see the consuming endpoint) to surface a "ready" notice. %>
+<%= helpers.turbo_frame_tag(frame_id, **frame_attributes) do %>
+  <% if ready? %>
+    <%= ready %>
+  <% else %>
+    <div class="flex items-center gap-3 text-muted-2 py-4">
+      <%= render Ui::SpinnerComponent.new(size: :sm, label: message) %>
+      <span class="text-sm"><%= message %></span>
+    </div>
+  <% end %>
+<% end %>

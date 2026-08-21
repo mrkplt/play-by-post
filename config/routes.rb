@@ -97,6 +97,10 @@ Rails.application.routes.draw do
         end
         resource :scene_summary, only: %i[new create edit update destroy],
                                   controller: "scene_summaries" do
+          # The scene page polls this while the async SceneSummaryJob is still
+          # running: it returns the spinner frame until the summary row exists,
+          # then the rendered summary (Shared::AsyncPendingComponent, Fizzy #115).
+          get :status
           # Namespaced under the summary: the editor autosaves the draft flag on
           # the summary's own row (its scene_id is uniquely indexed, so a summary
           # cannot hold a separate draft row), and publishing promotes it.

@@ -47,6 +47,20 @@ class SceneScreenPresenter < BasePresenter
     scene.resolved? && summary ? true : false
   end
 
+  # True when the async SceneSummaryJob is (from this viewer's vantage) still
+  # working: the pending frame renders in place of a summary. Mutually exclusive
+  # with summary? — one or the other, never both.
+  sig { returns(T::Boolean) }
+  def summary_pending?
+    @options.fetch(:summary_pending)
+  end
+
+  # Where the pending frame polls for the finished summary.
+  sig { returns(String) }
+  def summary_status_path
+    @options.fetch(:summary_status_path)
+  end
+
   # The GM action row shows only while the scene is still open.
   sig { returns(T::Boolean) }
   def gm_actions?

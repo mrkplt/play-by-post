@@ -23,13 +23,17 @@ class SceneShowBuilder
 
   sig { params(game_presenter: GamePresenter).returns(SceneScreenPresenter) }
   def screen(game_presenter)
+    summary = summary_presenter
+
     SceneScreenPresenter.new(
       scene_presenter,
       game_presenter: game_presenter,
       navigation: navigation_presenter,
       show: show_presenter,
       posts: posts_presenter,
-      summary: summary_presenter
+      summary: summary,
+      summary_pending: summary_pending?(summary),
+      summary_status_path: summary_status_path
     )
   end
 
@@ -80,18 +84,25 @@ class SceneShowBuilder
 
   private
 
-  # A draft summary is visible only to a GM (its author); everyone else sees it
-  # as absent until it is published. An AI-generated summary is additionally
-  # absent for a viewer whose ai_display_preference is "hidden" (AI Control
-  # Plane) — the same per-viewer filter SceneSummary.visible_to applies to the
-  # index/RSS, expressed here as a predicate since the scene only ever has one
-  # summary to check rather than a relation to filter.
+  # The async summary is "pending" for this viewer when the scene is resolved
+  # and the game has AI summaries on, but no summary is visible to them yet —
+  # the moment the poll frame (Fizzy #115) should show a spinner. A draft (or an
+  # AI-hidden summary) counts as not-yet-visible, so they keep polling.
+  sig { params(summary: T.nilable(SceneSummaryPresenter)).returns(T::Boolean) }
+  def summary_pending?(summary)
+    !summary && @scene.resolved? && @game.ai_summaries_enabled? ? true : false
+  end
+
+  sig { returns(String) }
+  def summary_status_path
+    @context.urls.status_game_scene_scene_summary_path(@game, @scene)
+  end
+
+  # The per-viewer visibility rule lives on SceneSummary so the async poll
+  # endpoint decides "ready" the same way the scene page decides "show".
   sig { params(summary: SceneSummary).returns(T::Boolean) }
   def summary_visible?(summary)
-    return false if summary.draft? && !summary_policy(summary).manage?
-    return false if summary.ai_generated? && @context.current_user.user_profile&.hidden?
-
-    true
+    summary.visible_to?(summary_policy(summary), @context.current_user)
   end
 
   sig { params(summary: SceneSummary).returns(SceneSummaryPolicy) }

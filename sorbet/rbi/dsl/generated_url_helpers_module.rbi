@@ -13,6 +13,18 @@ module GeneratedUrlHelpersModule
   def accept_invitation_url(*args); end
 
   sig { params(args: T.untyped).returns(String) }
+  def api_notebook_entries_url(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def api_notebook_entry_url(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def api_page_url(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def api_pages_url(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
   def archive_game_character_url(*args); end
 
   sig { params(args: T.untyped).returns(String) }
@@ -55,6 +67,9 @@ module GeneratedUrlHelpersModule
   def edit_profile_url(*args); end
 
   sig { params(args: T.untyped).returns(String) }
+  def error_tunnel_url(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
   def export_all_profile_url(*args); end
 
   sig { params(args: T.untyped).returns(String) }
@@ -62,6 +77,12 @@ module GeneratedUrlHelpersModule
 
   sig { params(args: T.untyped).returns(String) }
   def game_character_character_version_url(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def game_character_image_url(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def game_character_images_url(*args); end
 
   sig { params(args: T.untyped).returns(String) }
   def game_character_url(*args); end
@@ -92,6 +113,9 @@ module GeneratedUrlHelpersModule
 
   sig { params(args: T.untyped).returns(String) }
   def game_notebook_entries_url(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def game_notebook_entry_notebook_entry_version_url(*args); end
 
   sig { params(args: T.untyped).returns(String) }
   def game_notebook_entry_url(*args); end
@@ -200,6 +224,15 @@ module GeneratedUrlHelpersModule
 
   sig { params(args: T.untyped).returns(String) }
   def profile_api_tokens_url(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def profile_byok_key_url(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def profile_image_url(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def profile_images_url(*args); end
 
   sig { params(args: T.untyped).returns(String) }
   def profile_url(*args); end
@@ -313,6 +346,12 @@ module GeneratedUrlHelpersModule
   def rss_feed_url(*args); end
 
   sig { params(args: T.untyped).returns(String) }
+  def rswag_api_url(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def rswag_ui_url(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
   def save_draft_game_page_url(*args); end
 
   sig { params(args: T.untyped).returns(String) }
@@ -322,13 +361,16 @@ module GeneratedUrlHelpersModule
   def save_draft_game_scene_scene_summary_url(*args); end
 
   sig { params(args: T.untyped).returns(String) }
+  def status_game_scene_scene_summary_url(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def toggle_ai_summaries_consent_profile_url(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
   def toggle_ai_summaries_enabled_game_url(*args); end
 
   sig { params(args: T.untyped).returns(String) }
   def toggle_hide_ooc_profile_url(*args); end
-
-  sig { params(args: T.untyped).returns(String) }
-  def toggle_images_disabled_game_url(*args); end
 
   sig { params(args: T.untyped).returns(String) }
   def toggle_notification_preference_game_scene_url(*args); end
@@ -344,6 +386,9 @@ module GeneratedUrlHelpersModule
 
   sig { params(args: T.untyped).returns(String) }
   def turbo_resume_historical_location_url(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def update_ai_display_preference_profile_url(*args); end
 
   sig { params(args: T.untyped).returns(String) }
   def update_rails_disk_service_url(*args); end

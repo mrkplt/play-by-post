@@ -147,6 +147,10 @@ RSpec.describe SceneShowBuilder, :db do
   describe "#screen" do
     let(:game_presenter) { GamePresenter.new(game, policy: GamePolicy.new(viewer, game)) }
 
+    before do
+      allow(urls).to receive(:status_game_scene_scene_summary_path).with(game, scene).and_return("/status")
+    end
+
     it "bundles the parts into one screen presenter" do
       expect(builder.screen(game_presenter)).to be_a(SceneScreenPresenter)
     end
@@ -165,6 +169,47 @@ RSpec.describe SceneShowBuilder, :db do
       create(:scene_summary, scene: scene)
 
       expect(builder.screen(game_presenter).summary).to be_a(SceneSummaryPresenter)
+    end
+
+    it "carries the status poll path built from the url helper" do
+      expect(builder.screen(game_presenter).summary_status_path).to eq("/status")
+    end
+
+    describe "summary_pending" do
+      it "is pending on a resolved AI-enabled scene with no visible summary" do
+        scene.update!(resolved_at: Time.current)
+        game.update!(ai_summaries_enabled: true)
+
+        expect(builder.screen(game_presenter).summary_pending?).to be(true)
+      end
+
+      it "is not pending once a summary exists" do
+        scene.update!(resolved_at: Time.current)
+        game.update!(ai_summaries_enabled: true)
+        create(:scene_summary, scene: scene)
+
+        expect(builder.screen(game_presenter).summary_pending?).to be(false)
+      end
+
+      it "is not pending when the game has AI summaries off" do
+        scene.update!(resolved_at: Time.current)
+
+        expect(builder.screen(game_presenter).summary_pending?).to be(false)
+      end
+
+      it "is not pending while the scene is unresolved" do
+        game.update!(ai_summaries_enabled: true)
+
+        expect(builder.screen(game_presenter).summary_pending?).to be(false)
+      end
+
+      it "stays pending for a player whose only summary is an invisible draft" do
+        scene.update!(resolved_at: Time.current)
+        game.update!(ai_summaries_enabled: true)
+        create(:scene_summary, scene: scene, draft: true, body: "")
+
+        expect(builder.screen(game_presenter).summary_pending?).to be(true)
+      end
     end
   end
 end

@@ -24,11 +24,12 @@ RSpec.describe SceneScreenPresenter, :db do
     )
   end
 
-  def screen(summary_presenter: nil)
+  def screen(summary_presenter: nil, summary_pending: false, summary_status_path: "/status")
     described_class.new(
       scene,
       game_presenter: game, navigation: navigation,
-      show: show, posts: posts, summary: summary_presenter
+      show: show, posts: posts, summary: summary_presenter,
+      summary_pending: summary_pending, summary_status_path: summary_status_path
     )
   end
 
@@ -62,6 +63,20 @@ RSpec.describe SceneScreenPresenter, :db do
 
     it "is false for an unresolved scene that somehow has one" do
       expect(screen(summary_presenter: summary).summary?).to be(false)
+    end
+  end
+
+  describe "#summary_pending?" do
+    it "reflects the flag it was built with" do
+      expect(screen(summary_pending: true).summary_pending?).to be(true)
+      expect(screen(summary_pending: false).summary_pending?).to be(false)
+    end
+  end
+
+  describe "#summary_status_path" do
+    it "returns the poll path it was built with" do
+      expect(screen(summary_status_path: "/games/g/scenes/1/scene_summary/status").summary_status_path)
+        .to eq("/games/g/scenes/1/scene_summary/status")
     end
   end
 
