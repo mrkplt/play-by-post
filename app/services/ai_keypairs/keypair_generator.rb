@@ -4,8 +4,9 @@ module AiKeypairs
   # Generates a fresh RSA-2048 custody keypair (public half stored in
   # AiKeypair, private half in AiPrivateKey — see CryptoService's class
   # comment for the full custody model and envelope format the public key is
-  # used with).
-  class KeypairGenerator
+  # used with). A stateless process, so a module with module methods rather
+  # than an instantiated class (bin/check-service-modules).
+  module KeypairGenerator
     extend T::Sig
 
     RSA_KEY_BITS = 2048
