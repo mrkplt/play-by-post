@@ -1,13 +1,13 @@
 require "rails_helper"
 
-RSpec.describe Ai::PooledFunding do
-  class PooledFundingFakeKeySource
+RSpec.describe Ai::Funding do
+  class FundingFakeKeySource
     include AiKeyResolver::KeySource
     def for_user(user) = "key-#{user.id}"
   end
 
   let(:game) { create(:game) }
-  let(:resolver) { AiKeyResolver.new(key_source: PooledFundingFakeKeySource.new) }
+  let(:resolver) { AiKeyResolver.new(key_source: FundingFakeKeySource.new) }
   subject(:funding) { described_class.new(resolver: resolver, feature: "scene_summary", game: game) }
 
   def authorize(n)

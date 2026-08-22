@@ -244,7 +244,7 @@ matcher:
     - AiKeyResolver
     - AiKeyResolver::KeySource
     - AiKeyResolver::Candidate
-    - Ai::PooledFunding
+    - Ai::Funding
     - Crypto::CryptoService
     - Crypto::Blob
     - Crypto::DecryptionError

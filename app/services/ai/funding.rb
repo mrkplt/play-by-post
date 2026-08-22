@@ -12,7 +12,7 @@ module Ai
   # shared by every game-level AI feature (scene summaries now, portraits #19
   # later). It owns selection + failover; the caller owns the actual API call
   # (passed as the block) and its error types.
-  class PooledFunding
+  class Funding
     extend T::Sig
 
     # HTTP statuses meaning "this particular key can't fund the call": bad or

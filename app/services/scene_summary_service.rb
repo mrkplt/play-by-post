@@ -46,7 +46,7 @@ class SceneSummaryService
   end
 
   # A scene summary is a GAME-LEVEL output, funded from the game's pool of
-  # authorized member keys (GameKeyAuthorization) via Ai::PooledFunding, which
+  # authorized member keys (GameKeyAuthorization) via Ai::Funding, which
   # owns the shuffle/pop/failover. Any member's key may fund it — the GM is not
   # privileged. An empty/exhausted pool becomes ConfigurationError, rescued by
   # SceneSummaryJob the same way a missing key always was.
@@ -54,7 +54,7 @@ class SceneSummaryService
   def call
     response = funding.call { |api_key| request_completion(api_key) }
     Result.from_response(response, model_used: model)
-  rescue Ai::PooledFunding::Exhausted => error
+  rescue Ai::Funding::Exhausted => error
     raise ConfigurationError, error.message
   end
 
@@ -65,9 +65,9 @@ class SceneSummaryService
 
   private
 
-  sig { returns(Ai::PooledFunding) }
+  sig { returns(Ai::Funding) }
   def funding
-    Ai::PooledFunding.new(resolver: @key_resolver, feature: FEATURE, game: T.must(@scene.game))
+    Ai::Funding.new(resolver: @key_resolver, feature: FEATURE, game: T.must(@scene.game))
   end
 
   sig { params(api_key: String).returns(T::Hash[String, T.untyped]) }
