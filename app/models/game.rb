@@ -31,6 +31,7 @@ class Game < ApplicationRecord
   has_many :invitations, dependent: :destroy
   has_many :api_tokens, dependent: :destroy
   has_many :game_export_requests, dependent: :destroy
+  has_many :game_key_authorizations, dependent: :destroy
 
   validates :name, presence: true, length: { maximum: 200 }
   validates :slug, presence: true, uniqueness: true
@@ -114,19 +115,6 @@ class Game < ApplicationRecord
   sig { returns(T.nilable(ActiveSupport::Duration)) }
   def edit_window_duration
     post_edit_window_minutes&.minutes
-  end
-
-  # Whether this game has a BYOK OpenRouter key configured (the fallback
-  # funding source for a player-facing AI call when the acting player has
-  # none — see AiKeyResolver). Backed by the owner's "openrouter_key"
-  # EncryptedValue actually having a sealed value — not merely existing (see
-  # User#ai_key_present? for why); this app never holds the key material.
-  sig { returns(T::Boolean) }
-  def ai_key_present?
-    EncryptedValue
-      .where(owner: self, value_type: Crypto::StoredKeySource::OPENROUTER_KEY_VALUE_TYPE)
-      .where.not(sealed_value: nil)
-      .exists?
   end
 
   private

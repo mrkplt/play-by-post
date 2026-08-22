@@ -1,8 +1,9 @@
 # typed: true
 
 # Creates an EncryptedValue shell — a fresh dedicated custody keypair plus the
-# owning EncryptedValue row — for an owner (User or Game) and a value_type,
-# and writes both keypair halves. See Crypto::KeypairGenerator's class
+# owning EncryptedValue row — for a User owner and a value_type, and writes
+# both keypair halves. Keys are person-owned (a game does not own a key; see
+# EncryptedValue / GameKeyAuthorization). See Crypto::KeypairGenerator's class
 # comment for the custody model this splits across two databases.
 #
 # Deliberately generates the key material INSIDE #perform, on whichever

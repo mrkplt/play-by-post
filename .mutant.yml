@@ -18,6 +18,8 @@ matcher:
   subjects:
     # Models
     - AiUsage
+    - Ai::Feature
+    - GameKeyAuthorization
     - PublicKey
     - PrivateKey
     - EncryptedValue
@@ -234,6 +236,7 @@ matcher:
     # Services
     - AiKeyResolver
     - AiKeyResolver::KeySource
+    - AiKeyResolver::Candidate
     - Crypto::CryptoService
     - Crypto::Blob
     - Crypto::DecryptionError

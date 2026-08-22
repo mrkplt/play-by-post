@@ -4,7 +4,7 @@ module Crypto
   # AiKeyResolver::KeySource backed by the persisted EncryptedValue custody
   # model, resolving the "openrouter_key" EncryptedValue for a given owner.
   #
-  # For a given owner (User or Game), it loads that owner's "openrouter_key"
+  # For a given User owner, it loads that person's "openrouter_key"
   # EncryptedValue, reads the stored browser-sealed envelope (`sealed_value`),
   # pairs it with the value's dedicated private key (PrivateKey, worker-only
   # database, reached via the EncryptedValue's PublicKey), and decrypts it via
@@ -35,17 +35,9 @@ module Crypto
       decrypt_for(user)
     end
 
-    sig { override.params(game: Game).returns(String) }
-    def for_game(game)
-      decrypt_for(game)
-    end
-
     private
 
-    # T.untyped owner: User and Game are distinct types with no shared
-    # ancestor that expresses "EncryptedValue owner"; both reach here only via
-    # the typed public methods above, which pin the caller-facing contract.
-    sig { params(owner: T.untyped).returns(String) }
+    sig { params(owner: User).returns(String) }
     def decrypt_for(owner)
       label = "#{owner.class}##{owner.id}"
       encrypted_value = present_or_raise(
