@@ -10,8 +10,13 @@ RSpec.describe Ai::Feature do
       feature = described_class.fetch("scene_summary")
 
       expect(feature.level).to eq(:game)
+      expect(feature.label).to eq("Scene summaries")
       expect(feature).to be_game_level
       expect(feature).to be_pool_fundable
+    end
+
+    it "exposes the pool-fundable Features for the matrix columns" do
+      expect(described_class.pool_fundable.map(&:name)).to eq([ "scene_summary" ])
     end
 
     it "declares inbound_email as app-infra: neither game nor personal, not pool-fundable" do

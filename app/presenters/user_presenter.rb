@@ -83,18 +83,20 @@ class UserPresenter < BasePresenter
   end
 
   # The profile's "API tokens" section, one row per non-banned game membership
-  # paired with this user's api-scoped token for that game (if any). Parallel to
-  # #feed_rows, but filters `scope: "api"` and yields ApiTokenRowPresenters whose
-  # populated state exposes the raw token value rather than a feed URL.
+  # paired with this user's api-scoped token for that game (if any). Row
+  # assembly (mirroring #feed_rows, filtering `scope: "api"`) lives in
+  # ApiTokenRowsBuilder.
   sig { params(urls: T.untyped).returns(T::Array[ApiTokenRowPresenter]) }
   def api_token_rows(urls:)
-    tokens_by_game_id = @model.api_tokens.where(scope: "api").index_by(&:game_id)
-    feed_memberships.filter_map do |membership|
-      game = membership.game
-      next unless game
+    ApiTokenRowsBuilder.new(user: @model, urls: urls).rows
+  end
 
-      ApiTokenRowPresenter.new(game, token: tokens_by_game_id[game.id], urls: urls)
-    end
+  # The profile's "fund AI for your games" rows (KeyContributionRowsBuilder).
+  # URLs come from the construction helpers so the view reads this off the
+  # presenter with no controller ivar.
+  sig { returns(T::Array[KeyContributionRowPresenter]) }
+  def key_contribution_rows
+    KeyContributionRowsBuilder.new(user: @model, urls: @options.fetch(:helpers)).rows
   end
 
   # The user's avatar library as component-ready Item hashes. `helpers` is

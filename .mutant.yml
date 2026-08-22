@@ -78,6 +78,7 @@ matcher:
     - GameMemberPresenter
     - GameFeedRowPresenter
     - ApiTokenRowPresenter
+    - KeyContributionRowPresenter
     - GameLinkPresenter
     - ContentTemplatePresenter
     - GamePresenter
@@ -130,6 +131,10 @@ matcher:
     - Ui::FormErrorsComponent
     - Ui::SecretFieldComponent
     - Shared::TokenSectionComponent
+    - Shared::KeyContributionMatrixComponent
+    - Shared::KeyContributionMatrixComponent::Cell
+    - Shared::KeyContributionMatrixComponent::Offered
+    - Shared::KeyContributionMatrixComponent::Available
     - Shared::AiSummariesToggleComponent
     - Shared::SheetsToggleComponent
     - Shared::ProfileFormComponent
@@ -253,6 +258,8 @@ matcher:
     - TurnstileVerifier::SiteverifyUri
     - CharacterCreation
     - CharacterPresenterBuilder
+    - KeyContributionRowsBuilder
+    - ApiTokenRowsBuilder
     - ExportDelivery
     - EmailContentExtractor
     - EmailContentExtraction::OpenrouterRequest

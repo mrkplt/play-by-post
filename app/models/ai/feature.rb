@@ -29,10 +29,15 @@ module Ai
     sig { returns(Symbol) }
     attr_reader :level
 
-    sig { params(name: String, level: Symbol).void }
-    def initialize(name:, level:)
+    # Human label for the contribution-management UI (the matrix cell header).
+    sig { returns(String) }
+    attr_reader :label
+
+    sig { params(name: String, level: Symbol, label: String).void }
+    def initialize(name:, level:, label:)
       @name = name
       @level = level
+      @label = label
     end
 
     sig { returns(T::Boolean) }
@@ -54,8 +59,8 @@ module Ai
 
     REGISTRY = T.let(
       [
-        new(name: "scene_summary", level: :game),
-        new(name: "inbound_email", level: :app_infra)
+        new(name: "scene_summary", level: :game, label: "Scene summaries"),
+        new(name: "inbound_email", level: :app_infra, label: "Inbound email")
       ].to_h { |feature| [ feature.name, feature ] }.freeze,
       T::Hash[String, Feature]
     )
@@ -93,7 +98,14 @@ module Ai
       # authorization surface. Only pool-fundable (game-level) features.
       sig { returns(T::Array[String]) }
       def pool_fundable_names
-        REGISTRY.values.select(&:pool_fundable?).map(&:name)
+        pool_fundable.map(&:name)
+      end
+
+      # The pool-fundable Features themselves — column headers for the
+      # contribution-management matrix.
+      sig { returns(T::Array[Feature]) }
+      def pool_fundable
+        REGISTRY.values.select(&:pool_fundable?)
       end
     end
   end
