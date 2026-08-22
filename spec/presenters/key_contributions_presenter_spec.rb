@@ -20,6 +20,17 @@ RSpec.describe KeyContributionsPresenter do
     expect(rows_for.map(&:name)).to eq(%w[Alpha Beta])
   end
 
+  it "skips a membership whose game is missing" do
+    with_game = create(:game, name: "Real")
+    create(:game_member, game: with_game, user: user)
+    ghost = build_stubbed(:game_member)
+    allow(ghost).to receive(:game).and_return(nil)
+    memberships = [ ghost, *user.game_members.for_profile_listing ]
+
+    rows = described_class.new(memberships, user: user, urls: urls).rows
+    expect(rows.map(&:name)).to eq([ "Real" ])
+  end
+
   it "marks a game's contributed features as Offered and the rest Available" do
     allow_any_instance_of(User).to receive(:ai_key_present?).and_return(true)
     funded = create(:game, name: "Funded")

@@ -21,6 +21,16 @@ RSpec.describe ApiTokensPresenter do
     expect(rows.find { |r| r.game_id == beta.id }.token?).to be(false)
   end
 
+  it "skips a membership whose game is missing" do
+    real = create(:game, name: "Real")
+    create(:game_member, game: real, user: user)
+    ghost = build_stubbed(:game_member)
+    allow(ghost).to receive(:game).and_return(nil)
+
+    rows = described_class.new([ ghost, *user.game_members.for_profile_listing ], user: user, urls: urls).rows
+    expect(rows.map(&:name)).to eq([ "Real" ])
+  end
+
   it "ignores an rss-scoped token when matching the api token" do
     game = create(:game)
     create(:game_member, game: game, user: user)

@@ -28,6 +28,19 @@ RSpec.describe Games::KeyContributionsController, type: :request do
         post game_key_contributions_path(game), params: { feature: "scene_summary" }
       }.not_to change(GameKeyAuthorization, :count)
     end
+
+    it "redirects with the validation error when the member has no key to offer" do
+      allow_any_instance_of(User).to receive(:ai_key_present?).and_return(false)
+      sign_in member
+
+      expect {
+        post game_key_contributions_path(game), params: { feature: "scene_summary" }
+      }.not_to change(GameKeyAuthorization, :count)
+
+      expect(response).to redirect_to(profile_path)
+      follow_redirect!
+      expect(response.body).to include("must have a BYOK OpenRouter key")
+    end
   end
 
   describe "DELETE /games/:game_id/key_contributions/:feature" do

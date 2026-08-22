@@ -1,9 +1,9 @@
 <% if any_games? %>
-  <ul class="flex flex-col gap-4">
+  <ul class="flex flex-col gap-5">
     <% rows.each do |row| %>
-      <li class="flex flex-col gap-2">
+      <li>
         <span class="font-medium text-body"><%= row.name %></span>
-        <div class="flex flex-wrap gap-3">
+        <div class="flex flex-wrap gap-3 mt-2">
           <% row.cells.each do |cell| %>
             <%= button_to cell.path, method: cell.http_method, params: cell.params,
                   class: "flex items-center gap-2 bg-transparent border-0 p-0 cursor-pointer",
