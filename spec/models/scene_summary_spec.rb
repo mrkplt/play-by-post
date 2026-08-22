@@ -157,45 +157,43 @@ RSpec.describe SceneSummary, type: :model do
       create(:game_member, game: game, user: player)
     end
 
-    def policy_for(user, summary) = SceneSummaryPolicy.new(user, summary)
-
     it "is visible to anyone once published and not AI-hidden" do
       published = create(:scene_summary, scene: scene, draft: false)
 
-      expect(published.visible_to?(policy_for(player, published), player)).to be(true)
+      expect(published.visible_to?(player)).to be(true)
     end
 
     it "hides a draft from a non-manager" do
       draft = create(:scene_summary, scene: scene, draft: true, body: "")
 
-      expect(draft.visible_to?(policy_for(player, draft), player)).to be(false)
+      expect(draft.visible_to?(player)).to be(false)
     end
 
     it "shows a draft to a manager" do
       draft = create(:scene_summary, scene: scene, draft: true, body: "")
 
-      expect(draft.visible_to?(policy_for(gm, draft), gm)).to be(true)
+      expect(draft.visible_to?(gm)).to be(true)
     end
 
     it "hides an AI-generated summary from a viewer whose AI display preference is hidden" do
       ai = create(:scene_summary, :ai_generated, scene: scene)
       player.user_profile.update!(ai_display_preference: :hidden)
 
-      expect(ai.visible_to?(policy_for(player, ai), player)).to be(false)
+      expect(ai.visible_to?(player)).to be(false)
     end
 
     it "shows a hand-written summary even to a hidden-preference viewer" do
       hand = create(:scene_summary, scene: scene)
       player.user_profile.update!(ai_display_preference: :hidden)
 
-      expect(hand.visible_to?(policy_for(player, hand), player)).to be(true)
+      expect(hand.visible_to?(player)).to be(true)
     end
 
     it "shows an AI-generated summary to a viewer whose preference is not hidden" do
       ai = create(:scene_summary, :ai_generated, scene: scene)
       player.user_profile.update!(ai_display_preference: :tagged)
 
-      expect(ai.visible_to?(policy_for(player, ai), player)).to be(true)
+      expect(ai.visible_to?(player)).to be(true)
     end
 
     it "shows an AI-generated summary to a viewer who has no profile yet" do
@@ -203,7 +201,7 @@ RSpec.describe SceneSummary, type: :model do
       create(:game_member, game: game, user: profileless)
       ai = create(:scene_summary, :ai_generated, scene: scene)
 
-      expect(ai.visible_to?(policy_for(profileless, ai), profileless)).to be(true)
+      expect(ai.visible_to?(profileless)).to be(true)
     end
   end
 

@@ -64,4 +64,12 @@ Rails.application.configure do
 
   # Raise error when a before_action's only/except options reference missing actions.
   config.action_controller.raise_on_missing_callback_actions = true
+
+  # Action Cable's :test adapter records broadcasts for the turbo-rails
+  # assertion helpers (assert_turbo_stream_broadcasts / have_broadcasted_to) and
+  # replays them to sockets connected in a system test, so a Playwright feature
+  # spec sees a real broadcast swap the pending frame. cable.yml already selects
+  # it for the test env; pinned here alongside the queue/mailer test adapters so
+  # the test-time messaging setup reads in one place.
+  config.action_cable.disable_request_forgery_protection = true
 end

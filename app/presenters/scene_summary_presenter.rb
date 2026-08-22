@@ -9,6 +9,25 @@ class SceneSummaryPresenter < BasePresenter
   extend T::Sig
   include Draftable::Presentation
 
+  # Build a presenter for broadcasting a finished summary to one visibility
+  # class (SceneSummaryVisibility). A broadcast has no request and no single
+  # viewer — it goes to everyone in a class — so the two per-viewer facts the
+  # summary component reads (can it be managed, is the AI badge loud) are fixed
+  # by the class rather than derived from a User/policy: only the `manager` class
+  # manages, and only the `hidden` class would suppress the badge but it never
+  # receives an AI summary at all, so every broadcast class shows the badge. URLs
+  # come from the app's route helpers rather than a controller.
+  sig { params(summary: SceneSummary, klass: Symbol, game: Game).returns(SceneSummaryPresenter) }
+  def self.for_broadcast(summary, klass:, game:)
+    new(
+      summary,
+      game: game,
+      urls: Rails.application.routes.url_helpers,
+      can_manage: klass == SceneSummaryVisibility::MANAGER,
+      show_ai_badge: true
+    )
+  end
+
   sig { returns(String) }
   # mutant:disable
   def status_label
@@ -47,6 +66,8 @@ class SceneSummaryPresenter < BasePresenter
   def show_ai_badge?
     return true unless ai_generated?
 
+    return @options.fetch(:show_ai_badge) if @options.key?(:show_ai_badge)
+
     !@options.fetch(:viewer, nil)&.user_profile&.shown?
   end
 
@@ -81,9 +102,12 @@ class SceneSummaryPresenter < BasePresenter
   end
 
   # The viewer may edit or delete this summary — asked of the policy supplied
-  # at construction (options[:policy]) rather than looked up here.
+  # at construction (options[:policy]) rather than looked up here. A broadcast,
+  # which has no policy, fixes this by visibility class via options[:can_manage].
   sig { returns(T::Boolean) }
   def can_manage?
+    return @options.fetch(:can_manage) if @options.key?(:can_manage)
+
     @options.fetch(:policy).manage?
   end
 

@@ -49,14 +49,16 @@ class SceneSummary < ApplicationRecord
   # counterpart of .visible_to, folding in the draft rule. A draft is visible
   # only to a manager (its author); an AI-generated summary is hidden from a
   # viewer whose ai_display_preference is "hidden". The single source of the
-  # scene view's visibility: SceneShowBuilder gates the summary block with it,
-  # and the async poll endpoint decides "ready" with it, so the frame swaps in
-  # exactly when the summary becomes visible on the page.
-  sig { params(policy: SceneSummaryPolicy, viewer: User).returns(T::Boolean) }
-  def visible_to?(policy, viewer)
-    return false if draft? && !policy.manage?
-    return false if ai_generated? && viewer.user_profile&.hidden?
-
-    true
+  # scene view's visibility: SceneShowBuilder gates the summary block with it.
+  #
+  # Expressed through SceneSummaryVisibility so the "show on the page" decision
+  # and the "broadcast to this stream" decision (SceneSummaryJob) share one
+  # mapping: a viewer sees the summary exactly when their visibility class is one
+  # this summary is broadcast to. Manager-ness is read from the game (the same
+  # GM check SceneSummaryPolicy#manage? makes), so no policy needs threading in.
+  sig { params(viewer: User).returns(T::Boolean) }
+  def visible_to?(viewer)
+    SceneSummaryVisibility.classes_for(self)
+      .include?(SceneSummaryVisibility.for_viewer(game: T.must(T.must(scene).game), viewer: viewer))
   end
 end

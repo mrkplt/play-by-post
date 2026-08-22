@@ -1,16 +1,12 @@
-<%# A self-referential Turbo Frame: while pending it carries a poll `src` and
-    the job-status controller reloads it on an interval; the poll response is
-    another pending frame (keeps polling) until the item exists, when it returns
-    the ready content with no `src`/controller — Turbo swaps it in and Stimulus
-    tears the poller down. On that same completion response the toast layer is
-    replaced (see the consuming endpoint) to surface a "ready" notice. %>
-<%= helpers.turbo_frame_tag(frame_id, **frame_attributes) do %>
-  <% if ready? %>
-    <%= ready %>
-  <% else %>
-    <div class="flex items-center gap-3 text-muted-2 py-4">
-      <%= render Ui::SpinnerComponent.new(size: :sm, label: message) %>
-      <span class="text-sm"><%= message %></span>
-    </div>
-  <% end %>
+<%# A Turbo Frame that subscribes to a signed Turbo Stream and waits. While the
+    backend job is still running the frame shows a spinner; when the worker
+    finishes it broadcasts a turbo_stream.replace targeting this frame id, and
+    Turbo swaps the finished content in place for every subscribed viewer. The
+    completion toast rides its own broadcast (see the worker) into #toast_layer. %>
+<%= helpers.turbo_stream_from(*streamables, **stream_options) %>
+<%= helpers.turbo_frame_tag(frame_id) do %>
+  <div class="flex items-center gap-3 text-muted-2 py-4">
+    <%= render Ui::SpinnerComponent.new(size: :sm, label: message) %>
+    <span class="text-sm"><%= message %></span>
+  </div>
 <% end %>

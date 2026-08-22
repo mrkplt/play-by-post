@@ -24,12 +24,15 @@ RSpec.describe SceneScreenPresenter, :db do
     )
   end
 
-  def screen(summary_presenter: nil, summary_pending: false, summary_status_path: "/status")
+  def screen(summary_presenter: nil, summary_pending: false,
+             summary_pending_frame: "scene_summary_pending",
+             summary_stream: %w[scene summary plain], summary_stream_data: { scene_id: 1 })
     described_class.new(
       scene,
       game_presenter: game, navigation: navigation,
       show: show, posts: posts, summary: summary_presenter,
-      summary_pending: summary_pending, summary_status_path: summary_status_path
+      summary_pending: summary_pending, summary_pending_frame: summary_pending_frame,
+      summary_stream: summary_stream, summary_stream_data: summary_stream_data
     )
   end
 
@@ -73,10 +76,17 @@ RSpec.describe SceneScreenPresenter, :db do
     end
   end
 
-  describe "#summary_status_path" do
-    it "returns the poll path it was built with" do
-      expect(screen(summary_status_path: "/games/g/scenes/1/scene_summary/status").summary_status_path)
-        .to eq("/games/g/scenes/1/scene_summary/status")
+  describe "the pending-frame subscription details" do
+    it "exposes the frame id, stream, and stream data it was built with" do
+      presenter = screen(
+        summary_pending_frame: "scene_summary_pending",
+        summary_stream: %w[scene summary manager],
+        summary_stream_data: { scene_id: 42 }
+      )
+
+      expect(presenter.summary_pending_frame).to eq("scene_summary_pending")
+      expect(presenter.summary_stream).to eq(%w[scene summary manager])
+      expect(presenter.summary_stream_data).to eq({ scene_id: 42 })
     end
   end
 

@@ -43,6 +43,17 @@ production:
     database: <%= ENV.fetch("DATABASE_PATH") { "storage" } %>/production_queue.sqlite3
     migrations_paths: db/queue_migrate
     schema_dump: queue_schema.rb
+  # Action Cable's message backplane (Solid Cable). Lives on the same shared
+  # `dbdata` volume as cache/queue — the worker broadcasts Turbo Streams the web
+  # container's subscribers receive, so both containers read/write this file.
+  # NOT the worker-only ai_keys volume. Schema-owned like cache/queue: loads
+  # from db/cable_schema.rb, migrations_paths points at an empty directory so
+  # the primary's migrations are not duplicated here.
+  cable:
+    <<: *default
+    database: <%= ENV.fetch("DATABASE_PATH") { "storage" } %>/production_cable.sqlite3
+    migrations_paths: db/cable_migrate
+    schema_dump: cable_schema.rb
   # Private half of the BYOK keypair custody model. Mounted on a SEPARATE,
   # worker-only volume (see docker-compose.yml `worker.volumes` — `aikeysdata`
   # is not mounted into `web` at all), so the web container has no filesystem

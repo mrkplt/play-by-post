@@ -72,9 +72,10 @@
       <%= render Shared::SceneSummaryComponent.new(summary: @scene_screen.summary) %>
     <% elsif @scene_screen.summary_pending? %>
       <%= render Shared::AsyncPendingComponent.new(
-            frame_id: "scene_summary_pending",
-            poll_path: @scene_screen.summary_status_path,
-            ready: false,
+            frame_id: @scene_screen.summary_pending_frame,
+            stream: @scene_screen.summary_stream,
+            channel: "SceneSummaryChannel",
+            stream_data: @scene_screen.summary_stream_data,
             message: Shared::SceneSummaryComponent::PENDING_MESSAGE) %>
     <% end %>
 

@@ -322,6 +322,22 @@ authenticates by a bearer `ApiToken`, not an env var.
 mounted at `/data` in both the web and worker containers. Rails 8 runs SQLite in
 WAL mode, which is what makes concurrent access from the two containers safe.
 
+**Four SQLite databases share the `dbdata` volume.** `config/database.yml`
+`production` connects to `primary` (`production.sqlite3` — the real data),
+`cache` (Solid Cache), `queue` (Solid Queue), and `cable`
+(`production_cable.sqlite3` — Solid Cable's Action Cable message backplane).
+The cache/queue/cable three are schema-owned (they load `cache_schema.rb` /
+`queue_schema.rb` / `cable_schema.rb` and point `migrations_paths` at an empty
+directory so the primary's migrations are not duplicated into them). The `cable`
+database is what lets the **worker broadcast a Turbo Stream the web container's
+subscribers receive** — e.g. an AI scene summary pushed to the scene page when
+`SceneSummaryJob` finishes (`app/models/scene_summary_broadcast.rb`, subscribed
+via `SceneSummaryChannel`). It lives on the **shared** `dbdata` volume, NOT the
+worker-only `aikeysdata` volume, so it adds no new web↔worker coupling and does
+not touch the BYOK key isolation. Action Cable mounts at `/cable` (Rails
+default); `config/cable.yml` selects the `solid_cable` adapter in production and
+`async`/`test` in development/test.
+
 **Backups are now a file copy.** The whole database is `/data/production.sqlite3`
 (plus its `-wal` and `-shm` sidecars). Copy it with `sqlite3 … ".backup"` rather
 than `cp`, which can capture a torn file mid-write:

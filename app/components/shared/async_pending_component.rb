@@ -1,45 +1,69 @@
 # typed: strict
 
 # A generic "the backend is still making this" surface. While a background job
-# has not yet produced its result, this shows a spinner and a waiting message
-# and polls; once the result exists the same frame renders the finished content
-# and stops polling. State is nothing but presence on the page — reload or
-# navigate away and the next viewer is treated identically; there is no
-# per-user or per-initiator persistence.
+# has not yet produced its result, this shows a spinner and a waiting message;
+# when the job finishes it broadcasts the finished content over Action Cable and
+# Turbo swaps it into this frame in place. State is nothing but presence on the
+# page — reload or navigate away and the next viewer is treated identically;
+# there is no per-user or per-initiator persistence.
 #
-# Mechanism: a Turbo Frame driven by the `job-status` Stimulus controller, which
-# re-fetches the poll path on an interval. The poll endpoint re-renders THIS
-# component with `ready: false` (spinner, keeps the controller) until the row
-# exists, then with `ready: true` and the finished content in the `ready` slot —
-# the ready frame has no controller, so Stimulus tears the poller down on that
-# swap. A completion toast, if wanted, is the consuming endpoint's job (it can
-# ride a turbo_stream inside the ready frame); this component only shows the
-# spinner and holds the poll wiring.
+# Mechanism: a Turbo Frame that subscribes to a signed Turbo Stream (via
+# `turbo_stream_from`). The worker that runs the job broadcasts a
+# `turbo_stream.replace` targeting this frame's id once the result exists, and
+# every subscribed viewer's frame is replaced with the finished content. Because
+# the stream name is signed and (for visibility-scoped content) authorized by a
+# custom channel, a viewer only receives a broadcast meant for them.
 #
 # Not AI-specific. Scene summaries are the first consumer; the BYOK keypair job
-# is the intended second. Callers supply: a stable `frame_id`, the `poll_path`,
-# the `ready?` fact, an optional waiting `message`, and — when ready — the
-# content via the `ready` slot.
+# is the intended second. Callers supply: a stable `frame_id`, the `stream`
+# streamable(s) to subscribe to, an optional `channel`/`stream_data` for an
+# authorizing channel, and an optional waiting `message`.
 class Shared::AsyncPendingComponent < ApplicationComponent
   extend T::Sig
 
-  renders_one :ready
-
   DEFAULT_MESSAGE = "Waiting…"
 
-  # Where and how often the frame re-fetches while pending. One value so the
-  # component holds a single poll concept rather than a path and an interval.
-  class Poll < T::Struct
-    const :path, String
-    const :interval_ms, Integer, default: 3000
+  # The Turbo Stream subscription: which streamable(s) to subscribe to, and the
+  # optional authorizing channel + extra subscription params it needs.
+  class Subscription < T::Struct
+    const :stream, T.untyped
+    const :channel, T.nilable(String)
+    const :data, T::Hash[Symbol, T.untyped], default: {}
+
+    extend T::Sig
+
+    # The streamable(s) `turbo_stream_from` splats. An Array is passed through so
+    # a caller can subscribe to `[record, :scope, class]`; a single streamable is
+    # wrapped.
+    sig { returns(T::Array[T.untyped]) }
+    def streamables
+      stream.is_a?(Array) ? stream : [ stream ]
+    end
+
+    # The `turbo_stream_from` options: the authorizing channel and any extra
+    # subscription params the channel needs.
+    sig { returns(T::Hash[Symbol, T.untyped]) }
+    def options
+      opts = T.let({}, T::Hash[Symbol, T.untyped])
+      opts[:channel] = channel if channel
+      opts[:data] = data if data.any?
+      opts
+    end
   end
 
-  sig { params(frame_id: String, poll_path: String, ready: T::Boolean, message: String, interval_ms: Integer).void }
-  def initialize(frame_id:, poll_path:, ready:, message: DEFAULT_MESSAGE, interval_ms: 3000)
+  sig do
+    params(
+      frame_id: String,
+      stream: T.untyped,
+      channel: T.nilable(String),
+      stream_data: T::Hash[Symbol, T.untyped],
+      message: String
+    ).void
+  end
+  def initialize(frame_id:, stream:, channel: nil, stream_data: {}, message: DEFAULT_MESSAGE)
     @frame_id = frame_id
-    @ready = ready
+    @subscription = T.let(Subscription.new(stream: stream, channel: channel, data: stream_data), Subscription)
     @message = message
-    @poll = T.let(Poll.new(path: poll_path, interval_ms: interval_ms), Poll)
   end
 
   sig { returns(String) }
@@ -48,27 +72,13 @@ class Shared::AsyncPendingComponent < ApplicationComponent
   sig { returns(String) }
   attr_reader :message
 
-  sig { returns(T::Boolean) }
-  def ready?
-    @ready
+  sig { returns(T::Array[T.untyped]) }
+  def streamables
+    @subscription.streamables
   end
 
-  # Turbo Frame attributes. The frame ships with NO `src` (a self-referential
-  # `src` set in HTML no-ops on eager load and empties the frame); the
-  # `job-status` controller owns fetching, driving the poll path on an interval.
-  # Once ready both the controller and the poll path are dropped, so the ready
-  # response frame has no controller — Stimulus tears the poller down on that
-  # swap, which is exactly the stop signal.
   sig { returns(T::Hash[Symbol, T.untyped]) }
-  def frame_attributes
-    return {} if ready?
-
-    {
-      data: {
-        controller: "job-status",
-        job_status_interval_value: @poll.interval_ms,
-        job_status_src_value: @poll.path
-      }
-    }
+  def stream_options
+    @subscription.options
   end
 end

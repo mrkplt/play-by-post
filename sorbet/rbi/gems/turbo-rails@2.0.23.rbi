@@ -13,6 +13,7 @@ class ActionController::Base < ::ActionController::Metal
   include ::Devise::Controllers::SignInOut
   include ::Devise::Controllers::StoreLocation
   extend ::AbstractController::Helpers::Resolution
+  extend ::ActionController::Renderers::DeprecatedEscapeJsonResponses
 end
 
 module ActionController::Base::HelperMethods
@@ -72,10 +73,6 @@ module Turbo
     # pkg:gem/turbo-rails#lib/turbo-rails.rb:18
     def signed_stream_verifier_key; end
 
-    # Sets the attribute signed_stream_verifier_key
-    #
-    # @param value the value to set the attribute signed_stream_verifier_key to.
-    #
     # pkg:gem/turbo-rails#lib/turbo-rails.rb:12
     def signed_stream_verifier_key=(_arg0); end
 
@@ -143,6 +140,144 @@ module Turbo::Broadcastable::ClassMethods
   def broadcasts_to(stream, inserts_by: T.unsafe(nil), target: T.unsafe(nil), **rendering); end
   def suppressed_turbo_broadcasts?; end
   def suppressing_turbo_broadcasts(&block); end
+end
+
+# pkg:gem/turbo-rails#lib/turbo/broadcastable/test_helper.rb:3
+module Turbo::Broadcastable::TestHelper
+  extend ::ActiveSupport::Concern
+  include ::ActionCable::TestHelper
+  include ::Turbo::Streams::StreamName
+
+  # Asserts that no `<turbo-stream>` elements were broadcast over Action Cable
+  #
+  # ==== Arguments
+  #
+  # * <tt>stream_name_or_object</tt> the objects used to generate the
+  #   channel Action Cable name, or the name itself
+  # * <tt>&block</tt> optional block executed before the
+  #   assertion
+  #
+  # Asserts that no `<turbo-stream>` elements were broadcast:
+  #
+  #     message = Message.find(1)
+  #     message.broadcast_replace_to "messages"
+  #
+  #     assert_no_turbo_stream_broadcasts "messages" # fails with MiniTest::Assertion error
+  #
+  # You can pass a block to run before the assertion:
+  #
+  #     message = Message.find(1)
+  #
+  #     assert_no_turbo_stream_broadcasts "messages" do
+  #       # do something other than broadcast to "messages"
+  #     end
+  #
+  # In addition to a String, the helper also accepts an Object or Array to
+  # determine the name of the channel the elements are broadcast to:
+  #
+  #     message = Message.find(1)
+  #
+  #     assert_no_turbo_stream_broadcasts message do
+  #       # do something other than broadcast to "message_1"
+  #     end
+  #
+  # pkg:gem/turbo-rails#lib/turbo/broadcastable/test_helper.rb:104
+  def assert_no_turbo_stream_broadcasts(stream_name_or_object, &block); end
+
+  # Asserts that `<turbo-stream>` elements were broadcast over Action Cable
+  #
+  # ==== Arguments
+  #
+  # * <tt>stream_name_or_object</tt> the objects used to generate the
+  #   channel Action Cable name, or the name itself
+  # * <tt>&block</tt> optional block executed before the
+  #   assertion
+  #
+  # ==== Options
+  #
+  # * <tt>count:</tt> the number of `<turbo-stream>` elements that are
+  # expected to be broadcast
+  #
+  # Asserts `<turbo-stream>` elements were broadcast:
+  #
+  #     message = Message.find(1)
+  #     message.broadcast_replace_to "messages"
+  #
+  #     assert_turbo_stream_broadcasts "messages"
+  #
+  # Asserts that two `<turbo-stream>` elements were broadcast:
+  #
+  #     message = Message.find(1)
+  #     message.broadcast_replace_to "messages"
+  #     message.broadcast_remove_to "messages"
+  #
+  #     assert_turbo_stream_broadcasts "messages", count: 2
+  #
+  # You can pass a block to run before the assertion:
+  #
+  #     message = Message.find(1)
+  #
+  #     assert_turbo_stream_broadcasts "messages" do
+  #       message.broadcast_append_to "messages"
+  #     end
+  #
+  # In addition to a String, the helper also accepts an Object or Array to
+  # determine the name of the channel the elements are broadcast to:
+  #
+  #     message = Message.find(1)
+  #
+  #     assert_turbo_stream_broadcasts message do
+  #       message.broadcast_replace
+  #     end
+  #
+  # pkg:gem/turbo-rails#lib/turbo/broadcastable/test_helper.rb:58
+  def assert_turbo_stream_broadcasts(stream_name_or_object, count: T.unsafe(nil), &block); end
+
+  # Captures any `<turbo-stream>` elements that were broadcast over Action Cable
+  #
+  # ==== Arguments
+  #
+  # * <tt>stream_name_or_object</tt> the objects used to generate the
+  #   channel Action Cable name, or the name itself
+  # * <tt>&block</tt> optional block to capture broadcasts during execution
+  #
+  # Returns any `<turbo-stream>` elements that have been broadcast as an
+  # Array of <tt>Nokogiri::XML::Element</tt> instances
+  #
+  #     message = Message.find(1)
+  #     message.broadcast_append_to "messages"
+  #     message.broadcast_prepend_to "messages"
+  #
+  #     turbo_streams = capture_turbo_stream_broadcasts "messages"
+  #
+  #     assert_equal "append", turbo_streams.first["action"]
+  #     assert_equal "prepend", turbo_streams.second["action"]
+  #
+  # You can pass a block to limit the scope of the broadcasts being captured:
+  #
+  #     message = Message.find(1)
+  #
+  #     turbo_streams = capture_turbo_stream_broadcasts "messages" do
+  #       message.broadcast_append_to "messages"
+  #     end
+  #
+  #     assert_equal "append", turbo_streams.first["action"]
+  #
+  # In addition to a String, the helper also accepts an Object or Array to
+  # determine the name of the channel the elements are broadcast to:
+  #
+  #     message = Message.find(1)
+  #
+  #     replace, remove = capture_turbo_stream_broadcasts message do
+  #       message.broadcast_replace
+  #       message.broadcast_remove
+  #     end
+  #
+  #     assert_equal "replace", replace["action"]
+  #     assert_equal "replace", remove["action"]
+  #
+  # pkg:gem/turbo-rails#lib/turbo/broadcastable/test_helper.rb:157
+  def capture_turbo_stream_broadcasts(stream_name_or_object, &block); end
 end
 
 class Turbo::Debouncer
@@ -244,6 +379,8 @@ class Turbo::Native::NavigationController < ::ActionController::Base
   class << self
     private
 
+    def __class_attr_config; end
+    def __class_attr_config=(new_value); end
     def __class_attr_middleware_stack; end
     def __class_attr_middleware_stack=(new_value); end
   end
@@ -391,6 +528,18 @@ module Turbo::Streams::TurboStreamsTagBuilder
   def turbo_stream; end
 end
 
+class Turbo::StreamsChannel < ::ActionCable::Channel::Base
+  include ::Turbo::Streams::StreamName::ClassMethods
+  extend ::Turbo::Streams::StreamName
+  extend ::ActionView::Helpers::CaptureHelper
+  extend ::ActionView::Helpers::OutputSafetyHelper
+  extend ::ActionView::Helpers::TagHelper
+  extend ::Turbo::Streams::ActionHelper
+  extend ::Turbo::Streams::Broadcasts
+
+  def subscribed; end
+end
+
 module Turbo::StreamsHelper
   def turbo_stream; end
   def turbo_stream_from(*streamables, **attributes); end
@@ -481,8 +630,6 @@ class Turbo::SystemTestHelper::SignedStreamNameConditions
   include ::Enumerable
   include ::Turbo::Streams::StreamName
 
-  # @return [SignedStreamNameConditions] a new instance of SignedStreamNameConditions
-  #
   # pkg:gem/turbo-rails#lib/turbo/system_test_helper.rb:111
   def initialize(value); end
 

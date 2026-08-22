@@ -38,6 +38,8 @@ NON_AUTHORIZABLE = %w[
   NotificationPreference
   PostRead
   SceneParticipant
+  SceneSummaryBroadcast
+  SceneSummaryVisibility
   User
 ].freeze
 

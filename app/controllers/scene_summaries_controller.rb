@@ -4,12 +4,10 @@ class SceneSummariesController < ApplicationController
   extend T::Sig
   include SceneSummaryScoped
 
-  helper_method :status_poll_path
-
-  before_action :require_game_access!, only: %i[index new create edit update destroy status]
+  before_action :require_game_access!, only: %i[index new create edit update destroy]
   before_action :require_resolved_scene!, only: %i[new create]
   before_action :require_summary!, only: %i[edit update destroy]
-  after_action :verify_authorized, except: %i[index status]
+  after_action :verify_authorized, except: %i[index]
 
   sig { void }
   def index
@@ -20,26 +18,6 @@ class SceneSummariesController < ApplicationController
     )
     @game_presenter = T.let(GamePresenter.new(game, policy: policy(game), urls: self), T.nilable(GamePresenter))
     @game_routes = T.let(GameRoutesPresenter.new(T.must(@game_presenter), urls: self), T.nilable(GameRoutesPresenter))
-  end
-
-  # Polled by the scene page while SceneSummaryJob runs. Renders the shared
-  # async-pending frame: the spinner until a *visible* summary exists, then the
-  # summary itself. Read-only and visibility-gated (a draft, or an AI-hidden
-  # summary, is not "ready" for that viewer), so it is not part of the Pundit
-  # authorize flow — require_game_access! is the gate, matching #index.
-  sig { void }
-  def status
-    found = summary
-    summary_policy = found && policy(found)
-    visible = found if found && found.visible_to?(summary_policy, current_user)
-    @summary_presenter = T.let(
-      visible && SceneSummaryPresenter.new(visible, game: game, urls: self, policy: summary_policy, viewer: current_user),
-      T.nilable(SceneSummaryPresenter)
-    )
-    # The poll that first sees the summary is the completion moment; a now-flash
-    # rides the same response into the toast layer (replaced, per the app's
-    # toast convention) so it shows once and does not persist to a later page.
-    flash.now[:notice] = "Scene summary ready." if @summary_presenter
   end
 
   sig { void }
@@ -113,16 +91,6 @@ class SceneSummariesController < ApplicationController
   sig { void }
   def require_summary!
     redirect_to game_scene_path(game, scene), alert: "No summary found." unless summary
-  end
-
-  # The URL the pending frame re-fetches. A helper_method so the status view
-  # reads it without a primitive ivar (which the view-layering gate rejects).
-  # Dropping `scene` is an equivalent mutation here: this runs inside the request
-  # whose path already carries scene_id, so the url helper backfills it.
-  sig { returns(String) }
-  # mutant:disable
-  def status_poll_path
-    status_game_scene_scene_summary_path(game, scene)
   end
 
   sig { void }

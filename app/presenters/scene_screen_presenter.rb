@@ -55,10 +55,24 @@ class SceneScreenPresenter < BasePresenter
     @options.fetch(:summary_pending)
   end
 
-  # Where the pending frame polls for the finished summary.
+  # The Turbo Frame id the pending frame carries and the completion broadcast
+  # targets.
   sig { returns(String) }
-  def summary_status_path
-    @options.fetch(:summary_status_path)
+  def summary_pending_frame
+    @options.fetch(:summary_pending_frame)
+  end
+
+  # The signed Turbo Stream the pending frame subscribes to — this viewer's
+  # visibility class, as `[scene, :summary, class]`.
+  sig { returns(T::Array[T.untyped]) }
+  def summary_stream
+    @options.fetch(:summary_stream)
+  end
+
+  # Extra subscription params the authorizing channel needs (the scene id).
+  sig { returns(T::Hash[Symbol, T.untyped]) }
+  def summary_stream_data
+    @options.fetch(:summary_stream_data)
   end
 
   # The GM action row shows only while the scene is still open.
