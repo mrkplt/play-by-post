@@ -77,10 +77,11 @@ Rails.application.routes.draw do
       resources :images, only: %i[create update destroy], controller: "user_images"
       # BYOK OpenRouter key (AI Control Plane): create generates the
       # EncryptedValue's dedicated keypair (server-side, via
-      # KeypairGenerationJob), update seals/replaces the stored key with a
-      # browser-encrypted envelope. Singleton — one "openrouter_key"
-      # EncryptedValue per user.
-      resource :byok_key, only: %i[create update], module: :profiles
+      # KeypairGenerationJob), update seals the stored key with a
+      # browser-encrypted envelope, destroy tears the whole EncryptedValue
+      # (and its keypair) back down to the neutral state. Singleton — one
+      # "openrouter_key" EncryptedValue per user.
+      resource :byok_key, only: %i[create update destroy], module: :profiles
     end
     resources :games, only: %i[index new create show edit update destroy] do
       # Kept as toggle_*_game_path on the game itself — the setting switches
