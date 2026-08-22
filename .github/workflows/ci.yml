@@ -526,12 +526,12 @@ jobs:
   # for master pushes / version tags — never for pull requests. Reuses the gha
   # cache warmed by `build`, so this rebuild is fast.
   #
-  # Matrixed over both final stages, publishing two distinct image tags from
-  # one repository (ghcr.io/mrkplt/play-by-post): `web-*` tags built from
-  # `web-final`, `worker-*` tags built from `worker-final`. docker-compose.yml
-  # pins `web` to `web-latest` and `worker` to `worker-latest`. Only the
-  # `worker-*` image contains config/ai_private_keys.key — see the
-  # Dockerfile's app-export stage and docs/CONFIGURATION.md.
+  # Matrixed over both final stages, each publishing to its own image
+  # repository: `web-final` -> ghcr.io/mrkplt/play-by-post-web,
+  # `worker-final` -> ghcr.io/mrkplt/play-by-post-worker. docker-compose.yml
+  # pins `web` and `worker` to `:latest` of their respective images. Only the
+  # worker image contains config/ai_private_keys.key — see the Dockerfile's
+  # app-export stage and docs/CONFIGURATION.md.
   publish:
     runs-on: ubuntu-24.04-arm
     needs: [scan_ruby, scan_js, lint, typecheck, outdated_gems, test, mutation, quality_gate, build]
@@ -567,20 +567,21 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # `flavor: suffix=-web`/`-worker` (with onlatest so the bare `latest`
-      # tag also gets suffixed) turns every generated tag into its
-      # target-specific variant: web-latest / worker-latest,
-      # web-sha-<sha> / worker-sha-<sha>, etc. Both matrix legs push to the
-      # SAME image repository, distinguished only by tag — there is no
-      # separate GHCR package per image.
+      # Each matrix leg publishes to its OWN image repository — `web-final`
+      # -> ghcr.io/mrkplt/play-by-post-web, `worker-final` ->
+      # ...-worker — with conventional version tags (`latest`, `<branch>`,
+      # `sha-<sha>`, `<semver>`). Image name = role, tag = version: exactly
+      # what docker-compose.yml pins `web` and `worker` to (`:latest` each).
+      # The two roles are genuinely distinct artifacts — only the worker
+      # image carries config/ai_private_keys.key (see the Dockerfile's
+      # app-export stage and docs/CONFIGURATION.md) — so they are separate
+      # GHCR packages, not one package split by tag suffix.
       - name: Extract metadata
         id: meta
         if: steps.docs.outputs.skip != 'true'
         uses: docker/metadata-action@v6
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          flavor: |
-            suffix=-${{ matrix.target == 'web-final' && 'web' || 'worker' }},onlatest=true
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-${{ matrix.target == 'web-final' && 'web' || 'worker' }}
           tags: |
             type=sha,format=long
             type=ref,event=branch

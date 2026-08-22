@@ -278,11 +278,11 @@ from `build`; `web-final` copies from an intermediate `app-export` stage that de
 Plane's AR-encryption key file and its encrypted credentials) right after copying. That
 means the secret is absent from every layer of the `web-final` image, not filtered out
 at runtime — `web` has no code path that could ever read it, by construction. CI
-publishes the two stages as separate tags from the same GHCR repository
-(`ghcr.io/mrkplt/play-by-post`): `web-latest` / `web-sha-<sha>` from `web-final`,
-`worker-latest` / `worker-sha-<sha>` from `worker-final`. `docker-compose.yml` pins
-`web` to `web-latest` and `worker` to `worker-latest`. **"Enable always pull image" in
-Coolify applies to both services** — the stale-cache trap described above under "There
+publishes the two stages as two separate GHCR image repositories:
+`ghcr.io/mrkplt/play-by-post-web` (`:latest` / `:sha-<sha>`) from `web-final`,
+`ghcr.io/mrkplt/play-by-post-worker` (`:latest` / `:sha-<sha>`) from `worker-final`.
+`docker-compose.yml` pins `web` and `worker` to `:latest` of their respective images.
+**"Enable always pull image" in Coolify applies to both services** — the stale-cache trap described above under "There
 is no `IMAGE_TAG`" now applies twice.
 
 **`worker-keys` is a worker-only volume, separate from `dbdata`.** It holds the AI
