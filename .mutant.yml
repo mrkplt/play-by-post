@@ -18,6 +18,8 @@ matcher:
   subjects:
     # Models
     - AiUsage
+    - Ai::Feature
+    - GameKeyAuthorization
     - PublicKey
     - PrivateKey
     - EncryptedValue
@@ -76,6 +78,9 @@ matcher:
     - GameMemberPresenter
     - GameFeedRowPresenter
     - ApiTokenRowPresenter
+    - KeyContributionRowPresenter
+    - KeyContributionsPresenter
+    - ApiTokensPresenter
     - GameLinkPresenter
     - ContentTemplatePresenter
     - GamePresenter
@@ -128,6 +133,10 @@ matcher:
     - Ui::FormErrorsComponent
     - Ui::SecretFieldComponent
     - Shared::TokenSectionComponent
+    - Shared::KeyContributionMatrixComponent
+    - Shared::KeyContributionMatrixComponent::Cell
+    - Shared::KeyContributionMatrixComponent::Offered
+    - Shared::KeyContributionMatrixComponent::Available
     - Shared::AiSummariesToggleComponent
     - Shared::SheetsToggleComponent
     - Shared::ProfileFormComponent
@@ -234,6 +243,8 @@ matcher:
     # Services
     - AiKeyResolver
     - AiKeyResolver::KeySource
+    - AiKeyResolver::Candidate
+    - Ai::Funding
     - Crypto::CryptoService
     - Crypto::Blob
     - Crypto::DecryptionError
@@ -290,6 +301,7 @@ matcher:
     - Api::IndexFilters
     # Controllers
     - ActionMailbox::Ingresses::Resend::InboundEmailsController
+    - Games::KeyContributionsController
     - Webhooks::DeployController
     - ErrorTunnelController
     - SceneSummariesController
@@ -377,6 +389,7 @@ matcher:
     - ScenePolicy::Scope
     - GamePolicy
     - GameMemberPolicy
+    - GameKeyAuthorizationPolicy
     - InvitationPolicy
     - PostPolicy
     - GameFilePolicy

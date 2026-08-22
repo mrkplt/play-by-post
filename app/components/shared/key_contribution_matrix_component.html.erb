@@ -1,0 +1,21 @@
+<% if any_games? %>
+  <ul class="flex flex-col gap-5">
+    <% rows.each do |row| %>
+      <li>
+        <span class="font-medium text-body"><%= row.name %></span>
+        <div class="flex flex-wrap gap-3 mt-2">
+          <% row.cells.each do |cell| %>
+            <%= button_to cell.path, method: cell.http_method, params: cell.params,
+                  class: "flex items-center gap-2 bg-transparent border-0 p-0 cursor-pointer",
+                  aria: { label: cell.aria_label } do %>
+              <%= render Ui::ToggleSwitchComponent.new(state: cell.switch_state) %>
+              <span class="text-sm text-muted"><%= cell.label %></span>
+            <% end %>
+          <% end %>
+        </div>
+      </li>
+    <% end %>
+  </ul>
+<% else %>
+  <p class="text-sm text-muted">Join a game to make your key available for its AI features.</p>
+<% end %>

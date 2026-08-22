@@ -215,6 +215,40 @@ RSpec.describe UserPresenter do
     end
   end
 
+  describe "#key_contribution_rows", db: true do
+    let(:user) { create(:user) }
+    let(:helpers) { double("helpers") }
+
+    it "returns one row per non-banned membership, marking contributed features" do
+      allow_any_instance_of(User).to receive(:ai_key_present?).and_return(true)
+      funded = create(:game, name: "Funded")
+      unfunded = create(:game, name: "Unfunded")
+      create(:game_member, game: funded, user: user)
+      create(:game_member, game: unfunded, user: user)
+      create(:game_key_authorization, game: funded, user: user, feature: "scene_summary")
+
+      allow(helpers).to receive(:game_key_contributions_path).and_return("/create")
+      allow(helpers).to receive(:game_key_contribution_path).and_return("/destroy")
+
+      rows = described_class.new(user, helpers: helpers).key_contribution_rows
+
+      expect(rows.size).to eq(2)
+      funded_row = rows.find { |r| r.name == "Funded" }
+      unfunded_row = rows.find { |r| r.name == "Unfunded" }
+      expect(funded_row.cells.first).to be_a(KeyContributionRowPresenter::Offered)
+      expect(unfunded_row.cells.first).to be_a(KeyContributionRowPresenter::Available)
+    end
+
+    it "excludes banned memberships" do
+      banned = create(:game, name: "Forbidden Keep")
+      create(:game_member, :banned, game: banned, user: user)
+
+      rows = described_class.new(user, helpers: helpers).key_contribution_rows
+
+      expect(rows.map(&:name)).not_to include("Forbidden Keep")
+    end
+  end
+
   describe "#byok_key" do
     it "returns a UserByokKeyPresenter for the model" do
       expect(presenter.byok_key).to be_a(UserByokKeyPresenter)

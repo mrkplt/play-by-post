@@ -91,6 +91,10 @@ Rails.application.routes.draw do
         patch :toggle_sheets_hidden, to: "games/settings#sheets_hidden"
         patch :toggle_ai_summaries_enabled, to: "games/settings#ai_summaries_enabled"
       end
+      # A member offers/revokes their own key as a funding source for this
+      # game's game-level AI features (GameKeyAuthorization). Scoped by
+      # :feature; destroy uses the feature as the member id.
+      resources :key_contributions, only: %i[create destroy], param: :feature, module: :games
       resources :scenes, only: %i[index new create show] do
         member do
           patch :resolve

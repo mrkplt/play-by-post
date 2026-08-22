@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_21_000300) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_22_000100) do
   create_table "action_mailbox_inbound_emails", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "message_checksum", null: false
@@ -46,18 +46,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_21_000300) do
     t.bigint "blob_id", null: false
     t.string "variation_digest", null: false
     t.index ["blob_id", "variation_digest"], name: "index_active_storage_variant_records_uniqueness", unique: true
-  end
-
-  create_table "ai_keypairs", force: :cascade do |t|
-    t.datetime "created_at", null: false
-    t.string "fingerprint", null: false
-    t.integer "owner_id", null: false
-    t.string "owner_type", null: false
-    t.text "public_key", null: false
-    t.text "sealed_key"
-    t.datetime "updated_at", null: false
-    t.index ["fingerprint"], name: "index_ai_keypairs_on_fingerprint", unique: true
-    t.index ["owner_type", "owner_id"], name: "index_ai_keypairs_on_owner", unique: true
   end
 
   create_table "ai_usages", force: :cascade do |t|
@@ -169,6 +157,18 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_21_000300) do
     t.index ["game_id"], name: "index_game_files_on_game_id"
   end
 
+  create_table "game_key_authorizations", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "feature", null: false
+    t.integer "game_id", null: false
+    t.datetime "updated_at", null: false
+    t.integer "user_id", null: false
+    t.index ["game_id", "feature"], name: "index_game_key_authorizations_on_game_id_and_feature"
+    t.index ["game_id", "user_id", "feature"], name: "index_game_key_auth_on_game_user_feature", unique: true
+    t.index ["game_id"], name: "index_game_key_authorizations_on_game_id"
+    t.index ["user_id"], name: "index_game_key_authorizations_on_user_id"
+  end
+
   create_table "game_links", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "description", null: false
@@ -191,7 +191,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_21_000300) do
   end
 
   create_table "games", force: :cascade do |t|
-    t.string "ai_key_reference"
     t.boolean "ai_summaries_enabled", default: false, null: false
     t.datetime "created_at", null: false
     t.datetime "deleted_at"
@@ -386,7 +385,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_21_000300) do
   end
 
   create_table "users", force: :cascade do |t|
-    t.string "ai_key_reference"
     t.datetime "created_at", null: false
     t.string "email", default: "", null: false
     t.string "magic_link_token"
@@ -414,6 +412,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_21_000300) do
   add_foreign_key "game_export_requests", "games"
   add_foreign_key "game_export_requests", "users"
   add_foreign_key "game_files", "games"
+  add_foreign_key "game_key_authorizations", "games"
+  add_foreign_key "game_key_authorizations", "users"
   add_foreign_key "game_links", "games"
   add_foreign_key "game_members", "games"
   add_foreign_key "game_members", "users"

@@ -16,6 +16,11 @@ class GameMember < ApplicationRecord
   scope :game_masters, -> { where(role: "game_master") }
   scope :players, -> { where(role: "player") }
 
+  # The memberships that back a person's profile section listings (feeds, API
+  # tokens, key contributions): every non-banned membership, game preloaded,
+  # ordered by game name. One source for the shared "your games" ordering.
+  scope :for_profile_listing, -> { where.not(status: "banned").includes(:game).order("games.name") }
+
   sig { returns(T::Boolean) }
   def game_master?
     role == "game_master"

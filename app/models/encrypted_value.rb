@@ -22,8 +22,15 @@
 class EncryptedValue < ApplicationRecord
   extend T::Sig
 
-  belongs_to :owner, polymorphic: true
+  # A key is real money, and only a person can own money — so an EncryptedValue
+  # is owned by a User, never a Game. A game does not own a key; people own keys
+  # and authorize a game to *use* them (see GameKeyAuthorization). The column
+  # stays polymorphic in shape (owner_type/owner_id) for the custody primitive's
+  # generality, but the association is pinned to User.
+  belongs_to :owner, polymorphic: true, inverse_of: false
   belongs_to :public_key, inverse_of: :encrypted_value
+
+  validates :owner_type, inclusion: { in: %w[User] }
 
   validates :value_type, presence: true
   validates :owner_id, uniqueness: { scope: %i[owner_type value_type] }

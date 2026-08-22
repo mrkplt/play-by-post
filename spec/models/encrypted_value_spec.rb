@@ -25,12 +25,12 @@ RSpec.describe EncryptedValue, type: :model do
       expect(other).to be_valid
     end
 
-    it "allows a game to hold its own EncryptedValue alongside a user's", db: true do
-      user = create(:user)
-      create(:encrypted_value, owner: user, value_type: "openrouter_key")
-      game_value = build(:encrypted_value, :for_game, value_type: "openrouter_key")
+    it "rejects a Game as owner — only a person can own a key", db: true do
+      game = create(:game)
+      game_value = build(:encrypted_value, owner: game, value_type: "openrouter_key")
 
-      expect(game_value).to be_valid
+      expect(game_value).not_to be_valid
+      expect(game_value.errors[:owner_type]).to be_present
     end
   end
 

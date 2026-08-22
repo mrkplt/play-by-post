@@ -52,7 +52,11 @@ IVAR_WRITE_NODES = [
 #   subclass reads as bare `record` / `user` / `scope`. The readers live on the
 #   base and every use is in a subclass file; deleting them breaks all policies.
 V3_ALLOWLIST = {
-  "app/policies/application_policy.rb" => %i[user record scope]
+  "app/policies/application_policy.rb" => %i[user record scope],
+  # Ai::Feature#label is the feature's display name, read only from the
+  # contribution-matrix presenter/component (KeyContributionRowPresenter), not
+  # from within feature.rb itself.
+  "app/models/ai/feature.rb" => %i[label]
 }.freeze
 
 def each_def(node, &block)

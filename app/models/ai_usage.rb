@@ -3,7 +3,11 @@
 class AiUsage < ApplicationRecord
   extend T::Sig
 
-  FEATURES = T.let(%w[inbound_email scene_summary].freeze, T::Array[String])
+  # Derived from the canonical Ai::Feature registry — the one place every AI
+  # feature is declared. AiUsage records spend for any feature (including
+  # app-infra like inbound_email), so it validates against the full registry,
+  # not just the pool-fundable subset.
+  FEATURES = T.let(Ai::Feature.names.freeze, T::Array[String])
 
   validates :feature,    presence: true, inclusion: { in: FEATURES }
   validates :model_used, presence: true

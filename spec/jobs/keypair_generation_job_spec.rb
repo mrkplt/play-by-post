@@ -28,14 +28,6 @@ RSpec.describe KeypairGenerationJob, type: :job do
       expect(private_key.n).to eq(public_key.n)
     end
 
-    it "supports a Game owner (the GM fallback key)", :ai_credential, db: true do
-      game = create(:game)
-
-      described_class.new.perform(owner_type: "Game", owner_id: game.id, value_type: value_type)
-
-      expect(EncryptedValue.find_by(owner: game, value_type: value_type)).to be_present
-    end
-
     it "is idempotent — does nothing if an EncryptedValue already exists for the owner+value_type", :ai_credential, db: true do
       user = create(:user)
       existing = create(:encrypted_value, owner: user, value_type: value_type)
@@ -68,18 +60,6 @@ RSpec.describe KeypairGenerationJob, type: :job do
       }.to change(EncryptedValue, :count).by(1)
 
       expect(EncryptedValue.find_by(owner: user, value_type: value_type)).to be_present
-    end
-
-    it "checks owner_type as well as owner_id — a Game's EncryptedValue does not block a User with the same numeric id", :ai_credential, db: true do
-      game = create(:game)
-      create(:encrypted_value, owner: game, value_type: value_type)
-      user = create(:user, id: game.id)
-
-      expect {
-        described_class.new.perform(owner_type: "User", owner_id: user.id, value_type: value_type)
-      }.to change(EncryptedValue, :count).by(1)
-
-      expect(EncryptedValue.find_by(owner_type: "User", owner_id: user.id, value_type: value_type)).to be_present
     end
 
     it "does not leak private key material onto the PublicKey row", :ai_credential, db: true do

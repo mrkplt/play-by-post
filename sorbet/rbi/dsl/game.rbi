@@ -432,6 +432,20 @@ class Game
     def game_files=(value); end
 
     sig { returns(T::Array[T.untyped]) }
+    def game_key_authorization_ids; end
+
+    sig { params(ids: T::Array[T.untyped]).returns(T::Array[T.untyped]) }
+    def game_key_authorization_ids=(ids); end
+
+    # This method is created by ActiveRecord on the `Game` class because it declared `has_many :game_key_authorizations`.
+    # 🔗 [Rails guide for `has_many` association](https://guides.rubyonrails.org/association_basics.html#the-has-many-association)
+    sig { returns(::GameKeyAuthorization::PrivateCollectionProxy) }
+    def game_key_authorizations; end
+
+    sig { params(value: T::Enumerable[::GameKeyAuthorization]).void }
+    def game_key_authorizations=(value); end
+
+    sig { returns(T::Array[T.untyped]) }
     def game_link_ids; end
 
     sig { params(ids: T::Array[T.untyped]).returns(T::Array[T.untyped]) }
@@ -680,51 +694,6 @@ class Game
   end
 
   module GeneratedAttributeMethods
-    sig { returns(T.nilable(::String)) }
-    def ai_key_reference; end
-
-    sig { params(value: T.nilable(::String)).returns(T.nilable(::String)) }
-    def ai_key_reference=(value); end
-
-    sig { returns(T::Boolean) }
-    def ai_key_reference?; end
-
-    sig { returns(T.nilable(::String)) }
-    def ai_key_reference_before_last_save; end
-
-    sig { returns(T.untyped) }
-    def ai_key_reference_before_type_cast; end
-
-    sig { returns(T::Boolean) }
-    def ai_key_reference_came_from_user?; end
-
-    sig { returns(T.nilable([T.nilable(::String), T.nilable(::String)])) }
-    def ai_key_reference_change; end
-
-    sig { returns(T.nilable([T.nilable(::String), T.nilable(::String)])) }
-    def ai_key_reference_change_to_be_saved; end
-
-    sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
-    def ai_key_reference_changed?(from: T.unsafe(nil), to: T.unsafe(nil)); end
-
-    sig { returns(T.nilable(::String)) }
-    def ai_key_reference_in_database; end
-
-    sig { returns(T.nilable([T.nilable(::String), T.nilable(::String)])) }
-    def ai_key_reference_previous_change; end
-
-    sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
-    def ai_key_reference_previously_changed?(from: T.unsafe(nil), to: T.unsafe(nil)); end
-
-    sig { returns(T.nilable(::String)) }
-    def ai_key_reference_previously_was; end
-
-    sig { returns(T.nilable(::String)) }
-    def ai_key_reference_was; end
-
-    sig { void }
-    def ai_key_reference_will_change!; end
-
     sig { returns(T::Boolean) }
     def ai_summaries_enabled; end
 
@@ -1086,9 +1055,6 @@ class Game
     def post_edit_window_minutes_will_change!; end
 
     sig { void }
-    def restore_ai_key_reference!; end
-
-    sig { void }
     def restore_ai_summaries_enabled!; end
 
     sig { void }
@@ -1120,12 +1086,6 @@ class Game
 
     sig { void }
     def restore_updated_at!; end
-
-    sig { returns(T.nilable([T.nilable(::String), T.nilable(::String)])) }
-    def saved_change_to_ai_key_reference; end
-
-    sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
-    def saved_change_to_ai_key_reference?(from: T.unsafe(nil), to: T.unsafe(nil)); end
 
     sig { returns(T.nilable([T::Boolean, T::Boolean])) }
     def saved_change_to_ai_summaries_enabled; end
@@ -1327,9 +1287,6 @@ class Game
 
     sig { void }
     def updated_at_will_change!; end
-
-    sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
-    def will_save_change_to_ai_key_reference?(from: T.unsafe(nil), to: T.unsafe(nil)); end
 
     sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
     def will_save_change_to_ai_summaries_enabled?(from: T.unsafe(nil), to: T.unsafe(nil)); end
