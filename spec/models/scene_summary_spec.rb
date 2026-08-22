@@ -146,6 +146,65 @@ RSpec.describe SceneSummary, type: :model do
     end
   end
 
+  describe "#visible_to?", :db do
+    let(:game) { create(:game) }
+    let(:scene) { create(:scene, :resolved, game: game) }
+    let(:gm) { create(:user, :with_profile) }
+    let(:player) { create(:user, :with_profile) }
+
+    before do
+      create(:game_member, :game_master, game: game, user: gm)
+      create(:game_member, game: game, user: player)
+    end
+
+    it "is visible to anyone once published and not AI-hidden" do
+      published = create(:scene_summary, scene: scene, draft: false)
+
+      expect(published.visible_to?(player)).to be(true)
+    end
+
+    it "hides a draft from a non-manager" do
+      draft = create(:scene_summary, scene: scene, draft: true, body: "")
+
+      expect(draft.visible_to?(player)).to be(false)
+    end
+
+    it "shows a draft to a manager" do
+      draft = create(:scene_summary, scene: scene, draft: true, body: "")
+
+      expect(draft.visible_to?(gm)).to be(true)
+    end
+
+    it "hides an AI-generated summary from a viewer whose AI display preference is hidden" do
+      ai = create(:scene_summary, :ai_generated, scene: scene)
+      player.user_profile.update!(ai_display_preference: :hidden)
+
+      expect(ai.visible_to?(player)).to be(false)
+    end
+
+    it "shows a hand-written summary even to a hidden-preference viewer" do
+      hand = create(:scene_summary, scene: scene)
+      player.user_profile.update!(ai_display_preference: :hidden)
+
+      expect(hand.visible_to?(player)).to be(true)
+    end
+
+    it "shows an AI-generated summary to a viewer whose preference is not hidden" do
+      ai = create(:scene_summary, :ai_generated, scene: scene)
+      player.user_profile.update!(ai_display_preference: :tagged)
+
+      expect(ai.visible_to?(player)).to be(true)
+    end
+
+    it "shows an AI-generated summary to a viewer who has no profile yet" do
+      profileless = create(:user)
+      create(:game_member, game: game, user: profileless)
+      ai = create(:scene_summary, :ai_generated, scene: scene)
+
+      expect(ai.visible_to?(profileless)).to be(true)
+    end
+  end
+
   describe "#ai_generated?" do
     it "returns true when generated_at is present" do
       expect(build(:scene_summary, :ai_generated).ai_generated?).to be true

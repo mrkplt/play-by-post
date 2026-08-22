@@ -27,6 +27,8 @@ matcher:
     - GlitchTipDsn
     - Game
     - SceneSummary
+    - SceneSummaryVisibility
+    - SceneSummaryBroadcast
     - GameExportRequest
     - GameMember
     - GameFile
@@ -116,6 +118,9 @@ matcher:
     - UserPresenter
     - UserProfilePresenter
     # Components
+    - Ui::SpinnerComponent
+    - Shared::AsyncPendingComponent
+    - Shared::AsyncPendingComponent::Subscription
     - Shared::RecordBackedForm
     - Shared::GameFlagToggle
     - Shared::ImageLibraryComponent
@@ -344,6 +349,9 @@ matcher:
     - GamePurgeJob
     - FeedbackSweepJob
     - KeypairGenerationJob
+    # Channels
+    - SceneSummaryChannel
+    - ApplicationCable::Connection
     # Mailers
     - NotificationMailer
     - NotificationMailer::Delivery

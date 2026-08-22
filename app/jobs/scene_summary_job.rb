@@ -8,14 +8,28 @@ class SceneSummaryJob < ApplicationJob
   sig { params(scene_id: Integer).void }
   def perform(scene_id)
     scene = Scene.find_by(id: scene_id)
-    return unless scene
-
-    upsert_summary(scene, SceneSummaryService.new(scene).call)
+    generate_and_deliver(scene) if scene
   rescue SceneSummaryService::ConfigurationError => error
     Rails.logger.error("SceneSummaryJob: #{error.message}")
   end
 
   private
+
+  # Produce the summary, persist it, then push it to the waiting viewers.
+  sig { params(scene: Scene).void }
+  def generate_and_deliver(scene)
+    upsert_summary(scene, SceneSummaryService.new(scene).call)
+    broadcast(scene)
+  end
+
+  # Push the finished summary to every viewer waiting on the scene page, scoped
+  # to the visibility classes that may see it (SceneSummaryBroadcast). Reloaded
+  # from the row the upsert just wrote — upsert bypasses the in-memory object.
+  sig { params(scene: Scene).void }
+  def broadcast(scene)
+    summary = SceneSummary.find_by(scene_id: scene.id)
+    SceneSummaryBroadcast.new(summary).call if summary
+  end
 
   UPDATE_ONLY_COLUMNS = T.let(
     %i[body model_used generated_at input_tokens output_tokens generated_by_id cost

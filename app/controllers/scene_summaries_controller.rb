@@ -7,7 +7,7 @@ class SceneSummariesController < ApplicationController
   before_action :require_game_access!, only: %i[index new create edit update destroy]
   before_action :require_resolved_scene!, only: %i[new create]
   before_action :require_summary!, only: %i[edit update destroy]
-  after_action :verify_authorized, except: :index
+  after_action :verify_authorized, except: %i[index]
 
   sig { void }
   def index

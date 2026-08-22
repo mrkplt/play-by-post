@@ -23,13 +23,19 @@ class SceneShowBuilder
 
   sig { params(game_presenter: GamePresenter).returns(SceneScreenPresenter) }
   def screen(game_presenter)
+    summary = summary_presenter
+
     SceneScreenPresenter.new(
       scene_presenter,
       game_presenter: game_presenter,
       navigation: navigation_presenter,
       show: show_presenter,
       posts: posts_presenter,
-      summary: summary_presenter
+      summary: summary,
+      summary_pending: summary_pending?(summary),
+      summary_pending_frame: SceneSummaryChannel::PENDING_FRAME_ID,
+      summary_stream: summary_stream,
+      summary_stream_data: { scene_id: @scene.id }
     )
   end
 
@@ -80,18 +86,35 @@ class SceneShowBuilder
 
   private
 
-  # A draft summary is visible only to a GM (its author); everyone else sees it
-  # as absent until it is published. An AI-generated summary is additionally
-  # absent for a viewer whose ai_display_preference is "hidden" (AI Control
-  # Plane) — the same per-viewer filter SceneSummary.visible_to applies to the
-  # index/RSS, expressed here as a predicate since the scene only ever has one
-  # summary to check rather than a relation to filter.
+  # The async summary is "pending" for this viewer when the scene is resolved
+  # and the game has AI summaries on, but no summary is visible to them yet —
+  # the moment the pending frame (Fizzy #115) should show a spinner. A draft (or
+  # an AI-hidden summary) counts as not-yet-visible, so the frame keeps waiting
+  # for a broadcast in this viewer's visibility class.
+  sig { params(summary: T.nilable(SceneSummaryPresenter)).returns(T::Boolean) }
+  def summary_pending?(summary)
+    !summary && @scene.resolved? && @game.ai_summaries_enabled? ? true : false
+  end
+
+  # The signed Turbo Stream this viewer subscribes to while the summary is
+  # pending: their own visibility class, so a completion broadcast reaches them
+  # only if the finished summary is visible to their class. Built from the same
+  # SceneSummaryVisibility mapping the worker broadcasts through.
+  sig { returns(T::Array[T.untyped]) }
+  def summary_stream
+    # The GM answer comes from the game directly (the same question
+    # SceneSummaryPolicy#manage? asks) so no throwaway SceneSummary is built —
+    # building one would back-populate @scene.scene_summary and make the page
+    # think a summary already exists.
+    klass = SceneSummaryVisibility.for_viewer(game: @game, viewer: @context.current_user)
+    [ @scene, :summary, klass ]
+  end
+
+  # The per-viewer visibility rule lives on SceneSummary so the scene page and
+  # the broadcast agree on who may see a summary.
   sig { params(summary: SceneSummary).returns(T::Boolean) }
   def summary_visible?(summary)
-    return false if summary.draft? && !summary_policy(summary).manage?
-    return false if summary.ai_generated? && @context.current_user.user_profile&.hidden?
-
-    true
+    summary.visible_to?(@context.current_user)
   end
 
   sig { params(summary: SceneSummary).returns(SceneSummaryPolicy) }

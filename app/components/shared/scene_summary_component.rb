@@ -3,6 +3,10 @@
 class Shared::SceneSummaryComponent < ApplicationComponent
   extend T::Sig
 
+  # Shown by the async-pending frame while SceneSummaryJob is still running.
+  # Lives here so the scene page and the poll endpoint use one string.
+  PENDING_MESSAGE = "Generating scene summary…"
+
   sig { params(summary: SceneSummaryPresenter).void }
   def initialize(summary:)
     @summary = summary

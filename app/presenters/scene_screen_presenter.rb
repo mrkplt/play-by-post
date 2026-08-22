@@ -47,6 +47,34 @@ class SceneScreenPresenter < BasePresenter
     scene.resolved? && summary ? true : false
   end
 
+  # True when the async SceneSummaryJob is (from this viewer's vantage) still
+  # working: the pending frame renders in place of a summary. Mutually exclusive
+  # with summary? — one or the other, never both.
+  sig { returns(T::Boolean) }
+  def summary_pending?
+    @options.fetch(:summary_pending)
+  end
+
+  # The Turbo Frame id the pending frame carries and the completion broadcast
+  # targets.
+  sig { returns(String) }
+  def summary_pending_frame
+    @options.fetch(:summary_pending_frame)
+  end
+
+  # The signed Turbo Stream the pending frame subscribes to — this viewer's
+  # visibility class, as `[scene, :summary, class]`.
+  sig { returns(T::Array[T.untyped]) }
+  def summary_stream
+    @options.fetch(:summary_stream)
+  end
+
+  # Extra subscription params the authorizing channel needs (the scene id).
+  sig { returns(T::Hash[Symbol, T.untyped]) }
+  def summary_stream_data
+    @options.fetch(:summary_stream_data)
+  end
+
   # The GM action row shows only while the scene is still open.
   sig { returns(T::Boolean) }
   def gm_actions?

@@ -166,5 +166,62 @@ RSpec.describe SceneShowBuilder, :db do
 
       expect(builder.screen(game_presenter).summary).to be_a(SceneSummaryPresenter)
     end
+
+    it "carries the pending frame id and the viewer's own visibility-class stream" do
+      screen = builder.screen(game_presenter)
+
+      expect(screen.summary_pending_frame).to eq(SceneSummaryChannel::PENDING_FRAME_ID)
+      # A plain member subscribes to the :plain stream for this scene.
+      expect(screen.summary_stream).to eq([ scene, :summary, :plain ])
+      expect(screen.summary_stream_data).to eq({ scene_id: scene.id })
+    end
+
+    it "gives a manager the :manager stream" do
+      gm = create(:user, :with_profile)
+      create(:game_member, :game_master, game: game, user: gm)
+      gm_context = described_class::Context.new(
+        current_user: gm, urls: urls, policies: ->(record) { PostPolicy.new(gm, record) }
+      )
+      gm_builder = described_class.new(scene, game: game, context: gm_context)
+
+      expect(gm_builder.screen(game_presenter).summary_stream).to eq([ scene, :summary, :manager ])
+    end
+
+    describe "summary_pending" do
+      it "is pending on a resolved AI-enabled scene with no visible summary" do
+        scene.update!(resolved_at: Time.current)
+        game.update!(ai_summaries_enabled: true)
+
+        expect(builder.screen(game_presenter).summary_pending?).to be(true)
+      end
+
+      it "is not pending once a summary exists" do
+        scene.update!(resolved_at: Time.current)
+        game.update!(ai_summaries_enabled: true)
+        create(:scene_summary, scene: scene)
+
+        expect(builder.screen(game_presenter).summary_pending?).to be(false)
+      end
+
+      it "is not pending when the game has AI summaries off" do
+        scene.update!(resolved_at: Time.current)
+
+        expect(builder.screen(game_presenter).summary_pending?).to be(false)
+      end
+
+      it "is not pending while the scene is unresolved" do
+        game.update!(ai_summaries_enabled: true)
+
+        expect(builder.screen(game_presenter).summary_pending?).to be(false)
+      end
+
+      it "stays pending for a player whose only summary is an invisible draft" do
+        scene.update!(resolved_at: Time.current)
+        game.update!(ai_summaries_enabled: true)
+        create(:scene_summary, scene: scene, draft: true, body: "")
+
+        expect(builder.screen(game_presenter).summary_pending?).to be(true)
+      end
+    end
   end
 end

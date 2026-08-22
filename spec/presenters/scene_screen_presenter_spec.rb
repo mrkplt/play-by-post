@@ -24,11 +24,15 @@ RSpec.describe SceneScreenPresenter, :db do
     )
   end
 
-  def screen(summary_presenter: nil)
+  def screen(summary_presenter: nil, summary_pending: false,
+             summary_pending_frame: "scene_summary_pending",
+             summary_stream: %w[scene summary plain], summary_stream_data: { scene_id: 1 })
     described_class.new(
       scene,
       game_presenter: game, navigation: navigation,
-      show: show, posts: posts, summary: summary_presenter
+      show: show, posts: posts, summary: summary_presenter,
+      summary_pending: summary_pending, summary_pending_frame: summary_pending_frame,
+      summary_stream: summary_stream, summary_stream_data: summary_stream_data
     )
   end
 
@@ -62,6 +66,27 @@ RSpec.describe SceneScreenPresenter, :db do
 
     it "is false for an unresolved scene that somehow has one" do
       expect(screen(summary_presenter: summary).summary?).to be(false)
+    end
+  end
+
+  describe "#summary_pending?" do
+    it "reflects the flag it was built with" do
+      expect(screen(summary_pending: true).summary_pending?).to be(true)
+      expect(screen(summary_pending: false).summary_pending?).to be(false)
+    end
+  end
+
+  describe "the pending-frame subscription details" do
+    it "exposes the frame id, stream, and stream data it was built with" do
+      presenter = screen(
+        summary_pending_frame: "scene_summary_pending",
+        summary_stream: %w[scene summary manager],
+        summary_stream_data: { scene_id: 42 }
+      )
+
+      expect(presenter.summary_pending_frame).to eq("scene_summary_pending")
+      expect(presenter.summary_stream).to eq(%w[scene summary manager])
+      expect(presenter.summary_stream_data).to eq({ scene_id: 42 })
     end
   end
 

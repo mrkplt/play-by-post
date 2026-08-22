@@ -121,4 +121,29 @@ RSpec.describe SceneSummaryJob, type: :job do
       expect { described_class.new.perform(scene.id) }.not_to raise_error
     end
   end
+
+  describe "#perform broadcasting the finished summary" do
+    let(:service_result) do
+      SceneSummaryService::Result.new(
+        body: "The vault gave.", model_used: "openai/gpt-4o",
+        input_tokens: 10, output_tokens: 5, cost: 0.001
+      )
+    end
+
+    before do
+      create(:game_member, :game_master, game: game, user: gm)
+      allow(SceneSummaryService).to receive(:new).with(scene).and_return(
+        instance_double(SceneSummaryService, call: service_result)
+      )
+    end
+
+    it "broadcasts the summary to every visibility class after upserting it" do
+      expect(SceneSummaryBroadcast).to receive(:new)
+        .with(an_instance_of(SceneSummary)).and_call_original
+
+      described_class.new.perform(scene.id)
+
+      expect(SceneSummary.find_by(scene_id: scene.id)&.body).to eq("The vault gave.")
+    end
+  end
 end
