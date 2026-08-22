@@ -69,19 +69,29 @@ RSpec.describe "BYOK key sealing (AI Control Plane)", type: :feature do
       expect(user.reload.ai_key_present?).to be(true)
     end
 
-    it "replacing an existing key overwrites the sealed envelope" do
+    it "once saved, shows a delete button and no key input — the key can't be shown or re-pasted" do
       visit profile_path
-      find("[data-byok-key-seal-target='plaintext']").fill_in(with: "sk-or-v1-first-key")
+      find("[data-byok-key-seal-target='plaintext']").fill_in(with: "sk-or-v1-test-key-abc123")
       click_on "Save key"
 
       visit profile_path
-      expect(page).to have_button("Replace key")
-      find("[data-byok-key-seal-target='plaintext']").fill_in(with: "sk-or-v1-second-key")
-      click_on "Replace key"
+      expect(page).to have_button("Delete key")
+      expect(page).not_to have_field(type: "password")
+      expect(page).not_to have_button("Save key")
+      expect(page).not_to have_button("Replace key")
+    end
 
-      encrypted_value = EncryptedValue.find_by(owner: user, value_type: value_type)
-      plaintext = Crypto::CryptoService.new(generated.private_key_pem).decrypt(T.must(encrypted_value.sealed_blob))
-      expect(plaintext).to eq("sk-or-v1-second-key")
+    it "deleting a saved key returns the control to the neutral set-up-encryption state", :ai_credential do
+      visit profile_path
+      find("[data-byok-key-seal-target='plaintext']").fill_in(with: "sk-or-v1-test-key-abc123")
+      click_on "Save key"
+
+      visit profile_path
+      click_on "Delete key"
+
+      expect(page).to have_button("Set up encryption")
+      expect(user.reload.ai_key_present?).to be(false)
+      expect(EncryptedValue.find_by(owner: user, value_type: value_type)).to be_nil
     end
   end
 end

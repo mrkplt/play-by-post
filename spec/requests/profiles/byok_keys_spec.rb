@@ -112,7 +112,7 @@ RSpec.describe Profiles::ByokKeysController, type: :request do
       expect(plaintext).to eq(File.read(fixture_path.join("webcrypto_plaintext.txt")).strip)
     end
 
-    it "replaces an existing sealed key rather than erroring", :ai_credential, db: true do
+    it "refuses to seal over an already-sealed key — delete is the only way to change it", :ai_credential, db: true do
       encrypted_value = create(
         :encrypted_value, owner: user, value_type: value_type,
         sealed_value: { wrapped_key: "old", iv: "old", ciphertext: "old" }.to_json
@@ -121,7 +121,9 @@ RSpec.describe Profiles::ByokKeysController, type: :request do
 
       patch profile_byok_key_path, params: { byok_key: envelope }
 
-      expect(encrypted_value.reload.sealed_blob&.wrapped_key).to eq(envelope.fetch("wrapped_key"))
+      expect(response).to redirect_to(profile_path)
+      expect(flash[:alert]).to eq("A key is already saved. Delete it before setting a new one.")
+      expect(encrypted_value.reload.sealed_blob&.wrapped_key).to eq("old")
     end
 
     it "redirects with an alert when no EncryptedValue exists yet", :db do
@@ -146,6 +148,59 @@ RSpec.describe Profiles::ByokKeysController, type: :request do
 
     it "redirects unauthenticated users", :db do
       patch profile_byok_key_path, params: { byok_key: envelope }
+      expect(response).to have_http_status(:redirect)
+    end
+  end
+
+  describe "DELETE /profile/byok_key" do
+    it "tears the EncryptedValue and its keypair fully down to the neutral state", :ai_credential, db: true do
+      encrypted_value = create(
+        :encrypted_value, owner: user, value_type: value_type,
+        sealed_value: { wrapped_key: "w", iv: "i", ciphertext: "c" }.to_json
+      )
+      public_key = encrypted_value.public_key
+      private_key = create(:private_key, public_key_id: public_key.id)
+      sign_in(user)
+
+      delete profile_byok_key_path
+
+      expect(EncryptedValue.find_by(id: encrypted_value.id)).to be_nil
+      expect(PublicKey.find_by(id: public_key.id)).to be_nil
+      expect(PrivateKey.find_by(id: private_key.id)).to be_nil
+      expect(user.reload.ai_key_present?).to be(false)
+    end
+
+    it "flashes an exact success notice", :ai_credential, db: true do
+      create(:encrypted_value, owner: user, value_type: value_type,
+        sealed_value: { wrapped_key: "w", iv: "i", ciphertext: "c" }.to_json)
+      sign_in(user)
+
+      delete profile_byok_key_path
+
+      expect(response).to redirect_to(profile_path)
+      expect(flash[:notice]).to eq("OpenRouter key deleted.")
+    end
+
+    it "is a no-op that still succeeds when no EncryptedValue exists", :ai_credential, db: true do
+      sign_in(user)
+
+      expect { delete profile_byok_key_path }.not_to change(EncryptedValue, :count)
+      expect(flash[:notice]).to eq("OpenRouter key deleted.")
+    end
+
+    it "leaves another owner's key untouched", :ai_credential, db: true do
+      other = create(:encrypted_value, owner: create(:user), value_type: value_type,
+        sealed_value: { wrapped_key: "w", iv: "i", ciphertext: "c" }.to_json)
+      create(:encrypted_value, owner: user, value_type: value_type)
+      sign_in(user)
+
+      delete profile_byok_key_path
+
+      expect(EncryptedValue.find_by(id: other.id)).to be_present
+    end
+
+    it "redirects unauthenticated users", :db do
+      delete profile_byok_key_path
       expect(response).to have_http_status(:redirect)
     end
   end

@@ -2,13 +2,11 @@
   <p class="text-sm text-ink font-bold mb-1"><%= heading %></p>
   <p class="text-xs text-muted mb-3"><%= status_text %></p>
 
-  <% unless keypair_ready? %>
-    <%= button_to "Set up encryption", generate_url, method: :post,
-          class: "text-xs font-bold text-accent bg-transparent border-0 cursor-pointer p-0" %>
-  <% end %>
-
-  <% if keypair_ready? %>
-    <%= form_with url: seal_url, method: :patch, scope: :byok_key,
+  <% if key_present? %>
+    <%= button_to "Delete key", endpoint_url, method: :delete,
+          class: "text-xs font-bold text-danger bg-transparent border-0 cursor-pointer p-0" %>
+  <% elsif keypair_ready? %>
+    <%= form_with url: endpoint_url, method: :patch, scope: :byok_key,
           data: {
             controller: "byok-key-seal",
             "byok-key-seal-public-key-value": public_key_pem,
@@ -26,9 +24,12 @@
 
       <p class="text-xs text-danger mb-2 hidden" data-byok-key-seal-target="error"></p>
 
-      <%= form.submit submit_label,
+      <%= form.submit "Save key",
             data: { "byok-key-seal-target": "submit" },
             class: "text-xs font-bold text-accent-ink bg-accent rounded-control px-3 py-1.5 border-0 cursor-pointer" %>
     <% end %>
+  <% else %>
+    <%= button_to "Set up encryption", endpoint_url, method: :post,
+          class: "text-xs font-bold text-accent bg-transparent border-0 cursor-pointer p-0" %>
   <% end %>
 </div>

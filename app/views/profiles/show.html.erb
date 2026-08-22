@@ -52,8 +52,7 @@
   <%= render Ui::ByokKeyFormComponent.new(
         key_present: @user_presenter.byok_key.present?,
         public_key_pem: @user_presenter.byok_key.public_key_pem,
-        generate_url: profile_byok_key_path,
-        seal_url: profile_byok_key_path) %>
+        endpoint_url: profile_byok_key_path) %>
 
   <%# RSS Feeds %>
   <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do %>RSS Feeds<% end %>
