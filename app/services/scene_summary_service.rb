@@ -39,77 +39,41 @@ class SceneSummaryService
 
   FEATURE = "scene_summary"
 
-  # HTTP statuses that mean "this particular key can't fund the call" — bad or
-  # unauthorized key (401/403), no credit / over quota (402), rate-limited
-  # (429). On these the worker fails over to the next key in the pool. Any
-  # other failure (bad request, network, 5xx, timeout) is not the key's fault
-  # and aborts the whole run rather than burning the rest of the pool.
-  KEY_FAILURE_STATUSES = T.let([ 401, 402, 403, 429 ].freeze, T::Array[Integer])
-
   sig { params(scene: Scene, key_resolver: AiKeyResolver).void }
   def initialize(scene, key_resolver: AiKeyResolver.new(key_source: Crypto::StoredKeySource.new))
     @scene = scene
     @key_resolver = key_resolver
   end
 
+  # A scene summary is a GAME-LEVEL output, funded from the game's pool of
+  # authorized member keys (GameKeyAuthorization) via Ai::PooledFunding, which
+  # owns the shuffle/pop/failover. Any member's key may fund it — the GM is not
+  # privileged. An empty/exhausted pool becomes ConfigurationError, rescued by
+  # SceneSummaryJob the same way a missing key always was.
   sig { returns(Result) }
   def call
-    Result.from_response(request_completion_with_failover, model_used: model)
+    response = funding.call { |api_key| request_completion(api_key) }
+    Result.from_response(response, model_used: model)
+  rescue Ai::PooledFunding::Exhausted => error
+    raise ConfigurationError, error.message
   end
 
-  # Raised when this scene summary has no BYOK key to fund it — either the
-  # game has no game master to resolve a player key for, or neither the game
-  # master nor the game itself has a key configured (AiKeyResolver::NoKeyAvailable).
-  # There is no app-key fallback for this player-facing AI call (see #api_key
-  # removal below); SceneSummaryJob rescues this the same way it always
-  # rescued a missing key.
+  # Raised when this scene summary has no working BYOK key to fund it. There is
+  # no app-key fallback for this player-facing AI call; SceneSummaryJob rescues
+  # this the same way it always rescued a missing key.
   class ConfigurationError < StandardError; end
 
   private
 
-  # A scene summary is a GAME-LEVEL output, so it is funded from the game's
-  # pool of authorized member keys (GameKeyAuthorization), not one fixed
-  # person. The resolver hands back a shuffled pool; we pop and try each in
-  # turn, failing over only on a key-attributable failure. Any member's key
-  # may fund it — the GM is not privileged.
-  sig { returns(T::Hash[String, T.untyped]) }
-  def request_completion_with_failover
-    candidates = key_candidates
-
-    loop do
-      candidate = candidates.pop
-      raise ConfigurationError, exhausted_message if candidate.nil?
-
-      begin
-        return request_completion(candidate.key)
-      rescue Faraday::Error => error
-        raise unless key_failure?(error)
-        # This person's key can't fund it — drop it and try the next.
-      end
-    end
-  end
-
-  sig { returns(T::Array[AiKeyResolver::Candidate]) }
-  def key_candidates
-    @key_resolver.candidates(feature: FEATURE, game: T.must(@scene.game))
-  rescue AiKeyResolver::NoKeyAvailable => error
-    raise ConfigurationError, error.message
-  end
-
-  sig { params(error: Faraday::Error).returns(T::Boolean) }
-  def key_failure?(error)
-    KEY_FAILURE_STATUSES.include?(error.response_status)
+  sig { returns(Ai::PooledFunding) }
+  def funding
+    Ai::PooledFunding.new(resolver: @key_resolver, feature: FEATURE, game: T.must(@scene.game))
   end
 
   sig { params(api_key: String).returns(T::Hash[String, T.untyped]) }
   def request_completion(api_key)
     client = OpenAI::Client.new(access_token: api_key, uri_base: OPENROUTER_API_BASE)
     client.chat(parameters: { model: model, messages: [ { role: "user", content: prompt } ] })
-  end
-
-  sig { returns(String) }
-  def exhausted_message
-    "Game ##{T.must(@scene.game).id} has no working BYOK OpenRouter key to fund a scene summary"
   end
 
   sig { returns(String) }
