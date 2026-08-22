@@ -79,6 +79,8 @@ matcher:
     - GameFeedRowPresenter
     - ApiTokenRowPresenter
     - KeyContributionRowPresenter
+    - KeyContributionsPresenter
+    - ApiTokensPresenter
     - GameLinkPresenter
     - ContentTemplatePresenter
     - GamePresenter
@@ -258,8 +260,6 @@ matcher:
     - TurnstileVerifier::SiteverifyUri
     - CharacterCreation
     - CharacterPresenterBuilder
-    - KeyContributionRowsBuilder
-    - ApiTokenRowsBuilder
     - ExportDelivery
     - EmailContentExtractor
     - EmailContentExtraction::OpenrouterRequest
