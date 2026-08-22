@@ -62,22 +62,4 @@ RSpec.describe Crypto::StoredKeySource, :ai_credential do
         .to raise_error(described_class::UnresolvableKey, /no private key/)
     end
   end
-
-  describe "#for_game" do
-    it "decrypts the game's stored envelope back to its OpenRouter key", db: true do
-      game = create(:game)
-      seal_key_for(game, openrouter_key)
-
-      expect(source.for_game(game)).to eq(openrouter_key)
-    end
-
-    it "resolves the game's key independently of any user's key", db: true do
-      user = create(:user)
-      game = create(:game)
-      seal_key_for(user, "sk-or-user-key")
-      seal_key_for(game, "sk-or-game-key")
-
-      expect(source.for_game(game)).to eq("sk-or-game-key")
-    end
-  end
 end

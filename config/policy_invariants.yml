@@ -80,6 +80,12 @@ GameMemberPolicy:
     - implies: [update?, manage?] # update = manage AND target_eligible
   unconstrained: []
 
+GameKeyAuthorizationPolicy:
+  invariants:
+    - equivalent: [create?, contribute?]
+    - equivalent: [destroy?, contribute?]
+  unconstrained: []
+
 InvitationPolicy:
   invariants:
     - equivalent: [create?, manage?]

@@ -54,6 +54,13 @@
         public_key_pem: @user_presenter.byok_key.public_key_pem,
         endpoint_url: profile_byok_key_path) %>
 
+  <%# Fund AI for your games — offer your key per game/feature (only meaningful
+      once you have a key of your own to make available). %>
+  <% if @user_presenter.byok_key.present? %>
+    <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do %>Fund AI for your games<% end %>
+    <%= render Shared::KeyContributionMatrixComponent.new(rows: @user_presenter.key_contribution_rows) %>
+  <% end %>
+
   <%# RSS Feeds %>
   <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do %>RSS Feeds<% end %>
   <%= render Shared::TokenSectionComponent.new(

@@ -10,53 +10,44 @@ RSpec.describe SceneSummaryService do
   class SceneSummaryFakeKeySource
     include AiKeyResolver::KeySource
 
-    def for_user(user) = "unstubbed-user-key"
-    def for_game(game) = "unstubbed-game-key"
+    # Each person's decrypted key is derived from their id so a per-key failure
+    # can be simulated deterministically (a status raised for a specific key).
+    def for_user(user) = "key-#{user.id}"
   end
 
   let(:game) { create(:game) }
-  let(:gm) { create(:user, :with_profile) }
+  let(:funder) { create(:user, :with_profile) }
   let(:scene) { create(:scene, :resolved, game: game, title: "The Dungeon", description: "Dark and spooky") }
-  # AiKeyResolver's own decision logic (player key -> game key -> refuse) is
-  # covered by its own spec; here it is real, backed by a stubbed KeySource,
-  # so SceneSummaryService is only exercised on "whose identity does it pass
-  # to #resolve" and "how does it react to NoKeyAvailable".
+  # AiKeyResolver builds the pool and shuffles; SceneSummaryService owns the
+  # pop-and-failover loop. Here the resolver is real, backed by a stubbed
+  # KeySource, so the service is exercised on "does it try the pool" and "how
+  # does it classify OpenRouter failures".
   let(:key_source) { SceneSummaryFakeKeySource.new }
   let(:key_resolver) { AiKeyResolver.new(key_source: key_source) }
 
-  before do
-    create(:game_member, :game_master, game: game, user: gm)
+  # A member of `game` who has authorized their key to fund scene summaries.
+  def authorize_funder(user)
+    allow_any_instance_of(User).to receive(:ai_key_present?).and_return(true)
+    create(:game_key_authorization, game: game, user: user, feature: "scene_summary")
+  end
+
+  def faraday_error(status)
+    error = Faraday::Error.new("boom")
+    allow(error).to receive(:response_status).and_return(status)
+    error
   end
 
   describe "#call" do
-    context "when the game has no game master" do
-      let(:gmless_game) { create(:game) }
-      let(:gmless_scene) { create(:scene, :resolved, game: gmless_game) }
-
-      it "raises ConfigurationError naming the gm-less game, without asking the resolver" do
-        allow(key_source).to receive(:for_user).and_call_original
-        allow(key_source).to receive(:for_game).and_call_original
-
-        expect { described_class.new(gmless_scene, key_resolver: key_resolver).call }.to raise_error(
-          SceneSummaryService::ConfigurationError,
-          "Game ##{gmless_game.id} has no game master to resolve a BYOK key for"
-        )
-        expect(key_source).not_to have_received(:for_user)
-        expect(key_source).not_to have_received(:for_game)
-      end
-    end
-
-    context "when the resolver has no BYOK key for the GM or the game" do
-      it "raises ConfigurationError carrying the resolver's own message as a String" do
+    context "when the game has no available key in the pool" do
+      it "raises ConfigurationError carrying the resolver's own message" do
         expect { described_class.new(scene, key_resolver: key_resolver).call }.to raise_error do |error|
           expect(error).to be_a(SceneSummaryService::ConfigurationError)
-          expect(error.message).to be_a(String)
           expect(error.message).to include("No BYOK OpenRouter key")
         end
       end
     end
 
-    context "with a resolvable BYOK key" do
+    context "with a resolvable BYOK key in the pool" do
       let(:client_double) { instance_double(OpenAI::Client) }
       let(:api_response) do
         {
@@ -66,26 +57,23 @@ RSpec.describe SceneSummaryService do
       end
 
       before do
-        # game.game_master re-queries the DB, returning a distinct User
-        # instance from `gm`, so the key must be present in the database
-        # rather than stubbed on the `gm` object.
-        create(:encrypted_value, :sealed, owner: gm, value_type: "openrouter_key")
-        allow(key_source).to receive(:for_user).and_return("byok-key")
+        authorize_funder(funder)
         allow(ENV).to receive(:fetch).with("OPENROUTER_MODEL", SceneSummaryService::DEFAULT_MODEL).and_return("openai/gpt-4o")
         allow(OpenAI::Client).to receive(:new).and_return(client_double)
         allow(client_double).to receive(:chat).and_return(api_response)
       end
 
-      it "resolves the key via the GM (the acting user) and the scene's game" do
+      it "funds the call from an authorized member's key" do
+        expect(OpenAI::Client).to receive(:new).with(
+          access_token: "key-#{funder.id}",
+          uri_base: SceneSummaryService::OPENROUTER_API_BASE
+        ).and_return(client_double)
         described_class.new(scene, key_resolver: key_resolver).call
-        # ActiveRecord equality is by class+id, so this also proves the
-        # re-queried game_master (not some other user) was resolved.
-        expect(key_source).to have_received(:for_user).with(gm).once
       end
 
       it "creates an OpenAI client pointing at the OpenRouter API base with the resolved key" do
         expect(OpenAI::Client).to receive(:new).with(
-          access_token: "byok-key",
+          access_token: "key-#{funder.id}",
           uri_base: SceneSummaryService::OPENROUTER_API_BASE
         ).and_return(client_double)
         described_class.new(scene, key_resolver: key_resolver).call
@@ -171,6 +159,64 @@ RSpec.describe SceneSummaryService do
         )
         result = described_class.new(scene, key_resolver: key_resolver).call
         expect(result.body).to eq("")
+      end
+    end
+
+    context "failover across the pool" do
+      let(:client_double) { instance_double(OpenAI::Client) }
+      let(:funder_a) { create(:user, :with_profile) }
+      let(:funder_b) { create(:user, :with_profile) }
+      let(:api_response) do
+        { "choices" => [ { "message" => { "content" => "ok" } } ], "usage" => {} }
+      end
+
+      before do
+        allow(ENV).to receive(:fetch).with("OPENROUTER_MODEL", SceneSummaryService::DEFAULT_MODEL).and_return("openai/gpt-4o")
+        allow(OpenAI::Client).to receive(:new).and_return(client_double)
+      end
+
+      def authorize_both
+        allow_any_instance_of(User).to receive(:ai_key_present?).and_return(true)
+        create(:game_key_authorization, game: game, user: funder_a, feature: "scene_summary")
+        create(:game_key_authorization, game: game, user: funder_b, feature: "scene_summary")
+      end
+
+      [ 401, 402, 403, 429 ].each do |status|
+        it "fails over to the next key on a #{status} (key-attributable) failure" do
+          authorize_both
+          call_count = 0
+          allow(client_double).to receive(:chat) do
+            call_count += 1
+            raise faraday_error(status) if call_count == 1
+            api_response
+          end
+
+          result = described_class.new(scene, key_resolver: key_resolver).call
+
+          expect(result.body).to eq("ok")
+          expect(call_count).to eq(2) # first key failed, second succeeded
+        end
+      end
+
+      it "raises ConfigurationError when every key in the pool fails on a key-attributable error" do
+        authorize_both
+        allow(client_double).to receive(:chat).and_raise(faraday_error(402))
+
+        expect { described_class.new(scene, key_resolver: key_resolver).call }
+          .to raise_error(SceneSummaryService::ConfigurationError, /no working BYOK/)
+      end
+
+      it "aborts the whole run on a non-key error without trying the rest of the pool" do
+        authorize_both
+        call_count = 0
+        allow(client_double).to receive(:chat) do
+          call_count += 1
+          raise faraday_error(400)
+        end
+
+        expect { described_class.new(scene, key_resolver: key_resolver).call }
+          .to raise_error(Faraday::Error)
+        expect(call_count).to eq(1) # did not fail over
       end
     end
   end

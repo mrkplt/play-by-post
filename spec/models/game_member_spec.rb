@@ -58,4 +58,23 @@ RSpec.describe GameMember, type: :model do
       expect(member.viewable?).to be false
     end
   end
+
+  describe ".for_profile_listing", db: true do
+    it "excludes banned memberships" do
+      user = create(:user)
+      kept = create(:game_member, game: create(:game), user: user)
+      create(:game_member, :banned, game: create(:game), user: user)
+
+      expect(user.game_members.for_profile_listing).to contain_exactly(kept)
+    end
+
+    it "orders by game name" do
+      user = create(:user)
+      create(:game_member, game: create(:game, name: "Beta"), user: user)
+      create(:game_member, game: create(:game, name: "Alpha"), user: user)
+
+      names = user.game_members.for_profile_listing.map { |m| m.game.name }
+      expect(names).to eq(%w[Alpha Beta])
+    end
+  end
 end

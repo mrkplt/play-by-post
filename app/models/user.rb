@@ -8,6 +8,7 @@ class User < ApplicationRecord
   has_one :user_profile, dependent: :destroy
   has_many :game_members, dependent: :destroy
   has_many :games, through: :game_members
+  has_many :game_key_authorizations, dependent: :destroy
   has_many :scene_participants, dependent: :destroy
   has_many :scenes, through: :scene_participants
   has_many :posts, dependent: :destroy
