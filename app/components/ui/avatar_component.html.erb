@@ -1,1 +1,5 @@
-<span class="<%= classes %>" aria-hidden="true"><%= initial %></span>
+<% if image? %>
+  <%= image_tag image_url, class: image_classes, alt: "", aria: { hidden: true } %>
+<% else %>
+  <span class="<%= classes %>" aria-hidden="true"><%= initial %></span>
+<% end %>

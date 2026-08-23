@@ -32,18 +32,6 @@ RSpec.describe UserProfilePresenter do
     end
   end
 
-  describe "#ai_summaries_consent?" do
-    it "delegates to the model" do
-      allow(profile).to receive(:ai_summaries_consent?).and_return(true)
-      expect(described_class.new(profile).ai_summaries_consent?).to be(true)
-    end
-
-    it "reflects false from the model" do
-      allow(profile).to receive(:ai_summaries_consent?).and_return(false)
-      expect(described_class.new(profile).ai_summaries_consent?).to be(false)
-    end
-  end
-
   describe "#ai_display_preference" do
     it "delegates to the model" do
       allow(profile).to receive(:ai_display_preference).and_return("shown")

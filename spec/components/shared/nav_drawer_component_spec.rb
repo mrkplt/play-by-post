@@ -17,6 +17,7 @@ RSpec.describe Shared::NavDrawerComponent, type: :component do
   # the underlying user, since the presenter is what the component reads.
   before do
     allow(user_presenter).to receive(:display_name_or_email).and_return("Dana")
+    allow(user_presenter).to receive(:avatar).and_return(double("avatar", current_url: nil))
     allow(user_presenter).to receive(:drawer_memberships)
       .and_return([ gm_member, player_member, former_member ])
   end
@@ -30,6 +31,11 @@ RSpec.describe Shared::NavDrawerComponent, type: :component do
     r = rendered
     expect(r).to have_text("Dana")
     expect(r).to have_text("View Profile")
+  end
+
+  it "shows the player's avatar image in the profile chip when they have one" do
+    allow(user_presenter).to receive(:avatar).and_return(double("avatar", current_url: "/me.jpg"))
+    expect(rendered).to have_css("img[src='/me.jpg']")
   end
 
   it "lists the GM, player, and former games" do

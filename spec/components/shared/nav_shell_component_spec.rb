@@ -4,7 +4,8 @@ RSpec.describe Shared::NavShellComponent, type: :component do
   subject(:component) { described_class.new(current_user: current_user_presenter) }
 
   let(:current_user) { create(:user, email: "jane@example.com") }
-  let(:current_user_presenter) { UserPresenter.new(current_user) }
+  let(:helpers) { double("helpers", url_for: "/avatar.jpg") }
+  let(:current_user_presenter) { UserPresenter.new(current_user, helpers: helpers) }
 
   before do
     create(:user_profile, user: current_user, display_name: "Jane Doe")

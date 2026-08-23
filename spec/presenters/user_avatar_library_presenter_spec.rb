@@ -53,4 +53,16 @@ RSpec.describe UserAvatarLibraryPresenter, :db do
       expect(presenter.can_manage?).to be(true)
     end
   end
+
+  describe "#current_url" do
+    it "is the current avatar's URL via the helpers" do
+      create(:user_image, :with_file, :current, user: user)
+      expect(presenter.current_url).to match(%r{\A/blob/})
+    end
+
+    it "is nil when the user has no current avatar" do
+      create(:user_image, :with_file, user: user)
+      expect(presenter.current_url).to be_nil
+    end
+  end
 end

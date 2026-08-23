@@ -35,6 +35,14 @@ class RosterCharacterPresenter < BasePresenter
     removed? ? :muted : :gold
   end
 
+  # The character's portrait URL (nil → monogram) — a roster row is in-game, so
+  # its identity is the character. Built via the injected helpers.
+  sig { returns(T.nilable(String)) }
+  def portrait_url
+    variant = @model.portrait_variant
+    variant && @options.fetch(:helpers).url_for(variant)
+  end
+
   sig { returns(String) }
   def filter_key
     "#{@model.name} #{owner_name}".downcase

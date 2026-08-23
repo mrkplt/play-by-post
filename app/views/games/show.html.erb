@@ -36,11 +36,11 @@
             row IS the GM, so it is always crowned. %>
         <%= render Shared::RosterRowComponent.new(
               row: { name: @game_screen.scenes.gm_name, subtitle: "Running this game",
-                     avatar_tone: :dark, crown: true },
+                     avatar_tone: :dark, crown: true, avatar_url: @game_screen.scenes.gm_avatar_url },
               position: @game_screen.scenes.gm_row_position) %>
         <% @game_screen.scenes.roster_preview.each_with_index do |row, i| %>
           <%= render Shared::RosterRowComponent.new(
-                row: { name: row[:name], subtitle: row[:scene], avatar_tone: :gold },
+                row: { name: row[:name], subtitle: row[:scene], avatar_tone: :gold, avatar_url: row[:avatar_url] },
                 position: @game_screen.scenes.roster_preview_position(i)) %>
         <% end %>
       </div>
@@ -58,7 +58,7 @@
           <% @game_screen.roster.banned_members.each_with_index do |banned, i| %>
             <%= render Shared::RosterRowComponent.new(
                   row: { name: banned.display_name, subtitle: "Played by #{banned.display_name}",
-                         avatar_tone: :blue, variant: :blue },
+                         avatar_tone: :blue, variant: :blue, avatar_url: banned.avatar_url },
                   position: @game_screen.roster.banned_member_position(i)) do %>
               <%= form_with url: banned.unban_path, method: :patch, class: "inline" do |f| %>
                 <%= f.hidden_field :status, value: "active" %>

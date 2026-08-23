@@ -35,8 +35,8 @@ class SceneSummary < ApplicationRecord
   # ai_display_preference is "hidden" does not see AI-generated summaries at
   # all — composed with .public_for_game (or any other relation) rather than
   # duplicated at each call site, so the HTML index, the scene view, and the
-  # RSS feed can never diverge on what "hidden" excludes. Independent of
-  # ai_summaries_consent (producing, gates generation) — this gates viewing.
+  # RSS feed can never diverge on what "hidden" excludes. This gates viewing;
+  # generation is gated by the GM's game-level Game#ai_summaries_enabled.
   # ai_generated?/edited?/apply_manual_edit now come from AiGenerated::Model.
   sig { params(relation: T.untyped, user: User).returns(T.untyped) }
   def self.visible_to(relation, user)

@@ -5,8 +5,9 @@ RSpec.describe GameScenesPanelPresenter do
   let(:policy) { instance_double(GamePolicy, manage?: true) }
   let(:current_user) { build_stubbed(:user) }
   let(:game_presenter) { GamePresenter.new(game, policy: policy) }
+  let(:helpers) { double("helpers", url_for: "/portrait.jpg") }
 
-  subject(:presenter) { described_class.new(game_presenter, current_user: current_user) }
+  subject(:presenter) { described_class.new(game_presenter, current_user: current_user, helpers: helpers) }
 
   describe "#gm_name" do
     it "returns the GM's display name when there is a game master" do
@@ -29,6 +30,37 @@ RSpec.describe GameScenesPanelPresenter do
     end
   end
 
+  describe "#gm_avatar_url" do
+    def stub_gm(user)
+      member = user && build_stubbed(:game_member, :game_master, user: user)
+      masters_rel = double("game masters")
+      allow(game).to receive(:game_members).and_return(double(game_masters: masters_rel))
+      allow(masters_rel).to receive(:includes).with(:user).and_return(double(first: member))
+    end
+
+    it "is the GM's player avatar URL via the injected helpers" do
+      gm_user = build_stubbed(:user)
+      allow(gm_user).to receive(:avatar_variant).and_return(:variant)
+      stub_gm(gm_user)
+
+      expect(presenter.gm_avatar_url).to eq("/portrait.jpg")
+    end
+
+    it "is nil when the GM has no avatar" do
+      gm_user = build_stubbed(:user)
+      allow(gm_user).to receive(:avatar_variant).and_return(nil)
+      stub_gm(gm_user)
+
+      expect(presenter.gm_avatar_url).to be_nil
+    end
+
+    it "is nil when there is no game master yet" do
+      stub_gm(nil)
+
+      expect(presenter.gm_avatar_url).to be_nil
+    end
+  end
+
   describe "#active_scenes and #roster_preview" do
     let(:scene) { build_stubbed(:scene, title: "The Ambush") }
 
@@ -45,10 +77,11 @@ RSpec.describe GameScenesPanelPresenter do
 
     it "builds the roster preview from each scene's characters, deduped by name" do
       character = build_stubbed(:character, name: "Vex")
+      allow(character).to receive(:portrait_variant).and_return(:variant)
       sp = double("scene_participant", character: character)
       allow(scene).to receive(:scene_participants).and_return([ sp ])
 
-      expect(presenter.roster_preview).to eq([ { name: "Vex", scene: "The Ambush" } ])
+      expect(presenter.roster_preview).to eq([ { name: "Vex", scene: "The Ambush", avatar_url: "/portrait.jpg" } ])
     end
 
     it "excludes participants without a character" do
@@ -71,6 +104,7 @@ RSpec.describe GameScenesPanelPresenter do
 
     it "roster_preview_empty? is false when the roster preview has rows" do
       character = build_stubbed(:character, name: "Vex")
+      allow(character).to receive(:portrait_variant).and_return(nil)
       sp = double("scene_participant", character: character)
       allow(scene).to receive(:scene_participants).and_return([ sp ])
 

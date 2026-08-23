@@ -1,11 +1,11 @@
 # typed: strict
 
 # The per-user AI DISPLAY preference control on the Profile screen (AI Control
-# Plane): a 3-state segmented control (shown / tagged / hidden), independent
-# of Ui::ProfileAiConsentToggleComponent's on/off consent switch — display is
-# about consuming AI-generated assets, not producing them. Like the consent
-# toggle, this has no client-side behaviour to drive (no filtering to apply
-# immediately), so each option is a plain server round-trip (button_to)
+# Plane): a 3-state segmented control (shown / tagged / hidden) — the sole
+# per-user AI control, about consuming AI-generated assets, not producing them
+# (production is the GM's game-level toggle). This has no client-side behaviour
+# to drive (no filtering to apply immediately), so each option is a plain server
+# round-trip (button_to)
 # rather than a Stimulus controller. Options are parameterized off
 # UserProfile's own enum keys/labels rather than duplicated here, so a new
 # state added to the enum only needs a label added to OPTIONS.

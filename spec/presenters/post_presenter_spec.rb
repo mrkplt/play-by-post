@@ -51,6 +51,32 @@ RSpec.describe PostPresenter do
     end
   end
 
+  describe "#author_avatar_url" do
+    let(:urls) { double("urls", url_for: "/portrait.jpg") }
+
+    it "is the speaking character's portrait for a character participant" do
+      character = build_stubbed(:character)
+      allow(character).to receive(:portrait_variant).and_return(:variant)
+      participant = build_stubbed(:scene_participant, user: user, character: character)
+      presenter = described_class.new(post, scene_participants: [ participant ], urls: urls)
+
+      expect(presenter.author_avatar_url).to eq("/portrait.jpg")
+    end
+
+    it "is nil for a GM participant with no character (monogram fallback)" do
+      participant = build_stubbed(:scene_participant, user: user, character: nil)
+      presenter = described_class.new(post, scene_participants: [ participant ], urls: urls)
+
+      expect(presenter.author_avatar_url).to be_nil
+    end
+
+    it "is nil when the author is not a participant at all" do
+      presenter = described_class.new(post, scene_participants: [], urls: urls)
+
+      expect(presenter.author_avatar_url).to be_nil
+    end
+  end
+
   describe "delegation" do
     it "delegates is_ooc? to the model" do
       allow(post).to receive(:is_ooc?).and_return(true)

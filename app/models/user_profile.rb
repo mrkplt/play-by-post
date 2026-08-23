@@ -5,12 +5,14 @@ class UserProfile < ApplicationRecord
 
   belongs_to :user
 
-  # The per-user AI DISPLAY preference (AI Control Plane): independent of
-  # ai_summaries_consent (producing) — this is about consuming. shown = AI
-  # asset renders normally, no loud badge (provenance still recorded); tagged
-  # = renders with a prominent "AI-generated" badge; hidden = AI-generated
-  # rows are filtered out of this viewer's index/scene view/RSS entirely. See
-  # SceneSummary.visible_to and SceneSummaryPresenter#show_ai_badge?.
+  # The per-user AI DISPLAY preference (AI Control Plane): the sole per-user AI
+  # control — this is about consuming, not producing (production is the GM's
+  # game-level Game#ai_summaries_enabled). shown = AI asset renders normally, no
+  # loud badge (provenance still recorded); tagged = renders with a prominent
+  # "AI-generated" badge; hidden = AI-generated rows are filtered out of this
+  # viewer's index/scene view/RSS entirely, so it doubles as the viewer's opt-out
+  # of seeing AI content. See SceneSummary.visible_to and
+  # SceneSummaryPresenter#show_ai_badge?.
   enum :ai_display_preference, { shown: 0, tagged: 1, hidden: 2 }, default: :tagged
 
   validates :display_name, length: { maximum: 100 }, allow_blank: true

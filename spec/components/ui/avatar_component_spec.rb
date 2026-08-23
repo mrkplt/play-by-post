@@ -68,4 +68,32 @@ RSpec.describe Ui::AvatarComponent, type: :component do
   it "does not just lstrip — trailing whitespace with a leading char stays" do
     expect(described_class.new(name: " a ").initial).to eq("A")
   end
+
+  describe "with an image_url" do
+    it "renders the image instead of the monogram" do
+      view = rendered(name: "Vex", image_url: "/portrait.jpg")
+      expect(view).to have_css("img[src='/portrait.jpg']")
+      expect(view).not_to have_css("span", text: "V")
+    end
+
+    it "gives the image the size and shape classes but not the tone" do
+      view = rendered(name: "Vex", image_url: "/portrait.jpg", tone: :gold, size: :lg)
+      expect(view).to have_css("img.w-10.h-10.object-cover")
+      expect(view).not_to have_css("img.bg-accent")
+    end
+
+    it "renders the image with an empty alt (decorative — the name is the label)" do
+      expect(rendered(name: "Vex", image_url: "/portrait.jpg")).to have_css("img[alt='']")
+    end
+
+    it "#image? is true only when a non-blank url is given" do
+      expect(described_class.new(name: "Vex", image_url: "/x.jpg").image?).to be(true)
+      expect(described_class.new(name: "Vex", image_url: "").image?).to be(false)
+      expect(described_class.new(name: "Vex").image?).to be(false)
+    end
+
+    it "falls back to the monogram when the url is blank" do
+      expect(rendered(name: "Vex", image_url: "")).to have_css("span", text: "V")
+    end
+  end
 end

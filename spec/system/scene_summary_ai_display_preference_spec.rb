@@ -1,8 +1,9 @@
 require "rails_helper"
 
 # The AI Control Plane's per-viewer DISPLAY preference (shown/tagged/hidden):
-# independent of ai_summaries_consent (producing) — this controls how the
-# viewer's own client renders AI-generated summaries they encounter. Exercises
+# the sole per-user AI control — this controls how the viewer's own client
+# renders AI-generated summaries they encounter (production is the GM's
+# game-level toggle, not a user setting). Exercises
 # the scene screen (badge loudness + hidden filtering) and the members-only
 # campaign log (hidden filtering). Viewport-neutral (Path 3) — the control
 # and its downstream effect don't diverge by screen size.

@@ -13,15 +13,24 @@ class SceneRosterRowsPresenter < BasePresenter
     super
   end
 
-  # One row per participant with a character, name paired with this scene's
-  # title.
-  sig { returns(T::Array[T::Hash[Symbol, String]]) }
+  # One row per participant with a character: the character name, this scene's
+  # title, and the character's portrait URL (nil → monogram fallback). The
+  # roster preview is in-game, so the identity is the character, not the player.
+  sig { returns(T::Array[T::Hash[Symbol, T.nilable(String)]]) }
   def rows
     @model.model.scene_participants.filter_map do |participant|
       character = participant.character
       next unless character
 
-      { name: character.name, scene: @model.title }
+      { name: character.name, scene: @model.title, avatar_url: portrait_url(character) }
     end
+  end
+
+  private
+
+  sig { params(character: Character).returns(T.nilable(String)) }
+  def portrait_url(character)
+    variant = character.portrait_variant
+    variant && @options.fetch(:helpers).url_for(variant)
   end
 end

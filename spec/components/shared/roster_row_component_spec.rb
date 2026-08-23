@@ -17,6 +17,12 @@ RSpec.describe Shared::RosterRowComponent, type: :component do
     expect(rendered).to have_css("span", text: "V")
   end
 
+  it "renders the avatar image when a row supplies an avatar_url" do
+    view = rendered(row: { avatar_url: "/portrait.jpg" })
+    expect(view).to have_css("img[src='/portrait.jpg']")
+    expect(view).not_to have_css("span[aria-hidden='true']", exact_text: "V")
+  end
+
   it "renders trailing content" do
     expect(rendered { "Removed" }).to have_text("Removed")
   end

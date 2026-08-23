@@ -19,6 +19,15 @@ class UserAvatarLibraryPresenter < ImageLibraryPresenter
     true
   end
 
+  # The URL of the user's current avatar image, or nil when they have none —
+  # the identity block's monogram fallback. Lives here (not on UserPresenter)
+  # with the rest of the avatar-image logic and its helpers.
+  sig { returns(T.nilable(String)) }
+  def current_url
+    variant = @user.avatar_variant
+    variant && @helpers.url_for(variant)
+  end
+
   sig { override.returns(String) }
   def upload_url
     @helpers.profile_images_path
