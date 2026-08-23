@@ -40,9 +40,13 @@ class ApiTokenRowPresenter < BasePresenter
     @options.fetch(:urls).profile_api_token_path(@options[:token])
   end
 
-  sig { returns(String) }
-  def create_path
-    @options.fetch(:urls).profile_api_tokens_path
+  # The create route with this row's game and the section's scope folded in as
+  # query params — the token section renders it as a POST ButtonComponent link
+  # (the repo's inline-action idiom) rather than a form, so the state rides the
+  # URL the way sibling inline actions carry theirs.
+  sig { params(scope: String).returns(String) }
+  def create_path(scope)
+    @options.fetch(:urls).profile_api_tokens_path(game_id: game_id, scope: scope)
   end
 
   sig { returns(Integer) }

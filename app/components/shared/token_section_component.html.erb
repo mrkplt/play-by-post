@@ -6,10 +6,10 @@
         <%= render Ui::SecretFieldComponent.new(value: row.secret_value, label: secret_label, revoke_path: row.revoke_path) %>
       </div>
     <% else %>
-      <%= button_to create_label, row.create_path, method: :post,
-            params: { game_id: row.game_id, scope: scope },
-            class: "text-xs font-bold text-accent bg-transparent border-0 cursor-pointer p-0" %>
-      <% end %>
+      <%= render Ui::ButtonComponent.new(
+            style: Ui::ButtonComponent::Style.new(variant: :text, size: :sm),
+            link: Ui::ButtonComponent::Link.new(url: row.create_path(scope), method: :post)) do %><%= create_label %><% end %>
+    <% end %>
     <% end %>
   <% end %>
 </div>
