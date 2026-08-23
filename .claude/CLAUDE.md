@@ -49,6 +49,15 @@ decisions, not opening positions.
   built, it needs a probe, a benchmark, or a diff behind it before it is stated.
 - **Re-stating a concern after it has been heard is second-guessing.** Once they
   have responded to a concern, it is settled. Proceed.
+- **A mid-build instruction belongs in the PR, not a side branch.** If the owner
+  asks for something while a build is in flight, it is part of *this* change — fold
+  it into the current branch and PR. Do not spin it off into a separate branch/PR or
+  leave it uncommitted "to keep the diff clean," and do not stop to ask which PR it
+  goes in: it goes in this one.
+- **Always commit and push — commits are cheap, lost code is not.** When work is
+  done (or a natural stopping point is reached), commit it and push it; never leave
+  finished work sitting uncommitted in the working tree. Preserving the work in git
+  outweighs a tidy history.
 
 ### Planning and decisions
 
@@ -155,6 +164,10 @@ CI topology are in `docs/QUALITY_PIPELINE.md`.
 
 - **`--no-verify` is blocked by policy.** Let the hook finish; killing it mid-run leaves the
   ref unpushed.
+- **An apostrophe in a commit/PR message breaks a `'…'`-quoted heredoc.** `git commit -m "$(cat
+  <<'EOF' … EOF)"` runs under `eval`, so a `'` in the body (`doesn't`, `don't`) ends the shell
+  quote early and the command dies with `unexpected EOF`. Write the message to a file and use
+  `git commit -F` / `gh pr create --body-file`, or keep apostrophes out of the body.
 - **Never read a mutation number from a red suite.** Mutant counts "test failed" as a kill,
   so a broken spec inflates coverage. Confirm `bundle exec rspec` is green first.
 - **Run rspec before `bin/quality-metrics --check`.** A mutation run does not write line
