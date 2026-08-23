@@ -27,6 +27,19 @@ RSpec.describe Ui::SecretFieldComponent, type: :component do
     expect(page).to have_css('[data-action="secret-field#copy"]')
   end
 
+  it "renders no revoke control when no revoke_path is given" do
+    render_inline(described_class.new(value: secret, label: "Feed URL"))
+    expect(page).not_to have_button("Revoke")
+  end
+
+  it "renders a revoke control inline with the other controls when given a revoke_path" do
+    render_inline(described_class.new(value: secret, label: "Feed URL", revoke_path: "/tokens/1"))
+    revoke = page.find("button", text: "Revoke")
+    expect(revoke[:class]).to include("secret-field__btn")
+    expect(page).to have_css(%(.secret-field__row form[action="/tokens/1"] button), text: "Revoke")
+    expect(page).to have_css(%(.secret-field__row form input[name="_method"][value="delete"]), visible: :all)
+  end
+
   describe "#masked_value" do
     it "is a fixed-width dotted string that does not vary with value length" do
       short = described_class.new(value: "x", label: "L").masked_value

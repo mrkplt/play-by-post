@@ -2,10 +2,8 @@
   <% rows.each_with_index do |row, index| %>
     <%= render Ui::SettingsRowComponent.new(label: row.name, position: row_position(index)) do %>
     <% if row.token? %>
-      <div class="flex flex-col items-end gap-2 min-w-0">
-        <%= render Ui::SecretFieldComponent.new(value: row.secret_value, label: secret_label) %>
-        <%= button_to "Revoke", row.revoke_path, method: :delete,
-              class: "text-xs font-bold text-accent bg-transparent border-0 cursor-pointer p-0" %>
+      <div class="min-w-0">
+        <%= render Ui::SecretFieldComponent.new(value: row.secret_value, label: secret_label, revoke_path: row.revoke_path) %>
       </div>
     <% else %>
       <%= button_to create_label, row.create_path, method: :post,
