@@ -82,14 +82,24 @@ RSpec.describe "Profiles", type: :feature do
       expect(page).to have_css("button[aria-pressed='true']", text: "Tagged")
     end
 
-    it "switches the preference to shown from the profile" do
+    it "switches the preference to shown in place, without a full page reload" do
       visit profile_path
+
+      # Tag a body node OUTSIDE the swapped control. A full page render (the old
+      # redirect, which Turbo Drive follows as a visit that rebuilds <body> from
+      # fresh server HTML) drops this attribute; a targeted Turbo Stream swap of
+      # just the control leaves it. Its survival is what proves the content no
+      # longer jumps.
+      page.execute_script(
+        "document.querySelector('main, body').setAttribute('data-no-reload-probe', 'kept')"
+      )
 
       click_on "Shown"
 
       expect(page).to have_text("AI display preference updated.")
-      expect(user.user_profile.reload.ai_display_preference).to eq("shown")
       expect(page).to have_css("button[aria-pressed='true']", text: "Shown")
+      expect(user.user_profile.reload.ai_display_preference).to eq("shown")
+      expect(page).to have_css("[data-no-reload-probe='kept']")
     end
 
     it "switches the preference to hidden from the profile" do

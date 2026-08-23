@@ -3,14 +3,18 @@
 # The per-user AI DISPLAY preference control on the Profile screen (AI Control
 # Plane): a 3-state segmented control (shown / tagged / hidden) — the sole
 # per-user AI control, about consuming AI-generated assets, not producing them
-# (production is the GM's game-level toggle). This has no client-side behaviour
-# to drive (no filtering to apply immediately), so each option is a plain server
-# round-trip (button_to)
-# rather than a Stimulus controller. Options are parameterized off
-# UserProfile's own enum keys/labels rather than duplicated here, so a new
-# state added to the enum only needs a label added to OPTIONS.
+# (production is the GM's game-level toggle). Each option is a plain server
+# round-trip (button_to); the controller answers with a Turbo Stream that swaps
+# this control (CONTROL_ID) in place and drops a toast, so a choice persists
+# without a full-page reload or the content jump one caused. Options are
+# parameterized off UserProfile's own enum keys/labels rather than duplicated
+# here, so a new state added to the enum only needs a label added to OPTIONS.
 class Ui::ProfileAiDisplayPreferenceControlComponent < ApplicationComponent
   extend T::Sig
+
+  # Stable id the Turbo Stream reply targets to replace the control with its new
+  # active state (see ProfilesController#update_ai_display_preference).
+  CONTROL_ID = T.let("ai_display_preference_control", String)
 
   class Option < T::Struct
     const :value, String
