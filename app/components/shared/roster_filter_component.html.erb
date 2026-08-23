@@ -18,7 +18,7 @@
         <div data-roster-filter-target="row" data-roster-name="<%= row.filter_key %>">
           <%= render Shared::RosterRowComponent.new(
                 row: { name: row.character_name, subtitle: "Played by #{row.owner_name}",
-                       avatar_tone: row.avatar_tone, active: !row.removed? },
+                       avatar_tone: row.avatar_tone, active: !row.removed?, avatar_url: row.portrait_url },
                 position: roster.roster_character_position(i)) do %>
             <% if row.removed? %>
               <%= render(Ui::BadgeComponent.new(variant: :slate)) { "Removed" } %>

@@ -97,18 +97,16 @@ class UserPresenter < BasePresenter
     KeyContributionsPresenter.new(feed_memberships, user: @model, urls: @options.fetch(:helpers)).rows
   end
 
-  # The user's avatar library as component-ready Item hashes. `helpers` is
-  # supplied at construction (options[:helpers]) so the presenter builds the
-  # image URLs without the view reaching for a route.
-  sig { returns(T::Array[Shared::ImageLibraryComponent::Item]) }
-  def avatar_items
-    avatar_library.items
-  end
-
-  # Where the cropper posts a new avatar.
-  sig { returns(String) }
-  def avatar_upload_url
-    avatar_library.upload_url
+  # The user's avatar facet — the library items the profile cropper renders,
+  # the upload route, and the current-avatar URL the identity block uses —
+  # exposed as one accessor so those cohesive reads live on UserAvatarLibrary
+  # Presenter (which holds the helpers) rather than as three delegators here.
+  sig { returns(UserAvatarLibraryPresenter) }
+  def avatar
+    @avatar ||= T.let(
+      UserAvatarLibraryPresenter.new(user: @model, helpers: @options.fetch(:helpers)),
+      T.nilable(UserAvatarLibraryPresenter)
+    )
   end
 
   # The BYOK (bring-your-own OpenRouter key) facts the Profile screen's
@@ -119,14 +117,6 @@ class UserPresenter < BasePresenter
   end
 
   private
-
-  sig { returns(UserAvatarLibraryPresenter) }
-  def avatar_library
-    @avatar_library ||= T.let(
-      UserAvatarLibraryPresenter.new(user: @model, helpers: @options.fetch(:helpers)),
-      T.nilable(UserAvatarLibraryPresenter)
-    )
-  end
 
   sig { returns(T.untyped) }
   def feed_memberships

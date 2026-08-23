@@ -1,5 +1,5 @@
 <div class="<%= config.wrapper_classes %>">
-  <%= render Ui::AvatarComponent.new(name: name, tone: config.avatar_tone, size: config.avatar_size) %>
+  <%= render Ui::AvatarComponent.new(name: name, tone: config.avatar_tone, size: config.avatar_size, image_url: avatar_url) %>
   <div class="<%= config.labels_classes %>">
     <span class="<%= config.primary_classes %>">
       <% if crown? %>

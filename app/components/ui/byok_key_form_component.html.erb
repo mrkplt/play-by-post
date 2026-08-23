@@ -1,35 +1,55 @@
-<div class="bg-card border border-card-border rounded-card px-3.5 py-3">
-  <p class="text-sm text-ink font-bold mb-1"><%= heading %></p>
-  <p class="text-xs text-muted mb-3"><%= status_text %></p>
+<%# Everything renders inside the same turbo frame the worker's completion
+    broadcast targets (KeypairReadyBroadcast → ByokKeyChannel::PENDING_FRAME_ID),
+    so a broadcast replaces this control in place. The pending branch delegates
+    the frame to Shared::AsyncPendingComponent, which owns it; the other branches
+    put the frame at the root (turbo_frame_tag) so the broadcast's replacement
+    content is itself a matching frame. The card class lives on #card_classes so
+    the two branches share one spelling of it. %>
+<% if pending? %>
+  <div class="<%= card_classes %>">
+    <p class="<%= heading_classes %>"><%= heading %></p>
+    <%= render Shared::AsyncPendingComponent.new(
+          frame_id: frame_id,
+          stream: keypair_stream,
+          channel: "ByokKeyChannel",
+          message: "Preparing your encryption key…") %>
+  </div>
+<% else %>
+  <%= helpers.turbo_frame_tag frame_id do %>
+    <div class="<%= card_classes %>">
+      <p class="<%= heading_classes %>"><%= heading %></p>
+      <p class="text-xs text-muted mb-3"><%= status_text %></p>
 
-  <% if key_present? %>
-    <%= button_to "Delete key", endpoint_url, method: :delete,
-          class: "text-xs font-bold text-danger bg-transparent border-0 cursor-pointer p-0" %>
-  <% elsif keypair_ready? %>
-    <%= form_with url: endpoint_url, method: :patch, scope: :byok_key,
-          data: {
-            controller: "byok-key-seal",
-            "byok-key-seal-public-key-value": public_key_pem,
-            action: "submit->byok-key-seal#submitForm"
-          } do |form| %>
-      <label class="text-xs text-muted block mb-1" for="byok_key_plaintext">OpenRouter API key</label>
-      <input type="password" id="byok_key_plaintext" autocomplete="off"
-             class="w-full rounded-control border border-card-border bg-transparent px-2.5 py-2 text-sm text-ink mb-2"
-             data-byok-key-seal-target="plaintext"
-             placeholder="sk-or-v1-...">
+      <% if key_present? %>
+        <%= button_to "Delete key", endpoint_url, method: :delete,
+              class: "text-xs font-bold text-danger bg-transparent border-0 cursor-pointer p-0" %>
+      <% elsif keypair_ready? %>
+        <%= form_with url: endpoint_url, method: :patch, scope: :byok_key,
+              data: {
+                controller: "byok-key-seal",
+                "byok-key-seal-public-key-value": public_key_pem,
+                action: "submit->byok-key-seal#submitForm"
+              } do |form| %>
+          <label class="text-xs text-muted block mb-1" for="byok_key_plaintext">OpenRouter API key</label>
+          <input type="password" id="byok_key_plaintext" autocomplete="off"
+                 class="w-full rounded-control border border-card-border bg-transparent px-2.5 py-2 text-sm text-ink mb-2"
+                 data-byok-key-seal-target="plaintext"
+                 placeholder="sk-or-v1-...">
 
-      <%= form.hidden_field :wrapped_key, data: { "byok-key-seal-target": "wrappedKey" } %>
-      <%= form.hidden_field :iv, data: { "byok-key-seal-target": "iv" } %>
-      <%= form.hidden_field :ciphertext, data: { "byok-key-seal-target": "ciphertext" } %>
+          <%= form.hidden_field :wrapped_key, data: { "byok-key-seal-target": "wrappedKey" } %>
+          <%= form.hidden_field :iv, data: { "byok-key-seal-target": "iv" } %>
+          <%= form.hidden_field :ciphertext, data: { "byok-key-seal-target": "ciphertext" } %>
 
-      <p class="text-xs text-danger mb-2 hidden" data-byok-key-seal-target="error"></p>
+          <p class="text-xs text-danger mb-2 hidden" data-byok-key-seal-target="error"></p>
 
-      <%= form.submit "Save key",
-            data: { "byok-key-seal-target": "submit" },
-            class: "text-xs font-bold text-accent-ink bg-accent rounded-control px-3 py-1.5 border-0 cursor-pointer" %>
-    <% end %>
-  <% else %>
-    <%= button_to "Set up encryption", endpoint_url, method: :post,
-          class: "text-xs font-bold text-accent bg-transparent border-0 cursor-pointer p-0" %>
+          <%= form.submit "Save key",
+                data: { "byok-key-seal-target": "submit" },
+                class: "text-xs font-bold text-accent-ink bg-accent rounded-control px-3 py-1.5 border-0 cursor-pointer" %>
+        <% end %>
+      <% else %>
+        <%= button_to "Set up encryption", endpoint_url, method: :post,
+              class: "text-xs font-bold text-accent bg-transparent border-0 cursor-pointer p-0" %>
+      <% end %>
+    </div>
   <% end %>
-</div>
+<% end %>

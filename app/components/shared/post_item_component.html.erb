@@ -11,6 +11,7 @@
           name: @post.author_display_name,
           primary: @post.author_display_name,
           secondary: byline_time,
+          avatar_url: avatar_url,
           config: Ui::IdentityBlockComponent::Config.new(
             orientation: :stacked, size: :sm, avatar_tone: avatar_tone)) %>
   </div>

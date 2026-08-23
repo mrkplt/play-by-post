@@ -43,21 +43,12 @@ class ProfilesController < ApplicationController
     head :ok
   end
 
-  # The per-user AI consent gate (AI Control Plane): generation for this
-  # user's games still requires the game's own ai_summaries_enabled toggle —
-  # see SceneResolution#call.
-  sig { void }
-  def toggle_ai_summaries_consent
-    current_profile = profile
-    authorize current_profile, :manage?
-    current_profile.update!(ai_summaries_consent: !current_profile.ai_summaries_consent?)
-    redirect_to profile_path, notice: ai_summaries_consent_notice(current_profile)
-  end
-
-  # The per-user AI DISPLAY preference (AI Control Plane): independent of
-  # ai_summaries_consent — this controls how the viewer's own client renders
-  # AI-generated assets they encounter, not whether their games may generate
-  # them. See UserProfile#ai_display_preference and SceneSummary.visible_to.
+  # The per-user AI DISPLAY preference (AI Control Plane): the sole per-user AI
+  # control — its `hidden` state opts the viewer out of seeing AI content. This
+  # controls how the viewer's own client renders AI-generated assets they
+  # encounter, not whether their games may generate them (that is the GM's
+  # game-level Game#ai_summaries_enabled). See UserProfile#ai_display_preference
+  # and SceneSummary.visible_to.
   sig { void }
   def update_ai_display_preference
     current_profile = profile
@@ -79,11 +70,6 @@ class ProfilesController < ApplicationController
   sig { params(current_profile: UserProfile).void }
   def assign_profile_presenter(current_profile)
     @profile_presenter = T.let(UserProfilePresenter.new(current_profile), T.nilable(UserProfilePresenter))
-  end
-
-  sig { params(current_profile: UserProfile).returns(String) }
-  def ai_summaries_consent_notice(current_profile)
-    current_profile.ai_summaries_consent? ? "AI scene summaries enabled for your games." : "AI scene summaries disabled for your games."
   end
 
   # UserProfile#update! raises ArgumentError on an unrecognized enum value —

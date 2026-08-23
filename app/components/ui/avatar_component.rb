@@ -1,8 +1,9 @@
 # typed: strict
 
-# Monogram avatar — an initial letter on a solid circle. Placeholder for
-# real avatar uploads. Gold for players, dark for the GM, muted for
-# removed/banned rows.
+# Avatar — a circular identity glyph. When an `image_url` is given (an uploaded
+# player avatar or character portrait) it renders that image; otherwise it falls
+# back to the monogram, an initial letter on a solid circle. Gold for players,
+# dark for the GM, muted for removed/banned rows.
 class Ui::AvatarComponent < ApplicationComponent
   extend T::Sig
 
@@ -24,11 +25,22 @@ class Ui::AvatarComponent < ApplicationComponent
     String
   )
 
-  sig { params(name: String, tone: Symbol, size: Symbol).void }
-  def initialize(name:, tone: :gold, size: :md)
+  sig { params(name: String, tone: Symbol, size: Symbol, image_url: T.nilable(String)).void }
+  def initialize(name:, tone: :gold, size: :md, image_url: nil)
     @name = name
     @tone = tone
     @size = size
+    @image_url = image_url
+  end
+
+  sig { returns(T::Boolean) }
+  def image?
+    @image_url.present?
+  end
+
+  sig { returns(String) }
+  def image_url
+    T.must(@image_url)
   end
 
   sig { returns(String) }
@@ -37,6 +49,13 @@ class Ui::AvatarComponent < ApplicationComponent
     # is always a String ("" for a blank name). The .to_s-removal mutant is
     # therefore equivalent and left alive.
     @name.strip.slice(0, 1).to_s.upcase
+  end
+
+  # The <img>'s size/shape classes only — the monogram's tone (background/text
+  # colour) is meaningless behind a photo, so an image avatar drops it.
+  sig { returns(String) }
+  def image_classes
+    "#{BASE} #{SIZES.fetch(@size)} object-cover"
   end
 
   sig { returns(String) }

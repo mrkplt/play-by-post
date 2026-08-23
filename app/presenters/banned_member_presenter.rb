@@ -19,6 +19,16 @@ class BannedMemberPresenter < BasePresenter
     UserPresenter.new(@model.user).display_name_or_email
   end
 
+  # The banned player's avatar URL (nil → monogram) — a banned row is a person,
+  # not a character, so it uses the player avatar. Built via the injected
+  # helpers. #user is a required belongs_to (as #display_name already assumes),
+  # so no safe-navigation guard on it.
+  sig { returns(T.nilable(String)) }
+  def avatar_url
+    variant = @model.user.avatar_variant
+    variant && @options.fetch(:helpers).url_for(variant)
+  end
+
   # The Unban form's submit route — reinstates this banned member to active.
   sig { returns(String) }
   def unban_path

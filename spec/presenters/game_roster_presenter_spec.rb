@@ -6,8 +6,9 @@ RSpec.describe GameRosterPresenter do
   let(:current_user) { build_stubbed(:user) }
   let(:game_presenter) { GamePresenter.new(game, policy: policy) }
   let(:urls) { double("urls") }
+  let(:helpers) { double("helpers", url_for: "/portrait.jpg") }
 
-  subject(:presenter) { described_class.new(game_presenter, current_user: current_user, urls: urls) }
+  subject(:presenter) { described_class.new(game_presenter, current_user: current_user, urls: urls, helpers: helpers) }
 
   describe "#inactive_character_count" do
     it "counts archived characters visible to the viewer" do
@@ -42,7 +43,7 @@ RSpec.describe GameRosterPresenter do
       where_rel = double("banned rel")
       includes_rel = double("includes rel")
       allow(game).to receive(:game_members).and_return(double(where: where_rel))
-      allow(where_rel).to receive(:includes).with(:user).and_return(includes_rel)
+      allow(where_rel).to receive(:includes).with(user: :user_images).and_return(includes_rel)
       allow(includes_rel).to receive(:to_a).and_return([ banned ])
 
       result = presenter.banned_members
@@ -56,13 +57,13 @@ RSpec.describe GameRosterPresenter do
       where_rel = double("banned rel")
       includes_rel = double("includes rel")
       allow(game).to receive(:game_members).and_return(double(where: where_rel))
-      allow(where_rel).to receive(:includes).with(:user).and_return(includes_rel)
+      allow(where_rel).to receive(:includes).with(user: :user_images).and_return(includes_rel)
       allow(includes_rel).to receive(:to_a).and_return([ banned ])
       allow(BannedMemberPresenter).to receive(:new).and_call_original
 
       presenter.banned_members
 
-      expect(BannedMemberPresenter).to have_received(:new).with(banned, game: game, urls: urls)
+      expect(BannedMemberPresenter).to have_received(:new).with(banned, game: game, urls: urls, helpers: helpers)
     end
 
     it "queries by banned status specifically" do
@@ -111,7 +112,7 @@ RSpec.describe GameRosterPresenter do
       where_rel = double("banned rel")
       includes_rel = double("includes rel")
       allow(game).to receive(:game_members).and_return(double(where: where_rel))
-      allow(where_rel).to receive(:includes).with(:user).and_return(includes_rel)
+      allow(where_rel).to receive(:includes).with(user: :user_images).and_return(includes_rel)
       allow(includes_rel).to receive(:to_a).and_return([ banned ])
 
       expect(presenter.banned_member_position(0)).to eq(:last)

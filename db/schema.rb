@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_22_000100) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_22_000200) do
   create_table "action_mailbox_inbound_emails", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "message_checksum", null: false
@@ -374,7 +374,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_22_000100) do
 
   create_table "user_profiles", force: :cascade do |t|
     t.integer "ai_display_preference", default: 1, null: false
-    t.boolean "ai_summaries_consent", default: false, null: false
     t.datetime "created_at", null: false
     t.string "display_name"
     t.boolean "hide_ooc", default: false, null: false

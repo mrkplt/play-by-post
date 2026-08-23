@@ -21,7 +21,8 @@ class Shared::RosterRowComponent < ApplicationComponent
       avatar_tone: Symbol,
       crown: T::Boolean,
       active: T::Boolean,
-      variant: Symbol
+      variant: Symbol,
+      avatar_url: T.nilable(String)
     }
   end
 
@@ -29,7 +30,8 @@ class Shared::RosterRowComponent < ApplicationComponent
     avatar_tone: :gold,
     crown: false,
     active: true,
-    variant: :default
+    variant: :default,
+    avatar_url: nil
   }.freeze, T::Hash[Symbol, T.untyped])
 
   POSITIONS = T.let(%i[middle last].freeze, T::Array[Symbol])
@@ -55,6 +57,13 @@ class Shared::RosterRowComponent < ApplicationComponent
   sig { returns(Symbol) }
   def avatar_tone
     @row.fetch(:avatar_tone)
+  end
+
+  # The row's avatar image URL (a character portrait or a player avatar,
+  # whichever this row's identity is), or nil for the monogram fallback.
+  sig { returns(T.nilable(String)) }
+  def avatar_url
+    @row.fetch(:avatar_url)
   end
 
   sig { returns(T::Boolean) }

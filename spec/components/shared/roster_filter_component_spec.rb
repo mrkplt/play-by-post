@@ -16,7 +16,7 @@ RSpec.describe Shared::RosterFilterComponent, type: :component do
     instance_double(
       RosterCharacterPresenter,
       character_name: name, owner_name: owner, filter_key: key,
-      avatar_tone: :gold, removed?: removed
+      avatar_tone: :gold, removed?: removed, portrait_url: nil
     )
   end
 

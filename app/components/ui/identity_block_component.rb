@@ -18,24 +18,40 @@
 class Ui::IdentityBlockComponent < ApplicationComponent
   extend T::Sig
 
+  # The avatar's identity — the monogram name and its optional image URL —
+  # bundled so the two data fields the AvatarComponent consumes travel as one
+  # value rather than two loose ivars.
+  class Avatar < T::Struct
+    const :name, String
+    const :url, T.nilable(String)
+  end
+
   sig do
     params(
       name: String,
       primary: String,
       secondary: T.any(String, ActiveSupport::SafeBuffer),
-      config: Config
+      config: Config,
+      avatar_url: T.nilable(String)
     ).void
   end
-  def initialize(name:, primary:, secondary:, config: Config.new)
+  def initialize(name:, primary:, secondary:, config: Config.new, avatar_url: nil)
     config.validate!
-    @name = name
+    @avatar = T.let(Avatar.new(name: name, url: avatar_url), Avatar)
     @primary = primary
     @secondary = secondary
     @config = config
   end
 
   sig { returns(String) }
-  attr_reader :name
+  def name
+    @avatar.name
+  end
+
+  sig { returns(T.nilable(String)) }
+  def avatar_url
+    @avatar.url
+  end
 
   sig { returns(String) }
   attr_reader :primary

@@ -90,8 +90,10 @@ class GameRosterPresenter < BasePresenter
   def build_roster_characters
     removed_user_ids = game.game_members.where(status: "removed").pluck(:user_id).to_set
 
-    game.characters.active.visible_to(viewer, game).includes(:user).order(:name).to_a.map do |character|
-      RosterCharacterPresenter.new(character, removed: removed_user_ids.include?(character.user_id))
+    game.characters.active.visible_to(viewer, game).includes(:user, :character_images).order(:name).to_a.map do |character|
+      RosterCharacterPresenter.new(
+        character, removed: removed_user_ids.include?(character.user_id), helpers: @options.fetch(:helpers)
+      )
     end
   end
 
@@ -99,8 +101,8 @@ class GameRosterPresenter < BasePresenter
   def build_banned_members
     return [] unless @model.can_manage?
 
-    game.game_members.where(status: "banned").includes(:user).to_a.map do |member|
-      BannedMemberPresenter.new(member, game: game, urls: @options.fetch(:urls))
+    game.game_members.where(status: "banned").includes(user: :user_images).to_a.map do |member|
+      BannedMemberPresenter.new(member, game: game, urls: @options.fetch(:urls), helpers: @options.fetch(:helpers))
     end
   end
 end

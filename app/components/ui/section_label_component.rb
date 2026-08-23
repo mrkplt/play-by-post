@@ -5,8 +5,14 @@
 # body-screen label) and :sm (the tighter, smaller label the nav drawer uses).
 # `html_class` remains for caller-owned spacing/positioning only — never
 # typography or colour (bin/check-component-css-args enforces this).
+#
+# An optional `action` slot renders inline at the trailing edge of the label
+# row (e.g. a "View docs" link beside an "API tokens" heading) — the label and
+# its action sit on one baseline-aligned row rather than stacking.
 class Ui::SectionLabelComponent < ApplicationComponent
   extend T::Sig
+
+  renders_one :action
 
   COLOUR = T.let("font-bold text-muted uppercase", String)
 

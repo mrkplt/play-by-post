@@ -21,12 +21,13 @@ class GameScreenPresenter < BasePresenter
   def self.build(game, viewer)
     user = viewer.current_user
     urls = viewer.urls
+    helpers = viewer.helpers
 
     new(
       game,
-      show: GameShowPresenter.new(game, current_user: user, urls: urls, helpers: viewer.helpers),
-      roster: GameRosterPresenter.new(game, current_user: user, urls: urls),
-      scenes: GameScenesPanelPresenter.new(game, current_user: user)
+      show: GameShowPresenter.new(game, current_user: user, urls: urls, helpers: helpers),
+      roster: GameRosterPresenter.new(game, current_user: user, urls: urls, helpers: helpers),
+      scenes: GameScenesPanelPresenter.new(game, current_user: user, helpers: helpers)
     )
   end
 

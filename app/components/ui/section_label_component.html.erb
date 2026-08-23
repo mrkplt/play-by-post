@@ -1,1 +1,5 @@
-<div class="<%= classes %>" data-section-label><%= content %></div>
+<% if action? %>
+  <div class="<%= classes %> flex items-baseline justify-between gap-2" data-section-label><span><%= content %></span><%= action %></div>
+<% else %>
+  <div class="<%= classes %>" data-section-label><%= content %></div>
+<% end %>

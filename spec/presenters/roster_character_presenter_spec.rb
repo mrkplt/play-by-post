@@ -3,8 +3,9 @@ require "rails_helper"
 RSpec.describe RosterCharacterPresenter do
   let(:user) { build_stubbed(:user) }
   let(:character) { build_stubbed(:character, name: "Vex", user: user) }
+  let(:helpers) { double("helpers", url_for: "/portrait.jpg") }
 
-  subject(:presenter) { described_class.new(character, removed: false) }
+  subject(:presenter) { described_class.new(character, removed: false, helpers: helpers) }
 
   describe "#character_name" do
     it "returns the wrapped character's name" do
@@ -43,6 +44,18 @@ RSpec.describe RosterCharacterPresenter do
     it "joins the character name and owner name, lowercased" do
       allow(user).to receive(:display_name).and_return("Alice")
       expect(presenter.filter_key).to eq("vex alice")
+    end
+  end
+
+  describe "#portrait_url" do
+    it "is the character's portrait URL via the injected helpers" do
+      allow(character).to receive(:portrait_variant).and_return(:variant)
+      expect(presenter.portrait_url).to eq("/portrait.jpg")
+    end
+
+    it "is nil when the character has no portrait" do
+      allow(character).to receive(:portrait_variant).and_return(nil)
+      expect(presenter.portrait_url).to be_nil
     end
   end
 end

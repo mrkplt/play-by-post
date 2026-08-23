@@ -3,9 +3,10 @@ require "rails_helper"
 RSpec.describe Ui::SecretFieldComponent, type: :component do
   let(:secret) { "https://example.com/rss/feed?token=abc123" }
 
-  it "renders the label" do
+  it "renders the label for screen readers, hidden visually (the row already names it)" do
     render_inline(described_class.new(value: secret, label: "Feed URL"))
-    expect(page).to have_css("label.secret-field__label", text: "Feed URL")
+    expect(page).to have_css("label.sr-only", text: "Feed URL")
+    expect(page).not_to have_css("label.secret-field__label")
   end
 
   it "masks the value in the visible input and does not render the real value there" do

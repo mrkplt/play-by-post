@@ -271,13 +271,23 @@ RSpec.describe UserPresenter do
 
     subject(:presenter) { described_class.new(user, helpers: helpers) }
 
-    it "#avatar_items exposes the library's items" do
-      create(:user_image, :with_file, :current, user: user)
-      expect(presenter.avatar_items.map { |i| i[:current] }).to eq([ true ])
+    it "#avatar is the user's avatar library presenter, built with the injected helpers" do
+      expect(presenter.avatar).to be_a(UserAvatarLibraryPresenter)
     end
 
-    it "#avatar_upload_url is the profile images path" do
-      expect(presenter.avatar_upload_url).to eq("/profile/images")
+    it "#avatar exposes the library items" do
+      create(:user_image, :with_file, :current, user: user)
+      expect(presenter.avatar.items.map { |i| i[:current] }).to eq([ true ])
+    end
+
+    it "#avatar exposes the upload url and the current avatar url" do
+      create(:user_image, :with_file, :current, user: user)
+      expect(presenter.avatar.upload_url).to eq("/profile/images")
+      expect(presenter.avatar.current_url).to match(%r{\A/blob/})
+    end
+
+    it "memoizes the avatar presenter" do
+      expect(presenter.avatar).to be(presenter.avatar)
     end
   end
 end

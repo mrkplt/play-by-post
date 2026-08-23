@@ -93,31 +93,6 @@ RSpec.describe ProfilesController, type: :request do
     end
   end
 
-  describe "POST /profile/toggle_ai_summaries_consent" do
-    it "opts the user in and redirects with a notice" do
-      sign_in(user)
-      user.user_profile.update!(ai_summaries_consent: false)
-      post toggle_ai_summaries_consent_profile_path
-      expect(response).to redirect_to(profile_path)
-      expect(flash[:notice]).to eq("AI scene summaries enabled for your games.")
-      expect(user.user_profile.reload.ai_summaries_consent).to be(true)
-    end
-
-    it "opts the user back out and redirects with a notice" do
-      sign_in(user)
-      user.user_profile.update!(ai_summaries_consent: true)
-      post toggle_ai_summaries_consent_profile_path
-      expect(response).to redirect_to(profile_path)
-      expect(flash[:notice]).to eq("AI scene summaries disabled for your games.")
-      expect(user.user_profile.reload.ai_summaries_consent).to be(false)
-    end
-
-    it "unauthenticated user is redirected" do
-      post toggle_ai_summaries_consent_profile_path
-      expect(response).to have_http_status(:redirect)
-    end
-  end
-
   describe "POST /profile/update_ai_display_preference" do
     it "updates the preference to shown and redirects with a notice" do
       sign_in(user)

@@ -22,6 +22,13 @@ class Shared::NavDrawerComponent < ApplicationComponent
     @user.display_name_or_email
   end
 
+  # The player's own avatar image URL for the profile chip, or nil for the
+  # monogram fallback — the chip is player identity, so it uses the avatar.
+  sig { returns(T.nilable(String)) }
+  def avatar_url
+    @user.avatar.current_url
+  end
+
   # One presenter per game row. Each already knows its own name, whether it is
   # the active row, and which status glyph it carries — this component only
   # turns those answers into markup.

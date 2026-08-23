@@ -29,17 +29,32 @@ class GameScenesPanelPresenter < BasePresenter
   end
 
   # The GM's display name — always shown, crowned, at the top of the preview.
+  # "GM" when the game has no game master assigned yet.
   sig { returns(String) }
   def gm_name
-    @gm_name ||= T.let(build_gm_name, T.nilable(String))
+    @gm_name ||= T.let(gm_user ? UserPresenter.new(gm_user).display_name_or_email : "GM", T.nilable(String))
   end
 
-  # Up to five distinct characters participating in an active scene, each
-  # paired with that scene's title. Banned players are already excluded from
-  # scene participation.
-  sig { returns(T::Array[T::Hash[Symbol, String]]) }
+  # The GM's player avatar URL for the crowned preview row (nil → monogram) —
+  # the GM row is a person, so it uses the player avatar, not a character.
+  sig { returns(T.nilable(String)) }
+  def gm_avatar_url
+    variant = gm_user&.avatar_variant
+    variant && @options.fetch(:helpers).url_for(variant)
+  end
+
+  # Up to five distinct characters participating in an active scene, each paired
+  # with that scene's title and portrait URL. Banned players are already
+  # excluded from scene participation.
+  sig { returns(T::Array[T::Hash[Symbol, T.nilable(String)]]) }
   def roster_preview
-    @roster_preview ||= T.let(build_roster_preview, T.nilable(T::Array[T::Hash[Symbol, String]]))
+    @roster_preview ||= T.let(
+      raw_active_scenes
+        .flat_map { |scene| SceneRosterRowsPresenter.new(ScenePresenter.new(scene), helpers: @options.fetch(:helpers)).rows }
+        .uniq { |row| row[:name] }
+        .first(5),
+      T.nilable(T::Array[T::Hash[Symbol, T.nilable(String)]])
+    )
   end
 
   sig { returns(T::Boolean) }
@@ -80,17 +95,11 @@ class GameScenesPanelPresenter < BasePresenter
     raw_active_scenes.map { |scene| ScenePresenter.new(scene, hot_scene_ids: hot_ids) }
   end
 
-  sig { returns(String) }
-  def build_gm_name
-    gm = game.game_members.game_masters.includes(:user).first&.user
-    gm ? UserPresenter.new(gm).display_name_or_email : "GM"
+  sig { returns(T.nilable(User)) }
+  def gm_user
+    @gm_user ||= T.let(game.game_members.game_masters.includes(:user).first&.user, T.nilable(User))
   end
 
-  sig { returns(T::Array[T::Hash[Symbol, String]]) }
-  def build_roster_preview
-    rows = raw_active_scenes.flat_map { |scene| SceneRosterRowsPresenter.new(ScenePresenter.new(scene)).rows }
-    rows.uniq { |row| row[:name] }.first(5)
-  end
 
   sig { returns(T::Array[Scene]) }
   def raw_active_scenes

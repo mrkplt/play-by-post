@@ -11,9 +11,17 @@ class PostPresenter < BasePresenter
 
   sig { returns(String) }
   def author_display_name
-    participant = scene_participants.find { |sp| sp.user_id == @model.user_id }
     user = @model.user
-    participant&.display_name || user.display_name || user.email
+    author_participant&.display_name || user.display_name || user.email
+  end
+
+  # The byline avatar: a post in a scene speaks as a character, so this is the
+  # character's portrait — nil (monogram fallback) for a GM post, whose
+  # participant has no character. Built via the injected urls, not a view route.
+  sig { returns(T.nilable(String)) }
+  def author_avatar_url
+    variant = author_participant&.character&.portrait_variant
+    variant && @options.fetch(:urls).url_for(variant)
   end
 
   sig { returns(String) }
@@ -70,6 +78,18 @@ class PostPresenter < BasePresenter
   end
 
   private
+
+  # This post's author as a scene participant (their character in this scene),
+  # or nil when the author isn't a participant. Both the byline name and the
+  # byline avatar ask for it; the participant list is a small in-memory array
+  # already loaded for the scene, so re-finding per caller is cheaper than a
+  # memo ivar. Returns T.untyped rather than T.nilable(SceneParticipant): the
+  # callers only reach through it with `&.`, and a nilable-model runtime sig
+  # would reject the verifying doubles the builder/post specs pass here.
+  sig { returns(T.untyped) }
+  def author_participant
+    scene_participants.find { |sp| sp.user_id == @model.user_id }
+  end
 
   sig { returns(T::Array[SceneParticipant]) }
   def scene_participants

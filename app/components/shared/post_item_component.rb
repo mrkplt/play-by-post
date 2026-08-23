@@ -45,6 +45,13 @@ class Shared::PostItemComponent < ApplicationComponent
     @post.author_is_gm? ? :dark : :gold
   end
 
+  # The byline avatar: the speaking character's portrait, or nil (monogram) for
+  # a GM post — a scene post speaks as a character.
+  sig { returns(T.nilable(String)) }
+  def avatar_url
+    @post.author_avatar_url
+  end
+
   # Post body typography: OOC posts read a touch smaller than in-character ones.
   sig { returns(Symbol) }
   def body_variant

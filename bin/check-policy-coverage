@@ -36,6 +36,7 @@ NON_AUTHORIZABLE = %w[
   GameExportRequest
   GlitchTipDsn
   NotificationPreference
+  KeypairReadyBroadcast
   PostRead
   SceneParticipant
   SceneSummaryBroadcast

@@ -5,26 +5,26 @@
 
   <%# Display Name %>
   <%= render Ui::SectionLabelComponent.new do %>Display Name<% end %>
-  <div class="bg-card border border-card-border rounded-card px-3.5">
+  <%= render Ui::CardComponent.new do %>
     <%= render Ui::SettingsRowComponent.new(label: @profile_presenter.display_name_or_placeholder, position: :last) do %>
       <%= link_to "Edit", edit_profile_path, class: "text-xs font-bold text-accent no-underline" %>
     <% end %>
-  </div>
+  <% end %>
 
   <%# Avatar %>
   <%= render Shared::ImageLibraryComponent.new(
         title: "Avatar",
-        images: @user_presenter.avatar_items,
+        images: @user_presenter.avatar.items,
         can_manage: true,
         empty_text: "No avatar yet.") %>
   <%= render Shared::ImageCropperComponent.new(
-        upload_url: @user_presenter.avatar_upload_url,
+        upload_url: @user_presenter.avatar.upload_url,
         title: "Add an avatar",
         add_label: "Add avatar") %>
 
   <%# Email + Preferences %>
   <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do %>Account<% end %>
-  <div class="bg-card border border-card-border rounded-card px-3.5">
+  <%= render Ui::CardComponent.new do %>
     <%= render Ui::SettingsRowComponent.new(label: "Email", sub: current_user.email) do %>
     <% end %>
     <%= render Ui::SettingsRowComponent.new(label: "Hide OOC by default", sub: "Collapse out-of-character posts") do %>
@@ -33,22 +33,20 @@
         toggle_url: toggle_hide_ooc_profile_path
       ) %>
     <% end %>
-    <%= render Ui::SettingsRowComponent.new(label: "AI features", sub: "Allow AI scene summaries in your games") do %>
-      <%= render Ui::ProfileAiConsentToggleComponent.new(
-        consented: @profile_presenter.ai_summaries_consent?,
-        toggle_url: toggle_ai_summaries_consent_profile_path
-      ) %>
-    <% end %>
+  <% end %>
+
+  <%# AI (AI Control Plane): the viewer's own display preference, then their
+      BYOK key. Display preference is a per-user setting, so it heads this
+      section rather than sitting among BYOK's key controls. %>
+  <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do %>AI<% end %>
+  <%= render Ui::CardComponent.new do %>
     <%= render Ui::SettingsRowComponent.new(label: "AI display", sub: "How AI-generated content appears to you", position: :last) do %>
       <%= render Ui::ProfileAiDisplayPreferenceControlComponent.new(
         preference: @profile_presenter.ai_display_preference,
         update_url: update_ai_display_preference_profile_path
       ) %>
     <% end %>
-  </div>
-
-  <%# BYOK OpenRouter key (AI Control Plane) %>
-  <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do %>AI<% end %>
+  <% end %>
   <%= render Ui::ByokKeyFormComponent.new(
         key_present: @user_presenter.byok_key.present?,
         public_key_pem: @user_presenter.byok_key.public_key_pem,
@@ -66,25 +64,27 @@
   <%= render Shared::TokenSectionComponent.new(
         rows: @feed_rows, scope: "rss", secret_label: "Feed URL", create_label: "Create feed") %>
 
-  <%# API tokens %>
-  <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do %>API tokens<% end %>
-  <%# Swagger UI lives at the mounted /api-docs engine; turbo: false forces a
-      full navigation so Turbo doesn't graft it into the app frame. Spacing rides
-      on the component (html_options), not a wrapping view div, to keep styling
-      out of the view template. %>
-  <%= render Ui::ButtonComponent.new(
-        style: Ui::ButtonComponent::Style.new(variant: :text, size: :sm),
-        link: Ui::ButtonComponent::Link.new(url: "/api-docs", data: { turbo: false }),
-        html_options: { class: "inline-block mb-1.5" }) do %>View API documentation<% end %>
+  <%# API tokens — the "View API documentation" link rides inline with the
+      section heading via its action slot. Swagger UI lives at the mounted
+      /api-docs engine; turbo: false forces a full navigation so Turbo doesn't
+      graft it into the app frame. %>
+  <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do |label| %>
+    <% label.with_action do %>
+      <%= render Ui::ButtonComponent.new(
+            style: Ui::ButtonComponent::Style.new(variant: :text, size: :sm),
+            link: Ui::ButtonComponent::Link.new(url: "/api-docs", data: { turbo: false })) do %>View API documentation<% end %>
+    <% end %>
+    API tokens
+  <% end %>
   <%= render Shared::TokenSectionComponent.new(
         rows: @user_presenter.api_token_rows(urls: self), scope: "api", secret_label: "API token", create_label: "Create token") %>
 
   <%# Export %>
   <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do %>Export<% end %>
-  <div class="bg-card border border-card-border rounded-card px-3.5">
+  <%= render Ui::CardComponent.new do %>
     <%= render Ui::SettingsRowComponent.new(label: "All your games", sub: @user_presenter.export_all_games_notice, position: :last) do %>
       <%= button_to "Export All Games", export_all_profile_path, method: :post,
             class: "text-xs font-bold text-accent bg-transparent border-0 cursor-pointer p-0" %>
     <% end %>
-  </div>
+  <% end %>
 <% end %>

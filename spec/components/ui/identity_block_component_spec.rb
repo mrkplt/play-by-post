@@ -13,6 +13,12 @@ RSpec.describe Ui::IdentityBlockComponent, type: :component do
     expect(rendered).to have_css("span", text: "V")
   end
 
+  it "passes an avatar_url through to render the avatar image instead of the monogram" do
+    view = rendered(avatar_url: "/portrait.jpg")
+    expect(view).to have_css("img[src='/portrait.jpg']")
+    expect(view).not_to have_css("span[aria-hidden='true']", exact_text: "V")
+  end
+
   it "renders the primary and secondary labels" do
     r = rendered
     expect(r).to have_text("Vex Marrowgate")

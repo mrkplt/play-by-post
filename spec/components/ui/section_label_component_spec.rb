@@ -33,4 +33,25 @@ RSpec.describe Ui::SectionLabelComponent, type: :component do
   it "renders the extra html_class in the DOM" do
     expect(rendered(html_class: "mt-4") { "X" }).to have_css("div.mt-4")
   end
+
+  describe "with an action slot" do
+    def rendered_with_action
+      render_inline(described_class.new) do |label|
+        label.with_action { "View docs" }
+        "API tokens"
+      end
+      page
+    end
+
+    it "renders both the label content and the action inline on one row" do
+      view = rendered_with_action
+      expect(view).to have_text("API tokens")
+      expect(view).to have_text("View docs")
+      expect(view).to have_css("div.flex.justify-between")
+    end
+
+    it "renders no action wrapper when no action is given" do
+      expect(rendered { "API tokens" }).not_to have_css("div.justify-between")
+    end
+  end
 end
