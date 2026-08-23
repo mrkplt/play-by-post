@@ -54,7 +54,7 @@ class ProfilesController < ApplicationController
     current_profile = profile
     authorize current_profile, :manage?
     current_profile.update!(ai_display_preference: ai_display_preference_param)
-    redirect_to profile_path, notice: "AI display preference updated."
+    render_ai_display_preference(current_profile)
   end
 
   sig { void }
@@ -66,6 +66,26 @@ class ProfilesController < ApplicationController
   end
 
   private
+
+  # Persist-in-place: swap the control for its new active state and drop a
+  # confirmation toast via Turbo Stream, so a choice sticks with no full-page
+  # reload (the reload was jumping the profile's scroll position). flash.now,
+  # not flash: nothing redirects, so a persisted flash would leak onto the next
+  # full page load. Mirrors Profiles::ByokKeysController#render_pending.
+  sig { params(current_profile: UserProfile).void }
+  def render_ai_display_preference(current_profile)
+    flash.now[:notice] = "AI display preference updated."
+    render turbo_stream: [
+      turbo_stream.replace(
+        Ui::ProfileAiDisplayPreferenceControlComponent::CONTROL_ID,
+        Ui::ProfileAiDisplayPreferenceControlComponent.new(
+          preference: current_profile.ai_display_preference,
+          update_url: update_ai_display_preference_profile_path
+        )
+      ),
+      turbo_stream.replace("toast_layer", Ui::ToastComponent.new(toasts: FlashPresenter.new(flash).toasts))
+    ]
+  end
 
   sig { params(current_profile: UserProfile).void }
   def assign_profile_presenter(current_profile)

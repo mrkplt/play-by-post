@@ -94,24 +94,50 @@ RSpec.describe ProfilesController, type: :request do
   end
 
   describe "POST /profile/update_ai_display_preference" do
-    it "updates the preference to shown and redirects with a notice" do
+    let(:turbo_headers) { { "Accept" => "text/vnd.turbo-stream.html" } }
+
+    it "updates the preference to shown and answers with a Turbo Stream, not a redirect" do
       sign_in(user)
-      post update_ai_display_preference_profile_path, params: { ai_display_preference: "shown" }
-      expect(response).to redirect_to(profile_path)
-      expect(flash[:notice]).to eq("AI display preference updated.")
+      post update_ai_display_preference_profile_path, params: { ai_display_preference: "shown" }, headers: turbo_headers
+      expect(response.media_type).to eq("text/vnd.turbo-stream.html")
+
+      # Both streams target the right id (a replace of the control and of the
+      # toast layer). Nokogiri parses <template> content as a detached fragment,
+      # so descendant selectors don't cross the boundary — assert the stream
+      # targets and the rendered content separately.
+      stream = Capybara.string(response.body)
+      expect(stream).to have_css(
+        %(turbo-stream[action="replace"][target="#{Ui::ProfileAiDisplayPreferenceControlComponent::CONTROL_ID}"])
+      )
+      expect(stream).to have_css(%(turbo-stream[action="replace"][target="toast_layer"]))
+
+      # The control re-renders with the newly-chosen option pressed, and the
+      # toast carries the notice. Content sits inside <template>, which Nokogiri
+      # does not parse into the DOM tree, so assert on the raw markup.
+      expect(response.body).to include(%(aria-pressed="true" type="submit">Shown))
+      expect(response.body).to include(%(<span class="toast__message">AI display preference updated.</span>))
       expect(user.user_profile.reload.ai_display_preference).to eq("shown")
+    end
+
+    it "does not persist the notice into the next full page load" do
+      sign_in(user)
+      post update_ai_display_preference_profile_path, params: { ai_display_preference: "shown" }, headers: turbo_headers
+
+      # flash.now, so it is consumed by this render and gone on the next request.
+      get profile_path
+      expect(response.body).not_to include("AI display preference updated.")
     end
 
     it "updates the preference to hidden" do
       sign_in(user)
-      post update_ai_display_preference_profile_path, params: { ai_display_preference: "hidden" }
+      post update_ai_display_preference_profile_path, params: { ai_display_preference: "hidden" }, headers: turbo_headers
       expect(user.user_profile.reload.ai_display_preference).to eq("hidden")
     end
 
     it "updates the preference to tagged" do
       sign_in(user)
       user.user_profile.update!(ai_display_preference: :shown)
-      post update_ai_display_preference_profile_path, params: { ai_display_preference: "tagged" }
+      post update_ai_display_preference_profile_path, params: { ai_display_preference: "tagged" }, headers: turbo_headers
       expect(user.user_profile.reload.ai_display_preference).to eq("tagged")
     end
 

@@ -1,4 +1,4 @@
-<div class="<%= wrapper_classes %>" role="group" aria-label="AI display preference">
+<div id="<%= CONTROL_ID %>" class="<%= wrapper_classes %>" role="group" aria-label="AI display preference">
   <% options.each do |option| %>
     <%= button_to option.label, update_url, method: :post,
           params: { ai_display_preference: option.value },
