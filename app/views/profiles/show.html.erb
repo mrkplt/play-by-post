@@ -5,11 +5,11 @@
 
   <%# Display Name %>
   <%= render Ui::SectionLabelComponent.new do %>Display Name<% end %>
-  <div class="bg-card border border-card-border rounded-card px-3.5">
+  <%= render Ui::CardComponent.new do %>
     <%= render Ui::SettingsRowComponent.new(label: @profile_presenter.display_name_or_placeholder, position: :last) do %>
       <%= link_to "Edit", edit_profile_path, class: "text-xs font-bold text-accent no-underline" %>
     <% end %>
-  </div>
+  <% end %>
 
   <%# Avatar %>
   <%= render Shared::ImageLibraryComponent.new(
@@ -24,7 +24,7 @@
 
   <%# Email + Preferences %>
   <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do %>Account<% end %>
-  <div class="bg-card border border-card-border rounded-card px-3.5">
+  <%= render Ui::CardComponent.new do %>
     <%= render Ui::SettingsRowComponent.new(label: "Email", sub: current_user.email) do %>
     <% end %>
     <%= render Ui::SettingsRowComponent.new(label: "Hide OOC by default", sub: "Collapse out-of-character posts") do %>
@@ -33,20 +33,20 @@
         toggle_url: toggle_hide_ooc_profile_path
       ) %>
     <% end %>
-  </div>
+  <% end %>
 
   <%# AI (AI Control Plane): the viewer's own display preference, then their
       BYOK key. Display preference is a per-user setting, so it heads this
       section rather than sitting among BYOK's key controls. %>
   <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do %>AI<% end %>
-  <div class="bg-card border border-card-border rounded-card px-3.5">
+  <%= render Ui::CardComponent.new do %>
     <%= render Ui::SettingsRowComponent.new(label: "AI display", sub: "How AI-generated content appears to you", position: :last) do %>
       <%= render Ui::ProfileAiDisplayPreferenceControlComponent.new(
         preference: @profile_presenter.ai_display_preference,
         update_url: update_ai_display_preference_profile_path
       ) %>
     <% end %>
-  </div>
+  <% end %>
   <%= render Ui::ByokKeyFormComponent.new(
         key_present: @user_presenter.byok_key.present?,
         public_key_pem: @user_presenter.byok_key.public_key_pem,
@@ -81,10 +81,10 @@
 
   <%# Export %>
   <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do %>Export<% end %>
-  <div class="bg-card border border-card-border rounded-card px-3.5">
+  <%= render Ui::CardComponent.new do %>
     <%= render Ui::SettingsRowComponent.new(label: "All your games", sub: @user_presenter.export_all_games_notice, position: :last) do %>
       <%= button_to "Export All Games", export_all_profile_path, method: :post,
             class: "text-xs font-bold text-accent bg-transparent border-0 cursor-pointer p-0" %>
     <% end %>
-  </div>
+  <% end %>
 <% end %>

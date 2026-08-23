@@ -2,10 +2,12 @@
     broadcast targets (KeypairReadyBroadcast → ByokKeyChannel::PENDING_FRAME_ID),
     so a broadcast replaces this control in place. The pending branch delegates
     the frame to Shared::AsyncPendingComponent, which owns it; the other branches
-    carry the frame themselves. %>
+    put the frame at the root (turbo_frame_tag) so the broadcast's replacement
+    content is itself a matching frame. The card class lives on #card_classes so
+    the two branches share one spelling of it. %>
 <% if pending? %>
-  <div class="bg-card border border-card-border rounded-card px-3.5 py-3">
-    <p class="text-sm text-ink font-bold mb-1"><%= heading %></p>
+  <div class="<%= card_classes %>">
+    <p class="<%= heading_classes %>"><%= heading %></p>
     <%= render Shared::AsyncPendingComponent.new(
           frame_id: frame_id,
           stream: keypair_stream,
@@ -14,8 +16,8 @@
   </div>
 <% else %>
   <%= helpers.turbo_frame_tag frame_id do %>
-    <div class="bg-card border border-card-border rounded-card px-3.5 py-3">
-      <p class="text-sm text-ink font-bold mb-1"><%= heading %></p>
+    <div class="<%= card_classes %>">
+      <p class="<%= heading_classes %>"><%= heading %></p>
       <p class="text-xs text-muted mb-3"><%= status_text %></p>
 
       <% if key_present? %>

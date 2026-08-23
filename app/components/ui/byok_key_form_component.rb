@@ -80,6 +80,21 @@ class Ui::ByokKeyFormComponent < ApplicationComponent
     ByokKeyChannel::PENDING_FRAME_ID
   end
 
+  # The card wrapper's classes — the pending and settled branches share it from
+  # here so the string is spelled once. Ui::CardComponent's shell is px-3.5
+  # only; this control wants the taller py-3 padding, so it carries its own.
+  sig { returns(String) }
+  def card_classes
+    "bg-card border border-card-border rounded-card px-3.5 py-3"
+  end
+
+  # The heading's classes — shared by both branches from here so the string is
+  # spelled once (the pending and settled cards carry the same title).
+  sig { returns(String) }
+  def heading_classes
+    "text-sm text-ink font-bold mb-1"
+  end
+
   sig { returns(T::Boolean) }
   def pending?
     !@pending.nil?
