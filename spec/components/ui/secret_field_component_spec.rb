@@ -32,12 +32,12 @@ RSpec.describe Ui::SecretFieldComponent, type: :component do
     expect(page).not_to have_button("Revoke")
   end
 
-  it "renders a revoke control inline with the other controls when given a revoke_path" do
+  it "renders revoke as a destructive delete action inline with Show and Copy" do
     render_inline(described_class.new(value: secret, label: "Feed URL", revoke_path: "/tokens/1"))
-    revoke = page.find("button", text: "Revoke")
-    expect(revoke[:class]).to include("secret-field__btn")
-    expect(page).to have_css(%(.secret-field__row form[action="/tokens/1"] button), text: "Revoke")
-    expect(page).to have_css(%(.secret-field__row form input[name="_method"][value="delete"]), visible: :all)
+    revoke = page.find(".secret-field__row a", text: "Revoke")
+    expect(revoke[:href]).to eq("/tokens/1")
+    expect(revoke["data-turbo-method"]).to eq("delete")
+    expect(revoke[:class]).to include("text-danger")
   end
 
   describe "#masked_value" do
