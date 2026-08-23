@@ -11,14 +11,6 @@
 # It's strongly recommended that you check this file into your version control system.
 
 ActiveRecord::Schema[8.1].define(version: 2026_08_21_000000) do
-  create_table "ai_private_keys", force: :cascade do |t|
-    t.bigint "ai_keypair_id", null: false
-    t.datetime "created_at", null: false
-    t.text "encrypted_private_key", null: false
-    t.datetime "updated_at", null: false
-    t.index ["ai_keypair_id"], name: "index_ai_private_keys_on_ai_keypair_id", unique: true
-  end
-
   create_table "private_keys", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.text "encrypted_private_key", null: false
