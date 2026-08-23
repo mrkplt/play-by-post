@@ -78,5 +78,27 @@ RSpec.describe KeypairGenerationJob, type: :job do
       public_key = OpenSSL::PKey::RSA.new(encrypted_value.public_key.public_key)
       expect(encrypted_value.public_key.fingerprint).to eq(OpenSSL::Digest::SHA256.hexdigest(public_key.public_key.to_der))
     end
+
+    it "broadcasts the finished keypair to the User owner's Profile screen", :ai_credential, db: true do
+      user = create(:user)
+      broadcast = instance_double(KeypairReadyBroadcast, call: nil)
+      allow(KeypairReadyBroadcast).to receive(:new).and_return(broadcast)
+
+      described_class.new.perform(owner_type: "User", owner_id: user.id, value_type: value_type)
+
+      encrypted_value = EncryptedValue.find_by(owner: user, value_type: value_type)
+      expect(KeypairReadyBroadcast).to have_received(:new).with(encrypted_value)
+      expect(broadcast).to have_received(:call)
+    end
+
+    it "does not broadcast when the keypair already exists (the idempotent no-op)", :ai_credential, db: true do
+      user = create(:user)
+      create(:encrypted_value, owner: user, value_type: value_type)
+      allow(KeypairReadyBroadcast).to receive(:new)
+
+      described_class.new.perform(owner_type: "User", owner_id: user.id, value_type: value_type)
+
+      expect(KeypairReadyBroadcast).not_to have_received(:new)
+    end
   end
 end

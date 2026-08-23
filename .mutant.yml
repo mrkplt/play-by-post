@@ -31,6 +31,7 @@ matcher:
     - SceneSummary
     - SceneSummaryVisibility
     - SceneSummaryBroadcast
+    - KeypairReadyBroadcast
     - GameExportRequest
     - GameMember
     - GameFile
@@ -234,6 +235,7 @@ matcher:
     - Ui::ProfileOocToggleComponent
     - Ui::ProfileAiConsentToggleComponent
     - Ui::ByokKeyFormComponent
+    - Ui::ByokKeyFormComponent::Pending
     - Ui::ProfileAiDisplayPreferenceControlComponent
     - Ui::ProfileAiDisplayPreferenceControlComponent::Option
     - Ui::PillTabsComponent
@@ -363,6 +365,7 @@ matcher:
     - KeypairGenerationJob
     # Channels
     - SceneSummaryChannel
+    - ByokKeyChannel
     - ApplicationCable::Connection
     # Mailers
     - NotificationMailer

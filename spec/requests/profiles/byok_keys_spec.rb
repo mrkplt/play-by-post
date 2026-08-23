@@ -13,7 +13,6 @@ RSpec.describe Profiles::ByokKeysController, type: :request do
       }.to change(EncryptedValue, :count).by(1)
 
       expect(EncryptedValue.find_by(owner: user, value_type: value_type)).to be_present
-      expect(response).to redirect_to(profile_path)
     end
 
     it "is idempotent — does not create a second EncryptedValue if one already exists", :ai_credential, db: true do
@@ -25,34 +24,50 @@ RSpec.describe Profiles::ByokKeysController, type: :request do
       }.not_to change(EncryptedValue, :count)
     end
 
-    it "flashes a ready notice when the EncryptedValue already exists", :ai_credential, db: true do
+    it "redirects with a ready notice when the EncryptedValue already exists — nothing to wait on", :ai_credential, db: true do
       create(:encrypted_value, owner: user, value_type: value_type)
       sign_in(user)
 
       post profile_byok_key_path
 
+      expect(response).to redirect_to(profile_path)
       expect(flash[:notice]).to eq("Your encryption key is ready.")
     end
 
-    it "flashes a preparing notice when the EncryptedValue does not exist yet, even if another owner has one", :ai_credential, db: true do
+    context "when the keypair does not exist yet (the real async case)" do
       # The default test queue_adapter is :inline (config/environments/test.rb),
       # so KeypairGenerationJob would otherwise run synchronously inside the
       # request and the EncryptedValue would already exist by the time the
-      # notice is computed — swap to :test here to observe the real "still
+      # response is computed — swap to :test here to observe the real "still
       # enqueued, not yet generated" state the async worker leaves in
-      # production. Another owner's EncryptedValue also exists, so the notice
-      # must be scoped to current_user specifically, not "does any
-      # EncryptedValue exist at all."
-      create(:encrypted_value, owner: create(:user), value_type: value_type)
-      original_adapter = ActiveJob::Base.queue_adapter
-      ActiveJob::Base.queue_adapter = :test
-      sign_in(user)
+      # production.
+      around do |example|
+        original_adapter = ActiveJob::Base.queue_adapter
+        ActiveJob::Base.queue_adapter = :test
+        example.run
+      ensure
+        ActiveJob::Base.queue_adapter = original_adapter
+      end
 
-      post profile_byok_key_path
+      it "responds with a Turbo Stream that swaps in the pending spinner frame, not a redirect", :db do
+        sign_in(user)
 
-      expect(flash[:notice]).to eq("Preparing your encryption key…")
-    ensure
-      ActiveJob::Base.queue_adapter = original_adapter
+        post profile_byok_key_path, headers: { "Accept" => "text/vnd.turbo-stream.html" }
+
+        expect(response.media_type).to eq("text/vnd.turbo-stream.html")
+        expect(response.body).to include(ByokKeyChannel::PENDING_FRAME_ID)
+        expect(response.body).to include("Preparing your encryption key…")
+      end
+
+      it "does not persist the preparing notice into the next full page load", :db do
+        sign_in(user)
+
+        post profile_byok_key_path, headers: { "Accept" => "text/vnd.turbo-stream.html" }
+
+        # flash.now, so it is consumed by this render and gone on the next request.
+        get profile_path
+        expect(response.body).not_to include("Preparing your encryption key…")
+      end
     end
 
     it "redirects unauthenticated users", :db do

@@ -5,9 +5,13 @@
 # comment for the full envelope format, and KeypairGenerationJob for why key
 # generation happens on the worker, not inline here.
 #
-# `create` generates the EncryptedValue's dedicated keypair (idempotent — a
-# no-op if one already exists for this user+value_type) so the browser has a
-# public key to encrypt to. `update` accepts the browser-sealed envelope (the
+# `create` enqueues KeypairGenerationJob to generate the EncryptedValue's
+# dedicated keypair (idempotent — a no-op if one already exists for this
+# user+value_type) so the browser has a public key to encrypt to; because that
+# generation is async on the worker, `create` responds with a Turbo Stream
+# swapping the button for a pending spinner frame that the worker's
+# KeypairReadyBroadcast later replaces with the paste form. `update` accepts the
+# browser-sealed envelope (the
 # Stimulus byok-key-seal controller's output) and stores it against a keypair
 # that has no key sealed yet. `destroy` tears the whole EncryptedValue and its
 # keypair down to the neutral state — a stored key cannot be retrieved or
@@ -24,12 +28,20 @@ class Profiles::ByokKeysController < ApplicationController
 
   after_action :verify_authorized
 
+  # "Set up encryption": enqueue the async keypair job. When the keypair does
+  # not exist yet (the real async case), swap the button for a pending spinner
+  # frame in place via Turbo Stream — the worker's KeypairReadyBroadcast then
+  # replaces that frame with the paste form once the keypair exists, so the form
+  # appears with no reload and no re-click. When a keypair already exists (the
+  # idempotent no-op case, or a stray double-submit), there is nothing to wait
+  # on: redirect so the full page re-renders with the paste form.
   sig { void }
   def create
     authorize profile, :manage?
 
     KeypairGenerationJob.perform_later(owner_type: "User", owner_id: current_user.id, value_type: VALUE_TYPE)
-    redirect_to profile_path, notice: keypair_pending_notice
+
+    keypair_exists? ? redirect_to(profile_path, notice: "Your encryption key is ready.") : render_pending
   end
 
   sig { void }
@@ -61,6 +73,15 @@ class Profiles::ByokKeysController < ApplicationController
     EncryptedValue.find_by(owner: current_user, value_type: VALUE_TYPE)
   end
 
+  # Whether the async keypair already exists — a presence check, not a record
+  # fetch, so #create can decide between redirect and pending-render without
+  # loading the model (which would drag the whole EncryptedValue into the
+  # action's conditional and re-couple it to #byok_value).
+  sig { returns(T::Boolean) }
+  def keypair_exists?
+    EncryptedValue.exists?(owner: current_user, value_type: VALUE_TYPE)
+  end
+
   # The alert to redirect with if the current key must not be sealed, or nil if
   # sealing may proceed: there must be a keypair to seal against, and no key
   # already saved (changing a saved key is delete-then-set-up, never a
@@ -85,9 +106,29 @@ class Profiles::ByokKeysController < ApplicationController
     public_key.destroy!
   end
 
-  sig { returns(String) }
-  def keypair_pending_notice
-    EncryptedValue.exists?(owner: current_user, value_type: VALUE_TYPE) ? "Your encryption key is ready." : "Preparing your encryption key…"
+  # Swap the "Set up encryption" button for the pending spinner frame and drop a
+  # "preparing" toast, both via Turbo Stream, so the click surfaces progress in
+  # place while KeypairGenerationJob runs. The spinner frame subscribes to this
+  # user's keypair stream and is replaced by the paste form on completion
+  # (KeypairReadyBroadcast). flash.now, not flash: nothing redirects here, so a
+  # persisted flash would leak onto the next full page load.
+  sig { void }
+  def render_pending
+    flash.now[:notice] = "Preparing your encryption key…"
+    render turbo_stream: [
+      turbo_stream.replace(ByokKeyChannel::PENDING_FRAME_ID, pending_component),
+      turbo_stream.replace("toast_layer", Ui::ToastComponent.new(toasts: FlashPresenter.new(flash).toasts))
+    ]
+  end
+
+  sig { returns(Ui::ByokKeyFormComponent) }
+  def pending_component
+    Ui::ByokKeyFormComponent.new(
+      key_present: false,
+      public_key_pem: nil,
+      endpoint_url: profile_byok_key_path,
+      pending: Ui::ByokKeyFormComponent::Pending.new(stream: [ current_user, :byok_keypair ])
+    )
   end
 
   sig { void }
