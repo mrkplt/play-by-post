@@ -5,8 +5,5 @@
     completion toast rides its own broadcast (see the worker) into #toast_layer. %>
 <%= helpers.turbo_stream_from(*streamables, **stream_options) %>
 <%= helpers.turbo_frame_tag(frame_id) do %>
-  <div class="flex items-center gap-3 text-muted-2 py-4">
-    <%= render Ui::SpinnerComponent.new(size: :sm, label: message) %>
-    <span class="text-sm"><%= message %></span>
-  </div>
+  <%= render Shared::PendingIndicatorComponent.new(message: message) %>
 <% end %>

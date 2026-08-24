@@ -1,28 +1,23 @@
-<%# Everything renders inside the same turbo frame the worker's completion
-    broadcast targets (KeypairReadyBroadcast → ByokKeyChannel::PENDING_FRAME_ID),
-    so a broadcast replaces this control in place. The pending branch delegates
-    the frame to Shared::AsyncPendingComponent, which owns it; the other branches
-    put the frame at the root (turbo_frame_tag) so the broadcast's replacement
-    content is itself a matching frame. The card class lives on #card_classes so
-    the two branches share one spelling of it. %>
-<% if pending? %>
+<%# The whole control lives in one Turbo Frame (FRAME_ID): #create/#update/
+    #destroy replace it via Turbo Stream, and the pending branch's frame-poll
+    controller reloads it (GET #show on endpoint_url) until the keypair exists
+    and the paste form renders — polling, not a broadcast, so the reveal is
+    deterministic. %>
+<%= helpers.turbo_frame_tag frame_id do %>
   <div class="<%= card_classes %>">
     <p class="<%= heading_classes %>"><%= heading %></p>
-    <%= render Shared::AsyncPendingComponent.new(
-          frame_id: frame_id,
-          stream: keypair_stream,
-          channel: "ByokKeyChannel",
-          message: "Preparing your encryption key…") %>
-  </div>
-<% else %>
-  <%= helpers.turbo_frame_tag frame_id do %>
-    <div class="<%= card_classes %>">
-      <p class="<%= heading_classes %>"><%= heading %></p>
+
+    <% if pending? %>
+      <%= render Shared::PendingIndicatorComponent.new(
+            message: pending_message,
+            data: { controller: "frame-poll", "frame-poll-url-value": endpoint_url }) %>
+    <% else %>
       <p class="text-xs text-muted mb-3"><%= status_text %></p>
 
       <% if key_present? %>
-        <%= button_to "Delete key", endpoint_url, method: :delete,
-              class: "text-xs font-bold text-danger bg-transparent border-0 cursor-pointer p-0" %>
+        <%= render Ui::ButtonComponent.new(
+              style: Ui::ButtonComponent::Style.new(variant: :text_danger, size: :sm),
+              link: Ui::ButtonComponent::Link.new(url: endpoint_url, method: :delete)) do %>Delete key<% end %>
       <% elsif keypair_ready? %>
         <%= form_with url: endpoint_url, method: :patch, scope: :byok_key,
               data: {
@@ -42,14 +37,15 @@
 
           <p class="text-xs text-danger mb-2 hidden" data-byok-key-seal-target="error"></p>
 
-          <%= form.submit "Save key",
-                data: { "byok-key-seal-target": "submit" },
-                class: "text-xs font-bold text-accent-ink bg-accent rounded-control px-3 py-1.5 border-0 cursor-pointer" %>
+          <%= render Ui::ButtonComponent.new(
+                style: Ui::ButtonComponent::Style.new(variant: :primary, size: :sm),
+                html_options: { type: "submit", data: { "byok-key-seal-target": "submit" } }) do %>Save key<% end %>
         <% end %>
       <% else %>
-        <%= button_to "Set up encryption", endpoint_url, method: :post,
-              class: "text-xs font-bold text-accent bg-transparent border-0 cursor-pointer p-0" %>
+        <%= render Ui::ButtonComponent.new(
+              style: Ui::ButtonComponent::Style.new(variant: :text, size: :sm),
+              link: Ui::ButtonComponent::Link.new(url: endpoint_url, method: :post)) do %>Set up encryption<% end %>
       <% end %>
-    </div>
-  <% end %>
+    <% end %>
+  </div>
 <% end %>

@@ -80,7 +80,7 @@ Rails.application.routes.draw do
       # browser-encrypted envelope, destroy tears the whole EncryptedValue
       # (and its keypair) back down to the neutral state. Singleton — one
       # "openrouter_key" EncryptedValue per user.
-      resource :byok_key, only: %i[create update destroy], module: :profiles
+      resource :byok_key, only: %i[show create update destroy], module: :profiles
     end
     resources :games, only: %i[index new create show edit update destroy] do
       # Kept as toggle_*_game_path on the game itself — the setting switches

@@ -5,19 +5,20 @@
 # comment for the full envelope format, and KeypairGenerationJob for why key
 # generation happens on the worker, not inline here.
 #
-# `create` enqueues KeypairGenerationJob to generate the EncryptedValue's
-# dedicated keypair (idempotent — a no-op if one already exists for this
-# user+value_type) so the browser has a public key to encrypt to; because that
-# generation is async on the worker, `create` responds with a Turbo Stream
-# swapping the button for a pending spinner frame that the worker's
-# KeypairReadyBroadcast later replaces with the paste form. `update` accepts the
-# browser-sealed envelope (the
-# Stimulus byok-key-seal controller's output) and stores it against a keypair
-# that has no key sealed yet. `destroy` tears the whole EncryptedValue and its
+# The whole lifecycle happens in place — no action redirects. `create`
+# enqueues KeypairGenerationJob (idempotent — a no-op if a keypair already
+# exists for this user+value_type) and responds with a Turbo Stream swapping
+# the control to its pending state; the pending spinner's frame-poll reloads
+# the control (`show`) until the keypair exists and the paste form renders.
+# `update` accepts the browser-sealed envelope (the Stimulus byok-key-seal
+# controller's output) and `destroy` tears the whole EncryptedValue and its
 # keypair down to the neutral state — a stored key cannot be retrieved or
 # re-pasted, so the only way to change it is delete then set up a fresh
-# keypair. None of these actions ever sees, and this controller never handles,
-# the plaintext BYOK key — only the sealed JSON envelope.
+# keypair. Both respond with Turbo Streams that swap the control to its next
+# state and refresh the profile's "Fund AI for your games" section, whose
+# visibility hangs on key presence. None of these actions ever sees, and this
+# controller never handles, the plaintext BYOK key — only the sealed JSON
+# envelope.
 class Profiles::ByokKeysController < ApplicationController
   extend T::Sig
   include ProfileScoped
@@ -28,30 +29,37 @@ class Profiles::ByokKeysController < ApplicationController
 
   after_action :verify_authorized
 
-  # "Set up encryption": enqueue the async keypair job. When the keypair does
-  # not exist yet (the real async case), swap the button for a pending spinner
-  # frame in place via Turbo Stream — the worker's KeypairReadyBroadcast then
-  # replaces that frame with the paste form once the keypair exists, so the form
-  # appears with no reload and no re-click. When a keypair already exists (the
-  # idempotent no-op case, or a stray double-submit), there is nothing to wait
-  # on: redirect so the full page re-renders with the paste form.
+  # The poll target: renders the control's current state into its Turbo Frame.
+  # Only ever fetched by the pending spinner's frame-poll, so "no keypair yet"
+  # means the job is still running — render pending again and the poll
+  # continues; once the keypair exists this renders the paste form and the
+  # poll stops with it.
+  sig { void }
+  def show
+    authorize profile, :manage?
+
+    render streams.component(pending: !keypair_exists?), layout: false
+  end
+
+  # "Set up encryption": enqueue the async keypair job and swap the button for
+  # the pending spinner in place. When a keypair already exists (the idempotent
+  # no-op case, or a stray double-submit) there is nothing to wait on: the same
+  # stream renders the settled control instead.
   sig { void }
   def create
     authorize profile, :manage?
 
     KeypairGenerationJob.perform_later(owner_type: "User", owner_id: current_user.id, value_type: VALUE_TYPE)
 
-    keypair_exists? ? redirect_to(profile_path, notice: "Your encryption key is ready.") : render_pending
+    render_creation
   end
 
   sig { void }
   def update
     authorize profile, :manage?
 
-    blocker = seal_blocker
-    return redirect_to profile_path, alert: blocker if blocker
-
-    seal_value!(T.must(byok_value)) ? seal_succeeded : seal_failed
+    apply_seal
+    render turbo_stream: streams.settled
   end
 
   sig { void }
@@ -59,10 +67,36 @@ class Profiles::ByokKeysController < ApplicationController
     authorize profile, :manage?
 
     tear_down!(T.must(byok_value)) if byok_value
-    redirect_to profile_path, notice: "OpenRouter key deleted."
+    flash.now[:notice] = "OpenRouter key deleted."
+    render turbo_stream: streams.settled
   end
 
   private
+
+  # Whether the keypair is settled decides both the toast copy and whether the
+  # control renders pending — computed once so the two cannot disagree.
+  sig { void }
+  def render_creation
+    exists = keypair_exists?
+    flash.now[:notice] = exists ? "Your encryption key is ready." : "Preparing your encryption key…"
+    render turbo_stream: streams.creation(pending: !exists)
+  end
+
+  # Seal the envelope if nothing blocks it, setting the outcome flash either
+  # way — the caller renders the same in-place streams for every outcome.
+  sig { void }
+  def apply_seal
+    kind, message = seal_outcome
+    flash.now[kind] = message
+  end
+
+  sig { returns([ Symbol, String ]) }
+  def seal_outcome
+    blocker = seal_blocker
+    return [ :alert, blocker ] if blocker
+
+    seal_value!(T.must(byok_value)) ? [ :notice, "OpenRouter key saved." ] : [ :alert, "Could not save that key." ]
+  end
 
   # The current user's BYOK EncryptedValue, or nil in the neutral state.
   # Looked up per call rather than memoized in an ivar — this controller's
@@ -74,7 +108,7 @@ class Profiles::ByokKeysController < ApplicationController
   end
 
   # Whether the async keypair already exists — a presence check, not a record
-  # fetch, so #create can decide between redirect and pending-render without
+  # fetch, so #show/#create can decide between pending and settled without
   # loading the model (which would drag the whole EncryptedValue into the
   # action's conditional and re-couple it to #byok_value).
   sig { returns(T::Boolean) }
@@ -82,10 +116,10 @@ class Profiles::ByokKeysController < ApplicationController
     EncryptedValue.exists?(owner: current_user, value_type: VALUE_TYPE)
   end
 
-  # The alert to redirect with if the current key must not be sealed, or nil if
-  # sealing may proceed: there must be a keypair to seal against, and no key
-  # already saved (changing a saved key is delete-then-set-up, never a
-  # server-side overwrite — see the class comment).
+  # The alert if the current key must not be sealed, or nil if sealing may
+  # proceed: there must be a keypair to seal against, and no key already saved
+  # (changing a saved key is delete-then-set-up, never a server-side
+  # overwrite — see the class comment).
   sig { returns(T.nilable(String)) }
   def seal_blocker
     return "No keypair to seal a key against yet." unless byok_value
@@ -106,39 +140,16 @@ class Profiles::ByokKeysController < ApplicationController
     public_key.destroy!
   end
 
-  # Swap the "Set up encryption" button for the pending spinner frame and drop a
-  # "preparing" toast, both via Turbo Stream, so the click surfaces progress in
-  # place while KeypairGenerationJob runs. The spinner frame subscribes to this
-  # user's keypair stream and is replaced by the paste form on completion
-  # (KeypairReadyBroadcast). flash.now, not flash: nothing redirects here, so a
-  # persisted flash would leak onto the next full page load.
-  sig { void }
-  def render_pending
-    flash.now[:notice] = "Preparing your encryption key…"
-    render turbo_stream: [
-      turbo_stream.replace(ByokKeyChannel::PENDING_FRAME_ID, pending_component),
-      turbo_stream.replace("toast_layer", Ui::ToastComponent.new(toasts: FlashPresenter.new(flash).toasts))
-    ]
-  end
-
-  sig { returns(Ui::ByokKeyFormComponent) }
-  def pending_component
-    Ui::ByokKeyFormComponent.new(
-      key_present: false,
-      public_key_pem: nil,
-      endpoint_url: profile_byok_key_path,
-      pending: Ui::ByokKeyFormComponent::Pending.new(stream: [ current_user, :byok_keypair ])
+  # The in-place swap assembly, delegated so this controller stays thin — see
+  # ByokKeyStreams. flash.now rides into the toast: nothing here redirects, so
+  # a persisted flash would leak onto the next full page load.
+  sig { returns(ByokKeyStreams) }
+  def streams
+    ByokKeyStreams.new(
+      user: current_user,
+      context: ByokKeyStreams::Context.new(turbo_stream: turbo_stream, helpers: helpers, flash: flash),
+      endpoint_url: profile_byok_key_path
     )
-  end
-
-  sig { void }
-  def seal_succeeded
-    redirect_to profile_path, notice: "OpenRouter key saved."
-  end
-
-  sig { void }
-  def seal_failed
-    redirect_to profile_path, alert: "Could not save that key."
   end
 
   # Stores the browser-sealed envelope as-is (the JSON

@@ -6,7 +6,7 @@ RSpec.describe Ui::ByokKeyFormComponent, type: :component do
     page
   end
 
-  let(:urls) { { endpoint_url: "/profile/byok_key" } }
+  let(:urls) { { endpoint_url: "/profile/byok_key", pending: false } }
 
   describe "no keypair yet" do
     it "shows the set-up-encryption action, not the paste form" do
@@ -16,10 +16,10 @@ RSpec.describe Ui::ByokKeyFormComponent, type: :component do
       expect(view).not_to have_css("[data-controller='byok-key-seal']")
     end
 
-    it "renders inside the shared turbo frame so a completion broadcast can replace it" do
+    it "renders inside the shared turbo frame the controller's streams and the pending poll target" do
       view = rendered(key_present: false, public_key_pem: nil, **urls)
 
-      expect(view).to have_css("turbo-frame##{ByokKeyChannel::PENDING_FRAME_ID}")
+      expect(view).to have_css("turbo-frame##{described_class::FRAME_ID}")
     end
 
     it "#keypair_ready? is false" do
@@ -84,40 +84,35 @@ RSpec.describe Ui::ByokKeyFormComponent, type: :component do
   end
 
   describe "keypair generation pending" do
-    let(:owner) { create(:user) }
-
-    def pending_state
-      described_class::Pending.new(stream: [ owner, :byok_keypair ])
-    end
-
     def pending(**opts)
       render_inline(described_class.new(
-        key_present: false, public_key_pem: nil, pending: pending_state, **urls, **opts
+        key_present: false, public_key_pem: nil, **urls.merge(pending: true), **opts
       ))
       page
     end
 
-    it "shows a spinner subscribed to the owner's keypair stream, not the button", :db do
+    it "shows the spinner in the shared turbo frame, not the button" do
       view = pending
 
       expect(view).not_to have_button("Set up encryption")
-      expect(view).to have_css("turbo-frame##{ByokKeyChannel::PENDING_FRAME_ID}")
+      expect(view).to have_css("turbo-frame##{described_class::FRAME_ID}")
       expect(view.text).to include("Preparing your encryption key…")
     end
 
-    it "subscribes via a turbo-cable-stream-source authorized by ByokKeyChannel", :db do
+    it "wires the frame-poll controller at the control's endpoint so the frame reloads until the form is ready" do
       view = pending
 
-      expect(view).to have_css("turbo-cable-stream-source", visible: :all)
+      expect(view).to have_css(
+        "[data-controller='frame-poll'][data-frame-poll-url-value='/profile/byok_key']"
+      )
     end
 
-    it "#pending? is true and #keypair_stream is the streamable it was given", :db do
+    it "#pending? is true" do
       component = described_class.new(
-        key_present: false, public_key_pem: nil, pending: pending_state, **urls
+        key_present: false, public_key_pem: nil, **urls.merge(pending: true)
       )
 
       expect(component.pending?).to be(true)
-      expect(component.keypair_stream).to eq([ owner, :byok_keypair ])
     end
   end
 
@@ -137,7 +132,7 @@ RSpec.describe Ui::ByokKeyFormComponent, type: :component do
     it "the delete button issues a DELETE to the delete_url" do
       view = rendered(key_present: true, public_key_pem: pem, **urls)
 
-      expect(view).to have_css("form[action='/profile/byok_key'] input[name='_method'][value='delete']", visible: false)
+      expect(view).to have_css("a[href='/profile/byok_key'][data-turbo-method='delete']")
     end
 
     it "#heading and #status_text carry the saved copy, without implying the key can be shown" do
