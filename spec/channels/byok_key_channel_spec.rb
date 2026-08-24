@@ -37,4 +37,36 @@ RSpec.describe ByokKeyChannel, type: :channel do
 
     expect(subscription).to be_rejected
   end
+
+  # KeypairGenerationJob can finish — and broadcast the paste form — before the
+  # browser's subscription is confirmed, in which case the broadcast is dropped.
+  # Subscribing when the keypair already exists must replay it.
+  describe "replaying the ready broadcast" do
+    it "replays the paste form and toast when an unsealed keypair already exists", :db do
+      create(:encrypted_value, owner: user)
+      stub_connection(current_user: user)
+
+      captured = capture_turbo_stream_broadcasts([ user, :byok_keypair ]) { subscribe_to(user) }
+
+      targets = captured.map { |el| el["target"] }
+      expect(targets).to include(ByokKeyChannel::PENDING_FRAME_ID, "toast_layer")
+    end
+
+    it "broadcasts nothing when no keypair exists yet", :db do
+      stub_connection(current_user: user)
+
+      captured = capture_turbo_stream_broadcasts([ user, :byok_keypair ]) { subscribe_to(user) }
+
+      expect(captured).to be_empty
+    end
+
+    it "broadcasts nothing once a key is sealed", :db do
+      create(:encrypted_value, :sealed, owner: user)
+      stub_connection(current_user: user)
+
+      captured = capture_turbo_stream_broadcasts([ user, :byok_keypair ]) { subscribe_to(user) }
+
+      expect(captured).to be_empty
+    end
+  end
 end

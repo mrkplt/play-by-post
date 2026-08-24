@@ -31,6 +31,24 @@ RSpec.describe "BYOK key sealing (AI Control Plane)", type: :feature do
     expect(page).to have_button("Save key")
   end
 
+  # Regression for the enqueue-vs-subscribe race (Fizzy #120): KeypairGenerationJob
+  # can finish — and broadcast the paste form — before the browser's subscription
+  # is confirmed, so the broadcast is dropped and the spinner hung forever.
+  # ByokKeyChannel replays the broadcast on subscribe, so the spinner still
+  # resolves. The inline test adapter reproduces the race exactly (the job always
+  # wins: it runs, and its broadcast is dropped, inside #create before the spinner
+  # even renders); stubbing keypair_exists? false holds the controller on the
+  # pending path it would have taken in production's racy window.
+  it "resolves the pending spinner when the job finishes before the subscription", :ai_credential do
+    allow_any_instance_of(Profiles::ByokKeysController).to receive(:keypair_exists?).and_return(false)
+
+    visit profile_path
+    click_on "Set up encryption"
+
+    expect(page).to have_css("[data-controller='byok-key-seal']")
+    expect(page).to have_button("Save key")
+  end
+
   describe "with a keypair already generated" do
     # A real RSA-2048 keypair, not the factory's placeholder PEM: WebCrypto's
     # importKey rejects non-key material, and this spec's whole point is

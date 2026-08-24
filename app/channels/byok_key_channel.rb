@@ -25,12 +25,30 @@ class ByokKeyChannel < Turbo::StreamsChannel
 
     if verified.present? && verified == authorized_stream_name
       stream_from verified
+      replay_ready_broadcast
     else
       reject
     end
   end
 
   private
+
+  # Closes the enqueue-vs-subscribe race: KeypairGenerationJob can finish — and
+  # broadcast the paste form — before this subscription is confirmed, and Action
+  # Cable drops a broadcast with no subscriber, leaving the pending spinner
+  # waiting forever. If the keypair already exists with no key sealed yet — the
+  # exact state KeypairReadyBroadcast renders — re-broadcast it now that the
+  # subscriber is listening. When the job wins the race both fire; the frame
+  # replace is idempotent, so the duplicate is harmless.
+  sig { void }
+  def replay_ready_broadcast
+    encrypted_value = EncryptedValue.find_by(
+      owner: current_user,
+      value_type: Crypto::StoredKeySource::OPENROUTER_KEY_VALUE_TYPE,
+      sealed_value: nil
+    )
+    KeypairReadyBroadcast.new(encrypted_value).call if encrypted_value
+  end
 
   # The one (unsigned) stream name this connection's user is entitled to: their
   # own keypair stream. Compared against verified_stream_name_from_params, which
