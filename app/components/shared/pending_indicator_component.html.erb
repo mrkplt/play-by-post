@@ -1,0 +1,4 @@
+<%= tag.div class: "flex items-center gap-3 text-muted-2 py-4", data: data do %>
+  <%= render Ui::SpinnerComponent.new(size: :sm, label: message) %>
+  <span class="text-sm"><%= message %></span>
+<% end %>

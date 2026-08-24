@@ -8,12 +8,9 @@
     <p class="<%= heading_classes %>"><%= heading %></p>
 
     <% if pending? %>
-      <div class="flex items-center gap-3 text-muted-2 py-4"
-           data-controller="frame-poll"
-           data-frame-poll-url-value="<%= endpoint_url %>">
-        <%= render Ui::SpinnerComponent.new(size: :sm, label: pending_message) %>
-        <span class="text-sm"><%= pending_message %></span>
-      </div>
+      <%= render Shared::PendingIndicatorComponent.new(
+            message: pending_message,
+            data: { controller: "frame-poll", "frame-poll-url-value": endpoint_url }) %>
     <% else %>
       <p class="text-xs text-muted mb-3"><%= status_text %></p>
 

@@ -125,6 +125,7 @@ matcher:
     # Components
     - Ui::SpinnerComponent
     - Shared::AsyncPendingComponent
+    - Shared::PendingIndicatorComponent
     - Shared::AsyncPendingComponent::Subscription
     - Shared::RecordBackedForm
     - Shared::GameFlagToggle
