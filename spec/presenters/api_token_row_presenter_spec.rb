@@ -47,10 +47,10 @@ RSpec.describe ApiTokenRowPresenter do
   end
 
   describe "#create_path" do
-    it "targets the tokens collection route" do
-      allow(urls).to receive(:profile_api_tokens_path).and_return("/profile/api_tokens")
+    it "targets the tokens collection route, carrying the game and scope" do
       presenter = described_class.new(game, urls: urls)
-      expect(presenter.create_path).to eq("/profile/api_tokens")
+      expect(urls).to receive(:profile_api_tokens_path).with(game_id: game.id, scope: "api").and_return("/profile/api_tokens?game_id=#{game.id}&scope=api")
+      expect(presenter.create_path("api")).to eq("/profile/api_tokens?game_id=#{game.id}&scope=api")
     end
   end
 end

@@ -33,9 +33,12 @@ RSpec.describe Shared::TokenSectionComponent, type: :component do
       expect(page).to have_css(%(.secret-field[data-secret-field-value-value*="token=sekret"]))
     end
 
-    it "posts scope rss on the create control" do
+    it "posts scope rss and the game on the create control" do
       render_section(rows: [ feed_row ], scope: "rss", secret_label: "Feed URL", create_label: "Create feed")
-      expect(page).to have_css(%(input[name="scope"][value="rss"]), visible: :all)
+      create = page.find("a", text: "Create feed")
+      expect(create["data-turbo-method"]).to eq("post")
+      expect(create[:href]).to include("scope=rss")
+      expect(create[:href]).to include("game_id=#{game.id}")
     end
   end
 

@@ -8,10 +8,11 @@
 class Ui::SecretFieldComponent < ApplicationComponent
   extend T::Sig
 
-  sig { params(value: String, label: String).void }
-  def initialize(value:, label:)
+  sig { params(value: String, label: String, revoke_path: T.nilable(String)).void }
+  def initialize(value:, label:, revoke_path: nil)
     @value = value
     @label = label
+    @revoke_path = revoke_path
   end
 
   sig { returns(String) }
@@ -19,6 +20,9 @@ class Ui::SecretFieldComponent < ApplicationComponent
 
   sig { returns(String) }
   attr_reader :label
+
+  sig { returns(T.nilable(String)) }
+  attr_reader :revoke_path
 
   # The dotted placeholder shown until the field is revealed. Fixed length so the
   # real value's length isn't leaked by the mask width.
