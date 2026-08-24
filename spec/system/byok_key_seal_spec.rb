@@ -8,45 +8,79 @@ require "rails_helper"
 # proving interop with the server side beyond what a fixture-posting request
 # spec alone can show, since the browser generates the wrapped key at
 # runtime rather than replaying a fixture.
+#
+# Also proves the lifecycle requirement (Fizzy #120): generate -> save ->
+# delete all resolve in place. A dataset marker on <body> distinguishes
+# in-place Turbo Stream/Frame updates (body survives) from a full page load
+# or Turbo visit (body replaced, marker gone).
 RSpec.describe "BYOK key sealing (AI Control Plane)", type: :feature do
   let(:user) { create(:user, :with_profile) }
   let(:value_type) { "openrouter_key" }
 
   before { sign_in_as(user) }
 
+  def mark_body
+    page.execute_script("document.body.dataset.stayedInPlace = 'yes'")
+  end
+
+  def expect_no_page_replacement
+    expect(page.evaluate_script("document.body.dataset.stayedInPlace")).to eq("yes")
+  end
+
+  it "runs the whole generate -> save -> delete lifecycle in place, never replacing the page", :ai_credential do
+    visit profile_path
+    mark_body
+
+    click_on "Set up encryption"
+    expect(page).to have_css("[data-controller='byok-key-seal']")
+
+    find("[data-byok-key-seal-target='plaintext']").fill_in(with: "sk-or-v1-test-key-abc123")
+    click_on "Save key"
+    expect(page).to have_button("Delete key")
+    expect(page).to have_text(/fund ai for your games/i)
+
+    click_on "Delete key"
+    expect(page).to have_button("Set up encryption")
+    expect(page).not_to have_text(/fund ai for your games/i)
+
+    expect_no_page_replacement
+    expect(user.reload.ai_key_present?).to be(false)
+  end
+
+  # The inline test adapter finishes KeypairGenerationJob inside #create, so the
+  # pending branch would never render. Deferring the job (:test adapter) puts the
+  # controller on the pending path production takes while the worker is still
+  # running; performing the job mid-poll then proves the spinner's frame poll
+  # picks the finished keypair up and resolves to the form — no reload.
+  describe "while the keypair job is still running" do
+    around do |example|
+      original_adapter = ActiveJob::Base.queue_adapter
+      ActiveJob::Base.queue_adapter = :test
+      example.run
+    ensure
+      ActiveJob::Base.queue_adapter = original_adapter
+    end
+
+    it "resolves the pending spinner to the paste form by polling", :ai_credential do
+      visit profile_path
+      mark_body
+      click_on "Set up encryption"
+
+      expect(page).to have_css("[data-controller='frame-poll']")
+
+      # The worker finishes while the spinner is polling.
+      KeypairGenerationJob.perform_now(owner_type: "User", owner_id: user.id, value_type: value_type)
+
+      expect(page).to have_css("[data-controller='byok-key-seal']", wait: 5)
+      expect_no_page_replacement
+    end
+  end
+
   it "shows the set-up-encryption step before any keypair exists" do
     visit profile_path
 
     expect(page).to have_button("Set up encryption")
     expect(page).not_to have_css("[data-controller='byok-key-seal']")
-  end
-
-  it "generating a keypair reveals the paste-and-seal form (job runs inline in test)", :ai_credential do
-    visit profile_path
-
-    click_on "Set up encryption"
-
-    expect(page).to have_css("[data-controller='byok-key-seal']")
-    expect(page).to have_field(type: "password")
-    expect(page).to have_button("Save key")
-  end
-
-  # Regression for the enqueue-vs-subscribe race (Fizzy #120): KeypairGenerationJob
-  # can finish — and broadcast the paste form — before the browser's subscription
-  # is confirmed, so the broadcast is dropped and the spinner hung forever.
-  # ByokKeyChannel replays the broadcast on subscribe, so the spinner still
-  # resolves. The inline test adapter reproduces the race exactly (the job always
-  # wins: it runs, and its broadcast is dropped, inside #create before the spinner
-  # even renders); stubbing keypair_exists? false holds the controller on the
-  # pending path it would have taken in production's racy window.
-  it "resolves the pending spinner when the job finishes before the subscription", :ai_credential do
-    allow_any_instance_of(Profiles::ByokKeysController).to receive(:keypair_exists?).and_return(false)
-
-    visit profile_path
-    click_on "Set up encryption"
-
-    expect(page).to have_css("[data-controller='byok-key-seal']")
-    expect(page).to have_button("Save key")
   end
 
   describe "with a keypair already generated" do
@@ -67,7 +101,7 @@ RSpec.describe "BYOK key sealing (AI Control Plane)", type: :feature do
       find("[data-byok-key-seal-target='plaintext']").fill_in(with: "sk-or-v1-test-key-abc123")
       click_on "Save key"
 
-      expect(page).to have_current_path(profile_path)
+      expect(page).to have_button("Delete key")
 
       encrypted_value = EncryptedValue.find_by(owner: user, value_type: value_type)
       blob = encrypted_value.sealed_blob
@@ -84,6 +118,7 @@ RSpec.describe "BYOK key sealing (AI Control Plane)", type: :feature do
       find("[data-byok-key-seal-target='plaintext']").fill_in(with: "sk-or-v1-test-key-abc123")
       click_on "Save key"
 
+      expect(page).to have_button("Delete key")
       expect(user.reload.ai_key_present?).to be(true)
     end
 
@@ -92,7 +127,6 @@ RSpec.describe "BYOK key sealing (AI Control Plane)", type: :feature do
       find("[data-byok-key-seal-target='plaintext']").fill_in(with: "sk-or-v1-test-key-abc123")
       click_on "Save key"
 
-      visit profile_path
       expect(page).to have_button("Delete key")
       expect(page).not_to have_field(type: "password")
       expect(page).not_to have_button("Save key")
@@ -103,8 +137,8 @@ RSpec.describe "BYOK key sealing (AI Control Plane)", type: :feature do
       visit profile_path
       find("[data-byok-key-seal-target='plaintext']").fill_in(with: "sk-or-v1-test-key-abc123")
       click_on "Save key"
+      expect(page).to have_button("Delete key")
 
-      visit profile_path
       click_on "Delete key"
 
       expect(page).to have_button("Set up encryption")

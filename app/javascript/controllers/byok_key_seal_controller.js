@@ -20,7 +20,17 @@ export default class extends Controller {
   static targets = ["plaintext", "wrappedKey", "iv", "ciphertext", "submit", "error"]
   static values = { publicKey: String }
 
+  // First pass: intercept, seal, then requestSubmit() — which re-fires the
+  // submit event. Second pass: the sealed flag lets the event through
+  // un-prevented so TURBO performs the submission (element.submit() would be
+  // a native full-page POST, bypassing Turbo and bouncing the whole page —
+  // the response is a Turbo Stream that must be applied in place).
   async submitForm(event) {
+    if (this.sealed) {
+      this.sealed = false
+      return
+    }
+
     event.preventDefault()
     this.hideError()
 
@@ -37,7 +47,13 @@ export default class extends Controller {
       this.ivTarget.value = envelope.iv
       this.ciphertextTarget.value = envelope.ciphertext
       this.plaintextTarget.value = ""
-      this.element.submit()
+      this.sealed = true
+      this.submitTarget.disabled = false
+      // A macrotask, not an immediate call: WebCrypto's microtask chain can
+      // finish while the original submit event is still dispatching, and a
+      // requestSubmit() issued inside that dispatch is silently dropped (the
+      // form's firing-submit flag is still set).
+      setTimeout(() => this.element.requestSubmit(), 0)
     } catch (_e) {
       this.showError("Could not encrypt that key in this browser. Try a different browser.")
       this.submitTarget.disabled = false

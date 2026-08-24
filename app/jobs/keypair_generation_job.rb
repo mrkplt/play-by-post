@@ -35,28 +35,21 @@ class KeypairGenerationJob < ApplicationJob
   def perform(owner_type:, owner_id:, value_type:)
     return if EncryptedValue.exists?(owner_type: owner_type, owner_id: owner_id, value_type: value_type)
 
-    encrypted_value = build_keypair(owner_type: owner_type, owner_id: owner_id, value_type: value_type)
-
-    # Replace the owner's pending spinner frame with the now-usable paste form,
-    # and drop a "ready" toast — see KeypairReadyBroadcast. Only broadcast for a
-    # User owner, the sole owner type the Profile screen (and its keypair stream)
-    # exists for; a non-User owner has no screen waiting on this.
-    KeypairReadyBroadcast.new(encrypted_value).call if owner_type == "User"
+    build_keypair(owner_type: owner_type, owner_id: owner_id, value_type: value_type)
   end
 
   private
 
-  # Generate the keypair and persist both halves plus the owning EncryptedValue,
-  # returning it. The two key rows straddle the primary/ai_keys database boundary
-  # (see PrivateKey), so they cannot share one create.
-  sig { params(owner_type: String, owner_id: Integer, value_type: String).returns(EncryptedValue) }
+  # Generate the keypair and persist both halves plus the owning EncryptedValue.
+  # The two key rows straddle the primary/ai_keys database boundary (see
+  # PrivateKey), so they cannot share one create.
+  sig { params(owner_type: String, owner_id: Integer, value_type: String).void }
   def build_keypair(owner_type:, owner_id:, value_type:)
     generated = Crypto::KeypairGenerator.call
     public_key = PublicKey.create!(public_key: generated.public_key_pem, fingerprint: generated.fingerprint)
-    encrypted_value = EncryptedValue.create!(
+    EncryptedValue.create!(
       owner_type: owner_type, owner_id: owner_id, value_type: value_type, public_key: public_key
     )
     PrivateKey.create!(public_key_id: public_key.id, encrypted_private_key: generated.private_key_pem)
-    encrypted_value
   end
 end

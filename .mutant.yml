@@ -31,7 +31,6 @@ matcher:
     - SceneSummary
     - SceneSummaryVisibility
     - SceneSummaryBroadcast
-    - KeypairReadyBroadcast
     - GameExportRequest
     - GameMember
     - GameFile
@@ -244,6 +243,8 @@ matcher:
     - Ui::TurnstileWidgetComponent
     # Services
     - AiKeyResolver
+    - ByokKeyStreams
+    - ByokKeyStreams::Context
     - AiKeyResolver::KeySource
     - AiKeyResolver::Candidate
     - Ai::Funding
@@ -365,7 +366,6 @@ matcher:
     - KeypairGenerationJob
     # Channels
     - SceneSummaryChannel
-    - ByokKeyChannel
     - ApplicationCable::Connection
     # Mailers
     - NotificationMailer
