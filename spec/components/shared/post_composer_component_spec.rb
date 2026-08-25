@@ -12,9 +12,13 @@ RSpec.describe Shared::PostComposerComponent, type: :component do
 
   subject(:component) { described_class.new(post: post_presenter, game: game_presenter, scene: scene_presenter) }
 
+  # Render once per example: ViewComponent 4.15 raises ReusedInstanceError if
+  # the same instance is rendered twice (GHSA-8qw7-6phv-7q6p).
   def rendered_component
-    render_inline(component)
-    page
+    @rendered_component ||= begin
+      render_inline(component)
+      page
+    end
   end
 
   it "renders a form" do

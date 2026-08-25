@@ -5,9 +5,13 @@ RSpec.describe Shared::SidebarComponent, type: :component do
 
   let(:games) { [] }
 
+  # Render once per example: ViewComponent 4.15 raises ReusedInstanceError if
+  # the same instance is rendered twice (GHSA-8qw7-6phv-7q6p).
   def rendered_component
-    render_inline(component)
-    page
+    @rendered_component ||= begin
+      render_inline(component)
+      page
+    end
   end
 
   context "when signed out" do
