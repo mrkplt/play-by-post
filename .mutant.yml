@@ -79,8 +79,8 @@ matcher:
     - GameFeedRowPresenter
     - ApiTokenRowPresenter
     - KeyContributionRowPresenter
-    - KeyContributionsPresenter
-    - ApiTokensPresenter
+    - GameControlRowPresenter
+    - GameControlsPresenter
     - GameLinkPresenter
     - ContentTemplatePresenter
     - GamePresenter
@@ -133,11 +133,10 @@ matcher:
     - Shared::ImageCropperComponent
     - Ui::FormErrorsComponent
     - Ui::SecretFieldComponent
-    - Shared::TokenSectionComponent
-    - Shared::KeyContributionMatrixComponent
-    - Shared::KeyContributionMatrixComponent::Cell
-    - Shared::KeyContributionMatrixComponent::Offered
-    - Shared::KeyContributionMatrixComponent::Available
+    - Shared::GameControlsComponent
+    - Shared::GameControlsComponent::Cell
+    - Shared::GameControlsComponent::Offered
+    - Shared::GameControlsComponent::Available
     - Shared::AiSummariesToggleComponent
     - Shared::SheetsToggleComponent
     - Shared::ProfileFormComponent

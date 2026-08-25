@@ -47,15 +47,15 @@ RSpec.describe ByokKeyStreams, type: :model do
   end
 
   describe "#settled" do
-    it "swaps the control, the funding section, and the toast", :db do
+    it "swaps the control, the game-controls section, and the toast", :db do
       flash[:notice] = "OpenRouter key deleted."
 
-      control, funding, toast = streams.settled
+      control, game_controls, toast = streams.settled
 
       expect(control).to include(%(target="#{Ui::ByokKeyFormComponent::FRAME_ID}"))
       expect(control).to include("Set up encryption")
-      expect(funding).to include(%(target="ai_funding_section"))
-      expect(funding).to include(%(id="ai_funding_section"))
+      expect(game_controls).to include(%(target="game_controls"))
+      expect(game_controls).to include(%(id="game_controls"))
       expect(toast).to include(%(target="toast_layer"))
       expect(toast).to include("OpenRouter key deleted.")
     end

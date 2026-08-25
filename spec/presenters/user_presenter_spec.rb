@@ -125,127 +125,51 @@ RSpec.describe UserPresenter do
     end
   end
 
-  describe "#feed_rows", db: true do
-    let(:user) { create(:user) }
-    let(:urls) { double("urls") }
-
-    it "returns one row per non-banned membership, paired with any rss token" do
-      with_token = create(:game, name: "With Token")
-      without_token = create(:game, name: "Without Token")
-      create(:game_member, game: with_token, user: user)
-      create(:game_member, game: without_token, user: user)
-      token = create(:api_token, user: user, game: with_token, scope: "rss")
-
-      rows = described_class.new(user).feed_rows(urls: urls)
-
-      row_with_token = rows.find { |r| r.game_id == with_token.id }
-      row_without_token = rows.find { |r| r.game_id == without_token.id }
-      expect(row_with_token.token?).to be(true)
-      expect(row_without_token.token?).to be(false)
-      expect(rows.size).to eq(2)
-    end
-
-    it "excludes banned memberships" do
-      banned = create(:game, name: "Forbidden Keep")
-      create(:game_member, :banned, game: banned, user: user)
-
-      rows = described_class.new(user).feed_rows(urls: urls)
-
-      expect(rows.map(&:game_id)).not_to include(banned.id)
-    end
-
-    it "ignores an api-scoped token when matching the rss token" do
-      game = create(:game)
-      create(:game_member, game: game, user: user)
-      create(:api_token, user: user, game: game, scope: "api")
-
-      rows = described_class.new(user).feed_rows(urls: urls)
-
-      expect(rows.first.token?).to be(false)
-    end
-  end
-
-  describe "#api_token_rows", db: true do
-    let(:user) { create(:user) }
-    let(:urls) { double("urls") }
-
-    it "returns one row per non-banned membership, paired with any api token" do
-      with_token = create(:game, name: "With Token")
-      without_token = create(:game, name: "Without Token")
-      create(:game_member, game: with_token, user: user)
-      create(:game_member, game: without_token, user: user)
-      token = create(:api_token, user: user, game: with_token, scope: "api")
-
-      rows = described_class.new(user).api_token_rows(urls: urls)
-
-      row_with_token = rows.find { |r| r.game_id == with_token.id }
-      row_without_token = rows.find { |r| r.game_id == without_token.id }
-      expect(row_with_token.token?).to be(true)
-      expect(row_with_token.token_value).to eq(token.token)
-      expect(row_without_token.token?).to be(false)
-      expect(rows.size).to eq(2)
-    end
-
-    it "excludes banned memberships" do
-      banned = create(:game, name: "Forbidden Keep")
-      create(:game_member, :banned, game: banned, user: user)
-
-      rows = described_class.new(user).api_token_rows(urls: urls)
-
-      expect(rows.map(&:game_id)).not_to include(banned.id)
-    end
-
-    it "ignores an rss-scoped token when matching the api token" do
-      game = create(:game)
-      create(:game_member, game: game, user: user)
-      create(:api_token, user: user, game: game, scope: "rss")
-
-      rows = described_class.new(user).api_token_rows(urls: urls)
-
-      expect(rows.first.token?).to be(false)
-    end
-
-    it "returns ApiTokenRowPresenters" do
-      game = create(:game)
-      create(:game_member, game: game, user: user)
-
-      rows = described_class.new(user).api_token_rows(urls: urls)
-
-      expect(rows).to all(be_a(ApiTokenRowPresenter))
-    end
-  end
-
-  describe "#key_contribution_rows", db: true do
+  describe "#game_control_rows", db: true do
     let(:user) { create(:user) }
     let(:helpers) { double("helpers") }
 
-    it "returns one row per non-banned membership, marking contributed features" do
+    it "returns one row per non-banned membership, pairing tokens by scope" do
+      with_feed = create(:game, name: "With Feed")
+      without_feed = create(:game, name: "Without Feed")
+      create(:game_member, game: with_feed, user: user)
+      create(:game_member, game: without_feed, user: user)
+      create(:api_token, user: user, game: with_feed, scope: "rss")
+      create(:api_token, user: user, game: without_feed, scope: "api")
+
+      rows = described_class.new(user, helpers: helpers).game_control_rows
+
+      expect(rows.size).to eq(2)
+      expect(rows).to all(be_a(GameControlRowPresenter))
+      feed_row = rows.find { |r| r.name == "With Feed" }
+      api_row = rows.find { |r| r.name == "Without Feed" }
+      expect(feed_row.feed.token?).to be(true)
+      expect(feed_row.api.token?).to be(false)
+      expect(api_row.feed.token?).to be(false)
+      expect(api_row.api.token?).to be(true)
+    end
+
+    it "excludes banned memberships" do
+      banned = create(:game, name: "Forbidden Keep")
+      create(:game_member, :banned, game: banned, user: user)
+
+      rows = described_class.new(user, helpers: helpers).game_control_rows
+
+      expect(rows.map(&:name)).not_to include("Forbidden Keep")
+    end
+
+    it "marks a game's contributed features on the funding cells" do
       allow_any_instance_of(User).to receive(:ai_key_present?).and_return(true)
       funded = create(:game, name: "Funded")
-      unfunded = create(:game, name: "Unfunded")
       create(:game_member, game: funded, user: user)
-      create(:game_member, game: unfunded, user: user)
       create(:game_key_authorization, game: funded, user: user, feature: "scene_summary")
 
       allow(helpers).to receive(:game_key_contributions_path).and_return("/create")
       allow(helpers).to receive(:game_key_contribution_path).and_return("/destroy")
 
-      rows = described_class.new(user, helpers: helpers).key_contribution_rows
+      rows = described_class.new(user, helpers: helpers).game_control_rows
 
-      expect(rows.size).to eq(2)
-      funded_row = rows.find { |r| r.name == "Funded" }
-      unfunded_row = rows.find { |r| r.name == "Unfunded" }
-      expect(funded_row.cells.first).to be_a(KeyContributionRowPresenter::Offered)
-      expect(unfunded_row.cells.first).to be_a(KeyContributionRowPresenter::Available)
-    end
-
-    it "excludes banned memberships" do
-      banned = create(:game, name: "Forbidden Keep")
-      create(:game_member, :banned, game: banned, user: user)
-
-      rows = described_class.new(user, helpers: helpers).key_contribution_rows
-
-      expect(rows.map(&:name)).not_to include("Forbidden Keep")
+      expect(rows.first.ai_cells.first).to be_a(KeyContributionRowPresenter::Offered)
     end
   end
 

@@ -2,7 +2,7 @@ require "rails_helper"
 
 # The whole BYOK lifecycle responds in place: show is the pending poll's
 # target, and create/update/destroy answer with Turbo Streams swapping the
-# control frame (and, where key presence changes, the funding section) — no
+# control frame (and, where key presence changes, the game-controls section) — no
 # action redirects. Flash rides flash.now into the toast stream, so outcome
 # copy is asserted on the response body, never on a persisted flash.
 RSpec.describe Profiles::ByokKeysController, type: :request do
@@ -138,7 +138,7 @@ RSpec.describe Profiles::ByokKeysController, type: :request do
       expect(user.reload.ai_key_present?).to be(true)
     end
 
-    it "streams the key-present control, the funding section, and an exact success toast", :ai_credential, db: true do
+    it "streams the key-present control, the game-controls section, and an exact success toast", :ai_credential, db: true do
       encrypted_value = create(:encrypted_value, owner: user, value_type: value_type)
       encrypted_value.public_key.update!(public_key: File.read(fixture_path.join("public_key.pem")))
       sign_in(user)
@@ -147,7 +147,7 @@ RSpec.describe Profiles::ByokKeysController, type: :request do
 
       expect(response.media_type).to eq("text/vnd.turbo-stream.html")
       expect(response.body).to include("Delete key")
-      expect(response.body).to include("ai_funding_section")
+      expect(response.body).to include("game_controls")
       expect(response.body).to include("OpenRouter key saved.")
     end
 
@@ -231,7 +231,7 @@ RSpec.describe Profiles::ByokKeysController, type: :request do
       expect(user.reload.ai_key_present?).to be(false)
     end
 
-    it "streams the neutral control, the funding section, and an exact success toast", :ai_credential, db: true do
+    it "streams the neutral control, the game-controls section, and an exact success toast", :ai_credential, db: true do
       create(:encrypted_value, owner: user, value_type: value_type,
         sealed_value: { wrapped_key: "w", iv: "i", ciphertext: "c" }.to_json)
       sign_in(user)
@@ -240,7 +240,7 @@ RSpec.describe Profiles::ByokKeysController, type: :request do
 
       expect(response.media_type).to eq("text/vnd.turbo-stream.html")
       expect(response.body).to include("Set up encryption")
-      expect(response.body).to include("ai_funding_section")
+      expect(response.body).to include("game_controls")
       expect(response.body).to include("OpenRouter key deleted.")
     end
 

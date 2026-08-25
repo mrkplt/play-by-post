@@ -53,27 +53,9 @@
         endpoint_url: profile_byok_key_path,
         pending: false) %>
 
-  <%= render "ai_funding_section", user_presenter: @user_presenter %>
-
-  <%# RSS Feeds %>
-  <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do %>RSS Feeds<% end %>
-  <%= render Shared::TokenSectionComponent.new(
-        rows: @feed_rows, scope: "rss", secret_label: "Feed URL", create_label: "Create feed") %>
-
-  <%# API tokens — the "View API documentation" link rides inline with the
-      section heading via its action slot. Swagger UI lives at the mounted
-      /api-docs engine; turbo: false forces a full navigation so Turbo doesn't
-      graft it into the app frame. %>
-  <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do |label| %>
-    <% label.with_action do %>
-      <%= render Ui::ButtonComponent.new(
-            style: Ui::ButtonComponent::Style.new(variant: :text, size: :sm),
-            link: Ui::ButtonComponent::Link.new(url: "/api-docs", data: { turbo: false })) do %>View API documentation<% end %>
-    <% end %>
-    API tokens
-  <% end %>
-  <%= render Shared::TokenSectionComponent.new(
-        rows: @user_presenter.api_token_rows(urls: self), scope: "api", secret_label: "API token", create_label: "Create token") %>
+  <%# Your Games — the per-game control plane (feed, API token, AI funding),
+      grouped game-first so each game's controls read together. %>
+  <%= render "game_controls", user_presenter: @user_presenter %>
 
   <%# Export %>
   <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do %>Export<% end %>

@@ -112,17 +112,26 @@ RSpec.describe "Profiles", type: :feature do
     end
   end
 
-  describe "RSS feeds section" do
+  describe "Your Games section" do
     let(:game) { create(:game) }
 
     before { create(:game_member, game: game, user: user) }
 
-    it "lists the user's game with a create-feed control" do
+    it "shows one card per game with a create control per credential" do
       visit profile_path
       # SectionLabelComponent uppercases via CSS; assert the rendered form.
-      expect(page).to have_text("RSS FEEDS")
+      expect(page).to have_text("YOUR GAMES")
       expect(page).to have_text(game.name)
       expect(page).to have_button("Create feed")
+      expect(page).to have_button("Create token")
+      expect(page).not_to have_text("RSS FEEDS")
+      expect(page).not_to have_text("API TOKENS")
+    end
+
+    it "links to the API documentation from the section label" do
+      visit profile_path
+
+      expect(page).to have_link("View API documentation", href: "/api-docs")
     end
 
     it "creates a feed token and reveals the copyable URL" do
@@ -150,18 +159,38 @@ RSpec.describe "Profiles", type: :feature do
       expect(page).to have_button("Create feed")
       expect(user.api_tokens.where(scope: "rss")).to be_empty
     end
-  end
 
-  describe "API tokens section" do
-    let(:game) { create(:game) }
+    it "creates an api token and reveals the raw value" do
+      visit profile_path
+      click_on "Create token"
 
-    before { create(:game_member, game: game, user: user) }
+      expect(page).to have_css(".secret-field")
+      token = user.api_tokens.find_by(game: game, scope: "api")
+      click_on "Show"
+      expect(find(".secret-field__input").value).to eq(token.token)
+    end
 
-    it "links to the API documentation from the API tokens section" do
+    it "shows the Fund AI toggle only when the viewer has a BYOK key" do
+      visit profile_path
+      expect(page).not_to have_text("Fund AI")
+
+      create(:encrypted_value, :sealed, owner: user)
+      visit profile_path
+      expect(page).to have_text("Fund AI")
+      expect(page).to have_text("Scene summaries")
+    end
+
+    it "funds a game's AI feature from its card and revokes it again" do
+      create(:encrypted_value, :sealed, owner: user)
       visit profile_path
 
-      expect(page).to have_text("API TOKENS")
-      expect(page).to have_link("View API documentation", href: "/api-docs")
+      find("button[aria-label='Fund Scene summaries with your key']").click
+      expect(page).to have_css("button[aria-label='Stop funding Scene summaries with your key']")
+      expect(GameKeyAuthorization.find_by(game: game, user: user, feature: "scene_summary")).to be_present
+
+      find("button[aria-label='Stop funding Scene summaries with your key']").click
+      expect(page).to have_css("button[aria-label='Fund Scene summaries with your key']")
+      expect(GameKeyAuthorization.find_by(game: game, user: user, feature: "scene_summary")).to be_nil
     end
   end
 

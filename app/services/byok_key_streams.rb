@@ -8,8 +8,8 @@
 #
 #   - #creation: the control (pending unless the keypair already exists) plus
 #     the outcome toast — #create's response.
-#   - #settled: the control in its persisted state, the profile's "Fund AI for
-#     your games" section (whose visibility follows key presence), and the
+#   - #settled: the control in its persisted state, the profile's "Your Games"
+#     control-plane section (whose funding rows follow key presence), and the
 #     toast — seal and delete's shared response.
 #   - #component: the bare control for #show, the pending poll's target.
 #
@@ -41,7 +41,7 @@ class ByokKeyStreams
 
   sig { returns(T::Array[String]) }
   def settled
-    [ control(pending: false), funding, toast ]
+    [ control(pending: false), game_controls, toast ]
   end
 
   sig { params(pending: T::Boolean).returns(Ui::ByokKeyFormComponent) }
@@ -63,10 +63,10 @@ class ByokKeyStreams
   end
 
   sig { returns(String) }
-  def funding
+  def game_controls
     @context.turbo_stream.replace(
-      "ai_funding_section",
-      partial: "profiles/ai_funding_section",
+      "game_controls",
+      partial: "profiles/game_controls",
       locals: { user_presenter: UserPresenter.new(@user, helpers: @context.helpers) }
     )
   end
