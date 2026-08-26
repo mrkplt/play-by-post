@@ -44,4 +44,18 @@ RSpec.describe Ui::SettingsRowComponent, type: :component do
   it "rejects an unknown position" do
     expect { described_class.new(label: "A", position: :unknown) }.to raise_error(ArgumentError, /Unknown position/)
   end
+
+  it "keeps the control cluster fixed-width by default" do
+    expect(described_class.new(label: "A").control_classes)
+      .to eq("flex items-center gap-3 flex-shrink-0")
+  end
+
+  it "lets the control cluster shrink when asked" do
+    expect(described_class.new(label: "A", control: :shrink).control_classes)
+      .to eq("flex items-center gap-3 min-w-0")
+  end
+
+  it "rejects an unknown control layout" do
+    expect { described_class.new(label: "A", control: :unknown) }.to raise_error(KeyError)
+  end
 end

@@ -28,6 +28,7 @@ RSpec.describe "BYOK key sealing (AI Control Plane)", type: :feature do
   end
 
   it "runs the whole generate -> save -> delete lifecycle in place, never replacing the page", :ai_credential do
+    create(:game_member, game: create(:game), user: user)
     visit profile_path
     mark_body
 
@@ -37,11 +38,13 @@ RSpec.describe "BYOK key sealing (AI Control Plane)", type: :feature do
     find("[data-byok-key-seal-target='plaintext']").fill_in(with: "sk-or-v1-test-key-abc123")
     click_on "Save key"
     expect(page).to have_button("Delete key")
-    expect(page).to have_text(/fund ai for your games/i)
+    # The game card's Fund AI row follows key presence via the streamed
+    # game-controls swap.
+    expect(page).to have_text("Fund AI")
 
     click_on "Delete key"
     expect(page).to have_button("Set up encryption")
-    expect(page).not_to have_text(/fund ai for your games/i)
+    expect(page).not_to have_text("Fund AI")
 
     expect_no_page_replacement
     expect(user.reload.ai_key_present?).to be(false)

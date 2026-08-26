@@ -1,0 +1,19 @@
+<%# The person's per-game control plane — one card per game holding its RSS
+    feed, API token, and (when they have a BYOK key) AI-funding controls.
+    Wrapped in a stable id so ByokKeyStreams can re-render it in place when key
+    presence changes (the funding rows follow the key). The API-docs link rides
+    the section label's action slot; Swagger UI is a mounted engine, so
+    turbo: false forces a full navigation. %>
+<div id="game_controls">
+  <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do |label| %>
+    <% label.with_action do %>
+      <%= render Ui::ButtonComponent.new(
+            style: Ui::ButtonComponent::Style.new(variant: :text, size: :sm),
+            link: Ui::ButtonComponent::Link.new(url: "/api-docs", data: { turbo: false })) do %>View API documentation<% end %>
+    <% end %>
+    Your Games
+  <% end %>
+  <%= render Shared::GameControlsComponent.new(
+        rows: user_presenter.game_control_rows,
+        funding: user_presenter.byok_key.present?) %>
+</div>

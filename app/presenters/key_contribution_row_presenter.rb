@@ -1,17 +1,17 @@
 # typed: strict
 
-# View model for one game's row in the profile's "Fund AI for your games"
-# matrix: the game name, and one cell per pool-fundable feature. Each cell is a
-# component-ready toggle (Shared::KeyContributionMatrixComponent::Offered /
-# Available) that owns its own presentation, so neither this row nor the
-# component branches on a `contributing` flag. Parallels ApiTokenRowPresenter
-# (one game, per-column state + a route).
+# View model for one game's "Fund AI" cells in the profile's "Your Games"
+# section: one cell per pool-fundable feature. Each cell is a component-ready
+# toggle (Shared::GameControlsComponent::Offered / Available) that owns its own
+# presentation, so neither this row nor the component branches on a
+# `contributing` flag. Parallels ApiTokenRowPresenter (one game, per-column
+# state + a route).
 class KeyContributionRowPresenter < BasePresenter
   extend T::Sig
 
-  Cell = Shared::KeyContributionMatrixComponent::Cell
-  Offered = Shared::KeyContributionMatrixComponent::Offered
-  Available = Shared::KeyContributionMatrixComponent::Available
+  Cell = Shared::GameControlsComponent::Cell
+  Offered = Shared::GameControlsComponent::Offered
+  Available = Shared::GameControlsComponent::Available
 
   sig { params(model: Game, options: T.untyped).void }
   def initialize(model, **options)

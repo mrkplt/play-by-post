@@ -21,7 +21,7 @@ RSpec.describe ProfilesController, type: :request do
       expect_hamburger_present
     end
 
-    it "links the API tokens section to the Swagger UI docs, escaping Turbo" do
+    it "links the Your Games section to the Swagger UI docs, escaping Turbo" do
       sign_in(user)
       get profile_path
       expect(response.body).to include('href="/api-docs"')

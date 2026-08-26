@@ -1,0 +1,38 @@
+<% if any_games? %>
+  <div class="flex flex-col gap-3">
+    <% rows.each do |game_row| %>
+      <%= render Ui::CardComponent.new do %>
+        <h3 class="py-3 m-0 text-sm font-bold text-body border-b border-card-divider"><%= game_row.name %></h3>
+        <% token_rows(game_row).each_with_index do |token_row, index| %>
+          <%= render Ui::SettingsRowComponent.new(label: token_row.label, position: token_row_position(index), control: :shrink) do %>
+            <% if token_row.row.token? %>
+              <div class="min-w-0">
+                <%= render Ui::SecretFieldComponent.new(value: token_row.row.secret_value, label: token_row.secret_label, revoke_path: token_row.row.revoke_path) %>
+              </div>
+            <% else %>
+              <%= render Ui::ButtonComponent.new(
+                    style: Ui::ButtonComponent::Style.new(variant: :text, size: :sm),
+                    link: Ui::ButtonComponent::Link.new(url: token_row.row.create_path(token_row.scope), method: :post)) do %><%= token_row.create_label %><% end %>
+            <% end %>
+          <% end %>
+        <% end %>
+        <% if funding? %>
+          <%= render Ui::SettingsRowComponent.new(label: "Fund AI", sub: "Use your key for this game's AI features", position: :last) do %>
+            <div class="flex flex-wrap gap-3 justify-end">
+              <% game_row.ai_cells.each do |cell| %>
+                <%= button_to cell.path, method: cell.http_method, params: cell.params,
+                      class: "flex items-center gap-2 bg-transparent border-0 p-0 cursor-pointer",
+                      aria: { label: cell.aria_label } do %>
+                  <%= render Ui::ToggleSwitchComponent.new(state: cell.switch_state) %>
+                  <span class="text-sm text-muted"><%= cell.label %></span>
+                <% end %>
+              <% end %>
+            </div>
+          <% end %>
+        <% end %>
+      <% end %>
+    <% end %>
+  </div>
+<% else %>
+  <p class="text-sm text-muted">Join a game to manage its feed, API token, and AI funding here.</p>
+<% end %>

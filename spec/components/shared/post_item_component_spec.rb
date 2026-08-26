@@ -33,9 +33,13 @@ RSpec.describe Shared::PostItemComponent, type: :component do
     PostPresenter.new(model, game: game, urls: urls, policy: policy)
   end
 
+  # Render once per example: ViewComponent 4.15 raises ReusedInstanceError if
+  # the same instance is rendered twice (GHSA-8qw7-6phv-7q6p).
   def rendered_component
-    render_inline(component)
-    page
+    @rendered_component ||= begin
+      render_inline(component)
+      page
+    end
   end
 
   it "renders the post wrapper with the correct dom id" do

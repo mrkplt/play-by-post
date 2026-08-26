@@ -19,9 +19,13 @@ RSpec.describe Shared::GalleryComponent, type: :component do
 
   subject(:component) { described_class.new(game_files: [ presenter(game_file: game_file) ]) }
 
+  # Render once per example: ViewComponent 4.15 raises ReusedInstanceError if
+  # the same instance is rendered twice (GHSA-8qw7-6phv-7q6p).
   def rendered_component
-    render_inline(component)
-    page
+    @rendered_component ||= begin
+      render_inline(component)
+      page
+    end
   end
 
   it "renders the gallery grid" do
