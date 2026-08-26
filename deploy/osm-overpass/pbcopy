@@ -1,0 +1,82 @@
+# Self-hosted OpenStreetMap (Overpass API) replica for the relocation-candidate-search pipeline.
+# Deploy as a Coolify "Docker Compose" application (raw compose).
+#
+# Target host: PiHost (Raspberry Pi 4, 8GB, arm64). The wiktorn/overpass-api image
+# publishes an arm64 variant, so it runs natively on the Pi.
+#
+# TWO regional instances cover the US + UK + IE towns (one Overpass instance = one .pbf):
+#   - overpass-us   -> north-america/us            (~11GB pbf,  DB ~40-60GB)
+#   - overpass-gbie -> europe/britain-and-ireland  (~2.4GB pbf, DB ~10-15GB)
+#
+# Data lives on the RAID1 mirror at /mnt/raid1/osm (NOT the 120GB root SSD), via BIND MOUNTS,
+# matching the host's Nextcloud precedent. The host dirs are pre-created and world-writable so
+# the image's root entrypoint can populate and chown /db on first init:
+#   sudo mkdir -p /mnt/raid1/osm/us_db /mnt/raid1/osm/gb_ie_db
+#   sudo chmod 777 /mnt/raid1/osm/us_db /mnt/raid1/osm/gb_ie_db
+#
+# DAILY updates: Geofabrik publishes these regional diffs daily. The update loop is kept
+# INTERNAL to each container (OVERPASS_UPDATE_SLEEP=86400 = 24h) so the whole stack stays inside
+# Coolify's management -- no host cron reaching into a Coolify-managed container (which Coolify
+# would recreate out from under it on the next deploy). The image walks its persisted
+# replicate_id forward to Geofabrik's latest each cycle, so it self-heals any missed days.
+#
+# First boot does a full import from the Geofabrik extract -- expect hours on the Pi's
+# USB-attached spinning mirror. The API returns errors until the initial import completes.
+
+services:
+  overpass-us:
+    image: wiktorn/overpass-api:latest
+    container_name: overpass-us
+    environment:
+      OVERPASS_MODE: init
+      OVERPASS_PLANET_URL: https://download.geofabrik.de/north-america/us-latest.osm.pbf
+      OVERPASS_DIFF_URL: https://download.geofabrik.de/north-america/us-updates/
+      OVERPASS_META: "no"
+      OVERPASS_COMPRESSION: gz
+      OVERPASS_RULES_LOAD: "10"
+      # Single-user replica: 2 worker processes are plenty and save RAM on the 8GB Pi
+      # (which runs both instances' dispatchers alongside the other Coolify apps).
+      OVERPASS_FASTCGI_PROCESSES: "2"
+      # Daily update cycle (86400s). Geofabrik publishes these regional diffs daily, so this
+      # matches the feed's own grain: each day's diff is applied the day it lands, one small
+      # diff per cycle. The whole loop is internal to the container, so Coolify still owns it
+      # end-to-end (no host cron).
+      OVERPASS_UPDATE_SLEEP: "86400"
+    volumes:
+      # RAID1 bind mount -- DO NOT move the host path off /mnt/raid1 (the mirror). The
+      # 120GB root SSD cannot hold the imported DB.
+      - /mnt/raid1/osm/us_db:/db
+    ports:
+      - "12346:80"
+    restart: unless-stopped
+    healthcheck:
+      # Instance is "up" once the initial import has produced a queryable base timestamp.
+      test: ["CMD-SHELL", "curl -sf 'http://localhost/api/interpreter?data=[out:json];node(1);out;' | grep -q osm3s || exit 1"]
+      interval: 5m
+      timeout: 30s
+      retries: 3
+      start_period: 12h   # first-boot import from the US extract can take hours on this host
+
+  overpass-gbie:
+    image: wiktorn/overpass-api:latest
+    container_name: overpass-gbie
+    environment:
+      OVERPASS_MODE: init
+      OVERPASS_PLANET_URL: https://download.geofabrik.de/europe/britain-and-ireland-latest.osm.pbf
+      OVERPASS_DIFF_URL: https://download.geofabrik.de/europe/britain-and-ireland-updates/
+      OVERPASS_META: "no"
+      OVERPASS_COMPRESSION: gz
+      OVERPASS_RULES_LOAD: "10"
+      OVERPASS_FASTCGI_PROCESSES: "2"
+      OVERPASS_UPDATE_SLEEP: "86400"   # daily, matches Geofabrik's daily diff cadence
+    volumes:
+      - /mnt/raid1/osm/gb_ie_db:/db
+    ports:
+      - "12347:80"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf 'http://localhost/api/interpreter?data=[out:json];node(1);out;' | grep -q osm3s || exit 1"]
+      interval: 5m
+      timeout: 30s
+      retries: 3
+      start_period: 6h
