@@ -47,6 +47,14 @@ IVAR_WRITE_NODES = [
 # empty unless a reader is genuinely consumed across a class boundary — an
 # in-file dead reader must still be deleted, not allowlisted.
 #
+# Not every cross-file reader belongs here. A class whose readers are its
+# WHOLE surface is a value object masquerading as a class: declare it as a
+# T::Struct (const props — see Ai::Funding::Spend) or a Struct instead, and
+# the gate never sees it. This list is only for readers that sit beside real
+# behaviour (Ai::Feature#label) or define a contract consumed by
+# subclasses/implementers in other files (a declared interface, like
+# ApplicationPolicy's user/record/scope).
+#
 #   app/policies/application_policy.rb — the Pundit base class exposes user,
 #   record (and scope, on the inner Scope base) as the contract every policy
 #   subclass reads as bare `record` / `user` / `scope`. The readers live on the
@@ -242,6 +250,13 @@ else
       V2  Declare/keep `attr_reader :x` and call `x` in the method instead of `@x`.
       V3  Delete the unused accessor declaration (or, if it is genuinely used
           only from another file, add it to V3_ALLOWLIST with a stated reason).
+          EXCEPTION — a class whose readers are its whole surface is not a
+          class, it is a value object: declare it as a `T::Struct` (`const`
+          props; see Ai::Funding::Spend) or a `Struct`, not as hand-rolled
+          attr_readers, and do NOT allowlist it. If the readers instead define
+          a contract subclasses/implementers consume (ApplicationPolicy's
+          user/record/scope), that is a declared interface — the one shape
+          V3_ALLOWLIST is for.
   REMEDY
   exit 1
 end
