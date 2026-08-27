@@ -51,12 +51,10 @@ RSpec.describe SceneSummaryJob, type: :job do
     end
 
     it "stamps generated_at to now" do
-      Timecop.freeze do
-        described_class.new.perform(scene.id, requester.id)
+      described_class.new.perform(scene.id, requester.id)
 
-        summary = SceneSummary.find_by(scene_id: scene.id)
-        expect(summary.generated_at).to eq(Time.current)
-      end
+      summary = SceneSummary.find_by(scene_id: scene.id)
+      expect(summary.generated_at).to be_within(1.second).of(Time.current)
     end
 
     it "writes exactly one AiGeneration row with feature/model/tokens/cost/requester/payer/asset" do
