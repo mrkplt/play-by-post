@@ -28,20 +28,9 @@ module Ai
     # plus who paid for it. `funded_by` is the User whose candidate key won —
     # the last one #attempt tried without a key-attributable failure. Callers
     # use this to write the audit trail; Funding itself never persists anything.
-    class Spend
-      extend T::Sig
-
-      sig { returns(T.untyped) }
-      attr_reader :value
-
-      sig { returns(User) }
-      attr_reader :funded_by
-
-      sig { params(value: T.untyped, funded_by: User).void }
-      def initialize(value:, funded_by:)
-        @value = value
-        @funded_by = funded_by
-      end
+    class Spend < T::Struct
+      const :value, T.untyped
+      const :funded_by, User
     end
 
     sig { params(resolver: AiKeyResolver, feature: String, game: Game).void }
