@@ -56,7 +56,11 @@ V3_ALLOWLIST = {
   # Ai::Feature#label is the feature's display name, read only from the
   # contribution-matrix presenter/component (KeyContributionRowPresenter), not
   # from within feature.rb itself.
-  "app/models/ai/feature.rb" => %i[label]
+  "app/models/ai/feature.rb" => %i[label],
+  # Ai::Funding::Spend is a value object handed to callers: #value and
+  # #funded_by are its whole public surface, read by Ai::UserGeneration (and
+  # any future BYOK caller), never from within funding.rb itself.
+  "app/services/ai/funding.rb" => %i[value funded_by]
 }.freeze
 
 def each_def(node, &block)
