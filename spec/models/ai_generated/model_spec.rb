@@ -1,12 +1,11 @@
 require "rails_helper"
 
 # AiGenerated::Model supplies the shared ai_generated?/edited?/apply_manual_edit
-# behaviour to any record with the provenance columns (generated_at, model_used,
-# input_tokens, output_tokens, generated_by_id, cost, edited_at, edited_by_id,
-# body). Tested through a probe that includes it and backs onto the existing
-# `scene_summaries` table, so the instance methods run against a real row
-# without a synthetic schema — the same approach Draftable::Model's spec takes
-# against `posts`.
+# behaviour to any record with the provenance column (generated_at) and
+# edited_at/edited_by_id/body. Tested through a probe that includes it and
+# backs onto the existing `scene_summaries` table, so the instance methods run
+# against a real row without a synthetic schema — the same approach
+# Draftable::Model's spec takes against `posts`.
 class AiGeneratedProbe < ApplicationRecord
   self.table_name = "scene_summaries"
   include AiGenerated::Model
@@ -61,22 +60,14 @@ RSpec.describe AiGenerated::Model do
       end
     end
 
-    it "clears AI generation metadata, including generated_by and cost, so the record is no longer AI-generated", :db do
-      generator = create(:user)
+    it "clears generated_at so the record is no longer AI-generated", :db do
       editor = create(:user)
-      record = probe(
-        generated_at: Time.current, model_used: "openai/gpt-4o",
-        input_tokens: 10, output_tokens: 20, generated_by_id: generator.id, cost: 0.05
-      ).tap(&:save!)
+      record = probe(generated_at: Time.current).tap(&:save!)
 
       record.apply_manual_edit(body: "Hand-written", editor: editor)
 
       expect(record.ai_generated?).to be(false)
-      expect(record.model_used).to be_nil
-      expect(record.input_tokens).to be_nil
-      expect(record.output_tokens).to be_nil
-      expect(record.generated_by_id).to be_nil
-      expect(record.cost).to be_nil
+      expect(record.generated_at).to be_nil
     end
 
     it "returns false and does not clear AI metadata when the body is blank", :db do

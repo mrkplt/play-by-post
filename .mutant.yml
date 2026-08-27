@@ -18,6 +18,7 @@ matcher:
   subjects:
     # Models
     - AiUsage
+    - AiGeneration
     - Ai::Feature
     - GameKeyAuthorization
     - PublicKey
@@ -248,6 +249,9 @@ matcher:
     - AiKeyResolver::KeySource
     - AiKeyResolver::Candidate
     - Ai::Funding
+    - Ai::Funding::Spend
+    - Ai::UserGeneration
+    - Ai::UserGeneration::Result
     - Crypto::CryptoService
     - Crypto::Blob
     - Crypto::DecryptionError
@@ -297,8 +301,7 @@ matcher:
     - SceneFormBuilder
     - SceneParticipantSync
     - SceneReadState
-    - SceneSummaryService
-    - SceneSummaryService::Result
+    - SceneSummaryPrompt
     - FizzySweepService
     - Api::SchemaValidation
     - Api::IndexFilters

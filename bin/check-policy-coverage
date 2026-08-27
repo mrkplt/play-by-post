@@ -29,6 +29,7 @@ NON_AUTHORIZABLE = %w[
   KeysRecord
   PrivateKey
   PublicKey
+  AiGeneration
   AiUsage
   ApiToken
   Branding

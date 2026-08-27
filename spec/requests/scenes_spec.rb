@@ -821,6 +821,23 @@ RSpec.describe ScenesController, type: :request do
       expect(flash[:alert]).to match(/already resolved/i)
     end
 
+    context "AI summary generation" do
+      around do |example|
+        original_adapter = ActiveJob::Base.queue_adapter
+        ActiveJob::Base.queue_adapter = :test
+        example.run
+        ActiveJob::Base.queue_adapter = original_adapter
+      end
+
+      it "enqueues SceneSummaryJob with the resolving (signed-in) user's id" do
+        game.update!(ai_summaries_enabled: true)
+        sign_in(gm)
+
+        expect { patch resolve_game_scene_path(game, scene), params: { resolution: "Done." } }
+          .to have_enqueued_job(SceneSummaryJob).with(scene.id, gm.id)
+      end
+    end
+
     context "email notifications" do
       around do |example|
         original_adapter = ActiveJob::Base.queue_adapter

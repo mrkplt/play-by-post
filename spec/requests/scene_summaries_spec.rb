@@ -296,9 +296,6 @@ RSpec.describe SceneSummariesController, type: :request do
       summary.reload
       expect(summary.body).to eq("Edited text.")
       expect(summary.generated_at).to be_nil
-      expect(summary.model_used).to be_nil
-      expect(summary.input_tokens).to be_nil
-      expect(summary.output_tokens).to be_nil
       expect(summary.edited_by).to eq(gm)
       expect(summary.edited_at).to be_present
     end

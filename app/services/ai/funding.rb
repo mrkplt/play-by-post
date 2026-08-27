@@ -24,6 +24,15 @@ module Ai
     # the pool was empty to begin with.
     class Exhausted < StandardError; end
 
+    # The result of a successful funding call: the block's own return value,
+    # plus who paid for it. `funded_by` is the User whose candidate key won —
+    # the last one #attempt tried without a key-attributable failure. Callers
+    # use this to write the audit trail; Funding itself never persists anything.
+    class Spend < T::Struct
+      const :value, T.untyped
+      const :funded_by, User
+    end
+
     sig { params(resolver: AiKeyResolver, feature: String, game: Game).void }
     def initialize(resolver:, feature:, game:)
       @resolver = resolver
@@ -32,15 +41,17 @@ module Ai
     end
 
     # Yields each candidate's decrypted key to the block until one returns
-    # without a key-attributable Faraday failure, and returns that value. The
-    # pool decrements as keys fail — a failed key is popped and never retried.
-    sig { params(block: T.proc.params(key: String).returns(T.untyped)).returns(T.untyped) }
+    # without a key-attributable Faraday failure, and returns a Spend wrapping
+    # that value with the winning candidate's user. The pool decrements as
+    # keys fail — a failed key is popped and never retried.
+    sig { params(block: T.proc.params(key: String).returns(T.untyped)).returns(Spend) }
     def call(&block)
       candidates = pool
 
       loop do
-        result = attempt(candidates.pop, &block)
-        return result unless result.equal?(RETRY)
+        candidate = candidates.pop
+        result = attempt(candidate, &block)
+        return Spend.new(value: result, funded_by: T.must(candidate).user) unless result.equal?(RETRY)
       end
     end
 

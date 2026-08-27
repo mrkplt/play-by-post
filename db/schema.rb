@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_22_000200) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_26_000000) do
   create_table "action_mailbox_inbound_emails", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "message_checksum", null: false
@@ -46,6 +46,23 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_22_000200) do
     t.bigint "blob_id", null: false
     t.string "variation_digest", null: false
     t.index ["blob_id", "variation_digest"], name: "index_active_storage_variant_records_uniqueness", unique: true
+  end
+
+  create_table "ai_generations", force: :cascade do |t|
+    t.integer "asset_id", null: false
+    t.string "asset_type", null: false
+    t.decimal "cost", precision: 10, scale: 6
+    t.datetime "created_at", null: false
+    t.string "feature", null: false
+    t.integer "funded_by_id", null: false
+    t.integer "input_tokens"
+    t.string "model_used", null: false
+    t.integer "output_tokens"
+    t.integer "requested_by_id", null: false
+    t.index ["asset_type", "asset_id"], name: "index_ai_generations_on_asset_type_and_asset_id"
+    t.index ["created_at"], name: "index_ai_generations_on_created_at"
+    t.index ["funded_by_id"], name: "index_ai_generations_on_funded_by_id"
+    t.index ["requested_by_id"], name: "index_ai_generations_on_requested_by_id"
   end
 
   create_table "ai_usages", force: :cascade do |t|
@@ -323,20 +340,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_22_000200) do
 
   create_table "scene_summaries", force: :cascade do |t|
     t.text "body", null: false
-    t.decimal "cost", precision: 10, scale: 6
     t.datetime "created_at", null: false
     t.boolean "draft", default: false, null: false
     t.datetime "edited_at"
     t.integer "edited_by_id"
     t.datetime "generated_at"
-    t.integer "generated_by_id"
-    t.integer "input_tokens"
-    t.string "model_used"
-    t.integer "output_tokens"
     t.integer "scene_id", null: false
     t.datetime "updated_at", null: false
     t.index ["edited_by_id"], name: "index_scene_summaries_on_edited_by_id"
-    t.index ["generated_by_id"], name: "index_scene_summaries_on_generated_by_id"
     t.index ["scene_id"], name: "index_scene_summaries_on_scene_id", unique: true
   end
 
@@ -436,7 +447,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_22_000200) do
   add_foreign_key "scene_participants", "users"
   add_foreign_key "scene_summaries", "scenes"
   add_foreign_key "scene_summaries", "users", column: "edited_by_id"
-  add_foreign_key "scene_summaries", "users", column: "generated_by_id"
   add_foreign_key "scenes", "games"
   add_foreign_key "scenes", "scenes", column: "parent_scene_id"
   add_foreign_key "user_images", "users"
