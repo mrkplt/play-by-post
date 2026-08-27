@@ -21,15 +21,30 @@ class SceneSummaryJob < ApplicationJob
   # the summary to the waiting viewers.
   sig { params(scene: Scene, requested_by_id: Integer).void }
   def generate_and_deliver(scene, requested_by_id)
-    prompt = SceneSummaryPrompt.new(scene).to_s
-    result = Ai::UserGeneration.new(feature: FEATURE, game: T.must(scene.game)).call(prompt: prompt)
+    result = generate(scene)
+    persist(scene, result, requested_by_id)
+    broadcast(scene)
+  end
+
+  sig { params(scene: Scene).returns(Ai::UserGeneration::Result) }
+  def generate(scene)
+    Ai::UserGeneration
+      .new(feature: FEATURE, game: T.must(scene.game))
+      .call(prompt: SceneSummaryPrompt.new(scene).to_s)
+  end
+
+  # One transaction for the summary upsert and its audit row, so the two can
+  # never diverge. Reloaded from the row the upsert just wrote — upsert
+  # bypasses the in-memory object.
+  sig { params(scene: Scene, result: Ai::UserGeneration::Result, requested_by_id: Integer).void }
+  def persist(scene, result, requested_by_id)
+    scene_id = T.must(scene.id)
 
     ActiveRecord::Base.transaction do
-      upsert_summary(scene, result)
-      record_generation(scene, result, requested_by_id)
+      SceneSummary.upsert(upsert_attributes(scene_id, result.body), unique_by: :scene_id, update_only: UPDATE_ONLY_COLUMNS)
+      summary = T.must(SceneSummary.find_by(scene_id: scene_id))
+      record_generation(summary_id: summary.id, result: result, requested_by_id: requested_by_id)
     end
-
-    broadcast(scene)
   end
 
   # Push the finished summary to every viewer waiting on the scene page, scoped
@@ -46,18 +61,13 @@ class SceneSummaryJob < ApplicationJob
     T::Array[Symbol]
   )
 
-  sig { params(scene: Scene, result: Ai::UserGeneration::Result).void }
-  def upsert_summary(scene, result)
-    SceneSummary.upsert(upsert_attributes(scene, result), unique_by: :scene_id, update_only: UPDATE_ONLY_COLUMNS)
-  end
-
-  sig { params(scene: Scene, result: Ai::UserGeneration::Result).returns(T::Hash[Symbol, T.untyped]) }
-  def upsert_attributes(scene, result)
+  sig { params(scene_id: Integer, body: String).returns(T::Hash[Symbol, T.untyped]) }
+  def upsert_attributes(scene_id, body)
     now = Time.current
 
     {
-      scene_id: scene.id,
-      body: result.body,
+      scene_id: scene_id,
+      body: body,
       generated_at: now,
       edited_at: nil,
       edited_by_id: nil,
@@ -67,12 +77,9 @@ class SceneSummaryJob < ApplicationJob
   end
 
   # The permanent audit row for this generation: who requested it, whose key
-  # paid, cost, model, and token counts. Written in the same transaction as
-  # the summary upsert so the two can never diverge.
-  sig { params(scene: Scene, result: Ai::UserGeneration::Result, requested_by_id: Integer).void }
-  def record_generation(scene, result, requested_by_id)
-    summary = T.must(SceneSummary.find_by(scene_id: scene.id))
-
+  # paid, cost, model, and token counts.
+  sig { params(summary_id: Integer, result: Ai::UserGeneration::Result, requested_by_id: Integer).void }
+  def record_generation(summary_id:, result:, requested_by_id:)
     AiGeneration.create!(
       feature: FEATURE,
       model_used: result.model_used,
@@ -82,7 +89,7 @@ class SceneSummaryJob < ApplicationJob
       requested_by_id: requested_by_id,
       funded_by_id: result.funded_by.id,
       asset_type: "SceneSummary",
-      asset_id: summary.id
+      asset_id: summary_id
     )
   end
 end
