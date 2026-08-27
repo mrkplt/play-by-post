@@ -8,9 +8,10 @@
 class SceneResolution
   extend T::Sig
 
-  sig { params(scene: Scene).void }
-  def initialize(scene)
+  sig { params(scene: Scene, resolved_by: User).void }
+  def initialize(scene, resolved_by:)
     @scene = scene
+    @resolved_by = resolved_by
   end
 
   sig { params(resolution: T.untyped).returns(T::Boolean) }
@@ -19,7 +20,7 @@ class SceneResolution
 
     @scene.update!(resolved_at: Time.current, resolution: resolution)
     SceneNotifier.new(@scene).resolved
-    SceneSummaryJob.perform_later(@scene.id) if @scene.game&.ai_summaries_enabled?
+    SceneSummaryJob.perform_later(@scene.id, @resolved_by.id) if @scene.game&.ai_summaries_enabled?
     true
   end
 end

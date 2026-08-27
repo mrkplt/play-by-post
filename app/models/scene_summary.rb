@@ -7,7 +7,6 @@ class SceneSummary < ApplicationRecord
 
   belongs_to :scene
   belongs_to :edited_by, class_name: "User", optional: true
-  belongs_to :generated_by, class_name: "User", optional: true
 
   # Drafting scopes and presence-unless-draft, declared here so the wiring is
   # visible; Draftable::Model supplies the shared draft?/published?/publish!

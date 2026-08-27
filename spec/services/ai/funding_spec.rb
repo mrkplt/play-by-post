@@ -21,10 +21,17 @@ RSpec.describe Ai::Funding do
     error
   end
 
-  it "yields a key and returns the block's value on success" do
+  it "yields a key and returns a Spend wrapping the block's value on success" do
     authorize(1)
-    result = funding.call { |key| "used:#{key}" }
-    expect(result).to start_with("used:key-")
+    spend = funding.call { |key| "used:#{key}" }
+    expect(spend.value).to start_with("used:key-")
+  end
+
+  it "attributes the Spend to the winning candidate's user" do
+    authorize(1)
+    spend = funding.call { |_key| "ok" }
+    authorization = GameKeyAuthorization.available_for(game: game, feature: "scene_summary").first
+    expect(spend.funded_by).to eq(authorization.user)
   end
 
   it "raises Exhausted when the pool is empty" do
@@ -35,14 +42,17 @@ RSpec.describe Ai::Funding do
     it "fails over to the next key on a #{status} failure and decrements the pool" do
       authorize(2)
       calls = 0
-      result = funding.call do |key|
+      winning_key = nil
+      spend = funding.call do |key|
         calls += 1
         raise faraday_error(status) if calls == 1
+        winning_key = key
         "ok:#{key}"
       end
 
       expect(calls).to eq(2)
-      expect(result).to start_with("ok:")
+      expect(spend.value).to start_with("ok:")
+      expect(spend.funded_by.id).to eq(winning_key.delete_prefix("key-").to_i)
     end
   end
 

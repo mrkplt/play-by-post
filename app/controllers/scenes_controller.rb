@@ -57,7 +57,7 @@ class ScenesController < ApplicationController
   sig { void }
   def resolve
     authorize scene
-    message = if SceneResolution.new(scene).call(params[:resolution])
+    message = if SceneResolution.new(scene, resolved_by: current_user).call(params[:resolution])
       { notice: "Scene resolved." }
     else
       { alert: "Scene is already resolved." }

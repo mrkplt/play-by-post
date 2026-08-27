@@ -10,12 +10,13 @@ class SceneSummaryJob
     sig do
       params(
         scene_id: ::Integer,
+        requested_by_id: ::Integer,
         block: T.nilable(T.proc.params(job: SceneSummaryJob).void)
       ).returns(T.any(SceneSummaryJob, FalseClass))
     end
-    def perform_later(scene_id, &block); end
+    def perform_later(scene_id, requested_by_id, &block); end
 
-    sig { params(scene_id: ::Integer).void }
-    def perform_now(scene_id); end
+    sig { params(scene_id: ::Integer, requested_by_id: ::Integer).void }
+    def perform_now(scene_id, requested_by_id); end
   end
 end

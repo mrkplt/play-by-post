@@ -12,11 +12,6 @@ RSpec.describe SceneSummary, type: :model do
       summary = build(:scene_summary, edited_by: nil)
       expect(summary).to be_valid
     end
-
-    it "belongs to generated_by (optional)" do
-      summary = build(:scene_summary, generated_by: nil)
-      expect(summary).to be_valid
-    end
   end
 
   describe "validations" do
@@ -238,16 +233,24 @@ RSpec.describe SceneSummary, type: :model do
       end
     end
 
-    it "clears AI generation metadata so a manually-edited summary is no longer AI-generated", :db do
-      summary = create(:scene_summary, :ai_generated, input_tokens: 10, output_tokens: 20)
+    it "clears generated_at so a manually-edited summary is no longer AI-generated", :db do
+      summary = create(:scene_summary, :ai_generated)
       editor = create(:user)
 
       summary.apply_manual_edit(body: "Hand-written", editor: editor)
 
       expect(summary.ai_generated?).to be(false)
-      expect(summary.model_used).to be_nil
-      expect(summary.input_tokens).to be_nil
-      expect(summary.output_tokens).to be_nil
+      expect(summary.generated_at).to be_nil
+    end
+
+    it "leaves any ai_generations audit rows for the summary intact", :db do
+      summary = create(:scene_summary, :ai_generated)
+      generation = create(:ai_generation, asset_type: "SceneSummary", asset_id: summary.id)
+      editor = create(:user)
+
+      summary.apply_manual_edit(body: "Hand-written", editor: editor)
+
+      expect(AiGeneration.find(generation.id)).to eq(generation)
     end
 
     it "returns false and does not clear AI metadata when the body is blank", :db do

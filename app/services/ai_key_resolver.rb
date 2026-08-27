@@ -3,7 +3,7 @@
 # Decides WHICH people's OpenRouter keys may fund a game-level AI call, and in
 # what (random) order the worker should try them. It does NOT make the call —
 # it hands the generation service a shuffled pool of candidate keys to spend,
-# and that service tries them with failover (see SceneSummaryService).
+# and that service tries them with failover (see Ai::Funding).
 #
 # Keys are person-owned (EncryptedValue, owned by a User). A game funds a
 # game-level feature from its POOL: the people who authorized their key to fund
