@@ -221,11 +221,22 @@ RSpec.describe CharactersController, type: :request do
   describe "PATCH /games/:game_id/characters/:id" do
     let(:character) { create(:character, game: game, user: player) }
 
-    it "updates with valid params and redirects" do
+    it "updates with valid params and redirects a non-Turbo request" do
       sign_in(player)
       patch game_character_path(game, character), params: { character: { name: "Updated Name", content: "new content" } }
       expect(response).to redirect_to(game_character_path(game, character))
       expect(character.reload.name).to eq("Updated Name")
+    end
+
+    it "swaps the form in place with a toast for a Turbo request (InPlaceSave)" do
+      sign_in(player)
+      patch game_character_path(game, character),
+        params: { character: { name: "Turbo Name", content: "c" } },
+        headers: { "Accept" => "text/vnd.turbo-stream.html" }
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("edit_character_#{character.id}_form")
+      expect(response.body).to include("toast_layer")
+      expect(character.reload.name).to eq("Turbo Name")
     end
 
     it "renders :edit with unprocessable_content on invalid params" do

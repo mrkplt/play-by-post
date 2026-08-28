@@ -67,15 +67,15 @@ class CharactersController < ApplicationController
     redirect_to game_character_path(game, character), notice: "#{character.name} restored."
   end
 
+  # Long-form sheet edit — keep the writer on the form in place on save and on
+  # validation error, the same idiom pages and notebook entries use (InPlaceSave),
+  # rather than redirecting away.
   sig { void }
   def update
     authorize character
-    if character.update(permitted_attributes(character))
-      redirect_to game_character_path(game, character), notice: "Character updated."
-    else
-      assign_presenters(character)
-      render :edit, status: :unprocessable_content
-    end
+    outcome = SaveOutcome.for(character.update(permitted_attributes(character)), "character")
+    assign_presenters(character)
+    InPlaceSave.new(self, outcome: outcome, forward_to: game_character_path(game, character)).respond
   end
 
   private
