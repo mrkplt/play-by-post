@@ -45,7 +45,7 @@
     <%= render Shared::ChildSceneListComponent.new(game: @scene_screen.game, child_scenes: @scene_screen.show.visible_child_scenes) %>
 
     <%= render Shared::ControlRowComponent.new(label: "Participants: #{@scene_screen.scene.participant_names}") do %>
-      <%= render "scenes/mute_toggle", toggle_url: @scene_screen.navigation.toggle_notification_preference_path, muted: @scene_screen.show.muted? %>
+      <%= render Shared::MuteToggleComponent.new(toggle_url: @scene_screen.navigation.toggle_notification_preference_path, muted: @scene_screen.show.muted?) %>
     <% end %>
 
     <% if @scene_screen.scene.resolved? && (resolution = @scene_screen.scene.resolution) %>

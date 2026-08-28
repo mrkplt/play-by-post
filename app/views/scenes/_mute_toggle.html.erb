@@ -1,8 +1,0 @@
-<%# The per-viewer mute button, in a stable id so ScenesController swaps it in
-    place after a toggle (its label is the only change). Rendered on the scene
-    page and re-rendered by toggle_notification_preference. %>
-<span id="mute_toggle">
-  <%= render Ui::ButtonComponent.new(
-        style: Ui::ButtonComponent::Style.new(variant: :text),
-        link: Ui::ButtonComponent::Link.new(url: toggle_url, method: :post)) do %><%= muted ? "Unmute notifications" : "Mute notifications" %><% end %>
-</span>

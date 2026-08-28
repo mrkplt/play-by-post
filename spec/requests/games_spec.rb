@@ -652,7 +652,9 @@ RSpec.describe GamesController, type: :request do
       sign_in(gm)
       patch toggle_sheets_hidden_game_path(game)
       expect(game.reload.sheets_hidden?).to be true
-      expect(response).to redirect_to(game_path(game))
+      # In place: swap the toggle control + toast, no full reload.
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("sheets_toggle")
       expect(flash[:notice]).to match(/hidden/i)
     end
 
@@ -692,7 +694,8 @@ RSpec.describe GamesController, type: :request do
       sign_in(gm)
       patch toggle_ai_summaries_enabled_game_path(game)
       expect(game.reload.ai_summaries_enabled?).to be true
-      expect(response).to redirect_to(game_player_management_path(game))
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("ai_summaries_toggle")
       expect(flash[:notice]).to match(/enabled/i)
     end
 
@@ -701,7 +704,7 @@ RSpec.describe GamesController, type: :request do
       sign_in(gm)
       patch toggle_ai_summaries_enabled_game_path(game)
       expect(game.reload.ai_summaries_enabled?).to be false
-      expect(response).to redirect_to(game_player_management_path(game))
+      expect(response).to have_http_status(:ok)
       expect(flash[:notice]).to match(/disabled/i)
     end
 

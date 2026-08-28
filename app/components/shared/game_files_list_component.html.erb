@@ -1,0 +1,8 @@
+<div id="<%= Shared::GameFilesListComponent::DOM_ID %>">
+  <% if any? %>
+    <%= render Ui::SectionLabelComponent.new do %>Newest first<% end %>
+    <%= render Shared::GalleryComponent.new(game_files: game_files) %>
+  <% else %>
+    <p class="text-muted-2 text-sm"><%= Shared::GameFilesListComponent::EMPTY %></p>
+  <% end %>
+</div>

@@ -12,5 +12,5 @@
     <%= render Shared::FileUploadFormComponent.new(game: @game_presenter, game_file: @game_file_presenter) %>
   <% end %>
 
-  <%= render "game_files/list", game_files: @game_files %>
+  <%= render Shared::GameFilesListComponent.new(game_files: @game_files) %>
 <% end %>

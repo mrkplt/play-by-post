@@ -70,17 +70,15 @@ class ScenesController < ApplicationController
 
   private
 
-  # Swap the mute button (the _mute_toggle partial owns the stable id) for its new
-  # state, plus a toast.
+  # Swap the mute button (Shared::MuteToggleComponent owns the stable id) for its
+  # new state, plus a toast.
   sig { params(muted: T::Boolean).void }
   def render_mute_toggle(muted)
     flash_now(notice: muted ? "Notifications muted for this scene." : "Notifications enabled for this scene.")
-    stream = turbo_stream.replace(
-      "mute_toggle",
-      partial: "scenes/mute_toggle",
-      locals: { toggle_url: toggle_notification_preference_game_scene_path(game, scene), muted: muted }
+    component = Shared::MuteToggleComponent.new(
+      toggle_url: toggle_notification_preference_game_scene_path(game, scene), muted: muted
     )
-    render turbo_stream: [ stream, toast_stream ]
+    render turbo_stream: [ turbo_stream.replace(Shared::MuteToggleComponent::DOM_ID, component), toast_stream ]
   end
 
   sig { returns(Scene) }

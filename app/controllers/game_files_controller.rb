@@ -40,7 +40,7 @@ class GameFilesController < ApplicationController
   def render_files_in_place(notice: nil, alert: nil)
     flash_now(notice: notice, alert: alert)
     stream = turbo_stream.replace(
-      "game_files_list", partial: "game_files/list", locals: { game_files: build_game_file_presenters }
+      Shared::GameFilesListComponent::DOM_ID, Shared::GameFilesListComponent.new(game_files: build_game_file_presenters)
     )
     render turbo_stream: [ stream, toast_stream ]
   end

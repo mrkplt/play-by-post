@@ -160,6 +160,8 @@ matcher:
     - Shared::GameTabsComponent::PanelComponent
     - Shared::RosterFilterComponent
     - Shared::MemberRosterComponent
+    - Shared::MuteToggleComponent
+    - Shared::GameFilesListComponent
     - Shared::ResolveToggleComponent
     - Shared::UnreadAuraComponent
     - Shared::PostItemComponent
