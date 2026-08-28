@@ -47,7 +47,7 @@ RSpec.describe UserImagesController, type: :request do
       )
     end
 
-    it "redirects with an alert when no file is provided" do
+    it "responds in place with an alert when no file is provided" do
       sign_in(user)
 
       post profile_images_path, params: { image: {} }

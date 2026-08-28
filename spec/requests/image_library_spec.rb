@@ -62,7 +62,7 @@ RSpec.describe ImageLibrary, type: :request do
       )
     end
 
-    it "redirects with an alert when no file is provided" do
+    it "responds in place with an alert when no file is provided" do
       sign_in(player)
 
       post game_character_images_path(game, character), params: { image: {} }
@@ -70,7 +70,7 @@ RSpec.describe ImageLibrary, type: :request do
       expect(flash[:alert]).to eq("Please select an image to upload.")
     end
 
-    it "redirects with an alert when the image param is not a file" do
+    it "responds in place with an alert when the image param is not a file" do
       sign_in(player)
 
       post game_character_images_path(game, character), params: { image: { file: "not-a-file" } }

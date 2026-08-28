@@ -63,7 +63,7 @@ RSpec.describe CharacterImagesController, type: :request do
       }.not_to change { character.character_images.count }
     end
 
-    it "redirects with an alert when no file is provided" do
+    it "responds in place with an alert when no file is provided" do
       sign_in(player)
 
       post game_character_images_path(game, character), params: { image: {} }

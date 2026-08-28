@@ -37,10 +37,11 @@ RSpec.describe "Live scene posts", type: :feature do
         broadcast_new_post(content: "A rider approaches from the east.")
 
         expect(page).to have_text("A rider approaches from the east.", wait: 8)
+        post_id = ActionView::RecordIdentifier.dom_id(scene.posts.published.last)
+        # It is new activity for this viewer, so the post itself glows (unread-aura).
+        expect(page).to have_css("##{post_id}.ui-glow", wait: 8)
         # Viewer-neutral render: no Edit link on someone else's streamed post.
-        within("##{ActionView::RecordIdentifier.dom_id(scene.posts.published.last)}") do
-          expect(page).to have_no_link("Edit")
-        end
+        within("##{post_id}") { expect(page).to have_no_link("Edit") }
       end
 
       it "reflects a live edit of an existing post in place" do
@@ -56,6 +57,20 @@ RSpec.describe "Live scene posts", type: :feature do
         expect(page).to have_no_text("Original line.")
       end
     end
+  end
+
+  it "does not glow the author's own live post for the author" do
+    sign_in_as(other)
+    visit game_scene_path(game, scene)
+    connect_turbo_cable_stream_sources
+
+    post = create(:post, scene: scene, user: other, content: "My own words.")
+    PostBroadcast.new(post).created
+
+    post_id = ActionView::RecordIdentifier.dom_id(post)
+    expect(page).to have_css("##{post_id}", wait: 8)
+    # The author wrote it — the unread-aura controller strips the glow client-side.
+    expect(page).to have_no_css("##{post_id}.ui-glow", wait: 8)
   end
 
   it "hides a live-streamed OOC post for a viewer who has OOC hidden" do

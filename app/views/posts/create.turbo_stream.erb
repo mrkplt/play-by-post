@@ -7,7 +7,7 @@
     the post-edit-affordance controller, not rendered here. %>
 <%= turbo_stream.remove "no_posts_message" %>
 <%= turbo_stream.append "posts" do %>
-  <%= render Shared::PostItemComponent.new(post: @post_presenter, scene: @scene_presenter, suppress_edit: true) %>
+  <%= render Shared::PostItemComponent.new(post: @post_presenter, scene: @scene_presenter, presentation: Shared::PostItemComponent.broadcast(force_unread: true)) %>
 <% end %>
 <%= turbo_stream.update "post_composer" do %>
   <%= render Shared::PostComposerComponent.new(post: PostPresenter.new(Post.new), game: @game_presenter, scene: @scene_presenter) %>

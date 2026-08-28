@@ -165,6 +165,7 @@ matcher:
     - Shared::ResolveToggleComponent
     - Shared::UnreadAuraComponent
     - Shared::PostItemComponent
+    - Shared::PostItemComponent::Presentation
     - Shared::CharacterFormComponent
     - Shared::MarkdownToolbarComponent
     - Shared::CharacterVersionHistoryComponent

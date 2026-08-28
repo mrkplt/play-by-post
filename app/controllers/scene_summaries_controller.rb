@@ -41,16 +41,16 @@ class SceneSummariesController < ApplicationController
     assign_presenters(T.must(summary))
   end
 
+  # Long-form markdown editor — keep the writer on the form in place on save and
+  # on validation error (InPlaceSave), the same idiom pages, notebook entries, and
+  # character sheets use, rather than redirecting away.
   sig { void }
   def update
     authorize summary
     found_summary = T.must(summary)
-    if found_summary.apply_manual_edit(body: summary_params[:body], editor: current_user)
-      redirect_to game_scene_path(game, scene), notice: "Summary updated."
-    else
-      assign_presenters(found_summary)
-      render :edit, status: :unprocessable_content
-    end
+    outcome = SaveOutcome.for(found_summary.apply_manual_edit(body: summary_params[:body], editor: current_user), "summary")
+    assign_presenters(found_summary)
+    InPlaceSave.new(self, outcome: outcome, forward_to: game_scene_path(game, scene)).respond
   end
 
   sig { void }

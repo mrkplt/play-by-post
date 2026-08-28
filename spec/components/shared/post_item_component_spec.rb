@@ -25,7 +25,7 @@ RSpec.describe Shared::PostItemComponent, type: :component do
   end
   let(:presenter) { build_post_presenter(post) }
 
-  subject(:component) { described_class.new(post: presenter, suppress_edit: false) }
+  subject(:component) { described_class.new(post: presenter) }
 
   before { allow(game).to receive(:game_master?).and_return(false) }
 
@@ -63,7 +63,7 @@ RSpec.describe Shared::PostItemComponent, type: :component do
       recent = build_stubbed(:post, user: user, scene: raw_scene, content: "New", is_ooc: false,
         last_edited_at: nil, created_at: 1.hour.ago).tap { |p| allow(p).to receive(:game).and_return(game) }
       c = described_class.new(post: build_post_presenter(recent),
-        scene: ScenePresenter.new(raw_scene), read_post_ids: Set.new, suppress_edit: false)
+        scene: ScenePresenter.new(raw_scene), read_post_ids: Set.new)
       expect(c.card_classes).to include("is-hot")
     end
   end
@@ -76,7 +76,7 @@ RSpec.describe Shared::PostItemComponent, type: :component do
     it "is :post_body_ooc for an OOC post" do
       ooc_post = build_stubbed(:post, :ooc, user: user, scene: raw_scene, content: "OOC",
         created_at: Time.current).tap { |p| allow(p).to receive(:game).and_return(game) }
-      expect(described_class.new(post: build_post_presenter(ooc_post), suppress_edit: false).body_variant).to eq(:post_body_ooc)
+      expect(described_class.new(post: build_post_presenter(ooc_post)).body_variant).to eq(:post_body_ooc)
     end
   end
 
@@ -121,7 +121,7 @@ RSpec.describe Shared::PostItemComponent, type: :component do
       end
     end
     let(:presenter) { build_post_presenter(post) }
-    subject(:component) { described_class.new(post: presenter, suppress_edit: false) }
+    subject(:component) { described_class.new(post: presenter) }
 
     it "renders the OOC badge" do
       expect(rendered_component).to have_css("[data-testid='ooc-post']")
@@ -145,7 +145,7 @@ RSpec.describe Shared::PostItemComponent, type: :component do
       end
     end
     let(:presenter) { build_post_presenter(post) }
-    subject(:component) { described_class.new(post: presenter, suppress_edit: false) }
+    subject(:component) { described_class.new(post: presenter) }
 
     it "shows the edited indicator" do
       expect(rendered_component).to have_text("(edited)")
@@ -161,7 +161,7 @@ RSpec.describe Shared::PostItemComponent, type: :component do
     end
 
     it "suppresses the server-rendered Edit link for a broadcast (viewer-neutral) render" do
-      render_inline(described_class.new(post: presenter, suppress_edit: true))
+      render_inline(described_class.new(post: presenter, presentation: described_class.broadcast(force_unread: false)))
       expect(page).to have_no_link("Edit")
     end
   end
@@ -181,8 +181,7 @@ RSpec.describe Shared::PostItemComponent, type: :component do
         described_class.new(
           post: recent_presenter,
           scene: scene_presenter,
-          read_post_ids: Set.new,
-          suppress_edit: false
+          read_post_ids: Set.new
         )
       end
 
@@ -202,8 +201,7 @@ RSpec.describe Shared::PostItemComponent, type: :component do
         described_class.new(
           post: recent_presenter,
           scene: scene_presenter,
-          read_post_ids: Set.new([ recent_post.id ]),
-          suppress_edit: false
+          read_post_ids: Set.new([ recent_post.id ])
         )
       end
 
@@ -226,8 +224,7 @@ RSpec.describe Shared::PostItemComponent, type: :component do
         described_class.new(
           post: build_post_presenter(post_in_resolved),
           scene: ScenePresenter.new(resolved_scene),
-          read_post_ids: Set.new,
-          suppress_edit: false
+          read_post_ids: Set.new
         )
       end
 
@@ -239,11 +236,30 @@ RSpec.describe Shared::PostItemComponent, type: :component do
 
     context "when no read_post_ids provided" do
       subject(:component) do
-        described_class.new(post: recent_presenter, suppress_edit: false)
+        described_class.new(post: recent_presenter)
       end
 
       it "sets data-unread to false" do
         render_inline(component)
+        expect(page).to have_css("[data-unread='false']")
+      end
+    end
+
+    context "when force_unread (a live broadcast render)" do
+      it "sets data-unread to true even with no read_post_ids" do
+        render_inline(described_class.new(
+          post: recent_presenter, scene: scene_presenter, presentation: described_class.broadcast(force_unread: true)
+        ))
+        expect(page).to have_css("[data-unread='true']")
+      end
+
+      it "still respects a resolved scene (no glow on a resolved scene)" do
+        resolved = build_stubbed(:scene, resolved_at: 1.hour.ago)
+        post = build_stubbed(:post, user: user, scene: resolved, content: "x", is_ooc: false,
+          last_edited_at: nil, created_at: 1.hour.ago).tap { |p| allow(p).to receive(:game).and_return(game) }
+        render_inline(described_class.new(
+          post: build_post_presenter(post), scene: ScenePresenter.new(resolved), presentation: described_class.broadcast(force_unread: true)
+        ))
         expect(page).to have_css("[data-unread='false']")
       end
     end

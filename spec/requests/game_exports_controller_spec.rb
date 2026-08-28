@@ -32,7 +32,9 @@ RSpec.describe GameExportsController, type: :request do
         }.to change(GameExportRequest, :count).by(1)
           .and have_enqueued_job(ExportJob)
 
-        expect(response).to redirect_to(game_path(game))
+        # In place: a toast, no full game reload (matches profiles#export_all).
+        expect(response).to have_http_status(:ok)
+        expect(response.body).to include("toast_layer")
         expect(flash[:notice]).to match(/export requested/i)
       end
 
@@ -48,7 +50,7 @@ RSpec.describe GameExportsController, type: :request do
         }.not_to have_enqueued_job(ExportJob)
         expect(GameExportRequest.count).to eq(1)
 
-        expect(response).to redirect_to(game_path(game))
+        expect(response).to have_http_status(:ok)
         expect(flash[:notice]).to match(/export requested/i)
       end
 

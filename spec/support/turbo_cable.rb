@@ -13,7 +13,7 @@ RSpec.configure do |config|
   # The turbo capture/assert helpers call Minitest-style assertions internally
   # (assert_nothing_raised, assert_broadcasts), so their host assertions module
   # has to come along for the ride in these plain RSpec example groups.
-  %i[model job channel request].each do |type|
+  %i[model job channel request mailbox].each do |type|
     config.include ActiveSupport::Testing::Assertions, type: type
     config.include Turbo::Broadcastable::TestHelper, type: type
   end

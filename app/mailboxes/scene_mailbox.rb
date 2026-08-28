@@ -13,11 +13,14 @@ class SceneMailbox < ApplicationMailbox
 
     return if content.blank?
 
-    T.must(scene).posts.create!(
+    post = T.must(scene).posts.create!(
       user: T.must(sender_user),
       content: content,
       is_ooc: false
     )
+    # Reply-by-email is a full peer of the composer: the post must appear live on
+    # the scene page for every viewer, exactly as a controller-created post does.
+    PostBroadcast.new(post).created
   end
 
   private

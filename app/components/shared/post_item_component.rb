@@ -5,19 +5,36 @@ class Shared::PostItemComponent < ApplicationComponent
 
   CARD_BASE = T.let("attn-item rounded-post p-4 mb-3.5 last:mb-0", String)
 
+  # How this render treats the two per-viewer affordances a broadcast (which is
+  # rendered once for everyone) cannot know: whether to suppress the author-only
+  # Edit link, and whether to force the unread glow (a just-arrived post is new to
+  # whoever is watching). A page-load render uses the neutral default (edit shown
+  # per policy, unread from read_post_ids); a broadcast passes `.broadcast`.
+  class Presentation < T::Struct
+    const :suppress_edit, T::Boolean, default: false
+    const :force_unread, T::Boolean, default: false
+  end
+
+  # The broadcast presentation: suppress the Edit link always; force unread only
+  # for a created post (an edit is not new activity), so the caller passes the flag.
+  sig { params(force_unread: T::Boolean).returns(Presentation) }
+  def self.broadcast(force_unread:)
+    Presentation.new(suppress_edit: true, force_unread: force_unread)
+  end
+
   sig do
     params(
       post: PostPresenter,
-      suppress_edit: T::Boolean,
       scene: T.nilable(ScenePresenter),
-      read_post_ids: T.nilable(T::Set[Integer])
+      read_post_ids: T.nilable(T::Set[Integer]),
+      presentation: Presentation
     ).void
   end
-  def initialize(post:, suppress_edit:, scene: nil, read_post_ids: nil)
+  def initialize(post:, scene: nil, read_post_ids: nil, presentation: Presentation.new)
     @post = post
     @scene = scene
     @read_post_ids = read_post_ids
-    @suppress_edit = suppress_edit
+    @presentation = presentation
   end
 
   # Whether to render the author's "Edit" link. Off for a broadcast render,
@@ -27,11 +44,16 @@ class Shared::PostItemComponent < ApplicationComponent
   # submitter-only HTTP response and on any page reload.
   sig { returns(T::Boolean) }
   def show_edit?
-    !@suppress_edit && @post.editable_by_viewer?
+    !@presentation.suppress_edit && @post.editable_by_viewer?
   end
 
   sig { returns(T::Boolean) }
   def unread?
+    # A broadcast render has no viewer read-set; a just-arrived post is unread by
+    # definition, so it renders with the glow + mark-read affordance and each
+    # client's unread-aura controller decides (the author's own post is un-glowed
+    # client-side). A page-load render uses the per-viewer read_post_ids instead.
+    return true if @presentation.force_unread && !@scene&.resolved?
     return false if @read_post_ids.nil?
     return false if @scene&.resolved?
     return false unless @post.created_at > 72.hours.ago

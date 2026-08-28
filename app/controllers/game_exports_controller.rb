@@ -2,16 +2,21 @@
 
 class GameExportsController < ApplicationController
   extend T::Sig
+  include InPlaceRender
 
   before_action :require_export_access!
   after_action :verify_authorized
 
+  # Fire-and-forget: the export is emailed, so there is nothing on the page to
+  # re-render — a toast in place is the whole response, matching profiles#export_all
+  # (the identical operation), no full game reload.
   sig { void }
   def create
     authorize game, :export?
     ExportDelivery.request!(user: current_user, game: game)
 
-    redirect_to game_path(game), notice: "Export requested — you'll receive an email shortly."
+    flash_now(notice: "Export requested — you'll receive an email shortly.")
+    render turbo_stream: toast_stream
   end
 
   private

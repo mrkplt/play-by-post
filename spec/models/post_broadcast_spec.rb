@@ -65,6 +65,16 @@ RSpec.describe PostBroadcast, type: :model do
 
       expect(append.to_html).to include('data-ooc="true"')
     end
+
+    it "renders the created post as unread with a mark-read affordance (the glow)" do
+      post = create(:post, scene: scene, user: author)
+
+      elements = capture_turbo_stream_broadcasts(posts_stream) { described_class.new(post).created }
+      append = elements.find { |el| el["action"] == "append" }
+
+      expect(append.to_html).to include('data-unread="true"')
+      expect(append.to_html).to include("data-mark-read-url")
+    end
   end
 
   describe "#updated" do
@@ -77,6 +87,15 @@ RSpec.describe PostBroadcast, type: :model do
       expect(replace["target"]).to eq(ActionView::RecordIdentifier.dom_id(post))
       expect(replace.to_html).to include("Edited body.")
       expect(replace.to_html).not_to include(">Edit<")
+    end
+
+    it "does not force the edited post unread (an edit is not new activity)" do
+      post = create(:post, :edited, scene: scene, user: author)
+
+      elements = capture_turbo_stream_broadcasts(posts_stream) { described_class.new(post).updated }
+      replace = elements.find { |el| el["action"] == "replace" }
+
+      expect(replace.to_html).to include('data-unread="false"')
     end
   end
 end
