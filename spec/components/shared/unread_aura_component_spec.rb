@@ -12,8 +12,8 @@ RSpec.describe Shared::UnreadAuraComponent, type: :component do
   end
 
   describe "the posts container" do
-    it "mounts the unread-aura controller on the #posts container" do
-      expect(render_with([])).to have_css("div#posts[data-controller='unread-aura']")
+    it "mounts the unread-aura and stream-dedupe controllers on the #posts container" do
+      expect(render_with([])).to have_css("div#posts[data-controller='unread-aura stream-dedupe']")
     end
 
     it "keeps the #posts id so the Turbo Stream append target survives" do

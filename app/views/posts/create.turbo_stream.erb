@@ -1,10 +1,11 @@
 <%# The submitter's immediate, reliable copy of their own post — appended
     viewer-neutral (suppress_edit) so it is byte-identical to the PostBroadcast
-    render every other viewer receives. Because both share the post's dom_id,
-    the broadcast the submitter also receives replaces this element rather than
-    appending a duplicate. The composer resets in place (update keeps the
-    #post_composer wrapper). The author's Edit link is revealed client-side by
-    the post-edit-affordance controller, not rendered here. %>
+    render every other viewer receives. Both share the post's dom_id, and the
+    stream-dedupe controller on #posts cancels whichever append arrives second,
+    so the duplicate delivery never detaches the rendered node. The composer
+    resets in place (update keeps the #post_composer wrapper). The author's
+    Edit link is revealed client-side by the post-edit-affordance controller,
+    not rendered here. %>
 <%= turbo_stream.remove "no_posts_message" %>
 <%= turbo_stream.append "posts" do %>
   <%= render Shared::PostItemComponent.new(post: @post_presenter, scene: @scene_presenter, presentation: Shared::PostItemComponent.broadcast(force_unread: true)) %>
