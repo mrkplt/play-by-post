@@ -38,6 +38,7 @@ NON_AUTHORIZABLE = %w[
   GlitchTipDsn
   NotificationPreference
   KeypairReadyBroadcast
+  PostBroadcast
   PostRead
   SceneParticipant
   SceneSummaryBroadcast

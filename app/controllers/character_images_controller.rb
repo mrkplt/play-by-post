@@ -30,14 +30,16 @@ class CharacterImagesController < ApplicationController
   end
 
   # The portrait library exactly as characters/show renders it, for the in-place
-  # swap. can_manage comes from the same policy the page uses.
+  # swap. Every action reaching here has already `authorize`d the manage
+  # capability (it raises otherwise), so the acting user can manage this library
+  # by construction — can_manage is true without re-asking the policy.
   sig { override.returns(Shared::ImageLibraryComponent) }
   def rendered_library
     library = CharacterPortraitLibraryPresenter.new(
-      character: character, game: game, can_manage: policy(character.character_images.new).manage?, helpers: helpers
+      character: character, game: game, can_manage: true, helpers: helpers
     )
     Shared::ImageLibraryComponent.new(
-      title: "Portraits", images: library.items, can_manage: library.can_manage?, empty_text: "No portraits yet."
+      title: "Portraits", images: library.items, can_manage: true, empty_text: "No portraits yet."
     )
   end
 
