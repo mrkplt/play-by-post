@@ -36,6 +36,27 @@ RSpec.describe PostBroadcast, type: :model do
       expect(append.to_html).not_to include(">Edit<")
     end
 
+    it "renders the author's speaking character as the byline (uses the scene's participants)" do
+      character = create(:character, game: game, user: author, name: "Sir Reginald")
+      create(:scene_participant, scene: scene, user: author, character: character)
+      post = create(:post, scene: scene, user: author, content: "For the realm!")
+
+      elements = capture_turbo_stream_broadcasts(posts_stream) { described_class.new(post).created }
+      append = elements.find { |el| el["action"] == "append" }
+
+      # The speaker name comes from scene.scene_participants → scene_presenter →
+      # the presenter's scene_participants; dropping any of them breaks this.
+      expect(append.to_html).to include("Sir Reginald")
+    end
+
+    it "appends to the posts stream, not a different scene's stream" do
+      other_scene = create(:scene, game: game)
+      post = create(:post, scene: scene, user: author)
+
+      other = capture_turbo_stream_broadcasts([ other_scene, :posts ]) { described_class.new(post).created }
+      expect(other).to be_empty
+    end
+
     it "carries the OOC marker so each viewer's filter can hide it" do
       post = create(:post, :ooc, scene: scene, user: author)
 
