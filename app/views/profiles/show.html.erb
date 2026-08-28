@@ -11,12 +11,15 @@
     <% end %>
   <% end %>
 
-  <%# Avatar %>
-  <%= render Shared::ImageLibraryComponent.new(
-        title: "Avatar",
-        images: @user_presenter.avatar.items,
-        can_manage: true,
-        empty_text: "No avatar yet.") %>
+  <%# Avatar. Wrapped in the stable id UserImagesController swaps in place after
+      an upload / make-current / delete (matches ImageLibrary#library_target_id). %>
+  <div id="image_library_user_image">
+    <%= render Shared::ImageLibraryComponent.new(
+          title: "Avatar",
+          images: @user_presenter.avatar.items,
+          can_manage: true,
+          empty_text: "No avatar yet.") %>
+  </div>
   <%= render Shared::ImageCropperComponent.new(
         upload_url: @user_presenter.avatar.upload_url,
         title: "Add an avatar",

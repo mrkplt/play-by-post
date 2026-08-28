@@ -21,11 +21,15 @@
     <% end %>
   </div>
 
-  <%= render Shared::ImageLibraryComponent.new(
-        title: "Portraits",
-        images: @character_show_presenter.portrait_items,
-        can_manage: @character_show_presenter.can_manage_portraits?,
-        empty_text: "No portraits yet.") %>
+  <%# Wrapped in the stable id CharacterImagesController swaps in place after an
+      upload / make-current / delete (matches ImageLibrary#library_target_id). %>
+  <div id="image_library_character_image">
+    <%= render Shared::ImageLibraryComponent.new(
+          title: "Portraits",
+          images: @character_show_presenter.portrait_items,
+          can_manage: @character_show_presenter.can_manage_portraits?,
+          empty_text: "No portraits yet.") %>
+  </div>
 
   <% if @character_show_presenter.can_manage_portraits? %>
     <%= render Shared::ImageCropperComponent.new(
