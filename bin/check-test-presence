@@ -1,0 +1,130 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Assures every Ruby class/module under app/ and lib/ has a test.
+#
+# A class or module with no spec is the quiet way behavior ships unverified and
+# mutation coverage erodes (a whole subject with zero tests contributes only
+# surviving mutants). This fails the build until either a spec exists for the
+# file or the file is declared exempt in EXEMPT below (framework base classes and
+# mixins that carry no behavior of their own — their behavior is exercised
+# through their concrete subclasses/includers).
+#
+# A file is considered tested when any of these specs exist:
+#   - the mirror path:            app/x/y.rb           -> spec/x/y_spec.rb
+#   - a controller request spec:  app/controllers/z_controller.rb ->
+#                                   spec/requests/z_spec.rb  (top-level: drop _controller)
+#                                   spec/requests/z_controller_spec.rb (nested: keep it)
+#   - the parent's spec, for a nested value class:
+#                                 app/.../foo/bar.rb   -> spec/.../foo_spec.rb
+#
+# Nested value classes (Foo::Bar defined in app/.../foo/bar.rb) are tested
+# through the parent component/service's spec, so the parent spec satisfies them.
+
+require "pathname"
+
+ROOT = File.expand_path("..", __dir__)
+
+# Framework base classes and behavior-free mixins. Each is either a Rails base
+# class (ApplicationRecord/Controller/Job/Mailer/…) exercised only through its
+# subclasses, an abstract multi-db base (KeysRecord), the request-local store
+# (Current), or a controller mixin whose behavior is covered by every controller
+# that includes it (ProfileScoped, RequestMemo — hit through their includers'
+# request specs).
+EXEMPT = %w[
+  app/channels/application_cable/channel.rb
+  app/channels/application_cable/connection.rb
+  app/components/application_component.rb
+  app/controllers/application_controller.rb
+  app/controllers/data_application_controller.rb
+  app/controllers/api/base_controller.rb
+  app/controllers/profile_scoped.rb
+  app/controllers/request_memo.rb
+  app/jobs/application_job.rb
+  app/mailboxes/application_mailbox.rb
+  app/mailers/application_mailer.rb
+  app/models/application_record.rb
+  app/models/current.rb
+  app/models/keys_record.rb
+  app/presenters/base_presenter.rb
+].freeze
+
+# Directories whose files are internal collaborators of a self-contained library
+# that is verified end-to-end through its own public-API behavior suite, not
+# per-internal-class. Testing these in isolation would test implementation
+# details. PunditSymbolic (lib/pundit_symbolic) is covered by spec/pundit_symbolic/*
+# (declarations / faithfulness / invariants / encoder-edges / registry), which
+# exercises the encoder against real policies — the intended contract.
+EXEMPT_DIRS = %w[
+  lib/pundit_symbolic/
+].freeze
+
+# Whether ANY spec references this file's constant — the catch-all for suites
+# organized by concern rather than one-spec-per-file (e.g. spec/pundit_symbolic/*
+# covers the whole PunditSymbolic namespace across several behavior-named specs).
+def constant_referenced_in_specs?(file)
+  constant = constant_for(file)
+  return false unless constant
+
+  Dir.glob(File.join(ROOT, "spec/**/*_spec.rb")).any? do |spec|
+    File.foreach(spec).any? { |line| line.include?(constant) }
+  rescue ArgumentError # binary/undecodable spec fixture — skip
+    false
+  end
+end
+
+# The fully-qualified constant a file defines, from its autoload path.
+def constant_for(file)
+  rel = file.sub(%r{\Aapp/[^/]+/}, "").sub(%r{\Alib/}, "")
+  rel.sub(/\.rb\z/, "").split("/").map do |seg|
+    seg.split("_").map(&:capitalize).join
+  end.join("::")
+end
+
+# Candidate spec paths that would count `file` (repo-relative) as tested.
+def spec_candidates(file)
+  rel = file.sub(%r{\Aapp/}, "").sub(%r{\Alib/}, "")
+  # app/x/y.rb -> spec/x/y_spec.rb ; lib/x/y.rb -> spec/lib/x/y_spec.rb
+  mirror = file.start_with?("lib/") ? "spec/lib/#{rel.sub(/\.rb\z/, '_spec.rb')}" : "spec/#{rel.sub(/\.rb\z/, '_spec.rb')}"
+  candidates = [mirror]
+
+  if file.start_with?("app/controllers/")
+    path = file.sub("app/controllers/", "").sub(/\.rb\z/, "")
+    candidates << "spec/requests/#{path}_spec.rb"
+    candidates << "spec/requests/#{path.sub(/_controller\z/, '')}_spec.rb"
+  end
+
+  parent = rel.sub(%r{/[^/]+\.rb\z}, ".rb")
+  if parent != rel
+    candidates << "spec/#{parent.sub(/\.rb\z/, '_spec.rb')}"
+    candidates << "spec/lib/#{parent.sub(/\.rb\z/, '_spec.rb')}" if file.start_with?("lib/")
+  end
+
+  candidates
+end
+
+missing = []
+
+Dir.glob("#{ROOT}/{app,lib}/**/*.rb").sort.each do |absolute|
+  file = Pathname.new(absolute).relative_path_from(Pathname.new(ROOT)).to_s
+  next if EXEMPT.include?(file)
+  next if EXEMPT_DIRS.any? { |dir| file.start_with?(dir) }
+  next if spec_candidates(file).any? { |c| File.exist?(File.join(ROOT, c)) }
+  next if constant_referenced_in_specs?(file)
+
+  missing << file
+end
+
+if missing.empty?
+  puts "Test-presence check: OK (every class/module under app/ and lib/ has a test)"
+  exit 0
+end
+
+puts "Test-presence check: FAIL"
+puts "These files have no spec:\n\n"
+missing.each { |file| puts "  #{file}" }
+puts "\nAdd a spec (the mirror path spec/<same>_spec.rb, a request spec for a"
+puts "controller, or the parent's spec for a nested value class), or — if the file"
+puts "is a framework base class / behavior-free mixin — add it to EXEMPT in"
+puts "bin/check-test-presence with a reason."
+exit 1

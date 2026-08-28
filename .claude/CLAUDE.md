@@ -178,6 +178,34 @@ CI topology are in `docs/QUALITY_PIPELINE.md`.
 - **The gates do not run `assets:precompile`; the Docker build does**, with no master key.
   Boot-time code touching Active Storage must be guarded with `unless ENV["SECRET_KEY_BASE_DUMMY"]`.
 - **Every new component/presenter goes in `.mutant.yml`** or it is silently unmeasured.
+- **The `quality_gate` CI job enforces the mutation floor separately from the `mutation`
+  job.** The `mutation` job runs mutant and *always* passes (it just records the number);
+  `quality_gate` then reads that number and fails if it is below the floor in
+  `quality_baseline.json` (`mutation_coverage`, currently **83%** — over changed subjects
+  only, `mutant run --since origin/master`). So "mutation is green but quality fails" means
+  surviving mutants dropped the aggregate below the floor — **add tests to kill them, never
+  lower the floor** (gates ratchet up). A new class/module with no direct spec is the usual
+  culprit; the every-class-has-a-test gate (`bin/check-test-presence`) catches that class up
+  front, but thin specs still leave survivors.
+- **Read the exact surviving mutants from the CI `mutant-data` artifact — do not re-run the
+  whole suite locally to find them.** The `mutation` job uploads an artifact named
+  `mutant-data` containing `mutant_result.json` (`{coverage, mutations, kills, alive}`) and
+  `mutant_output.txt` (every `evil:Subject#method:file:line` survivor, grouped by subject).
+  Pull it with:
+  ```
+  gh api repos/<owner>/<repo>/actions/runs/<run-id>/artifacts \
+    --jq '.artifacts[] | select(.name=="mutant-data").id'
+  gh api repos/<owner>/<repo>/actions/artifacts/<artifact-id>/zip > /tmp/m.zip && unzip -o /tmp/m.zip -d /tmp/m
+  ```
+  Then tally survivors per subject from `mutant_output.txt` and kill the biggest clusters
+  first. To confirm a fix locally, run mutant scoped to just those subjects
+  (`bundle exec mutant run --jobs 4 'Shared::FooComponent*' 'Bar#baz'`) rather than the full
+  `--since` sweep — it is minutes, not the full ~20.
+- **Accept genuinely-equivalent mutants with `# mutant:disable` + a one-line reason**, the
+  repo convention (see the many existing uses). Equivalent = the mutation cannot change
+  observable behavior: dropping an `includes(:x)` eager-load, `T.must(v)` → `v` where `v` is
+  present, `target: dom_id(record)` → `target: record` (Turbo resolves a record to its
+  dom_id), an unused-kwarg rename. Do NOT reach for it to dodge a mutant a test could kill.
 - **Gem maintenance is in scope for any task.** Updatable > 5 ⇒ `bundle update` and commit
   the lockfile. Pinned > 8 ⇒ stop and ask for direction.
 - **`master` is squash-merge + delete-branch.** Land follow-ups on a fresh branch off the

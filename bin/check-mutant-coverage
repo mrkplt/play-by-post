@@ -41,9 +41,24 @@ BASE_FILENAMES = %w[
 ].freeze
 
 # Sub-paths excluded entirely (e.g. mixins that are not independently testable).
+# PunditSymbolic (lib/pundit_symbolic) is a self-contained library verified
+# end-to-end through its own public-API behavior suite (spec/pundit_symbolic/*),
+# not per-internal-class mutation — mutating its encoder internals is low-value
+# noise, so the whole namespace is excluded from the registry requirement (see
+# bin/check-test-presence EXEMPT_DIRS for the matching test-presence exemption).
 EXCLUDE_PATH_PATTERNS = [
   %r{/concerns/},
+  %r{/lib/pundit_symbolic/},
+  # Pure colour DATA, no behavior — Palette::Groups::ALL is the hand-edited
+  # [heading, {token => hex}] source. Mutating hex-string data produces only
+  # noise; the generated CSS is verified through Palette/PaletteCss specs.
+  %r{/lib/palette/groups\.rb\z},
 ].freeze
+
+# lib/ is autoloaded from its own root (lib/palette_css.rb -> PaletteCss,
+# lib/api/schema_validation.rb -> Api::SchemaValidation), so its constants are
+# derived from lib/ rather than an app/<layer>/ root.
+LIB_DIR = "lib"
 
 def path_to_constant(autoload_root, absolute_path)
   Pathname.new(absolute_path)
@@ -83,8 +98,23 @@ APP_DIRS.each do |dir|
   end
 end
 
+# lib/ classes must be registered too — the app/-only scan used to let a new lib
+# class silently escape mutation. Constants derive from the lib/ root.
+lib_path = File.join(root, LIB_DIR)
+if File.directory?(lib_path)
+  Dir.glob("#{lib_path}/**/*.rb").sort.each do |file|
+    next if BASE_FILENAMES.include?(File.basename(file))
+    next if EXCLUDE_PATH_PATTERNS.any? { |pat| file.match?(pat) }
+
+    constant = path_to_constant(lib_path, file)
+    next if subjects.include?(constant)
+
+    missing << [constant, file.delete_prefix("#{root}/")]
+  end
+end
+
 if missing.empty?
-  puts "Mutant coverage check: OK (all app/ classes are registered)"
+  puts "Mutant coverage check: OK (all app/ and lib/ classes are registered)"
   exit 0
 else
   puts "Mutant coverage check: FAIL"
