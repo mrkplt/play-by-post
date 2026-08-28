@@ -25,7 +25,7 @@ RSpec.describe Shared::PostItemComponent, type: :component do
   end
   let(:presenter) { build_post_presenter(post) }
 
-  subject(:component) { described_class.new(post: presenter) }
+  subject(:component) { described_class.new(post: presenter, suppress_edit: false) }
 
   before { allow(game).to receive(:game_master?).and_return(false) }
 
@@ -63,7 +63,7 @@ RSpec.describe Shared::PostItemComponent, type: :component do
       recent = build_stubbed(:post, user: user, scene: raw_scene, content: "New", is_ooc: false,
         last_edited_at: nil, created_at: 1.hour.ago).tap { |p| allow(p).to receive(:game).and_return(game) }
       c = described_class.new(post: build_post_presenter(recent),
-        scene: ScenePresenter.new(raw_scene), read_post_ids: Set.new)
+        scene: ScenePresenter.new(raw_scene), read_post_ids: Set.new, suppress_edit: false)
       expect(c.card_classes).to include("is-hot")
     end
   end
@@ -76,7 +76,7 @@ RSpec.describe Shared::PostItemComponent, type: :component do
     it "is :post_body_ooc for an OOC post" do
       ooc_post = build_stubbed(:post, :ooc, user: user, scene: raw_scene, content: "OOC",
         created_at: Time.current).tap { |p| allow(p).to receive(:game).and_return(game) }
-      expect(described_class.new(post: build_post_presenter(ooc_post)).body_variant).to eq(:post_body_ooc)
+      expect(described_class.new(post: build_post_presenter(ooc_post), suppress_edit: false).body_variant).to eq(:post_body_ooc)
     end
   end
 
@@ -121,7 +121,7 @@ RSpec.describe Shared::PostItemComponent, type: :component do
       end
     end
     let(:presenter) { build_post_presenter(post) }
-    subject(:component) { described_class.new(post: presenter) }
+    subject(:component) { described_class.new(post: presenter, suppress_edit: false) }
 
     it "renders the OOC badge" do
       expect(rendered_component).to have_css("[data-testid='ooc-post']")
@@ -145,7 +145,7 @@ RSpec.describe Shared::PostItemComponent, type: :component do
       end
     end
     let(:presenter) { build_post_presenter(post) }
-    subject(:component) { described_class.new(post: presenter) }
+    subject(:component) { described_class.new(post: presenter, suppress_edit: false) }
 
     it "shows the edited indicator" do
       expect(rendered_component).to have_text("(edited)")
@@ -158,6 +158,11 @@ RSpec.describe Shared::PostItemComponent, type: :component do
     it "renders an Edit link pointing at the presenter's edit URL" do
       render_inline(component)
       expect(page).to have_css("a[href='/games/1/scenes/2/posts/3/edit']", text: "Edit")
+    end
+
+    it "suppresses the server-rendered Edit link for a broadcast (viewer-neutral) render" do
+      render_inline(described_class.new(post: presenter, suppress_edit: true))
+      expect(page).to have_no_link("Edit")
     end
   end
 
@@ -176,7 +181,8 @@ RSpec.describe Shared::PostItemComponent, type: :component do
         described_class.new(
           post: recent_presenter,
           scene: scene_presenter,
-          read_post_ids: Set.new
+          read_post_ids: Set.new,
+          suppress_edit: false
         )
       end
 
@@ -196,7 +202,8 @@ RSpec.describe Shared::PostItemComponent, type: :component do
         described_class.new(
           post: recent_presenter,
           scene: scene_presenter,
-          read_post_ids: Set.new([ recent_post.id ])
+          read_post_ids: Set.new([ recent_post.id ]),
+          suppress_edit: false
         )
       end
 
@@ -219,7 +226,8 @@ RSpec.describe Shared::PostItemComponent, type: :component do
         described_class.new(
           post: build_post_presenter(post_in_resolved),
           scene: ScenePresenter.new(resolved_scene),
-          read_post_ids: Set.new
+          read_post_ids: Set.new,
+          suppress_edit: false
         )
       end
 
@@ -231,7 +239,7 @@ RSpec.describe Shared::PostItemComponent, type: :component do
 
     context "when no read_post_ids provided" do
       subject(:component) do
-        described_class.new(post: recent_presenter)
+        described_class.new(post: recent_presenter, suppress_edit: false)
       end
 
       it "sets data-unread to false" do

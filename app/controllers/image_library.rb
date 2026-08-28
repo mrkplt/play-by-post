@@ -63,8 +63,7 @@ module ImageLibrary
   # submissions apply it as a normal Turbo response. flash.now, not flash.
   sig { params(notice: T.nilable(String), alert: T.nilable(String)).void }
   def render_library_in_place(notice: nil, alert: nil)
-    flash.now[:notice] = notice if notice
-    flash.now[:alert] = alert if alert
+    flash_now(notice: notice, alert: alert)
     render turbo_stream: [ helpers.turbo_stream.replace(library_target_id, rendered_library), toast_stream ]
   end
 

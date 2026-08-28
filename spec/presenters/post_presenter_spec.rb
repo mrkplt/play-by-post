@@ -12,6 +12,33 @@ RSpec.describe PostPresenter do
     end
   end
 
+  describe "#edit_affordance" do
+    subject(:presenter) { described_class.new(post, game: game) }
+
+    before { allow(post).to receive(:user_id).and_return(42) }
+
+    it "carries the author id" do
+      game = instance_double(Game, edit_window_duration: nil)
+      expect(described_class.new(post, game: game).edit_affordance.author_id).to eq(42)
+    end
+
+    context "when the game has an edit window" do
+      let(:game) { instance_double(Game, edit_window_duration: 10.minutes) }
+
+      it "sets editable_until to created_at plus the window" do
+        expect(presenter.edit_affordance.editable_until).to eq(post.created_at + 10.minutes)
+      end
+    end
+
+    context "when the game has no edit window" do
+      let(:game) { instance_double(Game, edit_window_duration: nil) }
+
+      it "leaves editable_until nil" do
+        expect(presenter.edit_affordance.editable_until).to be_nil
+      end
+    end
+  end
+
   describe "#author_display_name" do
     context "without scene participants" do
       it "falls back to user email when no display name" do

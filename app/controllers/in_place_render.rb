@@ -25,11 +25,30 @@ module InPlaceRender
 
   private
 
-  # The toast stream built from the current flash — call after setting
-  # flash.now[:notice]/[:alert].
+  # Set the response's notice/alert (whichever is present) in one call, so an
+  # in-place action does not repeat `flash.now` per key. flash.now, never flash.
+  sig { params(notice: T.nilable(String), alert: T.nilable(String)).void }
+  def flash_now(notice: nil, alert: nil)
+    { notice: notice, alert: alert }.compact.each { |key, message| flash.now[key] = message }
+  end
+
+  # The toast stream built from the current flash — call after setting the flash.
   sig { returns(String) }
   def toast_stream
     helpers.turbo_stream.replace(TOAST_TARGET, Ui::ToastComponent.new(toasts: FlashPresenter.new(flash).toasts))
+  end
+
+  # Answer a Turbo client with a stream (the block, or the default template when
+  # no block is given) and a non-Turbo client with a redirect to `fallback` — the
+  # respond_to/html-fallback shape a mutation that stays on-page repeats. Keeps
+  # the two-format block out of the action so the action stays under the
+  # statement ceiling.
+  sig { params(fallback: String, alert: T.nilable(String), block: T.proc.void).void }
+  def turbo_or_redirect(fallback:, alert: nil, &block)
+    respond_to do |format|
+      format.turbo_stream(&block)
+      format.html { redirect_to(fallback, alert: alert) }
+    end
   end
 
   # Re-render the profile's per-game control-plane section (#game_controls) — the

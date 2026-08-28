@@ -38,8 +38,7 @@ class Profiles::ApiTokensController < ApplicationController
   # profile reload. flash.now, not flash: nothing redirects here.
   sig { params(notice: T.nilable(String), alert: T.nilable(String)).void }
   def render_in_place(notice: nil, alert: nil)
-    flash.now[:notice] = notice if notice
-    flash.now[:alert] = alert if alert
+    flash_now(notice: notice, alert: alert)
     render turbo_stream: [ game_controls_stream(current_user), toast_stream ]
   end
 

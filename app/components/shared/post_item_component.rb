@@ -8,12 +8,12 @@ class Shared::PostItemComponent < ApplicationComponent
   sig do
     params(
       post: PostPresenter,
+      suppress_edit: T::Boolean,
       scene: T.nilable(ScenePresenter),
-      read_post_ids: T.nilable(T::Set[Integer]),
-      suppress_edit: T::Boolean
+      read_post_ids: T.nilable(T::Set[Integer])
     ).void
   end
-  def initialize(post:, scene: nil, read_post_ids: nil, suppress_edit: false)
+  def initialize(post:, suppress_edit:, scene: nil, read_post_ids: nil)
     @post = post
     @scene = scene
     @read_post_ids = read_post_ids
@@ -44,11 +44,11 @@ class Shared::PostItemComponent < ApplicationComponent
     @post.is_ooc?
   end
 
-  # When the author's edit window closes, for the client-side edit affordance —
-  # nil when the game imposes no window (the client then never expires the link).
-  sig { returns(T.nilable(ActiveSupport::TimeWithZone)) }
-  def editable_until
-    @post.editable_until
+  # The data the client-side edit-affordance controller needs (author id + edit
+  # window close time), for the post's data attributes.
+  sig { returns(PostPresenter::EditAffordance) }
+  def edit_affordance
+    @post.edit_affordance
   end
 
   # Manuscript-style card. In-character posts are white; OOC posts take the

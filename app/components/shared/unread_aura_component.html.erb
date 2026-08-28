@@ -3,7 +3,7 @@
     <p id="no_posts_message" class="text-muted-2 m-0 text-sm">No posts yet. Be the first!</p>
   <% else %>
     <% post_presenters.each do |post_presenter| %>
-      <%= render Shared::PostItemComponent.new(post: post_presenter, scene: scene, read_post_ids: read_post_ids) %>
+      <%= render Shared::PostItemComponent.new(post: post_presenter, scene: scene, read_post_ids: read_post_ids, suppress_edit: false) %>
     <% end %>
   <% end %>
 </div>

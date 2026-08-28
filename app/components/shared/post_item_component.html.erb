@@ -1,8 +1,8 @@
 <div id="<%= dom_id(@post) %>"
      class="<%= card_classes %>"
      data-controller="post-edit-affordance"
-     data-post-edit-affordance-author-id-value="<%= @post.author_id %>"
-     <% if editable_until %>data-post-edit-affordance-editable-until-value="<%= editable_until.iso8601 %>"<% end %>
+     data-post-edit-affordance-author-id-value="<%= edit_affordance.author_id %>"
+     <% if edit_affordance.editable_until %>data-post-edit-affordance-editable-until-value="<%= edit_affordance.editable_until.iso8601 %>"<% end %>
      data-post-edit-affordance-edit-url-value="<%= @post.routes.edit_url %>"
      data-ooc="<%= ooc? %>"
      data-unread="<%= unread? %>"

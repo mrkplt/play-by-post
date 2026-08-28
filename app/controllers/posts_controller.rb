@@ -3,6 +3,7 @@
 class PostsController < ApplicationController
   extend T::Sig
   include PostScoped
+  include InPlaceRender
 
   before_action :require_participant!
   before_action :require_active_member_for_write!, only: %i[create]
@@ -65,38 +66,29 @@ class PostsController < ApplicationController
     new_post
   end
 
-  # The submitter's own response appends their post immediately and reliably (no
-  # cable round-trip) and resets the composer; PostBroadcast pushes the same post
-  # to every other viewer. Both renders are viewer-neutral (suppress_edit) and
-  # share the post's dom_id, so when the submitter's tab also receives the
-  # broadcast, Turbo REPLACES the same-id element rather than appending a
-  # duplicate (documented append-by-existing-id behavior) — the double-append is
-  # impossible by construction. The author's own Edit affordance is revealed
-  # client-side (post-edit-affordance controller), not server-rendered, so it
-  # survives the broadcast replace and needs no per-viewer render.
+  # The new post reaches every OTHER viewer via PostBroadcast; the submitter's own
+  # response appends it immediately and reliably (no cable round-trip) and resets
+  # the composer. Both renders are viewer-neutral (suppress_edit) and share the
+  # post's dom_id, so when the submitter's tab also receives the broadcast, Turbo
+  # REPLACES the same-id element rather than appending a duplicate (documented
+  # append-by-existing-id behavior) — the double-append is impossible by
+  # construction. The author's own Edit affordance is revealed client-side
+  # (post-edit-affordance controller), so it survives the broadcast replace and
+  # needs no per-viewer render.
   sig { params(authorized_post: PostPresenterBuilder::AuthorizedPost).void }
   def render_created(authorized_post)
     PostBroadcast.new(authorized_post.post).created
     @post_presenter = T.let(
       presenter_builder.post_presenter_with_participants(authorized_post), T.nilable(PostPresenter)
     )
-
-    respond_to do |format|
-      format.turbo_stream
-      format.html { redirect_to game_scene_path(game, scene) }
-    end
+    turbo_or_redirect(fallback: game_scene_path(game, scene)) { render :create }
   end
 
   sig { params(authorized_post: PostPresenterBuilder::AuthorizedPost).void }
   def render_composer_errors(authorized_post)
-    respond_with_composer_errors(presenter_builder.composer_component(authorized_post, page_context))
-  end
-
-  sig { params(component: Shared::PostComposerComponent).void }
-  def respond_with_composer_errors(component)
-    respond_to do |format|
-      format.turbo_stream { render turbo_stream: turbo_stream.update("post_composer", component) }
-      format.html { redirect_to game_scene_path(game, scene), alert: "Could not create post." }
+    component = presenter_builder.composer_component(authorized_post, page_context)
+    turbo_or_redirect(fallback: game_scene_path(game, scene), alert: "Could not create post.") do
+      render turbo_stream: turbo_stream.update("post_composer", component)
     end
   end
 
