@@ -2,6 +2,7 @@
 
 class GameFilesController < ApplicationController
   extend T::Sig
+  include InPlaceRender
 
   before_action :require_game_access!
   after_action :verify_authorized, except: :index
@@ -15,7 +16,7 @@ class GameFilesController < ApplicationController
   def create
     authorize game.game_files.new
     uploaded_file = params.dig(:game_file, :file)
-    return redirect_to index_path, alert: "Please select a file to upload." unless uploaded_file
+    return render_files_in_place(alert: "Please select a file to upload.") unless uploaded_file
 
     save_uploaded_game_file(uploaded_file)
   end
@@ -28,10 +29,21 @@ class GameFilesController < ApplicationController
     files = game.game_files
     authorize files.new
     files.find(params[:id]).destroy
-    redirect_to index_path, notice: "File deleted."
+    render_files_in_place(notice: "File deleted.")
   end
 
   private
+
+  # Upload and delete both stay on the Files page — re-render just the files list
+  # in place (gallery and empty-state follow) plus a toast. flash.now, not flash.
+  sig { params(notice: T.nilable(String), alert: T.nilable(String)).void }
+  def render_files_in_place(notice: nil, alert: nil)
+    flash_now(notice: notice, alert: alert)
+    stream = turbo_stream.replace(
+      "game_files_list", partial: "game_files/list", locals: { game_files: build_game_file_presenters }
+    )
+    render turbo_stream: [ stream, toast_stream ]
+  end
 
   # The Files index's presenter trio, shared by #index and #create's re-render
   # on a failed upload — kept as one method so the two call sites can't drift.
@@ -47,7 +59,7 @@ class GameFilesController < ApplicationController
     game_file = build_uploaded_game_file(uploaded_file)
 
     if game_file.save
-      redirect_to index_path, notice: "File uploaded."
+      render_files_in_place(notice: "File uploaded.")
     else
       assign_index_presenters(game_file)
       render :index, status: :unprocessable_content

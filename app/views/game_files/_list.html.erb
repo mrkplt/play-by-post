@@ -1,0 +1,10 @@
+<%# The files list, in a stable id so GameFilesController re-renders it in place
+    after an upload or delete (the gallery and empty-state follow). %>
+<div id="game_files_list">
+  <% if game_files.empty? %>
+    <p class="text-muted-2 text-sm">No files uploaded yet.</p>
+  <% else %>
+    <%= render Ui::SectionLabelComponent.new do %>Newest first<% end %>
+    <%= render Shared::GalleryComponent.new(game_files: game_files) %>
+  <% end %>
+</div>
