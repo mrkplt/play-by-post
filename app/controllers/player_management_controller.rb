@@ -14,19 +14,10 @@ class PlayerManagementController < ApplicationController
       GamePresenter.new(game, policy: game_policy, current_user: current_user),
       T.nilable(GamePresenter)
     )
-    @roster = T.let(roster, T.nilable(T::Array[GameMemberPresenter])) if game_policy.manage?
+    @roster = T.let(GameMemberRoster.new(game).rows, T.nilable(T::Array[GameMemberPresenter])) if game_policy.manage?
   end
 
   private
-
-  # The Members list: each active player membership paired with that user's
-  # first active character name, for the list's subtitle.
-  sig { returns(T::Array[GameMemberPresenter]) }
-  def roster
-    characters_by_user = Character.first_active_name_by_user(game.characters.active)
-    members = game.game_members.where.not(status: "banned").where(role: "player").includes(:user)
-    members.map { |member| GameMemberPresenter.new(member, character_name: characters_by_user[member.user_id]) }
-  end
 
   # Used only internally (authorize, presenter construction, associations) —
   # never read by a template, so it is not an ivar. `params[:game_id]` is a

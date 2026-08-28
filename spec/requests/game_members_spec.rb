@@ -20,7 +20,9 @@ RSpec.describe GameMembersController, type: :request do
     it "GM can update a player status" do
       sign_in(gm)
       patch game_player_management_game_member_path(game, player_member), params: { game_member: { status: "removed" } }
-      expect(response).to redirect_to(game_player_management_path(game))
+      # In place: re-render the Members roster + toast, no full reload.
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include(Shared::MemberRosterComponent::DOM_ID)
       expect(player_member.reload.status).to eq("removed")
     end
 
@@ -32,7 +34,7 @@ RSpec.describe GameMembersController, type: :request do
     it "GM can update a player status via the flat status param the UI sends" do
       sign_in(gm)
       patch game_player_management_game_member_path(game, player_member, status: "banned")
-      expect(response).to redirect_to(game_player_management_path(game))
+      expect(response).to have_http_status(:ok)
       expect(player_member.reload.status).to eq("banned")
     end
 
@@ -40,14 +42,14 @@ RSpec.describe GameMembersController, type: :request do
       gm_member = game.game_members.find_by(user: gm)
       sign_in(gm)
       patch game_player_management_game_member_path(game, gm_member), params: { game_member: { status: "removed" } }
-      expect(response).to redirect_to(game_player_management_path(game))
+      expect(response).to have_http_status(:ok)
       expect(flash[:alert]).to match(/cannot change gm/i)
     end
 
     it "GM gets alert for invalid status" do
       sign_in(gm)
       patch game_player_management_game_member_path(game, player_member), params: { game_member: { status: "invalid" } }
-      expect(response).to redirect_to(game_player_management_path(game))
+      expect(response).to have_http_status(:ok)
       expect(flash[:alert]).to match(/invalid status/i)
     end
 

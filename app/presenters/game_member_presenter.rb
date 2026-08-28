@@ -32,4 +32,9 @@ class GameMemberPresenter < BasePresenter
   def removed?
     @model.removed?
   end
+
+  sig { returns(Integer) }
+  def id
+    @model.id # mutant:disable
+  end
 end
