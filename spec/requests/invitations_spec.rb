@@ -22,7 +22,9 @@ RSpec.describe InvitationsController, type: :request do
         post game_player_management_invitations_path(game),
           params: { invitation: { email: "newplayer@example.com" } }
       }.to change(Invitation, :count).by(1)
-      expect(response).to redirect_to(game_path(game, anchor: "roster"))
+      # In place: re-render the invite panel + toast, no full reload.
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include(Shared::InvitePanelComponent::DOM_ID)
     end
 
     it "player cannot send an invitation" do
@@ -37,7 +39,7 @@ RSpec.describe InvitationsController, type: :request do
       sign_in(gm)
       post game_player_management_invitations_path(game),
         params: { invitation: { email: "not-an-email" } }
-      expect(response).to redirect_to(game_path(game, anchor: "roster"))
+      expect(response).to have_http_status(:ok)
       expect(flash[:alert]).to be_present
     end
   end
@@ -50,7 +52,8 @@ RSpec.describe InvitationsController, type: :request do
       expect {
         delete game_player_management_invitation_path(game, invitation)
       }.to change(Invitation, :count).by(-1)
-      expect(response).to redirect_to(game_path(game, anchor: "roster"))
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include(Shared::InvitePanelComponent::DOM_ID)
     end
 
     it "player cannot cancel an invitation" do
@@ -71,7 +74,7 @@ RSpec.describe InvitationsController, type: :request do
         post resend_game_player_management_invitation_path(game, invitation)
       }.not_to change(Invitation, :count)
       expect(invitation.reload.token).to eq(original_token)
-      expect(response).to redirect_to(game_path(game, anchor: "roster"))
+      expect(response).to have_http_status(:ok)
       expect(flash[:notice]).to match(/resent/i)
     end
 

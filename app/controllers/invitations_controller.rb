@@ -2,6 +2,7 @@
 
 class InvitationsController < ApplicationController
   extend T::Sig
+  include InPlaceRender
 
   skip_before_action :authenticate_user!, only: %i[accept]
 
@@ -14,9 +15,9 @@ class InvitationsController < ApplicationController
 
     if invitation.save
       InvitationMailer.invite(invitation).deliver_later
-      redirect_to_roster notice: "Invitation sent to #{invitation.email}."
+      render_panel notice: "Invitation sent to #{invitation.email}."
     else
-      redirect_to_roster alert: invitation.errors.full_messages.join(", ")
+      render_panel alert: invitation.errors.full_messages.join(", ")
     end
   end
 
@@ -25,7 +26,7 @@ class InvitationsController < ApplicationController
     invitation = game.invitations.find(params[:id])
     authorize invitation
     invitation.destroy
-    redirect_to_roster notice: "Invitation cancelled."
+    render_panel notice: "Invitation cancelled."
   end
 
   sig { void }
@@ -33,7 +34,7 @@ class InvitationsController < ApplicationController
     invitation = game.invitations.find(params[:id])
     authorize invitation, :resend?
     InvitationMailer.invite(invitation).deliver_later
-    redirect_to_roster notice: "Invitation resent to #{invitation.email}."
+    render_panel notice: "Invitation resent to #{invitation.email}."
   end
 
   sig { void }
@@ -54,9 +55,17 @@ class InvitationsController < ApplicationController
     Game.find_by!(slug: params[:game_id])
   end
 
+  # Invite / cancel / resend all live on the game Roster tab's invite panel —
+  # re-render just that panel in place (its pending list follows) plus a toast,
+  # no full game reload. flash.now, not flash: nothing redirects here.
   sig { params(notice: T.nilable(String), alert: T.nilable(String)).void }
-  def redirect_to_roster(notice: nil, alert: nil)
-    redirect_to game_path(game, anchor: "roster"), notice: notice, alert: alert
+  def render_panel(notice: nil, alert: nil)
+    flash_now(notice: notice, alert: alert)
+    panel = Shared::InvitePanelComponent.new(
+      game: GamePresenter.new(game, policy: policy(game)),
+      pending_invitations: game.invitations.pending.order(created_at: :desc).map { |invitation| InvitationPresenter.new(invitation, game: game, urls: self) }
+    )
+    render turbo_stream: [ turbo_stream.replace(Shared::InvitePanelComponent::DOM_ID, panel), toast_stream ]
   end
 
   sig { params(invitation: T.nilable(Invitation)).returns(T::Boolean) }
