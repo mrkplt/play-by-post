@@ -61,7 +61,11 @@
             resolve_path: @scene_screen.scene.routes.resolve_path) %>
     <% end %>
 
-    <%# Posts %>
+    <%# Posts. Subscribe every viewer to the scene's live post stream so a post
+        created or edited by anyone appears/updates in place without a reload
+        (PostsChannel authorizes; PostBroadcast pushes). The channel reads
+        scene_id from the subscription params. %>
+    <%= turbo_stream_from @scene_screen.scene.model, :posts, channel: "PostsChannel", data: { scene_id: @scene_screen.scene.model.id } %>
     <%= render Shared::UnreadAuraComponent.new(
           post_presenters: @scene_screen.posts.post_presenters,
           scene: @scene_screen.scene,

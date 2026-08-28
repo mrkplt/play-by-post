@@ -57,6 +57,24 @@ class PostPresenter < BasePresenter
     @options.fetch(:policy).update? # mutant:disable
   end
 
+  # This post's author id — the post-edit-affordance controller compares it to
+  # the signed-in user's id to reveal an Edit link on the author's own posts,
+  # client-side, so a broadcast (viewer-neutral) render still gets the author's
+  # affordance without a per-viewer server render.
+  sig { returns(Integer) }
+  def author_id
+    @model.user_id # mutant:disable
+  end
+
+  # When the author's edit window closes, or nil if the game imposes no window —
+  # the client uses this to stop offering Edit once the window has passed. A
+  # closed-or-nil window is expressed as absent by the component, not here.
+  sig { returns(T.nilable(ActiveSupport::TimeWithZone)) }
+  def editable_until
+    window = @options.fetch(:game).edit_window_duration
+    window && @model.created_at + window
+  end
+
   sig { returns(String) }
   def content
     @model.content.to_s # mutant:disable

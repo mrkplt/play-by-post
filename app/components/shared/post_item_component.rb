@@ -9,13 +9,25 @@ class Shared::PostItemComponent < ApplicationComponent
     params(
       post: PostPresenter,
       scene: T.nilable(ScenePresenter),
-      read_post_ids: T.nilable(T::Set[Integer])
+      read_post_ids: T.nilable(T::Set[Integer]),
+      suppress_edit: T::Boolean
     ).void
   end
-  def initialize(post:, scene: nil, read_post_ids: nil)
+  def initialize(post:, scene: nil, read_post_ids: nil, suppress_edit: false)
     @post = post
     @scene = scene
     @read_post_ids = read_post_ids
+    @suppress_edit = suppress_edit
+  end
+
+  # Whether to render the author's "Edit" link. Off for a broadcast render,
+  # which is produced once for every viewer and so must not carry an affordance
+  # that is only the author's (editable_by_viewer? is per-viewer; a broadcast
+  # has no single viewer). The author still gets their Edit link from the
+  # submitter-only HTTP response and on any page reload.
+  sig { returns(T::Boolean) }
+  def show_edit?
+    !@suppress_edit && @post.editable_by_viewer?
   end
 
   sig { returns(T::Boolean) }
@@ -30,6 +42,13 @@ class Shared::PostItemComponent < ApplicationComponent
   sig { returns(T::Boolean) }
   def ooc?
     @post.is_ooc?
+  end
+
+  # When the author's edit window closes, for the client-side edit affordance —
+  # nil when the game imposes no window (the client then never expires the link).
+  sig { returns(T.nilable(ActiveSupport::TimeWithZone)) }
+  def editable_until
+    @post.editable_until
   end
 
   # Manuscript-style card. In-character posts are white; OOC posts take the

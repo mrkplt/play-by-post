@@ -39,10 +39,14 @@ class PostsController < ApplicationController
     new_post.save ? render_created(authorized_post) : render_composer_errors(authorized_post)
   end
 
+  # Editing happens on a dedicated full-page form (#edit), so the submitter is
+  # returned to the scene, where a normal render shows their edit. Every other
+  # viewer already on the scene gets the edit live via the broadcast replace.
   sig { void }
   def update
     authorize post
     post.update!(content: params[:post][:content], last_edited_at: Time.current) # mutant:disable
+    PostBroadcast.new(post).updated
 
     redirect_to game_scene_path(game, scene)
   end
@@ -61,8 +65,18 @@ class PostsController < ApplicationController
     new_post
   end
 
+  # The submitter's own response appends their post immediately and reliably (no
+  # cable round-trip) and resets the composer; PostBroadcast pushes the same post
+  # to every other viewer. Both renders are viewer-neutral (suppress_edit) and
+  # share the post's dom_id, so when the submitter's tab also receives the
+  # broadcast, Turbo REPLACES the same-id element rather than appending a
+  # duplicate (documented append-by-existing-id behavior) — the double-append is
+  # impossible by construction. The author's own Edit affordance is revealed
+  # client-side (post-edit-affordance controller), not server-rendered, so it
+  # survives the broadcast replace and needs no per-viewer render.
   sig { params(authorized_post: PostPresenterBuilder::AuthorizedPost).void }
   def render_created(authorized_post)
+    PostBroadcast.new(authorized_post.post).created
     @post_presenter = T.let(
       presenter_builder.post_presenter_with_participants(authorized_post), T.nilable(PostPresenter)
     )
@@ -81,7 +95,7 @@ class PostsController < ApplicationController
   sig { params(component: Shared::PostComposerComponent).void }
   def respond_with_composer_errors(component)
     respond_to do |format|
-      format.turbo_stream { render turbo_stream: turbo_stream.replace("post_composer", component) }
+      format.turbo_stream { render turbo_stream: turbo_stream.update("post_composer", component) }
       format.html { redirect_to game_scene_path(game, scene), alert: "Could not create post." }
     end
   end
