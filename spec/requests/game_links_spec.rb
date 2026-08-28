@@ -175,7 +175,9 @@ RSpec.describe GameLinksController, type: :request do
       expect {
         delete game_game_link_path(game, link)
       }.to change(GameLink, :count).by(-1)
-      expect(response).to redirect_to(game_game_links_path(game))
+      # In place: re-render the links list + toast, no full reload.
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include(Shared::GameLinksListComponent::DOM_ID)
     end
 
     it "denies a player" do
