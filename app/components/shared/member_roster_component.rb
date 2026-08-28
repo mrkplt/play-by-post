@@ -27,18 +27,18 @@ class Shared::MemberRosterComponent < ApplicationComponent
 
   sig { returns(T::Boolean) }
   def any?
-    @members.any?
+    members.any?
   end
 
   # The row's position within the card list — :last on the final row so it drops
   # its divider, :middle otherwise.
   sig { params(member: GameMemberPresenter).returns(Symbol) }
   def position(member)
-    member.equal?(@members.last) ? :last : :middle
+    member.equal?(members.last) ? :last : :middle
   end
 
   sig { params(member: GameMemberPresenter, status: String).returns(String) }
   def status_url(member, status)
-    helpers.game_player_management_game_member_path(@game, member, status: status)
+    helpers.game_player_management_game_member_path(game, member, status: status)
   end
 end

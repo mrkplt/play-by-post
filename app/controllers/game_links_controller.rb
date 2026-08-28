@@ -68,13 +68,15 @@ class GameLinksController < ApplicationController
 
   private
 
+  # Only #destroy re-renders the list, and it has already authorized managing the
+  # link (it raises otherwise), so the actor can manage the list by construction —
+  # can_manage is true without re-asking the policy.
   sig { returns(Shared::GameLinksListComponent) }
   def links_list
-    presenter = game_presenter
     Shared::GameLinksListComponent.new(
-      game: presenter,
+      game: game_presenter,
       game_links: game.game_links.order(created_at: :desc).map { |gl| game_link_presenter(gl) },
-      can_manage: presenter.can_manage?
+      can_manage: true
     )
   end
 
