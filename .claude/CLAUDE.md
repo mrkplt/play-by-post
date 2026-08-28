@@ -226,6 +226,40 @@ CI topology are in `docs/QUALITY_PIPELINE.md`.
 - Thin — delegate logic to models/services
 - Sorbet sigil required; per-action `sig` blocks not needed
 
+### Interaction model — the Turbo boundary (design note)
+
+**The boundary is: the page refreshes when a full navigation is expected;
+everything else is a Turbo/Stimulus interaction on the current page.** A
+user-facing operation gets a full page load *only* when the destination is
+genuinely a different page; an operation that acts on what the user is already
+looking at updates in place (Turbo Stream + a toast, or a Stimulus interaction),
+never a reload. This is the settled scope — do not drift either way: don't leave
+an on-page mutation as a `redirect_to` reload, and don't turn a real navigation
+into a Turbo Frame just to avoid a load.
+
+**Full navigation (a `redirect_to` / real page load) is correct for:**
+- Creating a new resource you then land on (new game/scene/page/character/link/
+  template/file; notebook promote-to-page).
+- Deleting the resource you are currently viewing (game destroy; page/notebook/
+  scene-summary delete triggered from that record's own show/edit screen).
+- A major state transition that re-renders most of the screen (scene resolve,
+  scene participant join, character archive/restore).
+- Cross-session/auth landings (invitation accept, sign-in).
+- Following a link to a distinct screen (an Edit form page, an index tab). GET
+  navigation between pages stays navigation — we do **not** convert page-to-page
+  links into in-place frame swaps.
+
+**In-place (Turbo Stream + toast, or Stimulus) is required for everything else —**
+any create/update/delete/toggle whose effect shows on the screen the user is
+already on. Same rule off the controller path: a Stimulus controller must apply a
+returned Turbo Stream (`Turbo.renderStreamMessage`) rather than
+`window.location.reload()`, and any server-side write that a viewer should see
+live (e.g. a post created by ActionMailbox reply-by-email, not just by the
+controller) must broadcast, so every creation path of a live resource behaves the
+same. Shared plumbing: `InPlaceRender` (controllers), `InPlaceSave`/`SaveOutcome`
+(long-form editors), `PostBroadcast`/`SceneSummaryBroadcast` (live delivery).
+Authorization denials always redirect regardless of the above.
+
 ### Presenters, components, policies, forms
 
 Full contract in `docs/COMPONENT_CONVENTIONS.md` — read it before writing any of them.
