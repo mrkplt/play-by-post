@@ -7,6 +7,7 @@ module Games
   # policy enforces "own record, and a member of this game".
   class KeyContributionsController < ApplicationController
     extend T::Sig
+    include InPlaceRender
 
     after_action :verify_authorized
 
@@ -16,7 +17,7 @@ module Games
       authorize authorization, :create?
 
       authorization.save
-      redirect_to redirect_target, notice: contribution_notice(authorization)
+      render_in_place(contribution_notice(authorization))
     end
 
     sig { void }
@@ -25,7 +26,7 @@ module Games
       authorize authorization, :destroy?
 
       authorization.destroy
-      redirect_to redirect_target, notice: "Key contribution removed."
+      render_in_place("Key contribution removed.")
     end
 
     private
@@ -40,9 +41,14 @@ module Games
       params.require(:feature)
     end
 
-    sig { returns(String) }
-    def redirect_target
-      profile_path
+    # The funding toggle lives on the profile among the per-game controls, so a
+    # flip re-renders that #game_controls section in place (its funding rows
+    # follow the change) plus a toast — no full profile reload. flash.now, not
+    # flash: nothing redirects here. Mirrors ByokKeyStreams#game_controls.
+    sig { params(notice: String).void }
+    def render_in_place(notice)
+      flash.now[:notice] = notice
+      render turbo_stream: [ game_controls_stream(current_user), toast_stream ]
     end
 
     sig { params(authorization: GameKeyAuthorization).returns(String) }

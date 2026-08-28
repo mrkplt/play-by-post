@@ -39,4 +39,9 @@ class Shared::SheetsToggleComponent < ApplicationComponent
   def toggle_path
     T.unsafe(helpers).toggle_sheets_hidden_game_path(@game)
   end
+
+  sig { override.returns(String) }
+  def flag_name
+    "sheets"
+  end
 end

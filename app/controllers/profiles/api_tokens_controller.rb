@@ -7,6 +7,7 @@
 # the API's token management can grow here without bloating ProfilesController.
 class Profiles::ApiTokensController < ApplicationController
   extend T::Sig
+  include InPlaceRender
 
   after_action :verify_authorized
 
@@ -16,7 +17,7 @@ class Profiles::ApiTokensController < ApplicationController
 
     game = member_game(params[:game_id])
     scope = token_scope
-    return redirect_to profile_path, alert: "Could not create a token for that game." unless game && scope
+    return render_in_place(alert: "Could not create a token for that game.") unless game && scope
 
     issue_token(game, scope)
   end
@@ -27,10 +28,20 @@ class Profiles::ApiTokensController < ApplicationController
 
     token = current_user.api_tokens.find_by(id: params[:id])
     token&.destroy
-    redirect_to profile_path, notice: "#{token_label(token&.scope)} revoked."
+    render_in_place(notice: "#{token_label(token&.scope)} revoked.")
   end
 
   private
+
+  # Tokens live in the profile's per-game controls, so minting/revoking one
+  # re-renders that #game_controls section in place plus a toast — no full
+  # profile reload. flash.now, not flash: nothing redirects here.
+  sig { params(notice: T.nilable(String), alert: T.nilable(String)).void }
+  def render_in_place(notice: nil, alert: nil)
+    flash.now[:notice] = notice if notice
+    flash.now[:alert] = alert if alert
+    render turbo_stream: [ game_controls_stream(current_user), toast_stream ]
+  end
 
   # The human name per token scope, so flash copy reads "API token …" for
   # scope:"api" and "Feed token …" otherwise (rss, or an absent scope).
@@ -49,7 +60,7 @@ class Profiles::ApiTokensController < ApplicationController
   sig { params(game: Game, scope: String).void }
   def issue_token(game, scope)
     ApiToken.issue_for!(user: current_user, game: game, scope: scope)
-    redirect_to profile_path, notice: "#{token_label(scope)} created."
+    render_in_place(notice: "#{token_label(scope)} created.")
   end
 
   # The requested game, but only if the current user is a non-banned member of

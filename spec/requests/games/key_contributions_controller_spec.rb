@@ -17,7 +17,11 @@ RSpec.describe Games::KeyContributionsController, type: :request do
         post game_key_contributions_path(game), params: { feature: "scene_summary" }
       }.to change { GameKeyAuthorization.where(game: game, user: member, feature: "scene_summary").count }.by(1)
 
-      expect(response).to redirect_to(profile_path)
+      # In place: re-render the #game_controls section and drop a toast, no reload.
+      expect(response).to have_http_status(:ok)
+      expect(response.media_type).to eq("text/vnd.turbo-stream.html")
+      expect(response.body).to include("game_controls")
+      expect(response.body).to include("toast_layer")
     end
 
     it "denies a non-member" do
@@ -37,8 +41,8 @@ RSpec.describe Games::KeyContributionsController, type: :request do
         post game_key_contributions_path(game), params: { feature: "scene_summary" }
       }.not_to change(GameKeyAuthorization, :count)
 
-      expect(response).to redirect_to(profile_path)
-      follow_redirect!
+      # The validation error rides the in-place toast, not a redirect+flash.
+      expect(response).to have_http_status(:ok)
       expect(response.body).to include("must have a BYOK OpenRouter key")
     end
   end
@@ -52,7 +56,8 @@ RSpec.describe Games::KeyContributionsController, type: :request do
         delete game_key_contribution_path(game, "scene_summary")
       }.to change { GameKeyAuthorization.where(game: game, user: member).count }.by(-1)
 
-      expect(response).to redirect_to(profile_path)
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("game_controls")
     end
   end
 end

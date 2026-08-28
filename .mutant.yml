@@ -349,6 +349,7 @@ matcher:
     - TurnstileVerification
     - CharacterScoped
     - ImageLibrary
+    - InPlaceRender
     - PostScoped
     - RequestMemo
     - ProfileScoped

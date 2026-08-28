@@ -15,6 +15,7 @@ RSpec.describe Shared::GameFlagToggle do
     def on? = @on
     def on_label = "Turn Off"
     def off_label = "Turn On"
+    def flag_name = "test"
   end
 
   it "shows the on_label when the flag is on (the button turns it off)" do
@@ -23,5 +24,9 @@ RSpec.describe Shared::GameFlagToggle do
 
   it "shows the off_label when the flag is off (the button turns it on)" do
     expect(TestToggle.new(on: false).toggle_label).to eq("Turn On")
+  end
+
+  it "names its wrapper id from the flag name" do
+    expect(TestToggle.new(on: true).wrapper_id).to eq("test_toggle")
   end
 end

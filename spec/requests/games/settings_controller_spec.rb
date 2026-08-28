@@ -16,13 +16,16 @@ RSpec.describe Games::SettingsController, type: :request do
   end
 
   describe "PATCH /games/:id/toggle_sheets_hidden" do
-    it "flips the flag for the GM and returns to the game" do
+    it "flips the flag for the GM and swaps the toggle in place" do
       sign_in gm
 
       patch toggle_sheets_hidden_game_path(game)
 
       expect(game.reload.sheets_hidden?).to be(true)
-      expect(response).to redirect_to(game_path(game))
+      expect(response).to have_http_status(:ok)
+      expect(response.media_type).to eq("text/vnd.turbo-stream.html")
+      expect(response.body).to include("sheets_toggle")
+      expect(response.body).to include("toast_layer")
     end
 
     it "denies a player" do
@@ -35,13 +38,15 @@ RSpec.describe Games::SettingsController, type: :request do
   end
 
   describe "PATCH /games/:id/toggle_ai_summaries_enabled" do
-    it "flips the flag and returns to player management" do
+    it "flips the flag and swaps the toggle in place" do
       sign_in gm
 
       patch toggle_ai_summaries_enabled_game_path(game)
 
       expect(game.reload.ai_summaries_enabled?).to be(true)
-      expect(response).to redirect_to(game_player_management_path(game))
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("ai_summaries_toggle")
+      expect(response.body).to include("toast_layer")
     end
   end
 end

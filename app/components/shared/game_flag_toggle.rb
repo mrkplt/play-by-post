@@ -36,4 +36,17 @@ module Shared::GameFlagToggle
   def toggle_label
     on? ? on_label : off_label
   end
+
+  # A stable DOM id for the toggle's wrapper, so Games::SettingsController can
+  # replace just this control in place after a flip. Distinct per flag
+  # (`sheets_toggle` / `ai_summaries_toggle`), supplied by the component.
+  sig { returns(String) }
+  def wrapper_id
+    "#{flag_name}_toggle"
+  end
+
+  # The flag's short name, naming its wrapper id and matching the controller's
+  # setting symbol (`:sheets_hidden` → `sheets`).
+  sig { abstract.returns(String) }
+  def flag_name; end
 end
