@@ -12,10 +12,5 @@
     <%= render Shared::FileUploadFormComponent.new(game: @game_presenter, game_file: @game_file_presenter) %>
   <% end %>
 
-  <% if @game_files.empty? %>
-    <p class="text-muted-2 text-sm">No files uploaded yet.</p>
-  <% else %>
-    <%= render Ui::SectionLabelComponent.new do %>Newest first<% end %>
-    <%= render Shared::GalleryComponent.new(game_files: @game_files) %>
-  <% end %>
+  <%= render Shared::GameFilesListComponent.new(game_files: @game_files) %>
 <% end %>

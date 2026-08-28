@@ -29,7 +29,9 @@ RSpec.describe ImageLibrary, type: :request do
       image = character.character_images.last
       expect(image.file).to be_attached
       expect(image.current?).to be(true)
-      expect(response).to redirect_to(game_character_path(game, character))
+      # In place: swap the library section, no character reload.
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("image_library_character_image")
       expect(flash[:notice]).to eq("Image added.")
     end
 
@@ -60,7 +62,7 @@ RSpec.describe ImageLibrary, type: :request do
       )
     end
 
-    it "redirects with an alert when no file is provided" do
+    it "responds in place with an alert when no file is provided" do
       sign_in(player)
 
       post game_character_images_path(game, character), params: { image: {} }
@@ -68,7 +70,7 @@ RSpec.describe ImageLibrary, type: :request do
       expect(flash[:alert]).to eq("Please select an image to upload.")
     end
 
-    it "redirects with an alert when the image param is not a file" do
+    it "responds in place with an alert when the image param is not a file" do
       sign_in(player)
 
       post game_character_images_path(game, character), params: { image: { file: "not-a-file" } }
@@ -120,7 +122,7 @@ RSpec.describe ImageLibrary, type: :request do
   end
 
   describe "#update (set current)" do
-    it "makes the chosen image current and returns to the library" do
+    it "makes the chosen image current and swaps the library in place" do
       first = create(:character_image, :current, character: character)
       second = create(:character_image, character: character)
       sign_in(player)
@@ -129,13 +131,14 @@ RSpec.describe ImageLibrary, type: :request do
 
       expect(second.reload.current?).to be(true)
       expect(first.reload.current?).to be(false)
-      expect(response).to redirect_to(game_character_path(game, character))
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("image_library_character_image")
       expect(flash[:notice]).to eq("Image updated.")
     end
   end
 
   describe "#destroy" do
-    it "deletes the image and returns to the library" do
+    it "deletes the image and swaps the library in place" do
       image = create(:character_image, character: character)
       sign_in(player)
 
@@ -143,7 +146,8 @@ RSpec.describe ImageLibrary, type: :request do
         delete game_character_image_path(game, character, image)
       }.to change { character.character_images.count }.by(-1)
 
-      expect(response).to redirect_to(game_character_path(game, character))
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("image_library_character_image")
       expect(flash[:notice]).to eq("Image deleted.")
     end
   end

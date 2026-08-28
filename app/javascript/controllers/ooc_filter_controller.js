@@ -9,6 +9,16 @@ export default class extends Controller {
     this._applyFilter()
     this._updateIndicator()
     this._updateSwitch()
+    // Posts stream in live (PostBroadcast) after connect, so _applyFilter's
+    // one-shot pass on connect would miss them. Re-apply whenever nodes are
+    // added to the subtree so a freshly-appended OOC post is hidden for a viewer
+    // who has OOC hidden.
+    this._observer = new MutationObserver(() => this._applyFilter())
+    this._observer.observe(this.element, { childList: true, subtree: true })
+  }
+
+  disconnect() {
+    if (this._observer) this._observer.disconnect()
   }
 
   toggle() {

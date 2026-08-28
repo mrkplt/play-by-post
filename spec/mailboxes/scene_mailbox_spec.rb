@@ -53,7 +53,10 @@ RSpec.describe SceneMailbox, type: :mailbox do
       allow(mailbox).to receive(:scene).and_return(target_scene)
       allow(mailbox).to receive(:sender_user).and_return(participant)
       allow(target_scene).to receive(:posts).and_return(posts)
-      allow(posts).to receive(:create!)
+      allow(posts).to receive(:create!).and_return(build_stubbed(:post))
+      # Broadcasting is covered end-to-end in the routing section; here #process's
+      # own job (extract → write) is under test, so stub the push out.
+      allow(PostBroadcast).to receive(:new).and_return(instance_double(PostBroadcast, created: nil))
       mailbox.process
       mailbox
     end
@@ -99,6 +102,21 @@ RSpec.describe SceneMailbox, type: :mailbox do
           body: "Hello from email"
         )
       }.to change { scene.posts.count }.by(1)
+    end
+
+    it "broadcasts the reply-by-email post to the scene's live post stream" do
+      create(:scene_participant, scene: scene, user: user)
+
+      streams = capture_turbo_stream_broadcasts([ scene, :posts ]) do
+        receive_inbound_email_from_mail(
+          from: user.email,
+          to: "scene-#{scene.id}@inbound.example.com",
+          subject: "Re: Scene",
+          body: "A rider approaches."
+        )
+      end
+
+      expect(streams.map(&:to_html).join).to include("A rider approaches.")
     end
   end
 end

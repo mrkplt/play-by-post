@@ -25,7 +25,9 @@ RSpec.describe CharacterImagesController, type: :request do
         post game_character_images_path(game, character), params: { image: { file: upload } }
       }.to change { character.character_images.count }.by(1)
 
-      expect(response).to redirect_to(game_character_path(game, character))
+      # In place: swap the portrait library section + toast, no character reload.
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("image_library_character_image")
       expect(character.character_images.last.file).to be_attached
     end
 
@@ -61,12 +63,12 @@ RSpec.describe CharacterImagesController, type: :request do
       }.not_to change { character.character_images.count }
     end
 
-    it "redirects with an alert when no file is provided" do
+    it "responds in place with an alert when no file is provided" do
       sign_in(player)
 
       post game_character_images_path(game, character), params: { image: {} }
 
-      expect(response).to redirect_to(game_character_path(game, character))
+      expect(response).to have_http_status(:ok)
       expect(flash[:alert]).to eq("Please select an image to upload.")
     end
 
@@ -130,7 +132,8 @@ RSpec.describe CharacterImagesController, type: :request do
 
       expect(second.reload.current?).to be(true)
       expect(first.reload.current?).to be(false)
-      expect(response).to redirect_to(game_character_path(game, character))
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("image_library_character_image")
     end
   end
 
@@ -143,7 +146,8 @@ RSpec.describe CharacterImagesController, type: :request do
         delete game_character_image_path(game, character, image)
       }.to change { character.character_images.count }.by(-1)
 
-      expect(response).to redirect_to(game_character_path(game, character))
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("image_library_character_image")
     end
 
     it "denies a player who does not own the character" do

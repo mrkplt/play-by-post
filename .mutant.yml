@@ -32,6 +32,7 @@ matcher:
     - SceneSummary
     - SceneSummaryVisibility
     - SceneSummaryBroadcast
+    - PostBroadcast
     - GameExportRequest
     - GameMember
     - GameFile
@@ -158,9 +159,13 @@ matcher:
     - Shared::GameTabsComponent
     - Shared::GameTabsComponent::PanelComponent
     - Shared::RosterFilterComponent
+    - Shared::MemberRosterComponent
+    - Shared::MuteToggleComponent
+    - Shared::GameFilesListComponent
     - Shared::ResolveToggleComponent
     - Shared::UnreadAuraComponent
     - Shared::PostItemComponent
+    - Shared::PostItemComponent::Presentation
     - Shared::CharacterFormComponent
     - Shared::MarkdownToolbarComponent
     - Shared::CharacterVersionHistoryComponent
@@ -294,6 +299,7 @@ matcher:
     - NotebookEntryPromotion
     - NotebookLaneMove
     - InPlaceSave
+    - GameMemberRoster
     - PostDraft
     - SaveOutcome
     - PostPresenterBuilder
@@ -348,6 +354,7 @@ matcher:
     - TurnstileVerification
     - CharacterScoped
     - ImageLibrary
+    - InPlaceRender
     - PostScoped
     - RequestMemo
     - ProfileScoped
@@ -369,6 +376,7 @@ matcher:
     - KeypairGenerationJob
     # Channels
     - SceneSummaryChannel
+    - PostsChannel
     - ApplicationCable::Connection
     # Mailers
     - NotificationMailer

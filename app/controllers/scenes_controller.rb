@@ -3,6 +3,7 @@
 class ScenesController < ApplicationController
   extend T::Sig
   include SceneScoped
+  include InPlaceRender
 
   before_action :require_game_access!
   before_action :check_scene_visibility!, only: %i[show resolve toggle_notification_preference]
@@ -46,12 +47,13 @@ class ScenesController < ApplicationController
     screen.posts.mark_visited!
   end
 
+  # A per-viewer mute toggle whose only visible change is its own label — swap
+  # just that button in place plus a toast, no scene reload. flash.now, not flash.
   sig { void }
   def toggle_notification_preference
     authorize scene, :show?
     NotificationPreference.toggle!(scene, current_user)
-    redirect_to game_scene_path(game, scene),
-      notice: NotificationPreference.muted?(scene, current_user) ? "Notifications muted for this scene." : "Notifications enabled for this scene."
+    render_mute_toggle(NotificationPreference.muted?(scene, current_user))
   end
 
   sig { void }
@@ -67,6 +69,17 @@ class ScenesController < ApplicationController
   end
 
   private
+
+  # Swap the mute button (Shared::MuteToggleComponent owns the stable id) for its
+  # new state, plus a toast.
+  sig { params(muted: T::Boolean).void }
+  def render_mute_toggle(muted)
+    flash_now(notice: muted ? "Notifications muted for this scene." : "Notifications enabled for this scene.")
+    component = Shared::MuteToggleComponent.new(
+      toggle_url: toggle_notification_preference_game_scene_path(game, scene), muted: muted
+    )
+    render turbo_stream: [ turbo_stream.replace(Shared::MuteToggleComponent::DOM_ID, component), toast_stream ]
+  end
 
   sig { returns(Scene) }
   def build_new_scene

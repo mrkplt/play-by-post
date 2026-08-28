@@ -1,0 +1,5 @@
+<span id="<%= Shared::MuteToggleComponent::DOM_ID %>">
+  <%= render Ui::ButtonComponent.new(
+        style: Ui::ButtonComponent::Style.new(variant: :text),
+        link: Ui::ButtonComponent::Link.new(url: toggle_url, method: :post)) do %><%= label %><% end %>
+</span>

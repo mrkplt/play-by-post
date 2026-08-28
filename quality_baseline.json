@@ -2,7 +2,7 @@
   "line_coverage": 99.82,
   "branch_coverage": 97.19,
   "sorbet_typed_pct": 39.25,
-  "mutation_coverage": 80.0,
+  "mutation_coverage": 83.0,
   "view_css_statements": 176,
   "duplicated_component_class_strings": 18,
   "presenter_method_violations": 0,

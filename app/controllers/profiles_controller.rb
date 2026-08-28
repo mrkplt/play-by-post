@@ -3,6 +3,7 @@
 class ProfilesController < ApplicationController
   extend T::Sig
   include ProfileScoped
+  include InPlaceRender
 
   after_action :verify_authorized
 
@@ -56,12 +57,15 @@ class ProfilesController < ApplicationController
     render_ai_display_preference(current_profile)
   end
 
+  # Fire-and-forget: the export is emailed, so there is nothing on the page to
+  # re-render — a toast in place is the whole response, no full profile reload.
   sig { void }
   def export_all
     authorize profile, :manage?
     ExportDelivery.request!(user: current_user, game: nil)
 
-    redirect_to profile_path, notice: "Export requested — you'll receive an email shortly."
+    flash.now[:notice] = "Export requested — you'll receive an email shortly."
+    render turbo_stream: toast_stream
   end
 
   private
@@ -82,7 +86,7 @@ class ProfilesController < ApplicationController
           update_url: update_ai_display_preference_profile_path
         )
       ),
-      turbo_stream.replace("toast_layer", Ui::ToastComponent.new(toasts: FlashPresenter.new(flash).toasts))
+      toast_stream
     ]
   end
 

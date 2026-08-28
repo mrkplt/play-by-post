@@ -16,16 +16,25 @@ module ImageLibrary
   extend T::Sig
   extend T::Helpers
   include Kernel
+  include InPlaceRender
 
   abstract!
 
   requires_ancestor { ApplicationController }
 
+  # The stable DOM id wrapping the library section in both owners' views, so a
+  # mutation can swap just the library in place. Owner-scoped by suffix so the
+  # avatar and portrait libraries never collide if they ever share a page.
+  sig { returns(String) }
+  def library_target_id
+    "image_library_#{image_kind}"
+  end
+
   sig { void }
   def create
     authorize image_collection.new
     uploaded = uploaded_image_param
-    return redirect_to library_redirect_path, alert: "Please select an image to upload." unless uploaded
+    return render_library_in_place(alert: "Please select an image to upload.") unless uploaded
 
     save_uploaded_image(uploaded)
   end
@@ -36,17 +45,32 @@ module ImageLibrary
   def update
     authorize image_collection.new
     image_collection.find(params[:id]).make_current!
-    redirect_to library_redirect_path, notice: "Image updated."
+    render_library_in_place(notice: "Image updated.")
   end
 
   sig { void }
   def destroy
     authorize image_collection.new
     image_collection.find(params[:id]).destroy
-    redirect_to library_redirect_path, notice: "Image deleted."
+    render_library_in_place(notice: "Image deleted.")
   end
 
   private
+
+  # Swap the library section in place (its images/current all follow the change)
+  # plus a toast — every image action stays on the owner's screen with no reload.
+  # The cropper's fetch applies this Turbo Stream; the Use/Delete button_to
+  # submissions apply it as a normal Turbo response. flash.now, not flash.
+  sig { params(notice: T.nilable(String), alert: T.nilable(String)).void }
+  def render_library_in_place(notice: nil, alert: nil)
+    flash_now(notice: notice, alert: alert)
+    render turbo_stream: [ helpers.turbo_stream.replace(library_target_id, rendered_library), toast_stream ]
+  end
+
+  # The owner-specific library component for the current state — exactly what the
+  # owner's view renders, so the in-place swap matches a cold load.
+  sig { abstract.returns(Shared::ImageLibraryComponent) }
+  def rendered_library; end
 
   # The owner's has_many image relation (e.g. character.character_images).
   sig { abstract.returns(T.untyped) }
@@ -60,17 +84,13 @@ module ImageLibrary
   sig { abstract.returns(T.nilable(Game)) }
   def image_game; end
 
-  # Where every action returns to — the library screen for this owner.
-  sig { abstract.returns(String) }
-  def library_redirect_path; end
-
   sig { params(uploaded: T.untyped).void }
   def save_uploaded_image(uploaded)
     rejection = upload_rejection(uploaded)
-    return redirect_to(library_redirect_path, alert: rejection) if rejection
+    return render_library_in_place(alert: rejection) if rejection
 
     build_uploaded_image(uploaded).make_current!
-    redirect_to library_redirect_path, notice: "Image added."
+    render_library_in_place(notice: "Image added.")
   end
 
   # Validate size and content type BEFORE the R2 upload, not after. The model's

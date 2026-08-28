@@ -39,6 +39,11 @@ class Shared::AiSummariesToggleComponent < ApplicationComponent
     "Enable AI Summaries"
   end
 
+  sig { override.returns(String) }
+  def flag_name
+    "ai_summaries"
+  end
+
   sig { returns(String) }
   # mutant:disable
   def toggle_path

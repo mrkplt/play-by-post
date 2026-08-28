@@ -45,7 +45,7 @@
     <%= render Shared::ChildSceneListComponent.new(game: @scene_screen.game, child_scenes: @scene_screen.show.visible_child_scenes) %>
 
     <%= render Shared::ControlRowComponent.new(label: "Participants: #{@scene_screen.scene.participant_names}") do %>
-      <%= render Ui::ButtonComponent.new(style: Ui::ButtonComponent::Style.new(variant: :text), link: Ui::ButtonComponent::Link.new(url: @scene_screen.navigation.toggle_notification_preference_path, method: :post)) do %><%= @scene_screen.show.mute_toggle_label %><% end %>
+      <%= render Shared::MuteToggleComponent.new(toggle_url: @scene_screen.navigation.toggle_notification_preference_path, muted: @scene_screen.show.muted?) %>
     <% end %>
 
     <% if @scene_screen.scene.resolved? && (resolution = @scene_screen.scene.resolution) %>
@@ -61,7 +61,11 @@
             resolve_path: @scene_screen.scene.routes.resolve_path) %>
     <% end %>
 
-    <%# Posts %>
+    <%# Posts. Subscribe every viewer to the scene's live post stream so a post
+        created or edited by anyone appears/updates in place without a reload
+        (PostsChannel authorizes; PostBroadcast pushes). The channel reads
+        scene_id from the subscription params. %>
+    <%= turbo_stream_from @scene_screen.scene.model, :posts, channel: "PostsChannel", data: { scene_id: @scene_screen.scene.model.id } %>
     <%= render Shared::UnreadAuraComponent.new(
           post_presenters: @scene_screen.posts.post_presenters,
           scene: @scene_screen.scene,

@@ -17,7 +17,9 @@ RSpec.describe UserImagesController, type: :request do
         post profile_images_path, params: { image: { file: upload } }
       }.to change { user.user_images.count }.by(1)
 
-      expect(response).to redirect_to(profile_path)
+      # In place: swap the avatar library section + toast, no profile reload.
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("image_library_user_image")
       expect(user.user_images.reload.last.file).to be_attached
     end
 
@@ -45,12 +47,12 @@ RSpec.describe UserImagesController, type: :request do
       )
     end
 
-    it "redirects with an alert when no file is provided" do
+    it "responds in place with an alert when no file is provided" do
       sign_in(user)
 
       post profile_images_path, params: { image: {} }
 
-      expect(response).to redirect_to(profile_path)
+      expect(response).to have_http_status(:ok)
       expect(flash[:alert]).to eq("Please select an image to upload.")
     end
 
@@ -96,7 +98,8 @@ RSpec.describe UserImagesController, type: :request do
         delete profile_image_path(image)
       }.to change { user.user_images.count }.by(-1)
 
-      expect(response).to redirect_to(profile_path)
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("image_library_user_image")
     end
   end
 end

@@ -341,7 +341,9 @@ RSpec.describe "Games", type: :feature do
       visit edit_game_path(game)
       click_on "Hide Character Sheets"
 
-      expect(page).to have_current_path(game_path(game))
+      # In place: stays on the edit page, the toggle flips to the opposite label.
+      expect(page).to have_current_path(edit_game_path(game))
+      expect(page).to have_button("Show Character Sheets")
       expect(game.reload.sheets_hidden?).to be true
     end
 

@@ -1,5 +1,9 @@
 <div id="<%= dom_id(@post) %>"
      class="<%= card_classes %>"
+     data-controller="post-edit-affordance"
+     data-post-edit-affordance-author-id-value="<%= edit_affordance.author_id %>"
+     <% if edit_affordance.editable_until %>data-post-edit-affordance-editable-until-value="<%= edit_affordance.editable_until.iso8601 %>"<% end %>
+     data-post-edit-affordance-edit-url-value="<%= @post.routes.edit_url %>"
      data-ooc="<%= ooc? %>"
      data-unread="<%= unread? %>"
      <% if unread? %>data-mark-read-url="<%= @post.routes.mark_read_url %>"<% end %>
@@ -30,8 +34,14 @@
     <% if @post.last_edited_at.present? %>
       <span class="italic">(edited)</span>
     <% end %>
-    <% if @post.editable_by_viewer? %>
-      <%= link_to "Edit", @post.routes.edit_url, class: "text-accent font-semibold" %>
-    <% end %>
+    <%# Edit affordance slot. Server-rendered on a full page load when the viewer
+        may edit (works with JS off); for a live-streamed post (viewer-neutral)
+        the post-edit-affordance controller fills this slot client-side on the
+        author's own posts within the edit window. %>
+    <span data-post-edit-affordance-target="slot">
+      <% if show_edit? %>
+        <%= link_to "Edit", @post.routes.edit_url, class: "text-accent font-semibold" %>
+      <% end %>
+    </span>
   </div>
 </div>

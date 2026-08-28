@@ -95,7 +95,9 @@ RSpec.describe ContentTemplatesController, type: :request do
       expect {
         delete game_content_template_path(game, template)
       }.to change(ContentTemplate, :count).by(-1)
-      expect(response).to redirect_to(game_content_templates_path(game))
+      # In place: re-render the templates list + toast, no full reload.
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include(Shared::ContentTemplatesListComponent::DOM_ID)
     end
 
     it "denies a player" do

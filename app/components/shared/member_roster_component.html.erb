@@ -1,0 +1,22 @@
+<%# Wrapped in the stable DOM_ID so GameMembersController#update swaps the whole
+    roster in place after a status change (a row's controls, and the empty
+    state, follow the change). %>
+<div id="<%= Shared::MemberRosterComponent::DOM_ID %>">
+  <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do %>Members<% end %>
+  <% if any? %>
+    <div class="bg-card border border-card-border rounded-card px-3.5">
+      <% members.each do |member| %>
+        <%= render Ui::SettingsRowComponent.new(label: member.display_name, sub: member.character_name, position: position(member)) do %>
+          <% if member.active? %>
+            <%= render Ui::ButtonComponent.new(style: Ui::ButtonComponent::Style.new(variant: :text_muted), link: Ui::ButtonComponent::Link.new(url: status_url(member, "removed"), method: :patch, confirm: "Remove this player? They keep read-only access.")) do %>Remove<% end %>
+            <%= render Ui::ButtonComponent.new(style: Ui::ButtonComponent::Style.new(variant: :text_danger), link: Ui::ButtonComponent::Link.new(url: status_url(member, "banned"), method: :patch, confirm: "Ban this player? This permanently revokes all access and cannot be undone easily.")) do %>Ban<% end %>
+          <% elsif member.removed? %>
+            <%= render Ui::ButtonComponent.new(style: Ui::ButtonComponent::Style.new(variant: :text), link: Ui::ButtonComponent::Link.new(url: status_url(member, "active"), method: :patch)) do %>Reinstate<% end %>
+          <% end %>
+        <% end %>
+      <% end %>
+    </div>
+  <% else %>
+    <p class="text-muted-2 text-sm">No players yet.</p>
+  <% end %>
+</div>

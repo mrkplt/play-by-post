@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
+    <%# The signed-in user's id, for client controllers that must recognize the
+        viewer's own content (e.g. revealing the Edit link on a live-streamed
+        post the viewer authored). Absent when signed out. %>
+    <% if user_signed_in? %><meta name="current-user-id" content="<%= current_user.id %>"><% end %>
     <%= stylesheet_link_tag "tailwind", "data-turbo-track": "reload" %>
     <%# Browser error tracking (GlitchTip), loaded before app JS so early errors
         are caught. Rendered only when a DSN is configured; dev/CI/test have none

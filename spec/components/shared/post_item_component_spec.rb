@@ -159,6 +159,11 @@ RSpec.describe Shared::PostItemComponent, type: :component do
       render_inline(component)
       expect(page).to have_css("a[href='/games/1/scenes/2/posts/3/edit']", text: "Edit")
     end
+
+    it "suppresses the server-rendered Edit link for a broadcast (viewer-neutral) render" do
+      render_inline(described_class.new(post: presenter, presentation: described_class.broadcast(force_unread: false)))
+      expect(page).to have_no_link("Edit")
+    end
   end
 
   context "unread aura" do
@@ -236,6 +241,25 @@ RSpec.describe Shared::PostItemComponent, type: :component do
 
       it "sets data-unread to false" do
         render_inline(component)
+        expect(page).to have_css("[data-unread='false']")
+      end
+    end
+
+    context "when force_unread (a live broadcast render)" do
+      it "sets data-unread to true even with no read_post_ids" do
+        render_inline(described_class.new(
+          post: recent_presenter, scene: scene_presenter, presentation: described_class.broadcast(force_unread: true)
+        ))
+        expect(page).to have_css("[data-unread='true']")
+      end
+
+      it "still respects a resolved scene (no glow on a resolved scene)" do
+        resolved = build_stubbed(:scene, resolved_at: 1.hour.ago)
+        post = build_stubbed(:post, user: user, scene: resolved, content: "x", is_ooc: false,
+          last_edited_at: nil, created_at: 1.hour.ago).tap { |p| allow(p).to receive(:game).and_return(game) }
+        render_inline(described_class.new(
+          post: build_post_presenter(post), scene: ScenePresenter.new(resolved), presentation: described_class.broadcast(force_unread: true)
+        ))
         expect(page).to have_css("[data-unread='false']")
       end
     end

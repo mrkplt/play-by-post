@@ -1,0 +1,11 @@
+<%# Replacing the form re-renders it around the saved record, so validation
+    errors appear in place and a successful save leaves the writer exactly where
+    they were — the pages/notebook/character idiom. The toast layer is replaced
+    separately: it lives outside the form, in the layout. %>
+<%= turbo_stream.replace "scene_summary_edit_form" do %>
+  <%= render Shared::SceneSummaryFormComponent.new(summary: @summary_presenter) %>
+<% end %>
+
+<%= turbo_stream.replace "toast_layer" do %>
+  <%= render Ui::ToastComponent.new(toasts: FlashPresenter.new(flash).toasts) %>
+<% end %>

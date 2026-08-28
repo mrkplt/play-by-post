@@ -11,6 +11,10 @@ class Shared::ContentTemplatesListComponent < ApplicationComponent
   INTRO = "New page, note, and character records start from these templates."
   EMPTY = "No templates yet."
 
+  # Stable wrapper id so ContentTemplatesController re-renders the list in place
+  # after a delete.
+  DOM_ID = "content_templates_list"
+
   sig do
     params(
       game: GamePresenter,

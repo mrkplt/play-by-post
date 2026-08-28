@@ -29,9 +29,18 @@ class CharacterImagesController < ApplicationController
     game
   end
 
-  sig { override.returns(String) }
-  def library_redirect_path
-    game_character_path(game, character)
+  # The portrait library exactly as characters/show renders it, for the in-place
+  # swap. Every action reaching here has already `authorize`d the manage
+  # capability (it raises otherwise), so the acting user can manage this library
+  # by construction — can_manage is true without re-asking the policy.
+  sig { override.returns(Shared::ImageLibraryComponent) }
+  def rendered_library
+    library = CharacterPortraitLibraryPresenter.new(
+      character: character, game: game, can_manage: true, helpers: helpers
+    )
+    Shared::ImageLibraryComponent.new(
+      title: "Portraits", images: library.items, can_manage: true, empty_text: "No portraits yet."
+    )
   end
 
   # Looked up on demand and memoized through RequestMemo rather than an ivar:

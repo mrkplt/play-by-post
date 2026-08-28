@@ -12,7 +12,9 @@ RSpec.describe Profiles::ApiTokensController, type: :request do
       expect {
         post profile_api_tokens_path, params: { game_id: game.id, scope: "rss" }
       }.to change(ApiToken, :count).by(1)
-      expect(response).to redirect_to(profile_path)
+      # In place: re-render the #game_controls section (where tokens live) + toast.
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("game_controls")
       token = ApiToken.last
       expect(token.user).to eq(user)
       expect(token.game).to eq(game)
@@ -98,7 +100,8 @@ RSpec.describe Profiles::ApiTokensController, type: :request do
       expect {
         delete profile_api_token_path(token)
       }.to change(ApiToken, :count).by(-1)
-      expect(response).to redirect_to(profile_path)
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("game_controls")
     end
 
     it "flashes API-token copy when revoking an api token", :db do

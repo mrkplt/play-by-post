@@ -27,8 +27,12 @@ class UserImagesController < ApplicationController
     nil
   end
 
-  sig { override.returns(String) }
-  def library_redirect_path
-    profile_path
+  # The avatar library exactly as profiles/show renders it, for the in-place swap.
+  sig { override.returns(Shared::ImageLibraryComponent) }
+  def rendered_library
+    library = UserAvatarLibraryPresenter.new(user: current_user, helpers: helpers)
+    Shared::ImageLibraryComponent.new(
+      title: "Avatar", images: library.items, can_manage: true, empty_text: "No avatar yet."
+    )
   end
 end

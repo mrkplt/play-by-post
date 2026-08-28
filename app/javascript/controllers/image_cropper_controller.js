@@ -1,4 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
+import * as Turbo from "@hotwired/turbo"
 import Cropper from "cropperjs"
 
 // Drives the upload-and-crop modal (Shared::ImageCropperComponent): pick a
@@ -102,14 +103,15 @@ export default class extends Controller {
     try {
       const response = await fetch(this.uploadUrlValue, {
         method: "POST",
-        headers: { "X-CSRF-Token": this.csrfToken() },
+        headers: { "X-CSRF-Token": this.csrfToken(), "Accept": "text/vnd.turbo-stream.html" },
         body
       })
 
-      if (response.redirected) {
-        window.location.href = response.url
-      } else if (response.ok) {
-        window.location.reload()
+      if (response.ok) {
+        // The controller answers with a Turbo Stream that swaps the library
+        // section (and a toast) in place — apply it, no full-page reload.
+        Turbo.renderStreamMessage(await response.text())
+        this.close()
       } else {
         this.showError("Upload failed. Please try again.")
       }

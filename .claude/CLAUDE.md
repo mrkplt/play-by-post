@@ -178,6 +178,34 @@ CI topology are in `docs/QUALITY_PIPELINE.md`.
 - **The gates do not run `assets:precompile`; the Docker build does**, with no master key.
   Boot-time code touching Active Storage must be guarded with `unless ENV["SECRET_KEY_BASE_DUMMY"]`.
 - **Every new component/presenter goes in `.mutant.yml`** or it is silently unmeasured.
+- **The `quality_gate` CI job enforces the mutation floor separately from the `mutation`
+  job.** The `mutation` job runs mutant and *always* passes (it just records the number);
+  `quality_gate` then reads that number and fails if it is below the floor in
+  `quality_baseline.json` (`mutation_coverage`, currently **83%** — over changed subjects
+  only, `mutant run --since origin/master`). So "mutation is green but quality fails" means
+  surviving mutants dropped the aggregate below the floor — **add tests to kill them, never
+  lower the floor** (gates ratchet up). A new class/module with no direct spec is the usual
+  culprit; the every-class-has-a-test gate (`bin/check-test-presence`) catches that class up
+  front, but thin specs still leave survivors.
+- **Read the exact surviving mutants from the CI `mutant-data` artifact — do not re-run the
+  whole suite locally to find them.** The `mutation` job uploads an artifact named
+  `mutant-data` containing `mutant_result.json` (`{coverage, mutations, kills, alive}`) and
+  `mutant_output.txt` (every `evil:Subject#method:file:line` survivor, grouped by subject).
+  Pull it with:
+  ```
+  gh api repos/<owner>/<repo>/actions/runs/<run-id>/artifacts \
+    --jq '.artifacts[] | select(.name=="mutant-data").id'
+  gh api repos/<owner>/<repo>/actions/artifacts/<artifact-id>/zip > /tmp/m.zip && unzip -o /tmp/m.zip -d /tmp/m
+  ```
+  Then tally survivors per subject from `mutant_output.txt` and kill the biggest clusters
+  first. To confirm a fix locally, run mutant scoped to just those subjects
+  (`bundle exec mutant run --jobs 4 'Shared::FooComponent*' 'Bar#baz'`) rather than the full
+  `--since` sweep — it is minutes, not the full ~20.
+- **Accept genuinely-equivalent mutants with `# mutant:disable` + a one-line reason**, the
+  repo convention (see the many existing uses). Equivalent = the mutation cannot change
+  observable behavior: dropping an `includes(:x)` eager-load, `T.must(v)` → `v` where `v` is
+  present, `target: dom_id(record)` → `target: record` (Turbo resolves a record to its
+  dom_id), an unused-kwarg rename. Do NOT reach for it to dodge a mutant a test could kill.
 - **Gem maintenance is in scope for any task.** Updatable > 5 ⇒ `bundle update` and commit
   the lockfile. Pinned > 8 ⇒ stop and ask for direction.
 - **`master` is squash-merge + delete-branch.** Land follow-ups on a fresh branch off the
@@ -197,6 +225,40 @@ CI topology are in `docs/QUALITY_PIPELINE.md`.
 ### Controllers
 - Thin — delegate logic to models/services
 - Sorbet sigil required; per-action `sig` blocks not needed
+
+### Interaction model — the Turbo boundary (design note)
+
+**The boundary is: the page refreshes when a full navigation is expected;
+everything else is a Turbo/Stimulus interaction on the current page.** A
+user-facing operation gets a full page load *only* when the destination is
+genuinely a different page; an operation that acts on what the user is already
+looking at updates in place (Turbo Stream + a toast, or a Stimulus interaction),
+never a reload. This is the settled scope — do not drift either way: don't leave
+an on-page mutation as a `redirect_to` reload, and don't turn a real navigation
+into a Turbo Frame just to avoid a load.
+
+**Full navigation (a `redirect_to` / real page load) is correct for:**
+- Creating a new resource you then land on (new game/scene/page/character/link/
+  template/file; notebook promote-to-page).
+- Deleting the resource you are currently viewing (game destroy; page/notebook/
+  scene-summary delete triggered from that record's own show/edit screen).
+- A major state transition that re-renders most of the screen (scene resolve,
+  scene participant join, character archive/restore).
+- Cross-session/auth landings (invitation accept, sign-in).
+- Following a link to a distinct screen (an Edit form page, an index tab). GET
+  navigation between pages stays navigation — we do **not** convert page-to-page
+  links into in-place frame swaps.
+
+**In-place (Turbo Stream + toast, or Stimulus) is required for everything else —**
+any create/update/delete/toggle whose effect shows on the screen the user is
+already on. Same rule off the controller path: a Stimulus controller must apply a
+returned Turbo Stream (`Turbo.renderStreamMessage`) rather than
+`window.location.reload()`, and any server-side write that a viewer should see
+live (e.g. a post created by ActionMailbox reply-by-email, not just by the
+controller) must broadcast, so every creation path of a live resource behaves the
+same. Shared plumbing: `InPlaceRender` (controllers), `InPlaceSave`/`SaveOutcome`
+(long-form editors), `PostBroadcast`/`SceneSummaryBroadcast` (live delivery).
+Authorization denials always redirect regardless of the above.
 
 ### Presenters, components, policies, forms
 

@@ -6,6 +6,10 @@
 class Shared::InvitePanelComponent < ApplicationComponent
   extend T::Sig
 
+  # Stable wrapper id so InvitationsController re-renders the panel in place after
+  # invite / cancel / resend.
+  DOM_ID = "invite_panel"
+
   POSITIONS = T.let({ true => :last, false => :middle }.freeze, T::Hash[T::Boolean, Symbol])
 
   sig { params(game: GamePresenter, pending_invitations: T::Array[InvitationPresenter]).void }

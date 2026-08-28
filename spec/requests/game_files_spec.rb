@@ -82,19 +82,20 @@ RSpec.describe GameFilesController, type: :request do
       it "redirects with alert" do
         sign_in(gm)
         post game_game_files_path(game), params: { game_file: { file: nil } }
-        expect(response).to redirect_to(game_game_files_path(game))
+        expect(response).to have_http_status(:ok)
         expect(flash[:alert]).to match(/select a file/i)
       end
     end
 
     context "with a valid file" do
-      it "creates game file and redirects" do
+      it "creates game file and re-renders the list in place" do
         sign_in(gm)
         uploaded = Rack::Test::UploadedFile.new(StringIO.new("content"), "application/pdf", original_filename: "test.pdf")
         expect {
           post game_game_files_path(game), params: { game_file: { file: uploaded } }
         }.to change(GameFile, :count).by(1)
-        expect(response).to redirect_to(game_game_files_path(game))
+        expect(response).to have_http_status(:ok)
+        expect(response.body).to include("game_files_list")
         expect(flash[:notice]).to match(/uploaded/i)
       end
     end
@@ -154,7 +155,8 @@ RSpec.describe GameFilesController, type: :request do
       expect {
         delete game_game_file_path(game, game_file)
       }.to change(GameFile, :count).by(-1)
-      expect(response).to redirect_to(game_game_files_path(game))
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("game_files_list")
       expect(flash[:notice]).to match(/deleted/i)
     end
 

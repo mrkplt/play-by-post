@@ -37,13 +37,29 @@ RSpec.describe PostsController, type: :request do
         expect(response).to have_http_status(:ok)
       end
 
-      it "includes post content in turbo_stream response" do
+      # The submitter's own response appends their post immediately (reliable, no
+      # cable round-trip) and resets the composer. The appended render is
+      # viewer-neutral (no server Edit link); the author's Edit affordance is
+      # revealed client-side.
+      it "appends the new post and resets the composer in the turbo_stream response" do
         sign_in(player)
         post game_scene_posts_path(game, scene),
           params: { post: { content: "Unique turbo post text", is_ooc: false } },
           headers: { "Accept" => "text/vnd.turbo-stream.html" }
         expect(response).to have_http_status(:ok)
         expect(response.body).to include("Unique turbo post text")
+        expect(response.body).to include("post_composer")
+        expect(response.body).not_to include(">Edit<")
+      end
+
+      it "broadcasts the new post to the scene's post stream" do
+        sign_in(player)
+        streams = capture_turbo_stream_broadcasts([ scene, :posts ]) do
+          post game_scene_posts_path(game, scene),
+            params: { post: { content: "Broadcast post body", is_ooc: false } },
+            headers: { "Accept" => "text/vnd.turbo-stream.html" }
+        end
+        expect(streams.map { |el| el.to_html }.join).to include("Broadcast post body")
       end
 
       it "redirects with alert on failure" do
@@ -188,6 +204,15 @@ RSpec.describe PostsController, type: :request do
       sign_in(player)
       patch game_scene_post_path(game, scene, post_record), params: { post: { content: "Edited content" } }
       expect(post_record.reload.last_edited_at).to be_within(5.seconds).of(Time.current)
+    end
+
+    it "broadcasts the edit to the scene's post stream so other viewers update live" do
+      post_record = create(:post, scene: scene, user: player)
+      sign_in(player)
+      streams = capture_turbo_stream_broadcasts([ scene, :posts ]) do
+        patch game_scene_post_path(game, scene, post_record), params: { post: { content: "Edited live" } }
+      end
+      expect(streams.map { |el| el.to_html }.join).to include("Edited live")
     end
   end
 

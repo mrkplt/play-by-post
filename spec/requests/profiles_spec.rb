@@ -176,8 +176,10 @@ RSpec.describe ProfilesController, type: :request do
       }.to change(GameExportRequest, :count).by(1)
         .and have_enqueued_job(ExportJob)
 
-      expect(response).to redirect_to(profile_path)
-      expect(flash[:notice]).to match(/export requested/i)
+      # In place: a toast, no full profile reload.
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("toast_layer")
+      expect(response.body).to match(/export requested/i)
 
       request = GameExportRequest.last
       expect(request.user).to eq(user)
@@ -197,8 +199,8 @@ RSpec.describe ProfilesController, type: :request do
       }.not_to have_enqueued_job(ExportJob)
       expect(GameExportRequest.where(game: nil).count).to eq(1)
 
-      expect(response).to redirect_to(profile_path)
-      expect(flash[:notice]).to match(/export requested/i)
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to match(/export requested/i)
     end
 
     it "processes a new all-games export when a recent request never succeeded" do

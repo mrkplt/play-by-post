@@ -1,4 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
+import * as Turbo from "@hotwired/turbo"
 
 export default class extends Controller {
   static targets = ["modal"]
@@ -53,11 +54,13 @@ export default class extends Controller {
       method: "DELETE",
       headers: {
         "X-CSRF-Token": csrfToken,
-        "Accept": "text/html"
-      },
-      redirect: "follow"
-    }).then(() => {
-      window.location.reload()
+        "Accept": "text/vnd.turbo-stream.html"
+      }
+    }).then(response => response.text()).then(html => {
+      // The controller answers with a Turbo Stream that swaps the files list (and
+      // a toast) in place — apply it and close the lightbox, no full-page reload.
+      Turbo.renderStreamMessage(html)
+      this.close()
     })
   }
 }

@@ -12,26 +12,7 @@
     <%= render Shared::GameDetailsComponent.new(game: @game_presenter) %>
 
     <%# Members %>
-    <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do %>Members<% end %>
-    <% if @roster.empty? %>
-      <p class="text-muted-2 text-sm">No players yet.</p>
-    <% else %>
-      <div class="bg-card border border-card-border rounded-card px-3.5">
-        <% @roster.each_with_index do |member, i| %>
-          <%= render Ui::SettingsRowComponent.new(
-                label: member.display_name,
-                sub: member.character_name,
-                position: i == @roster.length - 1 ? :last : :middle) do %>
-            <% if member.active? %>
-              <%= render Ui::ButtonComponent.new(style: Ui::ButtonComponent::Style.new(variant: :text_muted), link: Ui::ButtonComponent::Link.new(url: game_player_management_game_member_path(@game_presenter, member, status: "removed"), method: :patch, confirm: "Remove this player? They keep read-only access.")) do %>Remove<% end %>
-              <%= render Ui::ButtonComponent.new(style: Ui::ButtonComponent::Style.new(variant: :text_danger), link: Ui::ButtonComponent::Link.new(url: game_player_management_game_member_path(@game_presenter, member, status: "banned"), method: :patch, confirm: "Ban this player? This permanently revokes all access and cannot be undone easily.")) do %>Ban<% end %>
-            <% elsif member.removed? %>
-              <%= render Ui::ButtonComponent.new(style: Ui::ButtonComponent::Style.new(variant: :text), link: Ui::ButtonComponent::Link.new(url: game_player_management_game_member_path(@game_presenter, member, status: "active"), method: :patch)) do %>Reinstate<% end %>
-            <% end %>
-          <% end %>
-        <% end %>
-      </div>
-    <% end %>
+    <%= render Shared::MemberRosterComponent.new(game: @game_presenter, members: @roster) %>
 
     <%# Game Preferences %>
     <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do %>Game Preferences<% end %>

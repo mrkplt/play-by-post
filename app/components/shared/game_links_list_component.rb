@@ -9,6 +9,10 @@
 class Shared::GameLinksListComponent < ApplicationComponent
   extend T::Sig
 
+  # Stable wrapper id so GameLinksController can re-render the list in place after
+  # a delete (the rows and the empty-state follow the change).
+  DOM_ID = "game_links_list"
+
   sig { params(game: GamePresenter, game_links: T::Array[GameLinkPresenter], can_manage: T::Boolean).void }
   def initialize(game:, game_links:, can_manage:)
     @game = T.let(game, GamePresenter)

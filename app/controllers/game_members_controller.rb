@@ -2,6 +2,7 @@
 
 class GameMembersController < ApplicationController
   extend T::Sig
+  include InPlaceRender
 
   after_action :verify_authorized
 
@@ -33,21 +34,29 @@ class GameMembersController < ApplicationController
   def require_manageable_member!(member)
     return false if policy(member).update?
 
-    redirect_to_player_management(alert: "Cannot change GM status.")
+    render_roster(alert: "Cannot change GM status.")
     true
   end
 
   sig { params(member: GameMember).void }
   def apply_status_change(member)
     new_status = params.dig(:game_member, :status) || params[:status]
-    return redirect_to_player_management(alert: "Invalid status.") unless GameMember::STATUSES.include?(new_status)
+    return render_roster(alert: "Invalid status.") unless GameMember::STATUSES.include?(new_status)
 
     member.update!(status: new_status)
-    redirect_to_player_management(notice: "Player status updated.")
+    render_roster(notice: "Player status updated.")
   end
 
+  # A status change alters the member's row (its controls) and can empty the
+  # roster, so re-render the whole Members section in place plus a toast — no
+  # full roster reload. flash.now, not flash: nothing redirects here.
   sig { params(notice: T.nilable(String), alert: T.nilable(String)).void }
-  def redirect_to_player_management(notice: nil, alert: nil)
-    redirect_to game_player_management_path(game), notice: notice, alert: alert
+  def render_roster(notice: nil, alert: nil)
+    flash_now(notice: notice, alert: alert)
+    roster = Shared::MemberRosterComponent.new(
+      game: GamePresenter.new(game, policy: policy(game), current_user: current_user),
+      members: GameMemberRoster.new(game).rows
+    )
+    render turbo_stream: [ turbo_stream.replace(Shared::MemberRosterComponent::DOM_ID, roster), toast_stream ]
   end
 end

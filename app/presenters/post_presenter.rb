@@ -57,6 +57,23 @@ class PostPresenter < BasePresenter
     @options.fetch(:policy).update? # mutant:disable
   end
 
+  # The data the client-side post-edit-affordance controller needs to reveal the
+  # Edit link on the viewer's own posts (broadcast renders are viewer-neutral, so
+  # the affordance is added client-side): the author's id (compared to the
+  # signed-in user) and when the edit window closes (nil = no window). Bundled so
+  # the component reads one accessor rather than several author/edit-window
+  # methods spreading across this presenter.
+  class EditAffordance < T::Struct
+    const :author_id, Integer
+    const :editable_until, T.nilable(ActiveSupport::TimeWithZone)
+  end
+
+  sig { returns(EditAffordance) }
+  def edit_affordance
+    window = @options.fetch(:game).edit_window_duration
+    EditAffordance.new(author_id: @model.user_id, editable_until: window && @model.created_at + window)
+  end
+
   sig { returns(String) }
   def content
     @model.content.to_s # mutant:disable

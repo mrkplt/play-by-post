@@ -287,7 +287,7 @@ RSpec.describe SceneSummariesController, type: :request do
   describe "PATCH /games/:game_id/scenes/:scene_id/scene_summary" do
     let!(:summary) { create(:scene_summary, :ai_generated, scene: resolved_scene) }
 
-    it "updates body and clears AI metadata with notice" do
+    it "updates body and clears AI metadata, redirecting a non-Turbo request" do
       sign_in(gm)
       patch game_scene_scene_summary_path(game, resolved_scene),
             params: { scene_summary: { body: "Edited text." } }
@@ -298,6 +298,17 @@ RSpec.describe SceneSummariesController, type: :request do
       expect(summary.generated_at).to be_nil
       expect(summary.edited_by).to eq(gm)
       expect(summary.edited_at).to be_present
+    end
+
+    it "swaps the form in place with a toast for a Turbo request (InPlaceSave)" do
+      sign_in(gm)
+      patch game_scene_scene_summary_path(game, resolved_scene),
+            params: { scene_summary: { body: "Turbo edit." } },
+            headers: { "Accept" => "text/vnd.turbo-stream.html" }
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("scene_summary_edit_form")
+      expect(response.body).to include("toast_layer")
+      expect(summary.reload.body).to eq("Turbo edit.")
     end
 
     it "rejects a player" do

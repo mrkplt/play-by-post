@@ -2,6 +2,7 @@
 
 class GameLinksController < ApplicationController
   extend T::Sig
+  include InPlaceRender
 
   before_action :require_game_access!
   after_action :verify_authorized
@@ -55,14 +56,29 @@ class GameLinksController < ApplicationController
     end
   end
 
+  # Delete happens on the links index — re-render the list in place (rows and
+  # empty-state follow) plus a toast, no full reload. flash.now, not flash.
   sig { void }
   def destroy
     authorize game_link
     game_link.destroy
-    redirect_to game_game_links_path(game), notice: "Link deleted."
+    flash_now(notice: "Link deleted.")
+    render turbo_stream: [ turbo_stream.replace(Shared::GameLinksListComponent::DOM_ID, links_list), toast_stream ]
   end
 
   private
+
+  # Only #destroy re-renders the list, and it has already authorized managing the
+  # link (it raises otherwise), so the actor can manage the list by construction —
+  # can_manage is true without re-asking the policy.
+  sig { returns(Shared::GameLinksListComponent) }
+  def links_list
+    Shared::GameLinksListComponent.new(
+      game: game_presenter,
+      game_links: game.game_links.order(created_at: :desc).map { |gl| game_link_presenter(gl) },
+      can_manage: true
+    )
+  end
 
   sig { params(link: GameLink).void }
   def assign_form_presenters(link)

@@ -5,27 +5,34 @@ module Games
   # GameSettingToggle.
   class SettingsController < ApplicationController
     extend T::Sig
+    include InPlaceRender
 
     after_action :verify_authorized
 
     sig { void }
     def sheets_hidden
-      toggle(:sheets_hidden) { |target| game_path(target) }
+      toggle(:sheets_hidden) { |game_presenter| Shared::SheetsToggleComponent.new(game: game_presenter) }
     end
 
     sig { void }
     def ai_summaries_enabled
-      toggle(:ai_summaries_enabled) { |target| game_player_management_path(target) }
+      toggle(:ai_summaries_enabled) { |game_presenter| Shared::AiSummariesToggleComponent.new(game: game_presenter) }
     end
 
     private
 
-    sig { params(setting: Symbol, destination: T.proc.params(game: Game).returns(String)).void }
-    def toggle(setting, &destination)
+    # Flip the flag and swap just the toggle control in place (by its wrapper id)
+    # plus a toast — a setting switch should not full-reload its whole screen.
+    # flash.now, not flash: nothing redirects. The block builds the control for
+    # the flipped state from a fresh GamePresenter.
+    sig { params(setting: Symbol, control: T.proc.params(game: GamePresenter).returns(Shared::GameFlagToggle)).void }
+    def toggle(setting, &control)
       target = game
       authorize target, :manage?
 
-      redirect_to destination.call(target), notice: GameSettingToggle.new(target, setting).call
+      flash.now[:notice] = GameSettingToggle.new(target, setting).call
+      component = control.call(GamePresenter.new(target.reload, policy: policy(target)))
+      render turbo_stream: [ turbo_stream.replace(component.wrapper_id, component), toast_stream ]
     end
 
     # A member route on games, so the game arrives as :id.

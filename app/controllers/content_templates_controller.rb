@@ -2,6 +2,7 @@
 
 class ContentTemplatesController < ApplicationController
   extend T::Sig
+  include InPlaceRender
 
   before_action :require_game_access!
   after_action :verify_authorized
@@ -59,7 +60,8 @@ class ContentTemplatesController < ApplicationController
   def destroy
     authorize content_template
     content_template.destroy
-    redirect_to game_content_templates_path(game), notice: "Template deleted."
+    flash_now(notice: "Template deleted.")
+    render turbo_stream: [ turbo_stream.replace(Shared::ContentTemplatesListComponent::DOM_ID, templates_list), toast_stream ]
   end
 
   private
@@ -78,6 +80,14 @@ class ContentTemplatesController < ApplicationController
   sig { returns(ContentTemplate) }
   def content_template
     game.content_templates.find(params[:id])
+  end
+
+  sig { returns(Shared::ContentTemplatesListComponent) }
+  def templates_list
+    Shared::ContentTemplatesListComponent.new(
+      game: game_presenter,
+      templates: game.content_templates.order(:content_type).map { |template| content_template_presenter(template) }
+    )
   end
 
   sig { void }
