@@ -23,7 +23,9 @@ RSpec.describe ScenesController, type: :request do
     it "mutes notifications when currently unmuted" do
       sign_in(gm)
       post toggle_notification_preference_game_scene_path(game, scene)
-      expect(response).to redirect_to(game_scene_path(game, scene))
+      # In place: swap just the mute button + toast, no scene reload.
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("mute_toggle")
       expect(flash[:notice]).to match(/muted/i)
       expect(NotificationPreference.muted?(scene, gm)).to be true
     end
@@ -32,7 +34,8 @@ RSpec.describe ScenesController, type: :request do
       create(:notification_preference, scene: scene, user: gm, muted: true)
       sign_in(gm)
       post toggle_notification_preference_game_scene_path(game, scene)
-      expect(response).to redirect_to(game_scene_path(game, scene))
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Mute notifications")
       expect(flash[:notice]).to match(/enabled/i)
       expect(NotificationPreference.muted?(scene, gm)).to be false
     end
