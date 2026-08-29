@@ -70,11 +70,17 @@
      the same frame becomes a centered panel floating on a dark canvas, with a
      border and drop shadow, so it reads as a deliberate web layout instead of a
      phone screen stranded in an empty white window. */
+  /* The frame is exactly one viewport tall and clips its own overflow, so the
+     body is the ONLY thing that scrolls and the footer stays pinned in view.
+     `100dvh` (dynamic viewport height) tracks the mobile browser's shrinking
+     visible area as its address bar shows/hides — with a static `vh`/min-height
+     the sticky footer sank below the fold on tall screens and the page's action
+     button (e.g. "New Scene") became unreachable / needed repeated taps. */
   .app-frame {
-    @apply min-h-[96vh] flex flex-col bg-canvas max-w-2xl mx-auto overflow-x-hidden;
+    @apply h-[100dvh] flex flex-col bg-canvas max-w-2xl mx-auto overflow-hidden;
   }
   .app-body {
-    @apply flex-1 px-4 py-4 flex flex-col gap-3;
+    @apply flex-1 min-h-0 overflow-y-auto px-4 py-4 flex flex-col gap-3;
   }
 
   /* ---- Desktop (>=1024px): a real two-pane website, not a phone frame ----
