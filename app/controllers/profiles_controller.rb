@@ -17,17 +17,21 @@ class ProfilesController < ApplicationController
 
   # The Display Name field edits in place on the profile show page (no
   # separate edit screen) — see Ui::ProfileDisplayNameFieldComponent. Success
-  # and failure both answer with a Turbo Stream that replaces the control;
-  # only the `editing`/error state differs, so happy and error paths share one
-  # render call rather than branching between two templates/components (the
-  # "same component on both paths" rule in docs/COMPONENT_CONVENTIONS.md).
+  # and failure each answer with a Turbo Stream that replaces the same
+  # control (the "same component on both paths" rule in
+  # docs/COMPONENT_CONVENTIONS.md) — only whether a toast joins the reply
+  # differs, so that split is two named render methods rather than a status
+  # flag threaded through one.
   sig { void }
   def update
     current_profile = profile
     authorize current_profile
 
-    saved = current_profile.update_display_name(params[:user_profile][:display_name])
-    render_display_name_field(current_profile, saved: saved)
+    if current_profile.update_display_name(params[:user_profile][:display_name])
+      render_display_name_saved(current_profile)
+    else
+      render_display_name_failed(current_profile)
+    end
   end
 
   sig { void }
@@ -85,25 +89,36 @@ class ProfilesController < ApplicationController
     ]
   end
 
-  # Persist-in-place: swap the Display Name control for its new state (view
-  # mode on success, edit mode with its error on failure) plus a toast on
-  # success. flash.now, not flash: nothing redirects here, so a persisted
-  # flash would leak onto the next full page load. The non-Turbo fallback
-  # (turbo_or_redirect) redirects to the profile page either way — there is no
+  # Persist-in-place: swap the Display Name control back to view mode plus a
+  # confirmation toast. flash.now, not flash: nothing redirects here, so a
+  # persisted flash would leak onto the next full page load. The non-Turbo
+  # fallback (turbo_or_redirect) redirects to the profile page — there is no
   # separate edit page to fall back to.
-  sig { params(current_profile: UserProfile, saved: T::Boolean).void }
-  def render_display_name_field(current_profile, saved:)
-    flash.now[:notice] = "Display name saved." if saved
-    turbo_or_redirect(fallback: profile_path) do
-      component = Ui::ProfileDisplayNameFieldComponent.new(
-        profile: UserProfilePresenter.new(current_profile),
-        update_url: profile_path,
-        editing: !saved
+  sig { params(current_profile: UserProfile).void }
+  def render_display_name_saved(current_profile)
+    flash.now[:notice] = "Display name saved."
+    streams = [ display_name_replace(current_profile), toast_stream ]
+    turbo_or_redirect(fallback: profile_path) { render turbo_stream: streams, status: :ok }
+  end
+
+  # Persist-in-place, failure branch: swap the same control back in, still in
+  # edit mode with the model's own validation message (see
+  # Ui::ProfileDisplayNameFieldComponent#editing?) — no toast, the error is
+  # already visible in the field itself.
+  sig { params(current_profile: UserProfile).void }
+  def render_display_name_failed(current_profile)
+    streams = [ display_name_replace(current_profile) ]
+    turbo_or_redirect(fallback: profile_path) { render turbo_stream: streams, status: :unprocessable_content }
+  end
+
+  sig { params(current_profile: UserProfile).returns(String) }
+  def display_name_replace(current_profile)
+    turbo_stream.replace(
+      Ui::ProfileDisplayNameFieldComponent::CONTROL_ID,
+      Ui::ProfileDisplayNameFieldComponent.new(
+        profile: UserProfilePresenter.new(current_profile), update_url: profile_path
       )
-      streams = [ turbo_stream.replace(Ui::ProfileDisplayNameFieldComponent::CONTROL_ID, component) ]
-      streams << toast_stream if saved
-      render turbo_stream: streams, status: saved ? :ok : :unprocessable_content
-    end
+    )
   end
 
   sig { params(current_profile: UserProfile).void }

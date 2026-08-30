@@ -6,9 +6,10 @@
 # separate edit page. Save posts to `update_path` (ProfilesController#update);
 # the controller answers with a Turbo Stream that swaps this control (by
 # CONTROL_ID) back to view mode plus a toast, mirroring
-# Ui::ProfileAiDisplayPreferenceControlComponent. On a validation failure the
-# controller re-renders this same component with `editing: true` so the field
-# stays open with its error message, instead of dropping back to view mode.
+# Ui::ProfileAiDisplayPreferenceControlComponent. A validation failure needs no
+# separate flag: the profile presenter still carries the error from the failed
+# save, and `editing?` opens the field for exactly that reason — there is no
+# other case where this renders already in edit mode.
 class Ui::ProfileDisplayNameFieldComponent < ApplicationComponent
   extend T::Sig
 
@@ -18,11 +19,10 @@ class Ui::ProfileDisplayNameFieldComponent < ApplicationComponent
 
   FORM_ID = T.let("profile_display_name_form", String)
 
-  sig { params(profile: UserProfilePresenter, update_url: String, editing: T::Boolean).void }
-  def initialize(profile:, update_url:, editing: false)
+  sig { params(profile: UserProfilePresenter, update_url: String).void }
+  def initialize(profile:, update_url:)
     @profile = profile
     @update_url = update_url
-    @editing = editing
   end
 
   sig { returns(String) }
@@ -40,7 +40,7 @@ class Ui::ProfileDisplayNameFieldComponent < ApplicationComponent
 
   sig { returns(T::Boolean) }
   def editing?
-    @editing || errors?
+    errors?
   end
 
   sig { returns(T::Boolean) }
