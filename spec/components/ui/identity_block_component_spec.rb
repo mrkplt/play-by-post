@@ -73,6 +73,10 @@ RSpec.describe Ui::IdentityBlockComponent, type: :component do
       expect(rendered(config: Config.new(size: :md)).native.to_html).to include("text-[13px]")
     end
 
+    it "uses the large label scale for :lg" do
+      expect(rendered(config: Config.new(size: :lg)).native.to_html).to include("text-[15px]")
+    end
+
     it "rejects an unknown size" do
       expect { described_class.new(name: "x", primary: "x", secondary: "y", config: Config.new(size: :xl)) }
         .to raise_error(ArgumentError, /Unknown size/)
@@ -171,6 +175,13 @@ RSpec.describe Ui::IdentityBlockComponent, type: :component do
 
       it "uses the muted colour for :on_dark" do
         expect(Config.new(size: :md, variant: :on_dark).secondary_classes).to eq("text-[11px] text-muted")
+      end
+    end
+
+    describe "#primary_classes for :lg" do
+      it "combines the large layout, size and colour for the inline default" do
+        expect(Config.new(orientation: :inline, size: :lg, variant: :on_dark).primary_classes)
+          .to eq("text-[15px] font-semibold text-white")
       end
     end
 

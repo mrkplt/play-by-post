@@ -21,11 +21,19 @@ RSpec.describe "Nav drawer", type: :feature do
       expect(page).to have_css("aside.nav-drawer", visible: :all)
     end
 
-    it "shows the user's display name and View Profile" do
+    it "shows the user's display name in the profile chip" do
       visit root_path
       within("aside.nav-drawer", visible: :all) do
         expect(page).to have_text(user.user_profile.display_name)
-        expect(page).to have_text("View Profile")
+      end
+    end
+
+    it "does not duplicate the profile link with a View Profile label" do
+      # Fizzy #128: the chip and the footer both linked to the profile page;
+      # the chip's redundant "View Profile" label is dropped.
+      visit root_path
+      within("aside.nav-drawer", visible: :all) do
+        expect(page).not_to have_text("View Profile")
       end
     end
 

@@ -25,7 +25,7 @@ RSpec.describe "Profiles", type: :feature do
   it "the drawer profile chip links to the profile page" do
     visit root_path
     within("aside.nav-drawer", visible: :all) do
-      expect(page).to have_link("View Profile", href: profile_path, visible: :all)
+      expect(page).to have_css("a[href='#{profile_path}']", visible: :all)
     end
   end
 
