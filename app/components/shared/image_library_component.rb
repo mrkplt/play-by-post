@@ -1,10 +1,16 @@
 # typed: strict
 
 # A per-owner image library: the current image shown large, a grid of the
-# owner's other images each with set-current / delete controls, and (when the
-# viewer may manage the library) an upload button that opens the cropper modal.
-# Drives both the character portrait section and the profile avatar section, so
-# it takes presentation-ready data — never a raw model.
+# owner's other images each with a delete control, and (when the viewer may
+# manage the library) an upload button that opens the cropper modal. Drives
+# both the character portrait section and the profile avatar section, so it
+# takes presentation-ready data — never a raw model.
+#
+# Selection is click-to-preview: clicking a thumbnail (the image-select
+# Stimulus controller wrapping the section) swaps the large image immediately,
+# client-side, with no server round-trip. A single Save button persists the
+# pending selection to `set_current_url` and the server answers with the usual
+# in-place Turbo Stream + toast. There is no per-thumbnail "Use" control.
 #
 # Each entry in `images` is a ready-made hash (an Item): the thumbnail URL, the
 # large URL, whether it is current, and the set-current / delete action URLs.
@@ -68,10 +74,17 @@ class Shared::ImageLibraryComponent < ApplicationComponent
 
   # The thumbnail's CSS: a shared base, ringed when this image is the current
   # one so the grid shows which is selected. Kept here (not the template) so the
-  # ternary is out of the output tag, per the no-logic-in-templates rule.
+  # ternary is out of the output tag, per the no-logic-in-templates rule. The
+  # image-select Stimulus controller applies the same two classes client-side
+  # when the user clicks a different thumbnail, so a cold load and a pending
+  # client-side selection never disagree on what "selected" looks like.
   THUMB_BASE = "w-16 h-16 rounded-control object-cover border"
   CURRENT_RING = "border-accent ring-2 ring-accent"
   IDLE_BORDER = "border-card-border"
+
+  SAVE_BUTTON_CLASS =
+    "bg-accent text-accent-ink border-0 rounded-control px-4 py-2 text-[13px] " \
+    "font-extrabold cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
 
   # The populated card adds column layout to the shared shell.
   sig { returns(String) }
@@ -82,5 +95,22 @@ class Shared::ImageLibraryComponent < ApplicationComponent
   sig { params(image: Item).returns(String) }
   def image_thumb_class(image)
     "#{THUMB_BASE} #{image[:current] ? CURRENT_RING : IDLE_BORDER}"
+  end
+
+  # The image-select Stimulus wiring for one thumbnail: it is always a target
+  # (so the controller can re-derive "which thumbnail is this image" from the
+  # DOM), but only a manageable library wires the click action and the data the
+  # action needs — a viewer who cannot manage the library cannot select at all.
+  sig { params(image: Item).returns(T::Hash[Symbol, T.untyped]) }
+  def thumb_data(image)
+    base = { image_select_target: "thumb", image_select_id_param: image[:id] }
+    return base unless can_manage
+
+    base.merge(
+      action: "click->image-select#select",
+      image_select_display_url_param: image[:display_url],
+      image_select_set_current_url_param: image[:set_current_url],
+      image_select_current_param: image[:current]
+    )
   end
 end
