@@ -16,10 +16,21 @@ module Games
 
     sig { void }
     def ai_summaries_enabled
-      toggle(:ai_summaries_enabled) { |game_presenter| Shared::AiSummariesToggleComponent.new(game: game_presenter) }
+      toggle(:ai_summaries_enabled) do |game_presenter|
+        Shared::AiSummariesToggleComponent.new(game: game_presenter, presentation: ai_summaries_presentation)
+      end
     end
 
     private
+
+    # Which presentation of the AI-summaries toggle to render back: the
+    # button that triggered the flip carries its own screen's presentation
+    # (see Shared::AiSummariesToggleComponent#toggle_path), defaulting to the
+    # Edit Game card when absent so an un-parameterized request still works.
+    sig { returns(Symbol) }
+    def ai_summaries_presentation
+      params[:presentation] == "row" ? :row : :card
+    end
 
     # Flip the flag and swap just the toggle control in place (by its wrapper id)
     # plus a toast — a setting switch should not full-reload its whole screen.

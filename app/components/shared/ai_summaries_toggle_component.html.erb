@@ -1,13 +1,23 @@
 <div id="<%= wrapper_id %>">
-  <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do %>AI Scene Summaries<% end %>
-  <%= render Ui::CardComponent.new do %>
-    <div class="py-3 flex flex-col items-start gap-2.5">
-      <p class="text-[13px] text-row-ink m-0">
-        AI summaries are currently <strong class="text-ink"><%= status_text %></strong>.
-        A summary is generated automatically each time a scene resolves.
-      </p>
-      <%= button_to toggle_label, toggle_path, method: :patch,
-          class: "bg-accent text-accent-ink rounded-control px-4 py-2 font-bold text-[13px] border-0 cursor-pointer" %>
-    </div>
+  <% if row? %>
+    <%= render Ui::SettingsRowComponent.new(
+          label: "AI Scene Summaries", sub: "Auto-summarize when scenes resolve", position: :last) do %>
+      <%= button_to toggle_path, method: :patch, class: "bg-transparent border-0 p-0 cursor-pointer",
+            "aria-label": toggle_label do %>
+        <%= render Ui::ToggleSwitchComponent.new(state: toggle_switch_state) %>
+      <% end %>
+    <% end %>
+  <% else %>
+    <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do %>AI Scene Summaries<% end %>
+    <%= render Ui::CardComponent.new do %>
+      <div class="py-3 flex flex-col items-start gap-2.5">
+        <p class="text-[13px] text-row-ink m-0">
+          AI summaries are currently <strong class="text-ink"><%= status_text %></strong>.
+          A summary is generated automatically each time a scene resolves.
+        </p>
+        <%= button_to toggle_label, toggle_path, method: :patch,
+            class: "bg-accent text-accent-ink rounded-control px-4 py-2 font-bold text-[13px] border-0 cursor-pointer" %>
+      </div>
+    <% end %>
   <% end %>
 </div>

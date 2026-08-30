@@ -175,5 +175,25 @@ RSpec.describe PlayerManagementController, type: :request do
       expect_hamburger_present
       expect_breadcrumb(game.name)
     end
+
+    it "renders the AI Scene Summaries toggle with the wrapper id the settings controller's turbo_stream targets" do
+      sign_in(gm)
+      get game_player_management_path(game)
+      expect(response.body).to include('id="ai_summaries_toggle"')
+    end
+
+    it "renders the AI Scene Summaries toggle as a settings row with a toggle switch" do
+      sign_in(gm)
+      get game_player_management_path(game)
+      expect(response.body).to include("AI Scene Summaries")
+      expect(response.body).to include("Auto-summarize when scenes resolve")
+      expect(response.body).to include('role="switch"')
+    end
+
+    it "posts the flip to the settings-controller route carrying the row presentation" do
+      sign_in(gm)
+      get game_player_management_path(game)
+      expect(response.body).to include(toggle_ai_summaries_enabled_game_path(game, presentation: "row"))
+    end
   end
 end
