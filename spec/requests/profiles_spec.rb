@@ -31,45 +31,58 @@ RSpec.describe ProfilesController, type: :request do
     end
   end
 
-  describe "GET /profile/edit" do
-    it "renders ok for authenticated user" do
-      sign_in(user)
-      get edit_profile_path
-      expect(response).to have_http_status(:ok)
-    end
-
-    it "unauthenticated user is redirected" do
-      get edit_profile_path
-      expect(response).to have_http_status(:redirect)
-    end
-
-    it "renders the universal header nav affordances with no breadcrumb" do
-      sign_in(user)
-      get edit_profile_path
-      expect_hamburger_present
-    end
-
-    it "renders visible text on the primary and cancel page-action buttons" do
-      sign_in(user)
-      get edit_profile_path
-      expect(response.body).to include(">Save<")
-      expect(response.body).to include(">Cancel<")
-    end
-  end
-
   describe "PATCH /profile" do
-    it "updates display_name and redirects" do
+    let(:turbo_headers) { { "Accept" => "text/vnd.turbo-stream.html" } }
+
+    it "updates display_name and answers with a Turbo Stream, not a redirect" do
+      sign_in(user)
+      patch profile_path, params: { user_profile: { display_name: "New Name" } }, headers: turbo_headers
+      expect(response.media_type).to eq("text/vnd.turbo-stream.html")
+      expect(response).to have_http_status(:ok)
+      expect(user.user_profile.reload.display_name).to eq("New Name")
+
+      stream = Capybara.string(response.body)
+      expect(stream).to have_css(
+        %(turbo-stream[action="replace"][target="#{Ui::ProfileDisplayNameFieldComponent::CONTROL_ID}"])
+      )
+      expect(stream).to have_css(%(turbo-stream[action="replace"][target="toast_layer"]))
+      expect(response.body).to include("New Name")
+      expect(response.body).to include(%(<span class="toast__message">Display name saved.</span>))
+    end
+
+    it "does not persist the notice into the next full page load" do
+      sign_in(user)
+      patch profile_path, params: { user_profile: { display_name: "New Name" } }, headers: turbo_headers
+
+      get profile_path
+      expect(response.body).not_to include("Display name saved.")
+    end
+
+    it "redirects a non-Turbo client to the profile page on success" do
       sign_in(user)
       patch profile_path, params: { user_profile: { display_name: "New Name" } }
-      expect(response).to redirect_to(root_path)
+      expect(response).to redirect_to(profile_path)
       expect(user.user_profile.reload.display_name).to eq("New Name")
     end
 
-    it "renders :edit with unprocessable_content when save fails" do
+    it "answers with a Turbo Stream re-opening the field, with the error, when save fails" do
+      sign_in(user)
+      allow_any_instance_of(UserProfile).to receive(:save).and_return(false)
+      patch profile_path, params: { user_profile: { display_name: "Something" } }, headers: turbo_headers
+      expect(response.media_type).to eq("text/vnd.turbo-stream.html")
+      expect(response).to have_http_status(:unprocessable_content)
+
+      stream = Capybara.string(response.body)
+      expect(stream).to have_css(
+        %(turbo-stream[action="replace"][target="#{Ui::ProfileDisplayNameFieldComponent::CONTROL_ID}"])
+      )
+    end
+
+    it "redirects a non-Turbo client to the profile page on failure" do
       sign_in(user)
       allow_any_instance_of(UserProfile).to receive(:save).and_return(false)
       patch profile_path, params: { user_profile: { display_name: "Something" } }
-      expect(response).to have_http_status(:unprocessable_content)
+      expect(response).to redirect_to(profile_path)
     end
 
     it "unauthenticated user is redirected" do

@@ -15,24 +15,19 @@ class ProfilesController < ApplicationController
     assign_profile_presenter(current_profile)
   end
 
-  sig { void }
-  def edit
-    current_profile = profile
-    authorize current_profile
-    assign_profile_presenter(current_profile)
-  end
-
+  # The Display Name field edits in place on the profile show page (no
+  # separate edit screen) — see Ui::ProfileDisplayNameFieldComponent. Success
+  # and failure both answer with a Turbo Stream that replaces the control;
+  # only the `editing`/error state differs, so happy and error paths share one
+  # render call rather than branching between two templates/components (the
+  # "same component on both paths" rule in docs/COMPONENT_CONVENTIONS.md).
   sig { void }
   def update
     current_profile = profile
     authorize current_profile
 
-    if current_profile.update_display_name(params[:user_profile][:display_name])
-      redirect_to root_path, notice: "Display name saved."
-    else
-      assign_profile_presenter(current_profile)
-      render :edit, status: :unprocessable_content
-    end
+    saved = current_profile.update_display_name(params[:user_profile][:display_name])
+    render_display_name_field(current_profile, saved: saved)
   end
 
   sig { void }
@@ -88,6 +83,27 @@ class ProfilesController < ApplicationController
       ),
       toast_stream
     ]
+  end
+
+  # Persist-in-place: swap the Display Name control for its new state (view
+  # mode on success, edit mode with its error on failure) plus a toast on
+  # success. flash.now, not flash: nothing redirects here, so a persisted
+  # flash would leak onto the next full page load. The non-Turbo fallback
+  # (turbo_or_redirect) redirects to the profile page either way — there is no
+  # separate edit page to fall back to.
+  sig { params(current_profile: UserProfile, saved: T::Boolean).void }
+  def render_display_name_field(current_profile, saved:)
+    flash.now[:notice] = "Display name saved." if saved
+    turbo_or_redirect(fallback: profile_path) do
+      component = Ui::ProfileDisplayNameFieldComponent.new(
+        profile: UserProfilePresenter.new(current_profile),
+        update_url: profile_path,
+        editing: !saved
+      )
+      streams = [ turbo_stream.replace(Ui::ProfileDisplayNameFieldComponent::CONTROL_ID, component) ]
+      streams << toast_stream if saved
+      render turbo_stream: streams, status: saved ? :ok : :unprocessable_content
+    end
   end
 
   sig { params(current_profile: UserProfile).void }

@@ -20,6 +20,14 @@ class UserProfilePresenter < BasePresenter
     @model.display_name.presence || "Not set"
   end
 
+  # The raw saved value (possibly blank), for pre-filling the edit field —
+  # unlike display_name_or_placeholder, this must not surface "Not set" as
+  # editable text.
+  sig { returns(T.nilable(String)) }
+  def display_name
+    @model.display_name
+  end
+
   sig { returns(T::Boolean) }
   def hide_ooc?
     @model.hide_ooc?

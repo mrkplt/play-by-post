@@ -141,7 +141,6 @@ matcher:
     - Shared::GameControlsComponent::Available
     - Shared::AiSummariesToggleComponent
     - Shared::SheetsToggleComponent
-    - Shared::ProfileFormComponent
     - Shared::SceneSummaryComponent
     - Shared::SceneSummaryEntryComponent
     - Shared::SceneSummaryFormComponent
@@ -243,6 +242,7 @@ matcher:
     - Ui::ByokKeyFormComponent::Pending
     - Ui::ProfileAiDisplayPreferenceControlComponent
     - Ui::ProfileAiDisplayPreferenceControlComponent::Option
+    - Ui::ProfileDisplayNameFieldComponent
     - Ui::PillTabsComponent
     - Ui::ToastComponent
     - Ui::IconComponent
