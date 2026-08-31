@@ -48,5 +48,23 @@ RSpec.describe Games::SettingsController, type: :request do
       expect(response.body).to include("ai_summaries_toggle")
       expect(response.body).to include("toast_layer")
     end
+
+    it "renders the card presentation when no presentation param is given (Edit Game)" do
+      sign_in gm
+
+      patch toggle_ai_summaries_enabled_game_path(game)
+
+      expect(response.body).to include("A summary is generated automatically each time a scene resolves.")
+    end
+
+    it "renders the row presentation when presentation=row (Player Management), targeting the same wrapper id" do
+      sign_in gm
+
+      patch toggle_ai_summaries_enabled_game_path(game), params: { presentation: "row" }
+
+      expect(response.body).to include("ai_summaries_toggle")
+      expect(response.body).to include("role=\"switch\"")
+      expect(response.body).not_to include("A summary is generated automatically each time a scene resolves.")
+    end
   end
 end

@@ -153,6 +153,20 @@ RSpec.describe "Player Management", type: :feature do
     end
   end
 
+  describe "AI Scene Summaries toggle" do
+    it "visually flips the switch in place when clicked (Fizzy #126)" do
+      visit game_player_management_path(game)
+
+      toggle = find("#ai_summaries_toggle [role='switch']")
+      expect(toggle["aria-checked"]).to eq("false")
+
+      within("#ai_summaries_toggle") { find("button[aria-label='Enable AI Summaries']").click }
+
+      expect(page).to have_css("#ai_summaries_toggle [role='switch'][aria-checked='true']")
+      expect(game.reload.ai_summaries_enabled?).to be(true)
+    end
+  end
+
   describe "banning players" do
     it "GM can ban a player" do
       visit game_player_management_path(game)

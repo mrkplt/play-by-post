@@ -17,12 +17,7 @@
     <%# Game Preferences %>
     <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do %>Game Preferences<% end %>
     <div class="bg-card border border-card-border rounded-card px-3.5">
-      <%= render Ui::SettingsRowComponent.new(label: "AI Scene Summaries", sub: "Auto-summarize when scenes resolve", position: :last) do %>
-        <%= button_to toggle_ai_summaries_enabled_game_path(@game_presenter), method: :patch, class: "bg-transparent border-0 p-0 cursor-pointer",
-              "aria-label": @game_presenter.ai_summaries_toggle_aria_label do %>
-          <%= render Ui::ToggleSwitchComponent.new(state: @game_presenter.ai_summaries_enabled? ? :on : :off) %>
-        <% end %>
-      <% end %>
+      <%= render Shared::AiSummariesToggleComponent.new(game: @game_presenter, presentation: :row) %>
     </div>
   <% end %>
 
