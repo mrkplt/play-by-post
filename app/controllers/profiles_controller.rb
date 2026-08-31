@@ -15,23 +15,22 @@ class ProfilesController < ApplicationController
     assign_profile_presenter(current_profile)
   end
 
-  sig { void }
-  def edit
-    current_profile = profile
-    authorize current_profile
-    assign_profile_presenter(current_profile)
-  end
-
+  # The Display Name field edits in place on the profile show page (no
+  # separate edit screen) — see Ui::ProfileDisplayNameFieldComponent. Success
+  # and failure each answer with a Turbo Stream that replaces the same
+  # control (the "same component on both paths" rule in
+  # docs/COMPONENT_CONVENTIONS.md) — only whether a toast joins the reply
+  # differs, so that split is two named render methods rather than a status
+  # flag threaded through one.
   sig { void }
   def update
     current_profile = profile
     authorize current_profile
 
     if current_profile.update_display_name(params[:user_profile][:display_name])
-      redirect_to root_path, notice: "Display name saved."
+      render_display_name_saved(current_profile)
     else
-      assign_profile_presenter(current_profile)
-      render :edit, status: :unprocessable_content
+      render_display_name_failed(current_profile)
     end
   end
 
@@ -88,6 +87,38 @@ class ProfilesController < ApplicationController
       ),
       toast_stream
     ]
+  end
+
+  # Persist-in-place: swap the Display Name control back to view mode plus a
+  # confirmation toast. flash.now, not flash: nothing redirects here, so a
+  # persisted flash would leak onto the next full page load. The non-Turbo
+  # fallback (turbo_or_redirect) redirects to the profile page — there is no
+  # separate edit page to fall back to.
+  sig { params(current_profile: UserProfile).void }
+  def render_display_name_saved(current_profile)
+    flash.now[:notice] = "Display name saved."
+    streams = [ display_name_replace(current_profile), toast_stream ]
+    turbo_or_redirect(fallback: profile_path) { render turbo_stream: streams, status: :ok }
+  end
+
+  # Persist-in-place, failure branch: swap the same control back in, still in
+  # edit mode with the model's own validation message (see
+  # Ui::ProfileDisplayNameFieldComponent#editing?) — no toast, the error is
+  # already visible in the field itself.
+  sig { params(current_profile: UserProfile).void }
+  def render_display_name_failed(current_profile)
+    streams = [ display_name_replace(current_profile) ]
+    turbo_or_redirect(fallback: profile_path) { render turbo_stream: streams, status: :unprocessable_content }
+  end
+
+  sig { params(current_profile: UserProfile).returns(String) }
+  def display_name_replace(current_profile)
+    turbo_stream.replace(
+      Ui::ProfileDisplayNameFieldComponent::CONTROL_ID,
+      Ui::ProfileDisplayNameFieldComponent.new(
+        profile: UserProfilePresenter.new(current_profile), update_url: profile_path
+      )
+    )
   end
 
   sig { params(current_profile: UserProfile).void }

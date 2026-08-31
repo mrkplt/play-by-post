@@ -1,0 +1,29 @@
+<div id="<%= CONTROL_ID %>" class="flex justify-between items-center py-3 gap-2.5" data-controller="inline-edit-field">
+  <div data-inline-edit-field-target="view" class="flex items-center gap-3 w-full justify-between" <%= "hidden" if editing? %>>
+    <span class="text-[13px] text-ink font-semibold"><%= display_name %></span>
+    <%= render Ui::ButtonComponent.new(
+          style: Ui::ButtonComponent::Style.new(variant: :text, size: :sm),
+          html_options: { data: { action: "inline-edit-field#edit" } }) do %>Edit<% end %>
+  </div>
+
+  <div data-inline-edit-field-target="edit" class="flex flex-col gap-1.5 w-full" <%= "hidden" unless editing? %>>
+    <%= form_with url: update_url, method: :patch, html: { id: FORM_ID }, class: "flex flex-col gap-1.5" do |f| %>
+      <div class="flex items-center gap-2">
+        <label class="sr-only" for="user_profile_display_name">Display name</label>
+        <input type="text" name="user_profile[display_name]" id="user_profile_display_name"
+               value="<%= display_name_value %>" maxlength="100"
+               data-inline-edit-field-target="input"
+               class="w-full border border-input-border rounded-control px-3 py-2.5 text-sm text-ink bg-card placeholder:text-muted-2">
+        <%= render Ui::ButtonComponent.new(
+              style: Ui::ButtonComponent::Style.new(variant: :primary, size: :sm),
+              html_options: { type: "submit" }) do %>Save<% end %>
+        <%= render Ui::ButtonComponent.new(
+              style: Ui::ButtonComponent::Style.new(variant: :text, size: :sm),
+              html_options: { type: "button", data: { action: "inline-edit-field#cancel" } }) do %>Cancel<% end %>
+      </div>
+      <% if errors? %>
+        <span class="text-sm text-danger"><%= error_message %></span>
+      <% end %>
+    <% end %>
+  </div>
+</div>

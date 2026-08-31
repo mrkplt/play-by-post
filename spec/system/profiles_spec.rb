@@ -5,14 +5,64 @@ RSpec.describe "Profiles", type: :feature do
 
   before { sign_in_as(user) }
 
-  it "user can update their display name" do
-    visit profile_path
-    click_on "Edit"
+  describe "display name (inline edit)" do
+    ViewportHelper::VIEWPORTS.each do |label, (width, height)|
+      context "at #{label}" do
+        before { resize_window_to_viewport(width, height) }
 
-    fill_in "Display name", with: "Aldric the Bold"
-    click_on "Save"
+        it "edits in place with no navigation and shows a confirmation toast" do
+          visit profile_path
 
-    expect(page).to have_text("Aldric the Bold")
+          # Tag a node outside the swapped control. A full page reload (Turbo
+          # Drive rebuilding <body> from fresh server HTML) drops this
+          # attribute; a targeted Turbo Stream swap of just the control leaves
+          # it — its survival proves this stayed in place.
+          page.execute_script(
+            "document.querySelector('main, body').setAttribute('data-no-reload-probe', 'kept')"
+          )
+
+          click_on "Edit"
+          expect(page).to have_current_path(profile_path)
+
+          fill_in "Display name", with: "Aldric the Bold"
+          click_on "Save"
+
+          expect(page).to have_text("Aldric the Bold")
+          expect(page).to have_text("Display name saved.")
+          expect(page).to have_current_path(profile_path)
+          expect(page).to have_css("[data-no-reload-probe='kept']")
+          expect(user.user_profile.reload.display_name).to eq("Aldric the Bold")
+        end
+      end
+    end
+
+    it "cancel reverts to the original name without saving" do
+      user.user_profile.update!(display_name: "Original Name")
+      visit profile_path
+
+      click_on "Edit"
+      fill_in "Display name", with: "Discarded Name"
+      click_on "Cancel"
+
+      expect(page).to have_text("Original Name")
+      expect(page).not_to have_text("Discarded Name")
+      expect(user.user_profile.reload.display_name).to eq("Original Name")
+    end
+
+    it "a validation failure keeps the field open with its error" do
+      allow_any_instance_of(UserProfile).to receive(:save) do |record|
+        record.errors.add(:display_name, "is too long")
+        false
+      end
+      visit profile_path
+
+      click_on "Edit"
+      fill_in "Display name", with: "Some Name"
+      click_on "Save"
+
+      expect(page).to have_css("[data-inline-edit-field-target='edit']:not([hidden])", visible: :all)
+      expect(page).to have_text("is too long")
+    end
   end
 
   it "display name is shown in the nav drawer" do
@@ -207,20 +257,6 @@ RSpec.describe "Profiles", type: :feature do
 
       # The old profile had a "My Games" section; the redesign removed it.
       expect(page).not_to have_css(".app-body", text: "My Games")
-    end
-
-    it "edit link navigates to edit page" do
-      visit profile_path
-      click_on "Edit"
-
-      expect(page).to have_current_path(edit_profile_path)
-    end
-
-    it "edit page has cancel link back to show" do
-      visit edit_profile_path
-
-      click_on "Cancel"
-      expect(page).to have_current_path(profile_path)
     end
   end
 end

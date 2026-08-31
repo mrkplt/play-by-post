@@ -3,12 +3,13 @@
     <%= render Shared::HeaderComponent.new(title: "Profile") %>
   <% end %>
 
-  <%# Display Name %>
+  <%# Display Name — edits in place (Ui::ProfileDisplayNameFieldComponent),
+      no separate edit page trip. The component owns its own row layout (it
+      is not a fixed-label/control pair like Ui::SettingsRowComponent — the
+      "label" itself becomes the editable control). %>
   <%= render Ui::SectionLabelComponent.new do %>Display Name<% end %>
   <%= render Ui::CardComponent.new do %>
-    <%= render Ui::SettingsRowComponent.new(label: @profile_presenter.display_name_or_placeholder, position: :last) do %>
-      <%= link_to "Edit", edit_profile_path, class: "text-xs font-bold text-accent no-underline" %>
-    <% end %>
+    <%= render Ui::ProfileDisplayNameFieldComponent.new(profile: @profile_presenter, update_url: profile_path) %>
   <% end %>
 
   <%# Avatar. Wrapped in the stable id UserImagesController swaps in place after

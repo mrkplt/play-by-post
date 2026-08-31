@@ -68,7 +68,7 @@ Rails.application.routes.draw do
 
     authenticate :user do
     resource :feedback, only: %i[create]
-    resource :profile, only: %i[show edit update], controller: "profiles" do
+    resource :profile, only: %i[show update], controller: "profiles" do
       post :toggle_hide_ooc, on: :collection
       post :update_ai_display_preference, on: :collection
       post :export_all, on: :collection
