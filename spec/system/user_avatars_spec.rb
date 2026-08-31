@@ -32,14 +32,24 @@ RSpec.describe "User avatars", type: :feature do
         expect(page).to have_css("[data-testid='add-image']")
       end
 
-      it "lets the user switch the current avatar" do
+      it "previews a clicked thumbnail immediately, then persists it on Save" do
         attach_avatar(create(:user_image, :current, user: user), "one.png")
         second = attach_avatar(create(:user_image, user: user), "two.png")
 
         sign_in_as(user)
         visit profile_path
 
-        click_on "Use"
+        thumbs = all("[data-testid='library-item'] img")
+        second_thumb = thumbs.find { |img| img["data-image-select-id-param"] == second.id.to_s }
+        expected_src = second_thumb["data-image-select-display-url-param"]
+
+        # Client-side only: the large preview swaps to the clicked thumbnail
+        # and Save becomes usable before anything is persisted.
+        second_thumb.click
+        expect(page).to have_css("[data-testid='current-image'][src='#{expected_src}']")
+        expect(second.reload.current?).to be(false)
+
+        find("[data-testid='save-image-selection']").click
 
         expect(page).to have_text("Image updated.")
         expect(second.reload.current?).to be(true)

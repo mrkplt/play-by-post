@@ -64,15 +64,22 @@ RSpec.describe UserImagesController, type: :request do
   end
 
   describe "PATCH /profile/images/:id" do
-    it "makes the chosen image current" do
+    # The Save button (image-select Stimulus controller) hits this exact
+    # endpoint via fetch with a turbo-stream Accept header — the request spec
+    # exercises that, not a plain form PATCH, since that is the only way this
+    # action is reached now that the "Use" button_to is gone.
+    it "makes the chosen image current and answers with the in-place library swap + toast" do
       first = create(:user_image, :current, user: user)
       second = create(:user_image, user: user)
       sign_in(user)
 
-      patch profile_image_path(second)
+      patch profile_image_path(second), headers: { "Accept" => "text/vnd.turbo-stream.html" }
 
       expect(second.reload.current?).to be(true)
       expect(first.reload.current?).to be(false)
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("image_library_user_image")
+      expect(response.body).to include("toast_layer")
     end
 
     it "cannot touch another user's image" do

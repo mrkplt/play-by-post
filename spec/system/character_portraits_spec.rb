@@ -59,15 +59,24 @@ RSpec.describe "Character portraits", type: :feature do
         expect(page).to have_field(type: "file", visible: true)
       end
 
-      it "lets the owner switch the current portrait" do
+      it "previews a clicked thumbnail immediately, then persists it on Save" do
         attach_portrait(create(:character_image, :current, character: character), "one.png")
         second = attach_portrait(create(:character_image, character: character), "two.png")
 
         sign_in_as(player)
         visit game_character_path(game, character)
 
-        # Only the non-current image offers "Use"; clicking it makes it current.
-        click_on "Use"
+        thumbs = all("[data-testid='library-item'] img")
+        second_thumb = thumbs.find { |img| img["data-image-select-id-param"] == second.id.to_s }
+        expected_src = second_thumb["data-image-select-display-url-param"]
+
+        # Client-side only: the large preview swaps to the clicked thumbnail
+        # and Save becomes usable before anything is persisted.
+        second_thumb.click
+        expect(page).to have_css("[data-testid='current-image'][src='#{expected_src}']")
+        expect(second.reload.current?).to be(false)
+
+        find("[data-testid='save-image-selection']").click
 
         expect(page).to have_text("Image updated.")
         expect(second.reload.current?).to be(true)
@@ -97,8 +106,8 @@ RSpec.describe "Character portraits", type: :feature do
 
     expect(page).to have_css("[data-testid='current-image']")
     expect(page).to have_no_css("[data-testid='add-image']")
-    expect(page).to have_no_css("[data-testid='use-image']")
     expect(page).to have_no_css("[data-testid='delete-image']")
+    expect(page).to have_no_css("[data-testid='save-image-selection']")
   end
 
   it "uploads a cropped portrait through the cropper" do
