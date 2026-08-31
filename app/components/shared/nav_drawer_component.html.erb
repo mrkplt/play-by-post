@@ -4,10 +4,10 @@
     <%= render Ui::IdentityBlockComponent.new(
           name: display_name,
           primary: display_name,
-          secondary: "View Profile",
+          secondary: "",
           avatar_url: avatar_url,
           config: Ui::IdentityBlockComponent::Config.new(
-            orientation: :inline, size: :md, variant: :on_dark)) %>
+            orientation: :inline, size: :lg, variant: :on_dark)) %>
   <% end %>
 
   <%= render Ui::SectionLabelComponent.new(size: :sm, html_class: "px-[18px] mb-0.5 flex-shrink-0") do %>

@@ -27,10 +27,19 @@ RSpec.describe Shared::NavDrawerComponent, type: :component do
     page
   end
 
-  it "shows the display name and View Profile" do
-    r = rendered
-    expect(r).to have_text("Dana")
-    expect(r).to have_text("View Profile")
+  it "shows the display name in the profile chip" do
+    expect(rendered).to have_text("Dana")
+  end
+
+  it "does not duplicate the profile link with a View Profile label" do
+    # Fizzy #128: the chip and the footer both linked to the profile page;
+    # the chip's redundant "View Profile" label is dropped and only the
+    # footer's Account Settings link remains as the textual affordance.
+    expect(rendered).not_to have_text("View Profile")
+  end
+
+  it "enlarges the display name now that the secondary label is gone" do
+    expect(rendered.native.to_html).to include("text-[15px]")
   end
 
   it "shows the player's avatar image in the profile chip when they have one" do

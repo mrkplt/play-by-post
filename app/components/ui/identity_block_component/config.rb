@@ -27,12 +27,14 @@ class Ui::IdentityBlockComponent::Config < T::Struct
 
   PRIMARY_SIZE = T.let({
     sm: "font-bold text-[11px] leading-tight",
-    md: "text-[13px] font-semibold"
+    md: "text-[13px] font-semibold",
+    lg: "text-[15px] font-semibold"
   }.freeze, T::Hash[Symbol, String])
 
   SECONDARY_SIZE = T.let({
     sm: "text-[11px]",
-    md: "text-[11px]"
+    md: "text-[11px]",
+    lg: "text-[11px]"
   }.freeze, T::Hash[Symbol, String])
 
   ORIENTATION_CLASSES = T.let({
