@@ -32,6 +32,24 @@ module GameExport
       )
     end
 
+    # A scene's summary, with its AI/edit provenance in the metadata header. The
+    # predicates come from AiGenerated::Model (generated_at/edited_at), so the
+    # export reads provenance exactly as the app does.
+    sig { params(summary: SceneSummary).returns(String) }
+    def self.scene_summary(summary)
+      document(title: "Scene Summary", metadata: summary_provenance(summary), body: summary.body)
+    end
+
+    # The provenance block: origin (AI-generated vs hand-written), whether it was
+    # edited (and by whom), and the draft marker — each on its own line.
+    sig { params(summary: SceneSummary).returns(String) }
+    def self.summary_provenance(summary)
+      lines = [ summary.ai_generated? ? "**Origin:** AI-generated" : "**Origin:** Hand-written" ]
+      lines << "**Edited by:** #{Author.name_for(summary.edited_by)}" if summary.edited?
+      lines << "**Status:** Draft" if summary.draft?
+      lines.join("\n\n")
+    end
+
     sig { params(title: String, metadata: T.nilable(String), body: T.nilable(String)).returns(String) }
     def self.document(title:, metadata:, body:)
       metadata_lines = metadata ? [ metadata, BLANK ] : []

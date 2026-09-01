@@ -3,20 +3,21 @@
 require "zip"
 
 module GameExport
-  # The zip layout for one game: which entries exist and where. One instance
-  # per game, so the game and prefix are state rather than threaded arguments.
-  # The low-level zip mechanics (prefixing, blob streaming, slug de-dup, version
-  # history) live in ZipWriter; Archive decides only what goes where.
+  # The zip layout for one game: which entries exist and where. The low-level
+  # zip mechanics (prefixing, blob streaming, slug de-dup, version history) live
+  # in ZipWriter; Archive decides only what goes where.
   class Archive
     extend T::Sig
 
-    # `reads` is duck-typed rather than sig'd as Reads: specs inject an
-    # instance_double, which sorbet-runtime rejects against a concrete type.
-    sig { params(zip: Zip::OutputStream, reads: T.untyped, game: Game, prefix: String).void }
-    def initialize(zip, reads, game:, prefix:)
+    # `reads`/`audit` are duck-typed rather than sig'd as their concrete classes:
+    # specs inject instance_doubles, which sorbet-runtime rejects against a
+    # concrete type.
+    sig { params(zip: Zip::OutputStream, reads: T.untyped, game: Game, prefix: String, audit: T.untyped).void }
+    def initialize(zip, reads, game:, prefix:, audit: AuditReads)
       @writer = T.let(ZipWriter.new(zip, prefix), ZipWriter)
       @reads = reads
       @game = game
+      @audit = audit
     end
 
     sig { params(scenes: T::Array[Scene]).void }
@@ -35,6 +36,14 @@ module GameExport
       end
     end
 
+    # The AI-generation audit log as a CSV at the game root. GM-eyes-only (gated
+    # by the caller): cost and funder attribution is real money.
+    sig { void }
+    def write_ai_audit
+      generations = @audit.generations_for(@game)
+      @writer.entry("ai_audit_log.csv", AuditDocument.csv(generations, @audit.names_for(generations)))
+    end
+
     private
 
     sig { params(scenes: T::Array[Scene]).void }
@@ -44,10 +53,8 @@ module GameExport
       @writer.entry("links_manifest.md", ManifestDocuments.links(@reads.links_for(@game)))
     end
 
-    # The uploaded files themselves, under files/, alongside the manifest that
-    # indexes them. Filenames are slugged and de-duplicated (extension
-    # preserved) so two files sharing a name don't collide; a GameFile with no
-    # attached blob is skipped.
+    # The uploaded files themselves, under files/. Names are slugged and
+    # de-duplicated (extension preserved); a GameFile with no blob is skipped.
     sig { void }
     def write_files
       tracker = T.let({}, T::Hash[String, Integer])
@@ -58,7 +65,6 @@ module GameExport
       end
     end
 
-    # The game's uploaded files that actually have a blob to stream.
     sig { returns(T::Array[T.untyped]) }
     def attached_files
       @reads.files_for(@game).select { |game_file| game_file.file.attached? }
@@ -78,6 +84,9 @@ module GameExport
     def write_scene(scene, dir)
       @writer.entry("#{dir}/scene_info.md", SceneDocuments.info(scene, @reads.participants_for(scene)))
       @writer.entry("#{dir}/posts.md", SceneDocuments.posts(@reads.published_posts_for(scene)))
+      # The scene's summary (published or draft), when it has one.
+      summary = scene.scene_summary
+      @writer.entry("#{dir}/summary.md", ProseDocuments.scene_summary(summary)) if summary
     end
 
     sig { params(scenes: T::Array[Scene]).void }
