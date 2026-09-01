@@ -114,6 +114,28 @@ RSpec.describe GameExport::Reads, :db do
       expect(c).to have_received(:order).with(:created_at)
     end
 
+    it "loads page versions with their editor, oldest first" do
+      page = build_stubbed(:page)
+      c = chain
+      allow(page).to receive(:page_versions).and_return(c)
+
+      service.send(:page_versions_for, page)
+
+      expect(c).to have_received(:includes).with(:edited_by)
+      expect(c).to have_received(:order).with(:created_at)
+    end
+
+    it "loads notebook entry versions with their editor, oldest first" do
+      entry = build_stubbed(:notebook_entry)
+      c = chain
+      allow(entry).to receive(:notebook_entry_versions).and_return(c)
+
+      service.send(:notebook_entry_versions_for, entry)
+
+      expect(c).to have_received(:includes).with(:edited_by)
+      expect(c).to have_received(:order).with(:created_at)
+    end
+
     describe "#characters_for" do
       let(:export_game) { build_stubbed(:game) }
       let(:export_scene) { build_stubbed(:scene) }

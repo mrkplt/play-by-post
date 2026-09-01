@@ -50,7 +50,8 @@ RSpec.describe GameExportService do
         GameExport::Reads,
         scenes_for: scenes, members_for: [], files_for: [], links_for: [],
         participants_for: [], published_posts_for: [], characters_for: characters,
-        versions_for: versions, pages_for: pages, notebook_entries_for: notebook_entries
+        versions_for: versions, pages_for: pages, notebook_entries_for: notebook_entries,
+        page_versions_for: [], notebook_entry_versions_for: []
       )
 
       described_class.new(export_user, games, reads: reads)

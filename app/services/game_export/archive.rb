@@ -31,6 +31,9 @@ module GameExport
     def write_notebook
       each_slugged(@reads.notebook_entries_for(@game), :title) do |entry, slug|
         write_entry("notebook/#{slug}.md", ProseDocuments.notebook_entry(entry))
+        write_version_history("notebook/#{slug}", @reads.notebook_entry_versions_for(entry)) do |version, number|
+          ProseDocuments.version(version, number)
+        end
       end
     end
 
@@ -111,18 +114,9 @@ module GameExport
     def write_characters(scenes)
       each_slugged(@reads.characters_for(@game, scenes), :name) do |character, slug|
         write_entry("characters/#{slug}/current_sheet.md", CharacterDocuments.sheet(character))
-        write_versions(character, slug)
-      end
-    end
-
-    sig { params(character: Character, slug: String).void }
-    def write_versions(character, slug)
-      @reads.versions_for(character).each_with_index do |version, index|
-        number = index + 1
-        date = version.created_at.strftime("%Y-%m-%d")
-        path = "characters/#{slug}/version_history/#{format("v%03d", number)}-#{date}.md"
-
-        write_entry(path, CharacterDocuments.version(version, number))
+        write_version_history("characters/#{slug}", @reads.versions_for(character)) do |version, number|
+          CharacterDocuments.version(version, number)
+        end
       end
     end
 
@@ -130,6 +124,30 @@ module GameExport
     def write_pages
       each_slugged(@reads.pages_for(@game), :title) do |page, slug|
         write_entry("pages/#{slug}.md", ProseDocuments.page(page))
+        write_version_history("pages/#{slug}", @reads.page_versions_for(page)) do |version, number|
+          ProseDocuments.version(version, number)
+        end
+      end
+    end
+
+    # Writes each retained version of a versioned record under
+    # <base_dir>/version_history/vNNN-<date>.md, numbered oldest-first. The
+    # renderer turns a version row into its markdown — the one thing that differs
+    # between characters, pages and notebook entries.
+    sig do
+      params(
+        base_dir: String,
+        versions: T::Array[T.untyped],
+        renderer: T.proc.params(version: T.untyped, number: Integer).returns(String)
+      ).void
+    end
+    def write_version_history(base_dir, versions, &renderer)
+      versions.each_with_index do |version, index|
+        number = index + 1
+        date = version.created_at.strftime("%Y-%m-%d")
+        path = "#{base_dir}/version_history/#{format("v%03d", number)}-#{date}.md"
+
+        write_entry(path, renderer.call(version, number))
       end
     end
   end

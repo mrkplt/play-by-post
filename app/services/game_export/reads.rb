@@ -52,6 +52,16 @@ module GameExport
       character.character_versions.includes(:edited_by).order(:created_at).to_a
     end
 
+    sig { params(page: Page).returns(T::Array[PageVersion]) }
+    def page_versions_for(page)
+      page.page_versions.includes(:edited_by).order(:created_at).to_a
+    end
+
+    sig { params(entry: NotebookEntry).returns(T::Array[NotebookEntryVersion]) }
+    def notebook_entry_versions_for(entry)
+      entry.notebook_entry_versions.includes(:edited_by).order(:created_at).to_a
+    end
+
     # Applies the export scope the policy decided (:all / :participating /
     # :visible). Each scope is its own method so the selection dispatches to one
     # rather than branching inside a single query builder.

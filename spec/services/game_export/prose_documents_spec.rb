@@ -40,4 +40,37 @@ RSpec.describe GameExport::ProseDocuments, :db do
       expect(content(build_stubbed(:notebook_entry, body: nil))).to include("_No content._")
     end
   end
+
+  describe "#version" do
+    let(:editor) { build_stubbed(:user).tap { |u| allow(u).to receive(:display_name).and_return("Jo") } }
+
+    def content(version, number = 1)
+      GameExport::ProseDocuments.version(version, number)
+    end
+
+    it "heads the version with its number and date" do
+      version = build_stubbed(:page_version, created_at: Time.utc(2026, 5, 6), edited_by: editor)
+      expect(content(version, 3)).to include("# Version 3 — 2026-05-06")
+    end
+
+    it "credits the editor by display name" do
+      version = build_stubbed(:page_version, edited_by: editor)
+      expect(content(version)).to include("**Edited by:** Jo")
+    end
+
+    it "records the title as it stood at that version" do
+      version = build_stubbed(:page_version, title: "Old House Rules", edited_by: editor)
+      expect(content(version)).to include("**Title:** Old House Rules")
+    end
+
+    it "includes the versioned body" do
+      version = build_stubbed(:page_version, body: "Roll **once**.", edited_by: editor)
+      expect(content(version)).to include("Roll **once**.")
+    end
+
+    it "renders a notebook entry version the same way" do
+      version = build_stubbed(:notebook_entry_version, title: "Old Plan", body: "Scheme.", edited_by: editor)
+      expect(content(version, 2)).to include("# Version 2", "**Edited by:** Jo", "**Title:** Old Plan", "Scheme.")
+    end
+  end
 end
