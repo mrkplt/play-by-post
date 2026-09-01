@@ -37,7 +37,9 @@ module GameExport
     def self.unique_filename(name, tracker)
       ext = File.extname(name)
       deduped = unique(call(File.basename(name, ext)), tracker)
-      ext.empty? ? deduped : "#{deduped}#{ext.downcase}"
+      # ext is "" for an extensionless name, so appending it unconditionally is
+      # the same as guarding on empty? — and leaves no equivalent branch.
+      "#{deduped}#{ext.downcase}"
     end
   end
 end

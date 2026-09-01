@@ -48,9 +48,10 @@ RSpec.describe GameExport::ProseDocuments, :db do
       GameExport::ProseDocuments.version(version, number)
     end
 
-    it "heads the version with its number and date" do
-      version = build_stubbed(:page_version, created_at: Time.utc(2026, 5, 6), edited_by: editor)
-      expect(content(version, 3)).to include("# Version 3 — 2026-05-06")
+    it "heads the version with its number and date, date only (no time component)" do
+      version = build_stubbed(:page_version, created_at: Time.utc(2026, 5, 6, 14, 30), edited_by: editor)
+      expect(content(version, 3)).to include("# Version 3 — 2026-05-06\n")
+      expect(content(version, 3)).not_to match(/Version 3 — 2026-05-06 \d/)
     end
 
     it "credits the editor by display name" do

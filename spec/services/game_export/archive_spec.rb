@@ -145,13 +145,19 @@ RSpec.describe GameExport::Archive, :db do
       expect(names).to include("#{prefix}pages/lore.md", "#{prefix}pages/lore-2.md")
     end
 
-    it "writes a file per page version under the page's version_history" do
+    it "writes a file per page version under the page's version_history, numbered oldest-first" do
       page = build_stubbed(:page, title: "House Rules")
-      version = build_stubbed(:page_version, created_at: Time.utc(2026, 5, 6), edited_by: build_stubbed(:user))
+      versions = [
+        build_stubbed(:page_version, created_at: Time.utc(2026, 5, 6), edited_by: build_stubbed(:user)),
+        build_stubbed(:page_version, created_at: Time.utc(2026, 5, 7), edited_by: build_stubbed(:user))
+      ]
 
-      names = entry_names(archive_for(pages: [ page ], page_versions: [ version ]))
+      names = entry_names(archive_for(pages: [ page ], page_versions: versions))
 
-      expect(names).to include("#{prefix}pages/house-rules/version_history/v001-2026-05-06.md")
+      expect(names).to include(
+        "#{prefix}pages/house-rules/version_history/v001-2026-05-06.md",
+        "#{prefix}pages/house-rules/version_history/v002-2026-05-07.md"
+      )
     end
 
     it "writes no notebook directory on its own" do

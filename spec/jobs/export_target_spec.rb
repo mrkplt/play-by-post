@@ -74,8 +74,13 @@ RSpec.describe ExportTarget do
       end
     end
 
-    it "streams the archive IO through as the attachable IO, rewound" do
-      described_class.new(nil).attach(request: request, archive: archive_io("the-bytes"), user: user)
+    it "rewinds the archive IO so the upload reads it from the start" do
+      # Hand attach an IO whose cursor is already at the end; only a rewind
+      # inside attach makes the full bytes readable.
+      io = archive_io("the-bytes")
+      io.read
+
+      described_class.new(nil).attach(request: request, archive: io, user: user)
 
       expect(AttachmentUploader).to have_received(:attach) do |args|
         expect(args[:attachable][:io].read).to eq("the-bytes")
