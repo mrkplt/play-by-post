@@ -103,43 +103,28 @@ RSpec.describe GameExport::Reads, :db do
       expect(c).to have_received(:order).with(:created_at)
     end
 
-    it "loads versions with their editor, oldest first" do
+    it "loads a versionable record's versions with their editor, oldest first, as an array" do
+      versions = [ build_stubbed(:page_version) ]
+      c = chain
+      allow(c).to receive(:to_a).and_return(versions)
+      record = build_stubbed(:page)
+      allow(record).to receive(:versions).and_return(c)
+
+      result = service.send(:versions_for, record)
+
+      expect(c).to have_received(:includes).with(:edited_by)
+      expect(c).to have_received(:order).with(:created_at)
+      expect(result).to eq(versions)
+    end
+
+    it "reads through the record's own #versions, so it serves every versionable type" do
       character = build_stubbed(:character)
       c = chain
-      allow(character).to receive(:character_versions).and_return(c)
+      allow(character).to receive(:versions).and_return(c)
 
       service.send(:versions_for, character)
 
-      expect(c).to have_received(:includes).with(:edited_by)
-      expect(c).to have_received(:order).with(:created_at)
-    end
-
-    it "loads page versions with their editor, oldest first, as an array" do
-      page = build_stubbed(:page)
-      c = chain
-      versions = [ build_stubbed(:page_version) ]
-      allow(c).to receive(:to_a).and_return(versions)
-      allow(page).to receive(:page_versions).and_return(c)
-
-      result = service.send(:page_versions_for, page)
-
-      expect(c).to have_received(:includes).with(:edited_by)
-      expect(c).to have_received(:order).with(:created_at)
-      expect(result).to eq(versions)
-    end
-
-    it "loads notebook entry versions with their editor, oldest first, as an array" do
-      entry = build_stubbed(:notebook_entry)
-      c = chain
-      versions = [ build_stubbed(:notebook_entry_version) ]
-      allow(c).to receive(:to_a).and_return(versions)
-      allow(entry).to receive(:notebook_entry_versions).and_return(c)
-
-      result = service.send(:notebook_entry_versions_for, entry)
-
-      expect(c).to have_received(:includes).with(:edited_by)
-      expect(c).to have_received(:order).with(:created_at)
-      expect(result).to eq(versions)
+      expect(character).to have_received(:versions)
     end
 
     describe "#characters_for" do

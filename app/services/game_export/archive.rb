@@ -14,7 +14,7 @@ module GameExport
     # instance_double, which sorbet-runtime rejects against a concrete type.
     sig { params(zip: Zip::OutputStream, reads: T.untyped, game: Game, prefix: String).void }
     def initialize(zip, reads, game:, prefix:)
-      @w = T.let(ZipWriter.new(zip, prefix), ZipWriter)
+      @writer = T.let(ZipWriter.new(zip, prefix), ZipWriter)
       @reads = reads
       @game = game
     end
@@ -30,11 +30,8 @@ module GameExport
 
     sig { void }
     def write_notebook
-      @w.each_slugged(@reads.notebook_entries_for(@game), :title) do |entry, slug|
-        @w.entry("notebook/#{slug}.md", ProseDocuments.notebook_entry(entry))
-        @w.version_history("notebook/#{slug}", @reads.notebook_entry_versions_for(entry)) do |version, number|
-          ProseDocuments.version(version, number)
-        end
+      @writer.each_slugged(@reads.notebook_entries_for(@game), :title) do |entry, slug|
+        write_prose("notebook/#{slug}", ProseDocuments.notebook_entry(entry), @reads.versions_for(entry))
       end
     end
 
@@ -42,9 +39,9 @@ module GameExport
 
     sig { params(scenes: T::Array[Scene]).void }
     def write_manifests(scenes)
-      @w.entry("README.md", ReadmeDocument.call(@game, scenes, @reads.members_for(@game)))
-      @w.entry("files_manifest.md", ManifestDocuments.files(@reads.files_for(@game)))
-      @w.entry("links_manifest.md", ManifestDocuments.links(@reads.links_for(@game)))
+      @writer.entry("README.md", ReadmeDocument.call(@game, scenes, @reads.members_for(@game)))
+      @writer.entry("files_manifest.md", ManifestDocuments.files(@reads.files_for(@game)))
+      @writer.entry("links_manifest.md", ManifestDocuments.links(@reads.links_for(@game)))
     end
 
     # The uploaded files themselves, under files/, alongside the manifest that
@@ -55,12 +52,16 @@ module GameExport
     def write_files
       tracker = T.let({}, T::Hash[String, Integer])
 
-      @reads.files_for(@game).each do |game_file|
-        next unless game_file.file.attached?
-
+      attached_files.each do |game_file|
         name = Slug.unique_filename(game_file.filename, tracker)
-        @w.blob_entry("files/#{name}", game_file.file.blob)
+        @writer.blob_entry("files/#{name}", game_file.file.blob)
       end
+    end
+
+    # The game's uploaded files that actually have a blob to stream.
+    sig { returns(T::Array[T.untyped]) }
+    def attached_files
+      @reads.files_for(@game).select { |game_file| game_file.file.attached? }
     end
 
     sig { params(scenes: T::Array[Scene]).void }
@@ -75,28 +76,37 @@ module GameExport
 
     sig { params(scene: Scene, dir: String).void }
     def write_scene(scene, dir)
-      @w.entry("#{dir}/scene_info.md", SceneDocuments.info(scene, @reads.participants_for(scene)))
-      @w.entry("#{dir}/posts.md", SceneDocuments.posts(@reads.published_posts_for(scene)))
+      @writer.entry("#{dir}/scene_info.md", SceneDocuments.info(scene, @reads.participants_for(scene)))
+      @writer.entry("#{dir}/posts.md", SceneDocuments.posts(@reads.published_posts_for(scene)))
     end
 
     sig { params(scenes: T::Array[Scene]).void }
     def write_characters(scenes)
-      @w.each_slugged(@reads.characters_for(@game, scenes), :name) do |character, slug|
-        @w.entry("characters/#{slug}/current_sheet.md", CharacterDocuments.sheet(character))
-        @w.version_history("characters/#{slug}", @reads.versions_for(character)) do |version, number|
-          CharacterDocuments.version(version, number)
-        end
+      @writer.each_slugged(@reads.characters_for(@game, scenes), :name) do |character, slug|
+        write_character(character, "characters/#{slug}")
       end
+    end
+
+    sig { params(character: Character, dir: String).void }
+    def write_character(character, dir)
+      @writer.entry("#{dir}/current_sheet.md", CharacterDocuments.sheet(character))
+      @writer.version_history(dir, @reads.versions_for(character), &CharacterDocuments.method(:version))
     end
 
     sig { void }
     def write_pages
-      @w.each_slugged(@reads.pages_for(@game), :title) do |page, slug|
-        @w.entry("pages/#{slug}.md", ProseDocuments.page(page))
-        @w.version_history("pages/#{slug}", @reads.page_versions_for(page)) do |version, number|
-          ProseDocuments.version(version, number)
-        end
+      @writer.each_slugged(@reads.pages_for(@game), :title) do |page, slug|
+        write_prose("pages/#{slug}", ProseDocuments.page(page), @reads.versions_for(page))
       end
+    end
+
+    # Pages and notebook entries share a shape: one prose document plus its
+    # version history under the same slugged directory. Passing the renderer as a
+    # Method (via &) keeps it out of an inline block nested inside each_slugged.
+    sig { params(dir: String, body: String, versions: T::Array[T.untyped]).void }
+    def write_prose(dir, body, versions)
+      @writer.entry("#{dir}.md", body)
+      @writer.version_history(dir, versions, &ProseDocuments.method(:version))
     end
   end
 end

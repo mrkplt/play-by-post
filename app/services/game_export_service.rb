@@ -25,15 +25,20 @@ class GameExportService
   # closing/unlinking it.
   sig { returns(Tempfile) }
   def call
-    tempfile = Tempfile.new([ "game-export", ".zip" ], binmode: true)
-    # rubyzip's RBI types the yielded value as IO; at runtime it is a
-    # Zip::OutputStream, which is what write_games consumes.
-    Zip::OutputStream.open(T.must(tempfile.path)) { |zip| write_games(T.unsafe(zip)) }
-    tempfile.rewind
-    tempfile
+    build_archive.tap(&:rewind)
   end
 
   private
+
+  # Builds the zip on disk and returns the open (unrewound) Tempfile. rubyzip's
+  # RBI types the yielded value as IO; at runtime it is a Zip::OutputStream,
+  # which is what write_games consumes.
+  sig { returns(Tempfile) }
+  def build_archive
+    tempfile = Tempfile.new([ "game-export", ".zip" ], binmode: true)
+    Zip::OutputStream.open(T.must(tempfile.path)) { |zip| write_games(T.unsafe(zip)) }
+    tempfile
+  end
 
   sig { params(zip: Zip::OutputStream).void }
   def write_games(zip)

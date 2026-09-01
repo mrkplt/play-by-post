@@ -47,19 +47,12 @@ module GameExport
       scene.posts.published.includes(:user).order(:created_at).to_a
     end
 
-    sig { params(character: Character).returns(T::Array[CharacterVersion]) }
-    def versions_for(character)
-      character.character_versions.includes(:edited_by).order(:created_at).to_a
-    end
-
-    sig { params(page: Page).returns(T::Array[PageVersion]) }
-    def page_versions_for(page)
-      page.page_versions.includes(:edited_by).order(:created_at).to_a
-    end
-
-    sig { params(entry: NotebookEntry).returns(T::Array[NotebookEntryVersion]) }
-    def notebook_entry_versions_for(entry)
-      entry.notebook_entry_versions.includes(:edited_by).order(:created_at).to_a
+    # Every Versionable record (Character, Page, NotebookEntry) exposes its
+    # snapshots through `versions`, so one read serves all three — each returns
+    # its own version rows with the editor preloaded, oldest first.
+    sig { params(record: T.untyped).returns(T::Array[T.untyped]) }
+    def versions_for(record)
+      record.versions.includes(:edited_by).order(:created_at).to_a
     end
 
     # Applies the export scope the policy decided (:all / :participating /

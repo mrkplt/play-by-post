@@ -113,8 +113,8 @@ class ExportJob < ApplicationJob
     begin
       ExportTarget.new(game).attach(request:, archive:, user:)
     ensure
-      archive.close
-      archive.unlink
+      # close! both closes the fd and unlinks the temp file in one call.
+      archive.close!
     end
   end
 
