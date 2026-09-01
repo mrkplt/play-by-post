@@ -74,4 +74,58 @@ RSpec.describe GameExport::ProseDocuments, :db do
       expect(content(version, 2)).to include("# Version 2", "**Edited by:** Jo", "**Title:** Old Plan", "Scheme.")
     end
   end
+
+  describe "#scene_summary" do
+    let(:editor) { build_stubbed(:user).tap { |u| allow(u).to receive(:display_name).and_return("Jo") } }
+
+    def content(summary)
+      GameExport::ProseDocuments.scene_summary(summary)
+    end
+
+    it "titles it and includes the body" do
+      summary = build_stubbed(:scene_summary, body: "They **escaped**.")
+      expect(content(summary)).to include("# Scene Summary", "They **escaped**.")
+    end
+
+    it "marks a hand-written summary's origin" do
+      summary = build_stubbed(:scene_summary, generated_at: nil)
+      expect(content(summary)).to include("**Origin:** Hand-written")
+      expect(content(summary)).not_to include("AI-generated")
+    end
+
+    it "marks an AI-generated summary's origin" do
+      summary = build_stubbed(:scene_summary, generated_at: Time.current)
+      expect(content(summary)).to include("**Origin:** AI-generated")
+    end
+
+    it "credits the editor when the summary was edited" do
+      summary = build_stubbed(:scene_summary, edited_at: Time.current, edited_by: editor)
+      expect(content(summary)).to include("**Edited by:** Jo")
+    end
+
+    it "separates the provenance lines with a blank line" do
+      summary = build_stubbed(:scene_summary, generated_at: Time.current, edited_at: Time.current, edited_by: editor)
+      expect(content(summary)).to include("**Origin:** AI-generated\n\n**Edited by:** Jo")
+    end
+
+    it "omits the editor line when the summary was never edited" do
+      summary = build_stubbed(:scene_summary, edited_at: nil)
+      expect(content(summary)).not_to include("**Edited by:**")
+    end
+
+    it "flags a draft summary" do
+      summary = build_stubbed(:scene_summary, draft: true)
+      expect(content(summary)).to include("**Status:** Draft")
+    end
+
+    it "does not flag a published summary as a draft" do
+      summary = build_stubbed(:scene_summary, draft: false)
+      expect(content(summary)).not_to include("Draft")
+    end
+
+    it "notes an empty draft body rather than writing nothing" do
+      summary = build_stubbed(:scene_summary, draft: true, body: nil)
+      expect(content(summary)).to include("_No content._")
+    end
+  end
 end

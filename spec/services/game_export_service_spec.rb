@@ -46,6 +46,9 @@ RSpec.describe GameExportService do
         allow(g).to receive(:member_for).with(export_user).and_return(gm_member)
         allow(g).to receive(:game_master?).with(export_user).and_return(gm)
       end
+      # Scenes are built (nulldb): stub the summary association so write_summary
+      # doesn't reach the database. Provenance content is pinned in ProseDocuments.
+      scenes.each { |scene| allow(scene).to receive(:scene_summary).and_return(nil) }
       reads = instance_double(
         GameExport::Reads,
         scenes_for: scenes, members_for: [], files_for: [], links_for: [],
@@ -130,6 +133,14 @@ RSpec.describe GameExportService do
       entries = entries_for(one_game, gm: false, notebook_entries: [ build_stubbed(:notebook_entry, title: "Secret Plan") ])
 
       expect(entries).not_to include(a_string_matching(%r{notebook/}))
+    end
+
+    it "writes the AI audit log for the GM" do
+      expect(entries_for(one_game, gm: true)).to include(a_string_matching(%r{ai_audit_log\.csv$}))
+    end
+
+    it "does not write the AI audit log for a non-GM (cost/funder is GM-eyes-only)" do
+      expect(entries_for(one_game, gm: false)).not_to include(a_string_matching(%r{ai_audit_log\.csv}))
     end
 
     context "with several games" do
@@ -253,6 +264,23 @@ RSpec.describe GameExportService do
         expect(entry_name).to be_present
         expect(zip_file_content(zip_data, entry_name)).to eq("%PDF-1.4 real bytes")
       end
+
+      it "writes an AI-generated scene summary with its provenance header" do
+        create(:scene_summary, :ai_generated, scene: scene, body: "The party fled.")
+
+        entry = zip_entries(zip_data).find { |e| e.end_with?("summary.md") }
+        content = zip_file_content(zip_data, entry)
+        expect(content).to include("# Scene Summary", "**Origin:** AI-generated", "The party fled.")
+      end
+
+      it "writes the AI audit log with a row for the game's generation" do
+        summary = create(:scene_summary, scene: scene)
+        create(:ai_generation, asset_type: "SceneSummary", asset_id: summary.id,
+                               requested_by_id: gm_user.id, funded_by_id: gm_user.id, model_used: "openai/gpt-4o")
+
+        csv = zip_file_content(zip_data, zip_entries(zip_data).find { |e| e.end_with?("ai_audit_log.csv") })
+        expect(csv).to include("generated_at,feature,asset", "SceneSummary##{summary.id}", "openai/gpt-4o")
+      end
     end
 
     context "single game, active player" do
@@ -269,6 +297,13 @@ RSpec.describe GameExportService do
         create(:notebook_entry, game: game, title: "Secret Plan")
         entries = zip_entries(zip_data)
         expect(entries).not_to include(a_string_matching(%r{notebook/}))
+      end
+
+      it "never includes the AI audit log, even when the game has AI generations" do
+        summary = create(:scene_summary, scene: scene)
+        create(:ai_generation, asset_type: "SceneSummary", asset_id: summary.id)
+
+        expect(zip_entries(zip_data)).not_to include(a_string_matching(%r{ai_audit_log\.csv}))
       end
     end
 

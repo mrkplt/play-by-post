@@ -287,6 +287,8 @@ matcher:
     - SceneResolution
     - GameExportService
     - GameExport::Archive
+    - GameExport::AuditDocument
+    - GameExport::AuditReads
     - GameExport::Author
     - GameExport::CharacterDocuments
     - GameExport::ManifestDocuments
