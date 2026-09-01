@@ -8,12 +8,31 @@ RSpec.describe GameExport::Archive, :db do
   let(:game) { build_stubbed(:game, name: "Sunken Archive") }
   let(:prefix) { "sunken-archive-export-2026-06-15/" }
 
-  def reads(scenes: [], characters: [], versions: [], pages: [], notebook_entries: [])
+  def reads(scenes: [], characters: [], versions: [], pages: [], notebook_entries: [], files: [])
     instance_double(
       GameExport::Reads,
-      members_for: [], files_for: [], links_for: [], participants_for: [],
+      members_for: [], files_for: files, links_for: [], participants_for: [],
       published_posts_for: [], scenes_for: scenes, characters_for: characters,
       versions_for: versions, pages_for: pages, notebook_entries_for: notebook_entries
+    )
+  end
+
+  # A GameFile-shaped double whose blob streams `bytes` when downloaded, so the
+  # archive's chunked write path is exercised without Active Storage.
+  def file_double(filename:, bytes: "PDF-BYTES", attached: true)
+    blob = instance_double(ActiveStorage::Blob)
+    allow(blob).to receive(:download) { |&block| block.call(bytes) }
+    # Attached::One reaches blob/attached? through delegation, so a verifying
+    # double can't stand in for it — a bare double models the surface used here.
+    attachment = double("file", attached?: attached, blob: blob)
+    # The same files_for result feeds the manifest too, so stub the columns
+    # ManifestDocuments reads (byte_size/content_type/created_at) alongside the
+    # streaming surface (filename/file).
+    instance_double(
+      GameFile,
+      filename: filename, file: attachment,
+      byte_size: bytes.bytesize, content_type: "application/pdf",
+      created_at: Time.utc(2026, 1, 1)
     )
   end
 
@@ -53,6 +72,27 @@ RSpec.describe GameExport::Archive, :db do
 
     it "roots every entry at the prefix it was given" do
       expect(entry_names(archive_for)).to all(start_with(prefix))
+    end
+
+    it "streams each uploaded file's bytes into files/, slugged and extension-preserved" do
+      data = archive_for(files: [ file_double(filename: "My Map.PDF", bytes: "map-bytes") ])
+
+      expect(entry_names(data)).to include("#{prefix}files/my-map.pdf")
+      expect(content_of(data, "#{prefix}files/my-map.pdf")).to eq("map-bytes")
+    end
+
+    it "disambiguates files that slug to the same name" do
+      names = entry_names(archive_for(files: [
+        file_double(filename: "notes.txt"), file_double(filename: "Notes.txt")
+      ]))
+
+      expect(names).to include("#{prefix}files/notes.txt", "#{prefix}files/notes-2.txt")
+    end
+
+    it "skips a GameFile whose blob is not attached" do
+      names = entry_names(archive_for(files: [ file_double(filename: "ghost.pdf", attached: false) ]))
+
+      expect(names).not_to include(a_string_matching(%r{files/ghost}))
     end
 
     it "writes scene info and posts per scene" do

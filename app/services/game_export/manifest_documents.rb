@@ -19,7 +19,7 @@ module GameExport
         "_No files uploaded._",
         "| Filename | Type | Size | Uploaded |",
         "|---|---|---|---|",
-        "_Binary files are not included in this export. The game's GM can download them from the app._"
+        "_The files themselves are in the `files/` folder of this export._"
       ).freeze,
       Layout
     )

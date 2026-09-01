@@ -241,6 +241,18 @@ RSpec.describe GameExportService do
         entries = zip_entries(zip_data)
         expect(entries).to include(a_string_matching(%r{notebook/wandering-merchant\.md$}))
       end
+
+      # End-to-end through real Active Storage: the archive spec stubs the blob,
+      # so this pins that an actually-attached GameFile's bytes stream into
+      # files/ via blob.download.
+      it "streams an uploaded file's real bytes into files/" do
+        game_file = create(:game_file, game: game, filename: "Rule Book.pdf")
+        game_file.file.attach(io: StringIO.new("%PDF-1.4 real bytes"), filename: "Rule Book.pdf", content_type: "application/pdf")
+
+        entry_name = zip_entries(zip_data).find { |e| e.end_with?("files/rule-book.pdf") }
+        expect(entry_name).to be_present
+        expect(zip_file_content(zip_data, entry_name)).to eq("%PDF-1.4 real bytes")
+      end
     end
 
     context "single game, active player" do

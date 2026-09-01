@@ -21,6 +21,7 @@ module GameExport
     sig { params(scenes: T::Array[Scene]).void }
     def write_game(scenes)
       write_manifests(scenes)
+      write_files
       write_scenes(scenes)
       write_characters(scenes)
       write_pages
@@ -42,10 +43,36 @@ module GameExport
       write_entry("links_manifest.md", ManifestDocuments.links(@reads.links_for(@game)))
     end
 
+    # The uploaded files themselves, under files/, alongside the manifest that
+    # indexes them. Each blob is streamed into the zip in chunks rather than read
+    # whole — a GameFile may be up to 50MB — and filenames are slugged and
+    # de-duplicated (extension preserved) so two files sharing a name don't
+    # collide. A GameFile with no attached blob is skipped.
+    sig { void }
+    def write_files
+      tracker = T.let({}, T::Hash[String, Integer])
+
+      @reads.files_for(@game).each do |game_file|
+        next unless game_file.file.attached?
+
+        name = Slug.unique_filename(game_file.filename, tracker)
+        write_blob_entry("files/#{name}", game_file.file.blob)
+      end
+    end
+
     sig { params(path: String, content: String).void }
     def write_entry(path, content)
       @zip.put_next_entry("#{@prefix}#{path}")
       @zip.write(content)
+    end
+
+    # Streams a blob's bytes into a zip entry in chunks, so a large attachment
+    # never sits fully in memory. download's block form yields successive chunks
+    # from the storage service.
+    sig { params(path: String, blob: T.untyped).void }
+    def write_blob_entry(path, blob)
+      @zip.put_next_entry("#{@prefix}#{path}")
+      blob.download { |chunk| @zip.write(chunk) }
     end
 
     # One tracker per collection, so repeated titles get -2/-3 rather than
