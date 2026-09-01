@@ -54,7 +54,7 @@ RSpec.describe GameExport::ManifestDocuments, :db do
         "|---|---|---|---|",
         "| rules.pdf | application/pdf | 500 B | 2026-01-01 |",
         "",
-        "_Binary files are not included in this export. The game's GM can download them from the app._",
+        "_The files themselves are in the `files/` folder of this export._",
         ""
       ].join("\n")
 

@@ -103,15 +103,28 @@ RSpec.describe GameExport::Reads, :db do
       expect(c).to have_received(:order).with(:created_at)
     end
 
-    it "loads versions with their editor, oldest first" do
-      character = build_stubbed(:character)
+    it "loads a versionable record's versions with their editor, oldest first, as an array" do
+      versions = [ build_stubbed(:page_version) ]
       c = chain
-      allow(character).to receive(:character_versions).and_return(c)
+      allow(c).to receive(:to_a).and_return(versions)
+      record = build_stubbed(:page)
+      allow(record).to receive(:versions).and_return(c)
 
-      service.send(:versions_for, character)
+      result = service.send(:versions_for, record)
 
       expect(c).to have_received(:includes).with(:edited_by)
       expect(c).to have_received(:order).with(:created_at)
+      expect(result).to eq(versions)
+    end
+
+    it "reads through the record's own #versions, so it serves every versionable type" do
+      character = build_stubbed(:character)
+      c = chain
+      allow(character).to receive(:versions).and_return(c)
+
+      service.send(:versions_for, character)
+
+      expect(character).to have_received(:versions)
     end
 
     describe "#characters_for" do

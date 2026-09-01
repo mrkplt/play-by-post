@@ -295,6 +295,7 @@ matcher:
     - GameExport::Reads
     - GameExport::SceneDocuments
     - GameExport::Slug
+    - GameExport::ZipWriter
     - MarkdownRenderer
     - NotebookEntryPromotion
     - NotebookLaneMove

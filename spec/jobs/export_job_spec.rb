@@ -13,9 +13,19 @@ RSpec.describe ExportJob, type: :job do
     ActiveJob::Base.queue_adapter = original_adapter
   end
 
+  # GameExportService#call returns an open Tempfile; build_archive streams it to
+  # storage then closes/unlinks it. A real Tempfile stands in so the job's
+  # rewind/close/unlink cleanup path is exercised rather than stubbed away.
+  def archive_tempfile(bytes = "zip-bytes")
+    Tempfile.new([ "export-spec", ".zip" ], binmode: true).tap do |f|
+      f.write(bytes)
+      f.rewind
+    end
+  end
+
   describe "#perform (end to end, real attachment)" do
     before do
-      allow_any_instance_of(GameExportService).to receive(:call).and_return("zip-bytes")
+      allow_any_instance_of(GameExportService).to receive(:call) { archive_tempfile }
       allow(ExportMailer).to receive(:export_ready).and_return(double(deliver_later: true))
     end
 
@@ -37,8 +47,7 @@ RSpec.describe ExportJob, type: :job do
 
   describe "#perform" do
     it "builds zip via GameExportService, attaches to request, and sends export_ready mail" do
-      zip_double = "fake-zip-data"
-      service_double = instance_double(GameExportService, call: zip_double)
+      service_double = instance_double(GameExportService, call: archive_tempfile("fake-zip-data"))
 
       allow(GameExportService).to receive(:new).with(user, [ game ]).and_return(service_double)
 
@@ -76,7 +85,7 @@ RSpec.describe ExportJob, type: :job do
       job = ExportJob.new
       allow(GameExportRequest).to receive(:find_by).with(id: export_request.id).and_return(export_request)
       allow(job).to receive(:games_for).and_return([ game ])
-      allow(GameExportService).to receive(:new).and_return(instance_double(GameExportService, call: "zip"))
+      allow(GameExportService).to receive(:new).and_return(instance_double(GameExportService, call: archive_tempfile))
       allow(export_request).to receive(:mark_succeeded!)
       allow(AttachmentUploader).to receive(:attach)
       archive_double = double(blob: double(url: "https://example.com/x.zip"))
@@ -86,6 +95,19 @@ RSpec.describe ExportJob, type: :job do
       job.perform(export_request.id)
 
       expect(job).to have_received(:games_for).with(user, game)
+    end
+
+    it "closes and unlinks the archive tempfile even when the attach fails" do
+      tempfile = archive_tempfile
+      allow(GameExportService).to receive(:new).and_return(instance_double(GameExportService, call: tempfile))
+      allow(GameExportRequest).to receive(:find_by).with(id: export_request.id).and_return(export_request)
+      allow(AttachmentUploader).to receive(:attach).and_raise(StandardError, "upload boom")
+      allow(ExportMailer).to receive(:export_failed).and_return(double(deliver_later: true))
+
+      expect { ExportJob.new.perform(export_request.id) }.to raise_error(StandardError, "upload boom")
+
+      expect(tempfile.closed?).to be(true)
+      expect(tempfile.path).to be_nil # unlink clears the path
     end
 
     it "does not stamp the receipt when the export fails" do
@@ -103,7 +125,7 @@ RSpec.describe ExportJob, type: :job do
       create(:game_member, :game_master, game: game_with_name, user: user)
       request = create(:game_export_request, user: user, game: game_with_name)
 
-      allow(GameExportService).to receive(:new).and_return(instance_double(GameExportService, call: "zip"))
+      allow(GameExportService).to receive(:new).and_return(instance_double(GameExportService, call: archive_tempfile))
       archive_double = double
       allow(archive_double).to receive(:blob).and_return(double(url: "https://example.com/x.zip"))
       allow(request).to receive(:archive).and_return(archive_double)
@@ -155,7 +177,7 @@ RSpec.describe ExportJob, type: :job do
         allow(archive_double).to receive(:blob).and_return(double(url: "https://example.com/all.zip"))
         allow(all_games_request).to receive(:archive).and_return(archive_double)
         allow(GameExportRequest).to receive(:find_by).with(id: all_games_request.id).and_return(all_games_request)
-        allow(GameExportService).to receive(:new).and_return(instance_double(GameExportService, call: "zip"))
+        allow(GameExportService).to receive(:new).and_return(instance_double(GameExportService, call: archive_tempfile))
         allow(ExportMailer).to receive(:export_ready).and_return(double(deliver_later: true))
         allow(AttachmentUploader).to receive(:attach)
 

@@ -19,6 +19,19 @@ module GameExport
       document(title: entry.title, metadata: "**Status:** #{entry.status}", body: entry.body)
     end
 
+    # A single historical version of a page or notebook entry — the title and
+    # body as they stood at that revision, headed by its number/date and editor.
+    # Page and notebook versions share the same title/body/edited_by shape, so
+    # one renderer serves both.
+    sig { params(version: T.untyped, number: Integer).returns(String) }
+    def self.version(version, number)
+      document(
+        title: "Version #{number} — #{version.created_at.strftime("%Y-%m-%d")}",
+        metadata: "**Edited by:** #{Author.name_for(version.edited_by)}\n\n**Title:** #{version.title}",
+        body: version.body
+      )
+    end
+
     sig { params(title: String, metadata: T.nilable(String), body: T.nilable(String)).returns(String) }
     def self.document(title:, metadata:, body:)
       metadata_lines = metadata ? [ metadata, BLANK ] : []

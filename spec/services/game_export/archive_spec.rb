@@ -8,12 +8,31 @@ RSpec.describe GameExport::Archive, :db do
   let(:game) { build_stubbed(:game, name: "Sunken Archive") }
   let(:prefix) { "sunken-archive-export-2026-06-15/" }
 
-  def reads(scenes: [], characters: [], versions: [], pages: [], notebook_entries: [])
+  def reads(scenes: [], characters: [], versions: [], pages: [], notebook_entries: [], files: [])
     instance_double(
       GameExport::Reads,
-      members_for: [], files_for: [], links_for: [], participants_for: [],
+      members_for: [], files_for: files, links_for: [], participants_for: [],
       published_posts_for: [], scenes_for: scenes, characters_for: characters,
       versions_for: versions, pages_for: pages, notebook_entries_for: notebook_entries
+    )
+  end
+
+  # A GameFile-shaped double whose blob streams `bytes` when downloaded, so the
+  # archive's chunked write path is exercised without Active Storage.
+  def file_double(filename:, bytes: "PDF-BYTES", attached: true)
+    blob = instance_double(ActiveStorage::Blob)
+    allow(blob).to receive(:download) { |&block| block.call(bytes) }
+    # Attached::One reaches blob/attached? through delegation, so a verifying
+    # double can't stand in for it — a bare double models the surface used here.
+    attachment = double("file", attached?: attached, blob: blob)
+    # The same files_for result feeds the manifest too, so stub the columns
+    # ManifestDocuments reads (byte_size/content_type/created_at) alongside the
+    # streaming surface (filename/file).
+    instance_double(
+      GameFile,
+      filename: filename, file: attachment,
+      byte_size: bytes.bytesize, content_type: "application/pdf",
+      created_at: Time.utc(2026, 1, 1)
     )
   end
 
@@ -53,6 +72,27 @@ RSpec.describe GameExport::Archive, :db do
 
     it "roots every entry at the prefix it was given" do
       expect(entry_names(archive_for)).to all(start_with(prefix))
+    end
+
+    it "streams each uploaded file's bytes into files/, slugged and extension-preserved" do
+      data = archive_for(files: [ file_double(filename: "My Map.PDF", bytes: "map-bytes") ])
+
+      expect(entry_names(data)).to include("#{prefix}files/my-map.pdf")
+      expect(content_of(data, "#{prefix}files/my-map.pdf")).to eq("map-bytes")
+    end
+
+    it "disambiguates files that slug to the same name" do
+      names = entry_names(archive_for(files: [
+        file_double(filename: "notes.txt"), file_double(filename: "Notes.txt")
+      ]))
+
+      expect(names).to include("#{prefix}files/notes.txt", "#{prefix}files/notes-2.txt")
+    end
+
+    it "skips a GameFile whose blob is not attached" do
+      names = entry_names(archive_for(files: [ file_double(filename: "ghost.pdf", attached: false) ]))
+
+      expect(names).not_to include(a_string_matching(%r{files/ghost}))
     end
 
     it "writes scene info and posts per scene" do
@@ -103,6 +143,21 @@ RSpec.describe GameExport::Archive, :db do
       expect(names).to include("#{prefix}pages/lore.md", "#{prefix}pages/lore-2.md")
     end
 
+    it "writes a file per page version under the page's version_history, numbered oldest-first" do
+      page = build_stubbed(:page, title: "House Rules")
+      versions = [
+        build_stubbed(:page_version, created_at: Time.utc(2026, 5, 6), edited_by: build_stubbed(:user)),
+        build_stubbed(:page_version, created_at: Time.utc(2026, 5, 7), edited_by: build_stubbed(:user))
+      ]
+
+      names = entry_names(archive_for(pages: [ page ], versions: versions))
+
+      expect(names).to include(
+        "#{prefix}pages/house-rules/version_history/v001-2026-05-06.md",
+        "#{prefix}pages/house-rules/version_history/v002-2026-05-07.md"
+      )
+    end
+
     it "writes no notebook directory on its own" do
       names = entry_names(archive_for(notebook_entries: [ build_stubbed(:notebook_entry, title: "Secret") ]))
 
@@ -125,6 +180,15 @@ RSpec.describe GameExport::Archive, :db do
       names = entry_names(archive_for(notebook: true, notebook_entries: entries))
 
       expect(names).to include("#{prefix}notebook/lead.md", "#{prefix}notebook/lead-2.md")
+    end
+
+    it "writes a file per entry version under the entry's version_history" do
+      entry = build_stubbed(:notebook_entry, title: "Wandering Merchant")
+      version = build_stubbed(:notebook_entry_version, created_at: Time.utc(2026, 5, 6), edited_by: build_stubbed(:user))
+
+      names = entry_names(archive_for(notebook: true, notebook_entries: [ entry ], versions: [ version ]))
+
+      expect(names).to include("#{prefix}notebook/wandering-merchant/version_history/v001-2026-05-06.md")
     end
   end
 
@@ -184,6 +248,24 @@ RSpec.describe GameExport::Archive, :db do
 
       expect(content_of(data, "#{prefix}notebook/wandering-merchant.md"))
         .to eq(GameExport::ProseDocuments.notebook_entry(entry))
+    end
+
+    it "writes each page version's own content" do
+      page = build_stubbed(:page, title: "House Rules")
+      version = build_stubbed(:page_version, created_at: Time.utc(2026, 5, 6), edited_by: build_stubbed(:user))
+      data = archive_for(pages: [ page ], versions: [ version ])
+
+      expect(content_of(data, "#{prefix}pages/house-rules/version_history/v001-2026-05-06.md"))
+        .to eq(GameExport::ProseDocuments.version(version, 1))
+    end
+
+    it "writes each notebook entry version's own content" do
+      entry = build_stubbed(:notebook_entry, title: "Wandering Merchant")
+      version = build_stubbed(:notebook_entry_version, created_at: Time.utc(2026, 5, 6), edited_by: build_stubbed(:user))
+      data = archive_for(notebook: true, notebook_entries: [ entry ], versions: [ version ])
+
+      expect(content_of(data, "#{prefix}notebook/wandering-merchant/version_history/v001-2026-05-06.md"))
+        .to eq(GameExport::ProseDocuments.version(version, 1))
     end
   end
 end

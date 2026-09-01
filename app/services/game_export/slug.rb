@@ -25,5 +25,21 @@ module GameExport
       tracker[base] = ordinal
       seen.zero? ? base : "#{base}-#{ordinal}"
     end
+
+    # A filename-safe, de-duplicated slug that preserves the extension: the
+    # extension is split off, the stem slugged (so "My Map.PDF" -> "my-map.pdf")
+    # and de-duplicated against a caller-held tracker, with the ordinal inserted
+    # before the extension so repeats read as "notes-2.txt", not "notes.txt-2".
+    # A file with no extension keeps just its (de-duplicated) slugged stem. The
+    # tracker is keyed by slugged stem, so two files that differ only in
+    # extension case (Notes.TXT / notes.txt) still disambiguate.
+    sig { params(name: String, tracker: T::Hash[String, Integer]).returns(String) }
+    def self.unique_filename(name, tracker)
+      ext = File.extname(name)
+      deduped = unique(call(File.basename(name, ext)), tracker)
+      # ext is "" for an extensionless name, so appending it unconditionally is
+      # the same as guarding on empty? — and leaves no equivalent branch.
+      "#{deduped}#{ext.downcase}"
+    end
   end
 end
