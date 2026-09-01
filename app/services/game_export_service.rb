@@ -1,6 +1,7 @@
 # typed: true
 
 require "zip"
+require "tempfile"
 
 # Builds the downloadable zip for one or more games. This class owns only the
 # top-level shape — the policy gate, the export scope, and each game's root
@@ -16,10 +17,20 @@ class GameExportService
     @reads = reads
   end
 
-  # Returns a binary string of the zip archive.
-  sig { returns(String) }
+  # Builds the zip on disk and returns it as an open, rewound Tempfile — never
+  # an in-memory String. A game's uploaded files can be tens of MB each
+  # (GameFile::MAX_SIZE is 50MB) and are streamed straight into the archive, so
+  # buffering the whole zip in memory would risk OOM-killing the worker (768m
+  # limit). The caller streams the Tempfile to storage and is responsible for
+  # closing/unlinking it.
+  sig { returns(Tempfile) }
   def call
-    Zip::OutputStream.write_buffer { |zip| write_games(zip) }.string
+    tempfile = Tempfile.new([ "game-export", ".zip" ], binmode: true)
+    # rubyzip's RBI types the yielded value as IO; at runtime it is a
+    # Zip::OutputStream, which is what write_games consumes.
+    Zip::OutputStream.open(T.must(tempfile.path)) { |zip| write_games(T.unsafe(zip)) }
+    tempfile.rewind
+    tempfile
   end
 
   private

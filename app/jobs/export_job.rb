@@ -12,14 +12,17 @@ class ExportTarget
   end
 
   # Attaches the freshly built zip to the request's archive, under this
-  # target's filename and scope label.
-  sig { params(request: GameExportRequest, zip_data: String, user: User).void }
-  def attach(request:, zip_data:, user:)
+  # target's filename and scope label. `archive` is the open, rewound Tempfile
+  # GameExportService produced — streamed straight to storage, never read into
+  # a String.
+  sig { params(request: GameExportRequest, archive: T.untyped, user: User).void }
+  def attach(request:, archive:, user:)
     filename = archive_filename
+    archive.rewind
 
     AttachmentUploader.attach(
       attachment: request.archive,
-      attachable: { io: StringIO.new(zip_data), filename: filename, content_type: "application/zip" },
+      attachable: { io: archive, filename: filename, content_type: "application/zip" },
       context: AttachmentUploader::Context.build(
         kind: "export",
         owner: AttachmentUploader::Owner.build(user: user, game: @game),
@@ -106,8 +109,13 @@ class ExportJob < ApplicationJob
 
   sig { params(request: GameExportRequest, user: User, game: T.nilable(Game)).void }
   def build_archive(request, user, game)
-    zip_data = GameExportService.new(user, games_for(user, game)).call
-    ExportTarget.new(game).attach(request:, zip_data:, user:)
+    archive = GameExportService.new(user, games_for(user, game)).call
+    begin
+      ExportTarget.new(game).attach(request:, archive:, user:)
+    ensure
+      archive.close
+      archive.unlink
+    end
   end
 
   sig { params(request_id: Integer, error: StandardError).void }

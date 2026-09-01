@@ -11,9 +11,16 @@ RSpec.describe GameExportService do
   let!(:participant) { create(:scene_participant, scene: scene, user: player_user) }
   let!(:post) { create(:post, scene: scene, user: player_user, content: "Hello world!") }
 
-  def zip_entries(zip_data)
+  # #call now returns an open Tempfile rather than a String; normalise either to
+  # an IO the zip readers can consume, so the helpers work whether given the
+  # service's Tempfile or a raw byte String.
+  def zip_io(archive)
+    archive.is_a?(String) ? StringIO.new(archive) : archive.tap(&:rewind)
+  end
+
+  def zip_entries(archive)
     entries = []
-    Zip::InputStream.open(StringIO.new(zip_data)) do |zip|
+    Zip::InputStream.open(zip_io(archive)) do |zip|
       while (entry = zip.get_next_entry)
         entries << entry.name
       end
@@ -21,8 +28,8 @@ RSpec.describe GameExportService do
     entries
   end
 
-  def zip_file_content(zip_data, name)
-    Zip::InputStream.open(StringIO.new(zip_data)) do |zip|
+  def zip_file_content(archive, name)
+    Zip::InputStream.open(zip_io(archive)) do |zip|
       while (entry = zip.get_next_entry)
         return zip.read.force_encoding(Encoding::UTF_8) if entry.name == name
       end
@@ -219,9 +226,9 @@ RSpec.describe GameExportService do
     context "single game, GM" do
       subject(:zip_data) { GameExportService.new(gm_user, [ game ]).call }
 
-      it "returns a non-empty zip" do
-        expect(zip_data).to be_a(String)
-        expect(zip_data).not_to be_empty
+      it "returns a non-empty zip Tempfile" do
+        expect(zip_data).to be_a(Tempfile)
+        expect(zip_data.size).to be > 0
       end
 
       # These keep the database deliberately: they assert zip assembly itself —

@@ -7,11 +7,17 @@ RSpec.describe ExportTarget do
   describe "#attach" do
     before { allow(AttachmentUploader).to receive(:attach) }
 
+    # attach streams an IO (the service's Tempfile in production); a rewindable
+    # StringIO stands in for it here.
+    def archive_io(bytes = "zip-bytes")
+      StringIO.new(bytes)
+    end
+
     it "attaches a slugified, dated filename and scope for a named game" do
       Timecop.freeze(Time.zone.local(2026, 3, 4)) do
         game = build_stubbed(:game, name: "The Lost Realm!")
 
-        described_class.new(game).attach(request: request, zip_data: "zip-bytes", user: user)
+        described_class.new(game).attach(request: request, archive: archive_io, user: user)
 
         expect(AttachmentUploader).to have_received(:attach) do |args|
           expect(args[:attachment]).to eq(request.archive)
@@ -28,7 +34,7 @@ RSpec.describe ExportTarget do
 
     it "uses an all-games filename and scope when there is no game" do
       Timecop.freeze(Time.zone.local(2026, 3, 4)) do
-        described_class.new(nil).attach(request: request, zip_data: "zip-bytes", user: user)
+        described_class.new(nil).attach(request: request, archive: archive_io, user: user)
 
         expect(AttachmentUploader).to have_received(:attach) do |args|
           expect(args[:context].owner.game).to be_nil
@@ -41,7 +47,7 @@ RSpec.describe ExportTarget do
     it "strips characters that are not safe for a filename slug" do
       game = build_stubbed(:game, name: "Foo & Bar: The  Sequel")
 
-      described_class.new(game).attach(request: request, zip_data: "z", user: user)
+      described_class.new(game).attach(request: request, archive: archive_io("z"), user: user)
 
       expect(AttachmentUploader).to have_received(:attach) do |args|
         expect(args[:context].naming.original_filename).to match(/\Afoo-bar-the-sequel-export-\d{4}-\d{2}-\d{2}\.zip\z/)
@@ -51,7 +57,7 @@ RSpec.describe ExportTarget do
     it "collapses a literal double hyphen down to one" do
       game = build_stubbed(:game, name: "Foo -- Bar")
 
-      described_class.new(game).attach(request: request, zip_data: "z", user: user)
+      described_class.new(game).attach(request: request, archive: archive_io("z"), user: user)
 
       expect(AttachmentUploader).to have_received(:attach) do |args|
         expect(args[:context].naming.original_filename).to match(/\Afoo-bar-export-\d{4}-\d{2}-\d{2}\.zip\z/)
@@ -61,15 +67,15 @@ RSpec.describe ExportTarget do
     it "collapses every run of dashes, not just the first" do
       game = build_stubbed(:game, name: "Foo  --  Bar   ---   Baz")
 
-      described_class.new(game).attach(request: request, zip_data: "z", user: user)
+      described_class.new(game).attach(request: request, archive: archive_io("z"), user: user)
 
       expect(AttachmentUploader).to have_received(:attach) do |args|
         expect(args[:context].naming.original_filename).to match(/\Afoo-bar-baz-export-\d{4}-\d{2}-\d{2}\.zip\z/)
       end
     end
 
-    it "wraps the zip bytes in the attachable IO" do
-      described_class.new(nil).attach(request: request, zip_data: "the-bytes", user: user)
+    it "streams the archive IO through as the attachable IO, rewound" do
+      described_class.new(nil).attach(request: request, archive: archive_io("the-bytes"), user: user)
 
       expect(AttachmentUploader).to have_received(:attach) do |args|
         expect(args[:attachable][:io].read).to eq("the-bytes")
