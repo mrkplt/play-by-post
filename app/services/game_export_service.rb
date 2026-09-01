@@ -72,11 +72,16 @@ class GameExportService
 
     archive = GameExport::Archive.new(zip, @reads, game: game, prefix: prefix)
     archive.write_game(@reads.scenes_for(game, policy.export_scene_selection))
+    write_gm_only(archive) if policy.update?
+  end
 
-    # Notebook content is GM-eyes-only regardless of general export
-    # eligibility — gated on the GM check specifically (policy.update? is
-    # GamePolicy's GM predicate), not policy.export?, since a player exporting
-    # their own visible/participating slice must never receive it.
-    archive.write_notebook if policy.update?
+  # Notebook content and the AI audit log are GM-eyes-only regardless of general
+  # export eligibility — gated on the GM check (policy.update?), not
+  # policy.export?, so a player exporting their own visible/participating slice
+  # never receives them. The audit log's cost/funder columns are real money.
+  sig { params(archive: GameExport::Archive).void }
+  def write_gm_only(archive)
+    archive.write_notebook
+    archive.write_ai_audit
   end
 end

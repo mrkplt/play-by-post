@@ -17,6 +17,10 @@ RSpec.describe GameExport::Archive, :db do
     )
   end
 
+  def audit_reads(generations: [], names: {})
+    object_double(GameExport::AuditReads, generations_for: generations, names_for: names)
+  end
+
   # A GameFile-shaped double whose blob streams `bytes` when downloaded, so the
   # archive's chunked write path is exercised without Active Storage.
   def file_double(filename:, bytes: "PDF-BYTES", attached: true)
@@ -55,11 +59,15 @@ RSpec.describe GameExport::Archive, :db do
     nil
   end
 
-  def archive_for(scenes: [], notebook: false, **rows)
+  def archive_for(scenes: [], notebook: false, ai_audit: false, summary: :none,
+                  ai_generations: [], audit_names: {}, **rows)
+    scenes.each { |scene| allow(scene).to receive(:scene_summary).and_return(summary == :none ? nil : summary) }
+    audit = audit_reads(generations: ai_generations, names: audit_names)
     Zip::OutputStream.write_buffer do |zip|
-      archive = described_class.new(zip, reads(scenes: scenes, **rows), game: game, prefix: prefix)
+      archive = described_class.new(zip, reads(scenes: scenes, **rows), game: game, prefix: prefix, audit: audit)
       archive.write_game(scenes)
       archive.write_notebook if notebook
+      archive.write_ai_audit if ai_audit
     end.string
   end
 
@@ -102,6 +110,19 @@ RSpec.describe GameExport::Archive, :db do
         "#{prefix}scenes/001-opening-scene/scene_info.md",
         "#{prefix}scenes/001-opening-scene/posts.md"
       )
+    end
+
+    it "writes a summary.md in the scene dir when the scene has a summary" do
+      summary = build_stubbed(:scene_summary, body: "It ended.")
+      names = entry_names(archive_for(scenes: [ build_stubbed(:scene, title: "Opening Scene") ], summary: summary))
+
+      expect(names).to include("#{prefix}scenes/001-opening-scene/summary.md")
+    end
+
+    it "writes no summary.md when the scene has none" do
+      names = entry_names(archive_for(scenes: [ build_stubbed(:scene, title: "Opening Scene") ], summary: nil))
+
+      expect(names).not_to include(a_string_matching(%r{summary\.md}))
     end
 
     it "numbers scenes in id order and disambiguates duplicate titles" do
@@ -192,6 +213,23 @@ RSpec.describe GameExport::Archive, :db do
     end
   end
 
+  describe "#write_ai_audit" do
+    it "writes ai_audit_log.csv at the game root" do
+      names = entry_names(archive_for(ai_audit: true))
+
+      expect(names).to include("#{prefix}ai_audit_log.csv")
+    end
+
+    it "wires the audit rows and name map into the CSV builder" do
+      generations = [ build_stubbed(:ai_generation) ]
+      name_map = { 1 => "Jo" }
+      data = archive_for(ai_audit: true, ai_generations: generations, audit_names: name_map)
+
+      expect(content_of(data, "#{prefix}ai_audit_log.csv"))
+        .to eq(GameExport::AuditDocument.csv(generations, name_map))
+    end
+  end
+
   # Each write is wiring a document builder to an entry. The builders are
   # pinned in their own specs; here it is enough that the bytes written match
   # what the builder produces for the same input.
@@ -222,6 +260,15 @@ RSpec.describe GameExport::Archive, :db do
         .to eq(GameExport::SceneDocuments.info(scene, []))
       expect(content_of(data, "#{prefix}scenes/001-opening-scene/posts.md"))
         .to eq(GameExport::SceneDocuments.posts([]))
+    end
+
+    it "writes the scene summary's own content when present" do
+      scene = build_stubbed(:scene, title: "Opening Scene")
+      summary = build_stubbed(:scene_summary, body: "The end.")
+      data = archive_for(scenes: [ scene ], summary: summary)
+
+      expect(content_of(data, "#{prefix}scenes/001-opening-scene/summary.md"))
+        .to eq(GameExport::ProseDocuments.scene_summary(summary))
     end
 
     it "writes each character's own sheet and version content" do
