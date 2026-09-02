@@ -129,8 +129,17 @@ class GamePurgeScope
   sig { void }
   def delete_scene_children
     SceneParticipant.where(scene_id: scene_ids).in_batches.delete_all
-    SceneSummary.where(scene_id: scene_ids).in_batches.delete_all
+    delete_scene_summaries_and_versions
     NotificationPreference.where(scene_id: scene_ids).in_batches.delete_all
+  end
+
+  # A summary's versions reference it, so they go first — same child-before-parent
+  # order as pages/notebook entries and their versions.
+  sig { void }
+  def delete_scene_summaries_and_versions
+    ids = SceneSummary.where(scene_id: scene_ids).pluck(:id)
+    SceneSummaryVersion.where(scene_summary_id: ids).in_batches.delete_all
+    SceneSummary.where(id: ids).in_batches.delete_all
   end
 
   sig { void }
