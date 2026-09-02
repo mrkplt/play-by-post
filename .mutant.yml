@@ -280,6 +280,7 @@ matcher:
     - GameDashboardQuery
     - GameSettingToggle
     - GamePurgeScope
+    - GamePurgeDeletion
     - GameSlug
     - SceneShowBuilder
     - SceneTreeBuilder

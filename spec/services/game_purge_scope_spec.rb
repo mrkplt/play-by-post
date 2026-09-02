@@ -57,51 +57,17 @@ RSpec.describe GamePurgeScope, type: :model, db: true do
     end
   end
 
+  # The deletion order lives in GamePurgeDeletion (see its own spec); the scope
+  # only delegates to it. Kept as one end-to-end assertion that the delegation
+  # actually purges, so the wiring can't silently break.
   describe "#delete_all_dependents!" do
-    it "deletes every dependent record and the game itself" do
+    it "delegates to GamePurgeDeletion and purges the game" do
       records = populate_game
-      scope = described_class.for(records[:game])
-
-      scope.delete_all_dependents!
-
-      expect(Game.unscoped.exists?(records[:game].id)).to be(false)
-      expect(Scene.exists?(records[:scene].id)).to be(false)
-      expect(Post.exists?(records[:post].id)).to be(false)
-      expect(SceneParticipant.exists?(records[:scene_participant].id)).to be(false)
-      expect(SceneSummary.exists?(records[:scene_summary].id)).to be(false)
-      expect(NotificationPreference.exists?(records[:notification_preference].id)).to be(false)
-      expect(Character.exists?(records[:character].id)).to be(false)
-      expect(CharacterVersion.exists?(records[:character_version].id)).to be(false)
-      expect(GameFile.exists?(records[:game_file].id)).to be(false)
-      expect(NotebookEntry.exists?(records[:notebook_entry].id)).to be(false)
-      expect(NotebookEntryVersion.exists?(records[:notebook_entry_version].id)).to be(false)
-    end
-
-    it "deletes notebook entry versions before their entries (FK-safe)" do
-      records = populate_game
-
-      expect { described_class.for(records[:game]).delete_all_dependents! }.not_to raise_error
-      expect(NotebookEntryVersion.exists?(records[:notebook_entry_version].id)).to be(false)
-    end
-
-    it "leaves another game's records untouched" do
-      records = populate_game
-      survivor = populate_game
 
       described_class.for(records[:game]).delete_all_dependents!
 
-      expect(Game.unscoped.exists?(survivor[:game].id)).to be(true)
-      expect(Scene.exists?(survivor[:scene].id)).to be(true)
-      expect(Post.exists?(survivor[:post].id)).to be(true)
-    end
-
-    it "breaks a scene's parent_scene_id link before deleting so the delete is FK-safe" do
-      game = create(:game)
-      parent = create(:scene, game: game)
-      child = create(:scene, game: game, parent_scene: parent)
-
-      expect { described_class.for(game).delete_all_dependents! }.not_to raise_error
-      expect(Scene.where(id: [ parent.id, child.id ])).to be_empty
+      expect(Game.unscoped.exists?(records[:game].id)).to be(false)
+      expect(Scene.exists?(records[:scene].id)).to be(false)
     end
   end
 end
