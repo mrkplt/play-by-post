@@ -66,6 +66,15 @@ RSpec.describe Shared::SceneSummaryComponent, type: :component do
     end
   end
 
+  context "with a hand-written summary that was then edited" do
+    let(:summary) { build_stubbed(:scene_summary, :edited, generated_at: nil, scene: scene) }
+
+    it "status_badge_variant returns 'yellow'" do
+      component = described_class.new(summary: presenter_for(can_manage: false))
+      expect(component.status_badge_variant).to eq("yellow")
+    end
+  end
+
   context "when AI-generated" do
     let(:summary) { build_stubbed(:scene_summary, :ai_generated, scene: scene) }
 
@@ -82,13 +91,13 @@ RSpec.describe Shared::SceneSummaryComponent, type: :component do
   context "when AI-generated and edited" do
     let(:summary) { build_stubbed(:scene_summary, :ai_generated, :edited, scene: scene) }
 
-    it "shows Edited badge" do
-      expect(rendered).to have_text("Edited")
+    it "shows the sticky AI-generated · edited badge" do
+      expect(rendered).to have_text("AI-generated · edited")
     end
 
-    it "status_badge_variant returns 'yellow'" do
+    it "status_badge_variant stays 'blue' (AI provenance dominates once set)" do
       component = described_class.new(summary: presenter_for(can_manage: false))
-      expect(component.status_badge_variant).to eq("yellow")
+      expect(component.status_badge_variant).to eq("blue")
     end
   end
 
@@ -115,12 +124,17 @@ RSpec.describe Shared::SceneSummaryComponent, type: :component do
       expect(rendered(viewer: viewer)).to have_css("strong", text: "glory")
     end
 
-    context "when edited (not the loud AI badge)" do
+    context "when AI-generated and edited (the badge is now an AI badge, sticky)" do
       let(:summary) { build_stubbed(:scene_summary, :ai_generated, :edited, scene: scene) }
 
-      it "still shows the Edited badge even when the viewer prefers shown" do
+      it "suppresses the AI-generated badge for a viewer who prefers shown" do
         viewer = build_stubbed(:user, user_profile: build_stubbed(:user_profile, ai_display_preference: :shown))
-        expect(rendered(viewer: viewer)).to have_text("Edited")
+        expect(rendered(viewer: viewer)).not_to have_text("AI-generated")
+      end
+
+      it "still discloses the edit via the meta line" do
+        viewer = build_stubbed(:user, user_profile: build_stubbed(:user_profile, ai_display_preference: :shown))
+        expect(rendered(viewer: viewer)).to have_text(/edited/i)
       end
     end
   end

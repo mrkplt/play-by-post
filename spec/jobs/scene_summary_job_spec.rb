@@ -57,6 +57,23 @@ RSpec.describe SceneSummaryJob, type: :job do
       expect(summary.generated_at).to be_within(1.second).of(Time.current)
     end
 
+    it "snapshots a version marked AI-authored, attributed to the requester" do
+      described_class.new.perform(scene.id, requester.id)
+
+      summary = SceneSummary.find_by(scene_id: scene.id)
+      version = summary.scene_summary_versions.last
+      expect(version.generated_at).to be_present
+      expect(version.body).to eq(summary.body)
+      expect(version.edited_by_id).to eq(requester.id)
+    end
+
+    it "records a second version when a generation overwrites an existing summary" do
+      create(:scene_summary, scene: scene, body: "old", editor: requester)
+
+      expect { described_class.new.perform(scene.id, requester.id) }
+        .to change { SceneSummary.find_by(scene_id: scene.id).scene_summary_versions.count }.by(1)
+    end
+
     it "writes exactly one AiGeneration row with feature/model/tokens/cost/requester/payer/asset" do
       expect { described_class.new.perform(scene.id, requester.id) }
         .to change(AiGeneration, :count).by(1)

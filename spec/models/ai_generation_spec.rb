@@ -75,11 +75,20 @@ RSpec.describe AiGeneration, type: :model do
   end
 
   describe "no cascade can reach an audit row", :db do
+    # Destroying a summary cascades to its version rows (dependent: :destroy); the
+    # raw DELETE below bypasses that, so clear the versions first — the point of
+    # these tests is that the AiGeneration audit row (which has NO association to
+    # the summary) survives, not the summary's own child cascade.
+    def destroy_summary_row!(summary)
+      SceneSummaryVersion.where(scene_summary_id: summary.id).delete_all
+      SceneSummary.connection.execute("DELETE FROM scene_summaries WHERE id = #{summary.id}")
+    end
+
     it "survives the destruction of the SceneSummary it references" do
       summary = create(:scene_summary, :ai_generated)
       generation = create(:ai_generation, asset_type: "SceneSummary", asset_id: summary.id)
 
-      SceneSummary.connection.execute("DELETE FROM scene_summaries WHERE id = #{summary.id}")
+      destroy_summary_row!(summary)
 
       expect(AiGeneration.find(generation.id)).to eq(generation)
     end
@@ -89,7 +98,7 @@ RSpec.describe AiGeneration, type: :model do
       summary = create(:scene_summary, :ai_generated, scene: scene)
       generation = create(:ai_generation, asset_type: "SceneSummary", asset_id: summary.id)
 
-      SceneSummary.connection.execute("DELETE FROM scene_summaries WHERE id = #{summary.id}")
+      destroy_summary_row!(summary)
       scene.destroy
 
       expect(AiGeneration.find(generation.id)).to eq(generation)
@@ -101,7 +110,7 @@ RSpec.describe AiGeneration, type: :model do
       summary = create(:scene_summary, :ai_generated, scene: scene)
       generation = create(:ai_generation, asset_type: "SceneSummary", asset_id: summary.id)
 
-      SceneSummary.connection.execute("DELETE FROM scene_summaries WHERE id = #{summary.id}")
+      destroy_summary_row!(summary)
       scene.destroy
       game.destroy
 

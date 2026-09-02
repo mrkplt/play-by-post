@@ -32,6 +32,19 @@ module GameExport
       )
     end
 
+    # One historical version of a scene summary. Unlike page/notebook versions it
+    # has no title; instead it records whether that revision was AI-authored
+    # (generated_at) alongside the editor and body.
+    sig { params(version: T.untyped, number: Integer).returns(String) }
+    def self.summary_version(version, number)
+      origin = version.generated_at ? "AI-generated" : "Hand-written"
+      document(
+        title: "Version #{number} — #{version.created_at.strftime("%Y-%m-%d")}",
+        metadata: "**Origin:** #{origin}\n\n**Edited by:** #{Author.name_for(version.edited_by)}",
+        body: version.body
+      )
+    end
+
     # A scene's summary, with its AI/edit provenance in the metadata header. The
     # predicates come from AiGenerated::Model (generated_at/edited_at), so the
     # export reads provenance exactly as the app does.

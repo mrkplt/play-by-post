@@ -42,6 +42,7 @@ matcher:
     - UserImage
     - PageVersion
     - NotebookEntryVersion
+    - SceneSummaryVersion
     - Scene
     - SceneParticipant
     - Post
@@ -279,6 +280,7 @@ matcher:
     - GameDashboardQuery
     - GameSettingToggle
     - GamePurgeScope
+    - GamePurgeDeletion
     - GameSlug
     - SceneShowBuilder
     - SceneTreeBuilder

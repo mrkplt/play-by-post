@@ -43,8 +43,16 @@ NON_AUTHORIZABLE = %w[
   SceneParticipant
   SceneSummaryBroadcast
   SceneSummaryVisibility
+  SceneSummaryVersion
   User
 ].freeze
+
+# SceneSummaryVersion has no request-facing endpoint (unlike page/notebook/
+# character versions, which each expose a `versions#show` route and so carry a
+# policy). Its rows are written internally (saves + the generation job) and read
+# only through the game export, which is already gated by the summary's own
+# export scope. Add a SceneSummaryVersionPolicy and drop this entry the moment a
+# version-history viewing route is introduced.
 
 def constant_for(basename)
   basename.delete_suffix(".rb").split("_").map(&:capitalize).join

@@ -14,11 +14,10 @@ class Shared::SceneSummaryComponent < ApplicationComponent
 
   sig { returns(String) }
   def status_badge_variant
-    case @summary.status_label
-    when "AI-generated" then "blue"
-    when "Edited" then "yellow"
-    else "gray"
-    end
+    return "blue" if @summary.ai_generated? # AI provenance dominates the badge, even once edited
+    return "yellow" if @summary.edited?
+
+    "gray"
   end
 
   # The AI Control Plane's per-viewer DISPLAY preference: the viewer's
@@ -29,7 +28,7 @@ class Shared::SceneSummaryComponent < ApplicationComponent
   # governs.
   sig { returns(T::Boolean) }
   def show_status_badge?
-    @summary.status_label != "AI-generated" || @summary.show_ai_badge?
+    !@summary.ai_generated? || @summary.show_ai_badge?
   end
 
   sig { returns(T::Boolean) }

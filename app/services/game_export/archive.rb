@@ -84,9 +84,17 @@ module GameExport
     def write_scene(scene, dir)
       @writer.entry("#{dir}/scene_info.md", SceneDocuments.info(scene, @reads.participants_for(scene)))
       @writer.entry("#{dir}/posts.md", SceneDocuments.posts(@reads.published_posts_for(scene)))
-      # The scene's summary (published or draft), when it has one.
-      summary = scene.scene_summary
-      @writer.entry("#{dir}/summary.md", ProseDocuments.scene_summary(summary)) if summary
+      write_summary(scene.scene_summary, dir)
+    end
+
+    # The scene's summary (published or draft) plus its full version history, when
+    # the scene has one.
+    sig { params(summary: T.nilable(SceneSummary), dir: String).void }
+    def write_summary(summary, dir)
+      return unless summary
+
+      @writer.entry("#{dir}/summary.md", ProseDocuments.scene_summary(summary))
+      @writer.version_history("#{dir}/summary", @reads.versions_for(summary), &ProseDocuments.method(:summary_version))
     end
 
     sig { params(scenes: T::Array[Scene]).void }

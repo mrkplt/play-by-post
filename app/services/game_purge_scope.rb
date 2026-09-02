@@ -1,37 +1,16 @@
 # typed: true
 
-# Bundles the id sets a game purge operates over, computed once from the game
-# so every purge/delete step reads from here instead of re-deriving (or
-# re-calling game.id) at each call site.
-class GamePurgeScope
+# The id sets a game purge operates over, computed once from the game so every
+# delete step reads from here instead of re-deriving (or re-calling game.id) at
+# each call site. A value object (T::Struct) the deletion order in
+# GamePurgeDeletion reads from.
+class GamePurgeScope < T::Struct
   extend T::Sig
 
-  sig { returns(Game) }
-  attr_reader :game
-
-  sig { returns(T::Array[Integer]) }
-  attr_reader :scene_ids
-
-  sig { returns(T::Array[Integer]) }
-  attr_reader :post_ids
-
-  sig { returns(T::Array[Integer]) }
-  attr_reader :character_ids
-
-  sig do
-    params(
-      game: Game,
-      scene_ids: T::Array[Integer],
-      post_ids: T::Array[Integer],
-      character_ids: T::Array[Integer]
-    ).void
-  end
-  def initialize(game:, scene_ids:, post_ids:, character_ids:)
-    @game = game
-    @scene_ids = scene_ids
-    @post_ids = post_ids
-    @character_ids = character_ids
-  end
+  const :game, Game
+  const :scene_ids, T::Array[Integer]
+  const :post_ids, T::Array[Integer]
+  const :character_ids, T::Array[Integer]
 
   sig { params(game: Game).returns(GamePurgeScope) }
   def self.for(game)
@@ -48,98 +27,10 @@ class GamePurgeScope
     game.id
   end
 
-  # Delete every record belonging to the game, children before parents so no
-  # foreign key is violated, in batches to bound memory. Attachments are
-  # already purged by the caller, so these are plain deletes — no cascade,
-  # no callbacks.
-  # Children before parents so no foreign key is violated.
+  # Delete every record belonging to the game, children before parents. The
+  # order lives in GamePurgeDeletion; the caller wraps this in a transaction.
   sig { void }
   def delete_all_dependents!
-    delete_posts_and_reads
-    delete_scenes_and_children
-    delete_characters_and_versions
-    delete_game_owned_records
-    game.delete
-  end
-
-  private
-
-  sig { void }
-  def delete_posts_and_reads
-    PostRead.where(post_id: post_ids).in_batches.delete_all
-    Post.where(id: post_ids).in_batches.delete_all
-  end
-
-  # The self-referencing parent_scene_id link is broken before the scenes are
-  # deleted so the delete is FK-safe.
-  sig { void }
-  def delete_scenes_and_children
-    delete_scene_children
-    unlink_scenes
-    delete_scenes
-  end
-
-  sig { void }
-  def delete_game_owned_records
-    delete_game_content_records
-    delete_game_membership_records
-  end
-
-  # NotebookEntry may reference a Page via promoted_page_id, so it is deleted
-  # before Page. A versioned child (NotebookEntryVersion, PageVersion) has a
-  # not-null FK to its parent, so those rows are deleted before the parents.
-  sig { void }
-  def delete_game_content_records
-    GameFile.where(game_id: game_id).in_batches.delete_all
-    delete_notebook_entries_and_versions
-    delete_pages_and_versions
-    GameLink.where(game_id: game_id).in_batches.delete_all
-    ContentTemplate.where(game_id: game_id).in_batches.delete_all
-  end
-
-  sig { void }
-  def delete_characters_and_versions
-    CharacterVersion.where(character_id: character_ids).in_batches.delete_all
-    CharacterImage.where(character_id: character_ids).in_batches.delete_all
-    Character.where(id: character_ids).in_batches.delete_all
-  end
-
-  sig { void }
-  def delete_notebook_entries_and_versions
-    ids = NotebookEntry.where(game_id: game_id).pluck(:id)
-    NotebookEntryVersion.where(notebook_entry_id: ids).in_batches.delete_all
-    NotebookEntry.where(id: ids).in_batches.delete_all
-  end
-
-  sig { void }
-  def delete_pages_and_versions
-    ids = Page.where(game_id: game_id).pluck(:id)
-    PageVersion.where(page_id: ids).in_batches.delete_all
-    Page.where(id: ids).in_batches.delete_all
-  end
-
-  sig { void }
-  def delete_game_membership_records
-    Invitation.where(game_id: game_id).in_batches.delete_all
-    GameMember.where(game_id: game_id).in_batches.delete_all
-    GameExportRequest.where(game_id: game_id).in_batches.delete_all
-    ApiToken.where(game_id: game_id).in_batches.delete_all
-  end
-
-  sig { void }
-  def delete_scene_children
-    SceneParticipant.where(scene_id: scene_ids).in_batches.delete_all
-    SceneSummary.where(scene_id: scene_ids).in_batches.delete_all
-    NotificationPreference.where(scene_id: scene_ids).in_batches.delete_all
-  end
-
-  sig { void }
-  def unlink_scenes
-    Scene.where(id: scene_ids).update_all(parent_scene_id: nil)
-  end
-
-  sig { void }
-  def delete_scenes
-    Scene.where(id: scene_ids).in_batches.delete_all
+    GamePurgeDeletion.new(self).delete_all!
   end
 end

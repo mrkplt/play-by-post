@@ -24,6 +24,7 @@ RSpec.describe GamePurgeJob, type: :job, db: true do
     records[:scenes] = [ parent, child ]
     records[:scene_participant] = create(:scene_participant, scene: parent, user: player, character: records[:character])
     records[:scene_summary] = create(:scene_summary, scene: parent)
+    records[:scene_summary_version] = records[:scene_summary].scene_summary_versions.first!
     records[:notification_preference] = create(:notification_preference, scene: parent, user: player)
 
     post = create(:post, scene: parent, user: player)
@@ -53,6 +54,7 @@ RSpec.describe GamePurgeJob, type: :job, db: true do
       Post.exists?(r[:post].id) && PostRead.exists?(r[:post_read].id) &&
       SceneParticipant.exists?(r[:scene_participant].id) &&
       SceneSummary.exists?(r[:scene_summary].id) &&
+      SceneSummaryVersion.exists?(r[:scene_summary_version].id) &&
       NotificationPreference.exists?(r[:notification_preference].id) &&
       Character.exists?(r[:character].id) && CharacterVersion.exists?(r[:character_version].id) &&
       CharacterImage.exists?(r[:character_image].id) &&
@@ -100,6 +102,7 @@ RSpec.describe GamePurgeJob, type: :job, db: true do
         expect(PostRead.where(id: target[:post_read].id)).to be_empty
         expect(SceneParticipant.where(id: target[:scene_participant].id)).to be_empty
         expect(SceneSummary.where(id: target[:scene_summary].id)).to be_empty
+        expect(SceneSummaryVersion.where(id: target[:scene_summary_version].id)).to be_empty
         expect(NotificationPreference.where(id: target[:notification_preference].id)).to be_empty
         expect(Character.where(id: target[:character].id)).to be_empty
         expect(CharacterVersion.where(id: target[:character_version].id)).to be_empty

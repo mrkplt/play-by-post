@@ -119,6 +119,16 @@ RSpec.describe GameExport::Archive, :db do
       expect(names).to include("#{prefix}scenes/001-opening-scene/summary.md")
     end
 
+    it "writes the summary's version history under summary/version_history" do
+      summary = build_stubbed(:scene_summary, body: "It ended.")
+      version = build_stubbed(:scene_summary_version, created_at: Time.utc(2026, 5, 6), edited_by: build_stubbed(:user))
+      names = entry_names(archive_for(
+        scenes: [ build_stubbed(:scene, title: "Opening Scene") ], summary: summary, versions: [ version ]
+      ))
+
+      expect(names).to include("#{prefix}scenes/001-opening-scene/summary/version_history/v001-2026-05-06.md")
+    end
+
     it "writes no summary.md when the scene has none" do
       names = entry_names(archive_for(scenes: [ build_stubbed(:scene, title: "Opening Scene") ], summary: nil))
 
