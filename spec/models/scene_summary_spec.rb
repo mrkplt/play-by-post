@@ -12,6 +12,41 @@ RSpec.describe SceneSummary, type: :model do
       summary = build(:scene_summary, edited_by: nil)
       expect(summary).to be_valid
     end
+
+    it "has many scene summary versions destroyed with the summary" do
+      association = described_class.reflect_on_association(:scene_summary_versions)
+      expect(association.macro).to eq(:has_many)
+      expect(association.options[:dependent]).to eq(:destroy)
+    end
+  end
+
+  describe "version snapshot", :db do
+    it "snapshots body, provenance, and editor on save" do
+      editor = create(:user)
+      summary = create(:scene_summary, body: "the recap", generated_at: Time.utc(2026, 5, 6), editor: editor)
+
+      version = summary.scene_summary_versions.last
+      expect(version.body).to eq("the recap")
+      expect(version.generated_at).to be_within(1.second).of(Time.utc(2026, 5, 6))
+      expect(version.edited_by).to eq(editor)
+    end
+
+    it "attributes a version to the acting Current.user on update" do
+      summary = create(:scene_summary)
+      editor = create(:user)
+      Current.user = editor
+
+      expect { summary.update!(body: "revised") }.to change { summary.scene_summary_versions.count }.by(1)
+      expect(summary.scene_summary_versions.last.edited_by).to eq(editor)
+    ensure
+      Current.user = nil
+    end
+
+    it "records generated_at nil on a version snapshotted from a hand-written summary" do
+      summary = create(:scene_summary, generated_at: nil)
+
+      expect(summary.scene_summary_versions.last.generated_at).to be_nil
+    end
   end
 
   describe "validations" do

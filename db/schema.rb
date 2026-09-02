@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_26_000000) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_01_180000) do
   create_table "action_mailbox_inbound_emails", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "message_checksum", null: false
@@ -351,6 +351,17 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_26_000000) do
     t.index ["scene_id"], name: "index_scene_summaries_on_scene_id", unique: true
   end
 
+  create_table "scene_summary_versions", force: :cascade do |t|
+    t.text "body"
+    t.datetime "created_at", null: false
+    t.integer "edited_by_id", null: false
+    t.datetime "generated_at"
+    t.integer "scene_summary_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["edited_by_id"], name: "index_scene_summary_versions_on_edited_by_id"
+    t.index ["scene_summary_id"], name: "index_scene_summary_versions_on_scene_summary_id"
+  end
+
   create_table "scenes", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.text "description"
@@ -447,6 +458,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_26_000000) do
   add_foreign_key "scene_participants", "users"
   add_foreign_key "scene_summaries", "scenes"
   add_foreign_key "scene_summaries", "users", column: "edited_by_id"
+  add_foreign_key "scene_summary_versions", "scene_summaries"
+  add_foreign_key "scene_summary_versions", "users", column: "edited_by_id"
   add_foreign_key "scenes", "games"
   add_foreign_key "scenes", "scenes", column: "parent_scene_id"
   add_foreign_key "user_images", "users"

@@ -4,9 +4,11 @@ class SceneSummary < ApplicationRecord
   extend T::Sig
   include Draftable::Model
   include AiGenerated::Model
+  include Versionable::Model
 
   belongs_to :scene
   belongs_to :edited_by, class_name: "User", optional: true
+  has_many :scene_summary_versions, dependent: :destroy
 
   # Drafting scopes and presence-unless-draft, declared here so the wiring is
   # visible; Draftable::Model supplies the shared draft?/published?/publish!
@@ -59,5 +61,26 @@ class SceneSummary < ApplicationRecord
   def visible_to?(viewer)
     SceneSummaryVisibility.classes_for(self)
       .include?(SceneSummaryVisibility.for_viewer(game: T.must(T.must(scene).game), viewer: viewer))
+  end
+
+  # The versions association Versionable::Model snapshots through — a summary's
+  # change history lives in scene_summary_versions.
+  sig { override.returns(T.untyped) }
+  def versions
+    scene_summary_versions
+  end
+
+  # A summary version captures the body and, uniquely among adopters, its
+  # AI-provenance (generated_at) — so "was this revision AI-authored" is a
+  # per-revision historical fact. Attribution is the acting user, falling back to
+  # the summary's own last editor for save paths without Current.user (e.g. the
+  # generation job attributes to the requester it set as edited_by).
+  sig { override.returns(T::Hash[Symbol, T.untyped]) }
+  def version_attributes
+    {
+      body: body,
+      generated_at: generated_at,
+      edited_by_id: Current.user&.id || edited_by_id
+    }
   end
 end
