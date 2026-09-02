@@ -341,5 +341,13 @@ RSpec.describe SceneSummary, type: :model do
 
       expect(summary.reload.generated_at).to be_present
     end
+
+    it "resets on the non-bang save path too" do
+      summary = create(:scene_summary, :ai_generated, draft: true)
+      summary.body = ""
+
+      expect(summary.save).to be(true)
+      expect(summary.reload.generated_at).to be_nil
+    end
   end
 end

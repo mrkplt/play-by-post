@@ -66,6 +66,15 @@ RSpec.describe Shared::SceneSummaryComponent, type: :component do
     end
   end
 
+  context "with a hand-written summary that was then edited" do
+    let(:summary) { build_stubbed(:scene_summary, :edited, generated_at: nil, scene: scene) }
+
+    it "status_badge_variant returns 'yellow'" do
+      component = described_class.new(summary: presenter_for(can_manage: false))
+      expect(component.status_badge_variant).to eq("yellow")
+    end
+  end
+
   context "when AI-generated" do
     let(:summary) { build_stubbed(:scene_summary, :ai_generated, scene: scene) }
 
