@@ -33,9 +33,12 @@ class SceneSummaryJob < ApplicationJob
       .call(prompt: SceneSummaryPrompt.new(scene).to_s)
   end
 
-  # One transaction for the summary upsert and its audit row, so the two can
-  # never diverge. Reloaded from the row the upsert just wrote — upsert
-  # bypasses the in-memory object.
+  # One transaction for the summary upsert, its version snapshot, and its audit
+  # row, so the three can never diverge. Reloaded from the row the upsert just
+  # wrote — upsert bypasses the in-memory object, so it also bypasses
+  # Versionable::Model's save-time snapshot; the version is written explicitly
+  # here instead, recording that this revision was AI-authored (generated_at set)
+  # and attributing it to the requester.
   sig { params(scene: Scene, result: Ai::UserGeneration::Result, requested_by_id: Integer).void }
   def persist(scene, result, requested_by_id)
     scene_id = T.must(scene.id)
@@ -43,8 +46,22 @@ class SceneSummaryJob < ApplicationJob
     ActiveRecord::Base.transaction do
       SceneSummary.upsert(upsert_attributes(scene_id, result.body), unique_by: :scene_id, update_only: UPDATE_ONLY_COLUMNS)
       summary = T.must(SceneSummary.find_by(scene_id: scene_id))
+      snapshot_generation(summary, requested_by_id)
       record_generation(summary_id: summary.id, result: result, requested_by_id: requested_by_id)
     end
+  end
+
+  # The version row for an AI generation. The upsert path skips Versionable's
+  # save override, so the snapshot is written here from the freshly-loaded
+  # summary — carrying its generated_at (this revision was AI-authored) and
+  # attributed to the requester, who has no Current.user in a job.
+  sig { params(summary: SceneSummary, requested_by_id: Integer).void }
+  def snapshot_generation(summary, requested_by_id)
+    summary.scene_summary_versions.create!(
+      body: summary.body,
+      generated_at: summary.generated_at,
+      edited_by_id: requested_by_id
+    )
   end
 
   # Push the finished summary to every viewer waiting on the scene page, scoped
