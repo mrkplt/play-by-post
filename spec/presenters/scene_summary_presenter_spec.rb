@@ -22,8 +22,8 @@ RSpec.describe SceneSummaryPresenter do
     context "when AI-generated and then edited" do
       let(:summary) { build_stubbed(:scene_summary, :ai_generated, :edited) }
 
-      it "returns 'Edited'" do
-        expect(presenter.status_label).to eq("Edited")
+      it "returns 'AI-generated · edited' (provenance is sticky, Fizzy #122)" do
+        expect(presenter.status_label).to eq("AI-generated · edited")
       end
     end
   end
@@ -118,9 +118,14 @@ RSpec.describe SceneSummaryPresenter do
       expect(described_class.new(ai_only).status_label).to eq("AI-generated")
     end
 
-    it "returns 'Hand-written' when edited but not AI-generated" do
+    it "returns 'Edited' when hand-written then edited (never AI-generated)" do
       edited_manual = build_stubbed(:scene_summary, :edited, generated_at: nil)
-      expect(described_class.new(edited_manual).status_label).to eq("Hand-written")
+      expect(described_class.new(edited_manual).status_label).to eq("Edited")
+    end
+
+    it "returns 'Hand-written' when never AI-generated and never edited" do
+      fresh_manual = build_stubbed(:scene_summary, generated_at: nil, edited_at: nil)
+      expect(described_class.new(fresh_manual).status_label).to eq("Hand-written")
     end
   end
 

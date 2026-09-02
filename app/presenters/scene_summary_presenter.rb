@@ -31,9 +31,12 @@ class SceneSummaryPresenter < BasePresenter
   sig { returns(String) }
   # mutant:disable
   def status_label
-    return "Hand-written" unless @model.ai_generated?
+    return @model.edited? ? "Edited" : "Hand-written" unless @model.ai_generated?
 
-    @model.edited? ? "Edited" : "AI-generated"
+    # AI provenance is sticky (Fizzy #122): a hand-edit no longer erases it, so an
+    # AI-generated summary that was then edited must still read as AI-generated —
+    # surfacing both facts rather than collapsing to "Edited".
+    @model.edited? ? "AI-generated · edited" : "AI-generated"
   end
 
   sig { returns(T.nilable(String)) }

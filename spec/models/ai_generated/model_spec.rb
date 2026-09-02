@@ -60,24 +60,23 @@ RSpec.describe AiGenerated::Model do
       end
     end
 
-    it "clears generated_at so the record is no longer AI-generated", :db do
+    it "leaves generated_at intact so the record stays AI-generated (sticky)", :db do
       editor = create(:user)
       record = probe(generated_at: Time.current).tap(&:save!)
 
       record.apply_manual_edit(body: "Hand-written", editor: editor)
 
-      expect(record.ai_generated?).to be(false)
-      expect(record.generated_at).to be_nil
+      expect(record.reload.ai_generated?).to be(true)
+      expect(record.generated_at).to be_present
     end
 
-    it "returns false and does not clear AI metadata when the body is blank", :db do
+    it "returns false when the body is blank on a published record (validation)", :db do
       record = probe(generated_at: Time.current, draft: false, body: "Has content").tap(&:save!)
       editor = create(:user)
 
       result = record.apply_manual_edit(body: "", editor: editor)
 
       expect(result).to be(false)
-      expect(record.reload.ai_generated?).to be(true)
     end
   end
 end

@@ -63,6 +63,24 @@ class SceneSummary < ApplicationRecord
       .include?(SceneSummaryVisibility.for_viewer(game: T.must(T.must(scene).game), viewer: viewer))
   end
 
+  # The AI-generated flag is sticky (Fizzy #122), cleared only when the body is
+  # emptied. Enforced at the save boundary so it holds for every write path — the
+  # draft autosave (a raw #update), publish, and #apply_manual_edit alike — not
+  # just the hand-edit action. Runs before super so the version snapshot
+  # Versionable::Model takes records the reset generated_at. save/save! both
+  # route here for the same reason Versionable overrides both.
+  sig { params(options: T.untyped).returns(T.untyped) }
+  def save(**options)
+    reset_provenance_if_blank
+    super
+  end
+
+  sig { params(options: T.untyped).returns(T.untyped) }
+  def save!(**options)
+    reset_provenance_if_blank
+    super
+  end
+
   # The versions association Versionable::Model snapshots through — a summary's
   # change history lives in scene_summary_versions.
   sig { override.returns(T.untyped) }
@@ -82,5 +100,15 @@ class SceneSummary < ApplicationRecord
       generated_at: generated_at,
       edited_by_id: Current.user&.id || edited_by_id
     }
+  end
+
+  private
+
+  # Clears the AI-generated provenance when the body has been emptied — the
+  # "unless all text was deleted" half of the sticky rule. Whitespace-only
+  # counts as empty.
+  sig { void }
+  def reset_provenance_if_blank
+    self.generated_at = nil if body.blank?
   end
 end

@@ -287,7 +287,7 @@ RSpec.describe SceneSummariesController, type: :request do
   describe "PATCH /games/:game_id/scenes/:scene_id/scene_summary" do
     let!(:summary) { create(:scene_summary, :ai_generated, scene: resolved_scene) }
 
-    it "updates body and clears AI metadata, redirecting a non-Turbo request" do
+    it "updates body and records the edit while keeping AI provenance sticky, redirecting a non-Turbo request" do
       sign_in(gm)
       patch game_scene_scene_summary_path(game, resolved_scene),
             params: { scene_summary: { body: "Edited text." } }
@@ -295,7 +295,7 @@ RSpec.describe SceneSummariesController, type: :request do
       expect(flash[:notice]).to match(/updated/i)
       summary.reload
       expect(summary.body).to eq("Edited text.")
-      expect(summary.generated_at).to be_nil
+      expect(summary.generated_at).to be_present # sticky: a hand-edit does not clear it (Fizzy #122)
       expect(summary.edited_by).to eq(gm)
       expect(summary.edited_at).to be_present
     end

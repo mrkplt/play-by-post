@@ -268,14 +268,24 @@ RSpec.describe SceneSummary, type: :model do
       end
     end
 
-    it "clears generated_at so a manually-edited summary is no longer AI-generated", :db do
+    it "keeps generated_at so a manually-edited AI summary stays AI-generated (sticky)", :db do
       summary = create(:scene_summary, :ai_generated)
       editor = create(:user)
 
       summary.apply_manual_edit(body: "Hand-written", editor: editor)
 
-      expect(summary.ai_generated?).to be(false)
-      expect(summary.generated_at).to be_nil
+      expect(summary.reload.ai_generated?).to be(true)
+      expect(summary.generated_at).to be_present
+    end
+
+    it "records the edit alongside the retained AI provenance", :db do
+      summary = create(:scene_summary, :ai_generated)
+      editor = create(:user)
+
+      summary.apply_manual_edit(body: "Hand-written", editor: editor)
+
+      expect(summary.reload.edited?).to be(true)
+      expect(summary.ai_generated?).to be(true)
     end
 
     it "leaves any ai_generations audit rows for the summary intact", :db do
@@ -288,14 +298,48 @@ RSpec.describe SceneSummary, type: :model do
       expect(AiGeneration.find(generation.id)).to eq(generation)
     end
 
-    it "returns false and does not clear AI metadata when the body is blank", :db do
-      summary = create(:scene_summary, :ai_generated)
+    it "returns false when the body is blank on a published summary (validation)", :db do
+      summary = create(:scene_summary, :ai_generated, draft: false)
       editor = create(:user)
 
       result = summary.apply_manual_edit(body: "", editor: editor)
 
       expect(result).to be(false)
-      expect(summary.reload.ai_generated?).to be(true)
+    end
+  end
+
+  describe "blank-body provenance reset (sticky rule's escape hatch)", :db do
+    around do |example|
+      Current.user = create(:user) # every real update path attributes an editor
+      example.run
+    ensure
+      Current.user = nil
+    end
+
+    it "clears generated_at when a draft's body is emptied on save" do
+      summary = create(:scene_summary, :ai_generated, draft: true)
+      expect(summary.ai_generated?).to be(true)
+
+      summary.update!(body: "")
+
+      expect(summary.reload.ai_generated?).to be(false)
+      expect(summary.generated_at).to be_nil
+    end
+
+    it "clears generated_at for a whitespace-only body" do
+      summary = create(:scene_summary, :ai_generated, draft: true)
+
+      summary.update!(body: "   \n  ")
+
+      expect(summary.reload.generated_at).to be_nil
+    end
+
+    it "keeps generated_at when the body still has content" do
+      summary = create(:scene_summary, :ai_generated, draft: true)
+
+      summary.update!(body: "still here")
+
+      expect(summary.reload.generated_at).to be_present
     end
   end
 end
