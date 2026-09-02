@@ -47,6 +47,16 @@ RSpec.describe SceneSummary, type: :model do
 
       expect(summary.scene_summary_versions.last.generated_at).to be_nil
     end
+
+    it "attributes the version to the record's edited_by when there is no Current.user" do
+      editor = create(:user)
+      summary = create(:scene_summary, editor: editor)
+      Current.user = nil # a direct model save outside a request
+
+      summary.update!(body: "reworked", edited_by: editor)
+
+      expect(summary.scene_summary_versions.last.edited_by).to eq(editor)
+    end
   end
 
   describe "validations" do

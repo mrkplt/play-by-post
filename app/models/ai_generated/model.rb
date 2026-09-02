@@ -15,10 +15,14 @@
 # hand-edit does NOT clear it — the asset stays AI-generated, because an
 # AI-authored draft that a human then polishes is still AI-authored in
 # substance. `#apply_manual_edit` therefore leaves `generated_at` intact and
-# only stamps the edit. The one reset — emptying the body ("unless all text was
-# deleted") — is enforced by the adopter at its save boundary (see
-# SceneSummary#reset_provenance_if_blank), so it holds for every write path, not
-# just the hand-edit action.
+# only stamps the edit.
+#
+# The one reset — emptying the body ("unless all text was deleted") — is NOT
+# provided by this module. It is the ADOPTER'S responsibility to enforce at its
+# own save boundary (SceneSummary overrides save/save! to call
+# #reset_provenance_if_blank before super), so it holds for every write path, not
+# just the hand-edit action. A future adopter (e.g. Character Portraits) that
+# wants the blank-reset must do the same — including it alone will not reset.
 #
 # Accounting — who requested the generation, whose key paid, cost, model, and
 # token counts — is NOT provenance and does not live on the asset. It is

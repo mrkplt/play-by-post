@@ -90,9 +90,11 @@ class SceneSummary < ApplicationRecord
 
   # A summary version captures the body and, uniquely among adopters, its
   # AI-provenance (generated_at) — so "was this revision AI-authored" is a
-  # per-revision historical fact. Attribution is the acting user, falling back to
-  # the summary's own last editor for save paths without Current.user (e.g. the
-  # generation job attributes to the requester it set as edited_by).
+  # per-revision historical fact. Attribution prefers the request's Current.user;
+  # it falls back to the record's own edited_by, which #apply_manual_edit sets
+  # from the editor it was handed — so a direct model call (no Current.user) still
+  # attributes the version to the right person. (The generation job upserts and so
+  # bypasses this method, writing its own version attributed to the requester.)
   sig { override.returns(T::Hash[Symbol, T.untyped]) }
   def version_attributes
     {
