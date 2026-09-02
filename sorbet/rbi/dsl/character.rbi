@@ -1013,6 +1013,51 @@ class Character
     sig { void }
     def name_will_change!; end
 
+    sig { returns(T::Boolean) }
+    def portrait_locked; end
+
+    sig { params(value: T::Boolean).returns(T::Boolean) }
+    def portrait_locked=(value); end
+
+    sig { returns(T::Boolean) }
+    def portrait_locked?; end
+
+    sig { returns(T.nilable(T::Boolean)) }
+    def portrait_locked_before_last_save; end
+
+    sig { returns(T.untyped) }
+    def portrait_locked_before_type_cast; end
+
+    sig { returns(T::Boolean) }
+    def portrait_locked_came_from_user?; end
+
+    sig { returns(T.nilable([T::Boolean, T::Boolean])) }
+    def portrait_locked_change; end
+
+    sig { returns(T.nilable([T::Boolean, T::Boolean])) }
+    def portrait_locked_change_to_be_saved; end
+
+    sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
+    def portrait_locked_changed?(from: T.unsafe(nil), to: T.unsafe(nil)); end
+
+    sig { returns(T.nilable(T::Boolean)) }
+    def portrait_locked_in_database; end
+
+    sig { returns(T.nilable([T::Boolean, T::Boolean])) }
+    def portrait_locked_previous_change; end
+
+    sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
+    def portrait_locked_previously_changed?(from: T.unsafe(nil), to: T.unsafe(nil)); end
+
+    sig { returns(T.nilable(T::Boolean)) }
+    def portrait_locked_previously_was; end
+
+    sig { returns(T.nilable(T::Boolean)) }
+    def portrait_locked_was; end
+
+    sig { void }
+    def portrait_locked_will_change!; end
+
     sig { void }
     def restore_archived_at!; end
 
@@ -1036,6 +1081,9 @@ class Character
 
     sig { void }
     def restore_name!; end
+
+    sig { void }
+    def restore_portrait_locked!; end
 
     sig { void }
     def restore_updated_at!; end
@@ -1090,6 +1138,12 @@ class Character
 
     sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
     def saved_change_to_name?(from: T.unsafe(nil), to: T.unsafe(nil)); end
+
+    sig { returns(T.nilable([T::Boolean, T::Boolean])) }
+    def saved_change_to_portrait_locked; end
+
+    sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
+    def saved_change_to_portrait_locked?(from: T.unsafe(nil), to: T.unsafe(nil)); end
 
     sig { returns(T.nilable([::ActiveSupport::TimeWithZone, ::ActiveSupport::TimeWithZone])) }
     def saved_change_to_updated_at; end
@@ -1216,6 +1270,9 @@ class Character
 
     sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
     def will_save_change_to_name?(from: T.unsafe(nil), to: T.unsafe(nil)); end
+
+    sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
+    def will_save_change_to_portrait_locked?(from: T.unsafe(nil), to: T.unsafe(nil)); end
 
     sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
     def will_save_change_to_updated_at?(from: T.unsafe(nil), to: T.unsafe(nil)); end

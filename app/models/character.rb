@@ -43,6 +43,15 @@ class Character < ApplicationRecord
     current_portrait&.display_variant
   end
 
+  # Whether this character's portrait is permanently locked — set when an AI
+  # portrait generation was refused by content moderation (a static placeholder
+  # is forced current and no in-app actor may change the portrait again). Every
+  # portrait-mutating path (generate, upload, mark-current) checks this.
+  sig { returns(T::Boolean) }
+  def portrait_locked?
+    portrait_locked
+  end
+
   sig { void }
   def archive!
     update!(archived_at: Time.current)

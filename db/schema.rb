@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_09_01_180000) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_02_000200) do
   create_table "action_mailbox_inbound_emails", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "message_checksum", null: false
@@ -112,6 +112,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_01_180000) do
     t.integer "game_id", null: false
     t.boolean "hidden", default: false, null: false
     t.string "name", null: false
+    t.boolean "portrait_locked", default: false, null: false
     t.datetime "updated_at", null: false
     t.integer "user_id", null: false
     t.index ["game_id"], name: "index_characters_on_game_id"
@@ -212,12 +213,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_01_180000) do
     t.datetime "created_at", null: false
     t.datetime "deleted_at"
     t.text "description"
+    t.integer "environment_page_id"
     t.string "name", null: false
     t.integer "post_edit_window_minutes"
     t.boolean "sheets_hidden", default: false, null: false
     t.string "slug", null: false
     t.datetime "updated_at", null: false
     t.index ["deleted_at"], name: "index_games_on_deleted_at"
+    t.index ["environment_page_id"], name: "index_games_on_environment_page_id"
     t.index ["slug"], name: "index_games_on_slug", unique: true
   end
 
@@ -438,6 +441,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_01_180000) do
   add_foreign_key "game_links", "games"
   add_foreign_key "game_members", "games"
   add_foreign_key "game_members", "users"
+  add_foreign_key "games", "pages", column: "environment_page_id"
   add_foreign_key "invitations", "games"
   add_foreign_key "invitations", "users", column: "invited_by_id"
   add_foreign_key "notebook_entries", "games"

@@ -29,6 +29,7 @@ matcher:
     - ErrorTracking
     - GlitchTipDsn
     - Game
+    - Game::EnvironmentPage
     - SceneSummary
     - SceneSummaryVisibility
     - SceneSummaryBroadcast

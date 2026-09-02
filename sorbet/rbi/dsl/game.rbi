@@ -375,6 +375,9 @@ class Game
     sig { params(value: T::Enumerable[::ApiToken]).void }
     def api_tokens=(value); end
 
+    sig { params(args: T.untyped, blk: T.untyped).returns(::Page) }
+    def build_environment_page(*args, &blk); end
+
     sig { returns(T::Array[T.untyped]) }
     def character_ids; end
 
@@ -402,6 +405,24 @@ class Game
 
     sig { params(value: T::Enumerable[::ContentTemplate]).void }
     def content_templates=(value); end
+
+    sig { params(args: T.untyped, blk: T.untyped).returns(::Page) }
+    def create_environment_page(*args, &blk); end
+
+    sig { params(args: T.untyped, blk: T.untyped).returns(::Page) }
+    def create_environment_page!(*args, &blk); end
+
+    sig { returns(T.nilable(::Page)) }
+    def environment_page; end
+
+    sig { params(value: T.nilable(::Page)).void }
+    def environment_page=(value); end
+
+    sig { returns(T::Boolean) }
+    def environment_page_changed?; end
+
+    sig { returns(T::Boolean) }
+    def environment_page_previously_changed?; end
 
     sig { returns(T::Array[T.untyped]) }
     def game_export_request_ids; end
@@ -514,6 +535,12 @@ class Game
 
     sig { params(value: T::Enumerable[::Page]).void }
     def pages=(value); end
+
+    sig { returns(T.nilable(::Page)) }
+    def reload_environment_page; end
+
+    sig { void }
+    def reset_environment_page; end
 
     sig { returns(T::Array[T.untyped]) }
     def scene_ids; end
@@ -874,6 +901,51 @@ class Game
     sig { void }
     def description_will_change!; end
 
+    sig { returns(T.nilable(::Integer)) }
+    def environment_page_id; end
+
+    sig { params(value: T.nilable(::Integer)).returns(T.nilable(::Integer)) }
+    def environment_page_id=(value); end
+
+    sig { returns(T::Boolean) }
+    def environment_page_id?; end
+
+    sig { returns(T.nilable(::Integer)) }
+    def environment_page_id_before_last_save; end
+
+    sig { returns(T.untyped) }
+    def environment_page_id_before_type_cast; end
+
+    sig { returns(T::Boolean) }
+    def environment_page_id_came_from_user?; end
+
+    sig { returns(T.nilable([T.nilable(::Integer), T.nilable(::Integer)])) }
+    def environment_page_id_change; end
+
+    sig { returns(T.nilable([T.nilable(::Integer), T.nilable(::Integer)])) }
+    def environment_page_id_change_to_be_saved; end
+
+    sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
+    def environment_page_id_changed?(from: T.unsafe(nil), to: T.unsafe(nil)); end
+
+    sig { returns(T.nilable(::Integer)) }
+    def environment_page_id_in_database; end
+
+    sig { returns(T.nilable([T.nilable(::Integer), T.nilable(::Integer)])) }
+    def environment_page_id_previous_change; end
+
+    sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
+    def environment_page_id_previously_changed?(from: T.unsafe(nil), to: T.unsafe(nil)); end
+
+    sig { returns(T.nilable(::Integer)) }
+    def environment_page_id_previously_was; end
+
+    sig { returns(T.nilable(::Integer)) }
+    def environment_page_id_was; end
+
+    sig { void }
+    def environment_page_id_will_change!; end
+
     sig { returns(::Integer) }
     def id; end
 
@@ -1067,6 +1139,9 @@ class Game
     def restore_description!; end
 
     sig { void }
+    def restore_environment_page_id!; end
+
+    sig { void }
     def restore_id!; end
 
     sig { void }
@@ -1110,6 +1185,12 @@ class Game
 
     sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
     def saved_change_to_description?(from: T.unsafe(nil), to: T.unsafe(nil)); end
+
+    sig { returns(T.nilable([T.nilable(::Integer), T.nilable(::Integer)])) }
+    def saved_change_to_environment_page_id; end
+
+    sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
+    def saved_change_to_environment_page_id?(from: T.unsafe(nil), to: T.unsafe(nil)); end
 
     sig { returns(T.nilable([::Integer, ::Integer])) }
     def saved_change_to_id; end
@@ -1299,6 +1380,9 @@ class Game
 
     sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
     def will_save_change_to_description?(from: T.unsafe(nil), to: T.unsafe(nil)); end
+
+    sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
+    def will_save_change_to_environment_page_id?(from: T.unsafe(nil), to: T.unsafe(nil)); end
 
     sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
     def will_save_change_to_id?(from: T.unsafe(nil), to: T.unsafe(nil)); end

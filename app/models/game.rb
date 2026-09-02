@@ -2,6 +2,7 @@
 
 class Game < ApplicationRecord
   extend T::Sig
+  include EnvironmentPage
 
   POST_EDIT_WINDOW_OPTIONS = [
     [ "Forever", nil ],
@@ -33,8 +34,14 @@ class Game < ApplicationRecord
   has_many :game_export_requests, dependent: :destroy
   has_many :game_key_authorizations, dependent: :destroy
 
+  # A GM may designate one of this game's pages as the environment/setting page,
+  # whose body seeds AI character-portrait prompts. Nullable; nullified on purge
+  # before pages are deleted (GamePurgeDeletion#delete_pages_and_versions).
+  belongs_to :environment_page, class_name: "Page", optional: true
+
   validates :name, presence: true, length: { maximum: 200 }
   validates :slug, presence: true, uniqueness: true
+  validate :environment_page_belongs_to_game
 
   # Soft-deleted games are hidden everywhere by this default scope: every
   # controller lookup, through-association, and export enumeration is filtered
