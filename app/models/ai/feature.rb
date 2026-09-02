@@ -1,18 +1,15 @@
 # typed: strict
 
 # The single source of truth for every AI feature the app has, and its funding
-# character. An AI feature is one of three levels:
+# character. An AI feature is one of two levels:
 #
-#   :game       — a shared, game-level output (e.g. a scene summary). Eligible
-#                 for GROUP contribution: funded from the game's pool of
-#                 GameKeyAuthorizations. This is what makes a feature
-#                 "pool-fundable".
-#   :personal   — an individual's own output, funded by that person's own key
-#                 only, never the pool. (None ship yet; Character Portraits #19
-#                 is the expected first one.)
+#   :game       — a BYOK output funded from the game's pool of
+#                 GameKeyAuthorizations: any member who authorized their key for
+#                 the feature may fund it (e.g. a scene summary, a character
+#                 portrait). This is what makes a feature "pool-fundable".
 #   :app_infra  — the app's own infrastructure spend on the app's OpenRouter key
 #                 (e.g. inbound-email extraction), entirely outside BYOK. Never
-#                 game/personal, never pool-fundable.
+#                 game-level, never pool-fundable.
 #
 # Everything that needs to know "is this feature game-level / may a person's key
 # fund it for a game" asks HERE — AiUsage validates its `feature` against the
@@ -21,7 +18,7 @@ module Ai
   class Feature
     extend T::Sig
 
-    LEVELS = T.let(%i[game personal app_infra].freeze, T::Array[Symbol])
+    LEVELS = T.let(%i[game app_infra].freeze, T::Array[Symbol])
 
     sig { returns(String) }
     attr_reader :name
@@ -45,11 +42,6 @@ module Ai
       level == :game
     end
 
-    sig { returns(T::Boolean) }
-    def personal_level?
-      level == :personal
-    end
-
     # A feature draws from a game's contribution pool exactly when it is a
     # game-level output — a shared asset the game collectively funds.
     sig { returns(T::Boolean) }
@@ -60,6 +52,7 @@ module Ai
     REGISTRY = T.let(
       [
         new(name: "scene_summary", level: :game, label: "Scene summaries"),
+        new(name: "character_portrait", level: :game, label: "Character portraits"),
         new(name: "inbound_email", level: :app_infra, label: "Inbound email")
       ].to_h { |feature| [ feature.name, feature ] }.freeze,
       T::Hash[String, Feature]

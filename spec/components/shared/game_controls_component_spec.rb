@@ -71,8 +71,9 @@ RSpec.describe Shared::GameControlsComponent, type: :component do
 
       expect(page).to have_text("Fund AI")
       expect(page).to have_text("Scene summaries")
-      expect(page.find("form[action='/create']")).to be_present
+      expect(page).to have_text("Character portraits")
       expect(page).to have_css("form[action='/create'] input[name='feature'][value='scene_summary']", visible: :all)
+      expect(page).to have_css("form[action='/create'] input[name='feature'][value='character_portrait']", visible: :all)
       expect(page).not_to have_css("form[action='/create'] input[name='_method'][value='delete']", visible: :all)
     end
 

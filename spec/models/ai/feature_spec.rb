@@ -1,8 +1,8 @@
 require "rails_helper"
 
 # Ai::Feature is the single source of truth for every AI feature the app has:
-# its name, its funding level (game / personal / app-infra), and whether it
-# draws from a game's contribution pool. AiUsage validates against it and
+# its name, its funding level (game / app-infra), and whether it draws from a
+# game's contribution pool. AiUsage validates against it and
 # GameKeyAuthorization scopes to its pool-fundable members.
 RSpec.describe Ai::Feature do
   describe "the registry" do
@@ -15,25 +15,33 @@ RSpec.describe Ai::Feature do
       expect(feature).to be_pool_fundable
     end
 
-    it "exposes the pool-fundable Features for the matrix columns" do
-      expect(described_class.pool_fundable.map(&:name)).to eq([ "scene_summary" ])
+    it "declares character_portrait as a game-level, pool-fundable feature" do
+      feature = described_class.fetch("character_portrait")
+
+      expect(feature.level).to eq(:game)
+      expect(feature.label).to eq("Character portraits")
+      expect(feature).to be_game_level
+      expect(feature).to be_pool_fundable
     end
 
-    it "declares inbound_email as app-infra: neither game nor personal, not pool-fundable" do
+    it "exposes the pool-fundable Features for the matrix columns" do
+      expect(described_class.pool_fundable.map(&:name)).to eq([ "scene_summary", "character_portrait" ])
+    end
+
+    it "declares inbound_email as app-infra: not game-level, not pool-fundable" do
       feature = described_class.fetch("inbound_email")
 
       expect(feature.level).to eq(:app_infra)
       expect(feature).not_to be_game_level
-      expect(feature).not_to be_personal_level
       expect(feature).not_to be_pool_fundable
     end
 
     it "exposes every declared feature name" do
-      expect(described_class.names).to include("scene_summary", "inbound_email")
+      expect(described_class.names).to include("scene_summary", "character_portrait", "inbound_email")
     end
 
     it "exposes only pool-fundable feature names for the authorization surface" do
-      expect(described_class.pool_fundable_names).to include("scene_summary")
+      expect(described_class.pool_fundable_names).to include("scene_summary", "character_portrait")
       expect(described_class.pool_fundable_names).not_to include("inbound_email")
     end
   end
@@ -69,14 +77,6 @@ RSpec.describe Ai::Feature do
 
     it "is false for an unknown feature" do
       expect(described_class.pool_fundable?("nope")).to be(false)
-    end
-  end
-
-  describe "level predicates" do
-    it "personal_level? is true only for a personal feature" do
-      # No personal feature ships yet (portraits #19 will add one); assert the
-      # predicate is wired by confirming a game feature is not personal.
-      expect(described_class.fetch("scene_summary")).not_to be_personal_level
     end
   end
 end
