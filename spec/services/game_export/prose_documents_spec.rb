@@ -75,6 +75,34 @@ RSpec.describe GameExport::ProseDocuments, :db do
     end
   end
 
+  describe "#summary_version" do
+    let(:editor) { build_stubbed(:user).tap { |u| allow(u).to receive(:display_name).and_return("Jo") } }
+
+    def content(version, number = 1)
+      GameExport::ProseDocuments.summary_version(version, number)
+    end
+
+    it "heads the version with number and date and credits the editor" do
+      version = build_stubbed(:scene_summary_version, created_at: Time.utc(2026, 5, 6), edited_by: editor)
+      expect(content(version, 2)).to include("# Version 2 — 2026-05-06", "**Edited by:** Jo")
+    end
+
+    it "marks an AI-authored revision's origin" do
+      version = build_stubbed(:scene_summary_version, generated_at: Time.current, edited_by: editor)
+      expect(content(version)).to include("**Origin:** AI-generated")
+    end
+
+    it "marks a hand-written revision's origin" do
+      version = build_stubbed(:scene_summary_version, generated_at: nil, edited_by: editor)
+      expect(content(version)).to include("**Origin:** Hand-written")
+    end
+
+    it "includes the versioned body" do
+      version = build_stubbed(:scene_summary_version, body: "recap text", edited_by: editor)
+      expect(content(version)).to include("recap text")
+    end
+  end
+
   describe "#scene_summary" do
     let(:editor) { build_stubbed(:user).tap { |u| allow(u).to receive(:display_name).and_return("Jo") } }
 

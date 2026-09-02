@@ -273,6 +273,20 @@ RSpec.describe GameExportService do
         expect(content).to include("# Scene Summary", "**Origin:** AI-generated", "The party fled.")
       end
 
+      it "writes the summary's version history, and keeps AI provenance sticky after a hand-edit" do
+        summary = create(:scene_summary, :ai_generated, scene: scene, body: "First cut.", editor: gm_user)
+        Current.user = gm_user
+        summary.update!(body: "Polished by a human.")
+        Current.user = nil
+
+        entries = zip_entries(zip_data)
+        expect(entries).to include(a_string_matching(%r{summary/version_history/v001-}))
+        expect(entries).to include(a_string_matching(%r{summary/version_history/v002-}))
+        # Sticky: the current summary export still declares AI provenance post-edit.
+        summary_md = zip_file_content(zip_data, entries.find { |e| e.end_with?("summary.md") })
+        expect(summary_md).to include("**Origin:** AI-generated")
+      end
+
       it "writes the AI audit log with a row for the game's generation" do
         summary = create(:scene_summary, scene: scene)
         create(:ai_generation, asset_type: "SceneSummary", asset_id: summary.id,

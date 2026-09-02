@@ -41,26 +41,29 @@ class SceneSummaryJob < ApplicationJob
   # and attributing it to the requester.
   sig { params(scene: Scene, result: Ai::UserGeneration::Result, requested_by_id: Integer).void }
   def persist(scene, result, requested_by_id)
-    scene_id = T.must(scene.id)
-
     ActiveRecord::Base.transaction do
-      SceneSummary.upsert(upsert_attributes(scene_id, result.body), unique_by: :scene_id, update_only: UPDATE_ONLY_COLUMNS)
-      summary = T.must(SceneSummary.find_by(scene_id: scene_id))
+      summary = upsert_and_load(T.must(scene.id), result.body)
       snapshot_generation(summary, requested_by_id)
       record_generation(summary_id: summary.id, result: result, requested_by_id: requested_by_id)
     end
   end
 
+  # Upserts the summary for the scene and returns the reloaded row (upsert
+  # bypasses the in-memory object).
+  sig { params(scene_id: Integer, body: String).returns(SceneSummary) }
+  def upsert_and_load(scene_id, body)
+    SceneSummary.upsert(upsert_attributes(scene_id, body), unique_by: :scene_id, update_only: UPDATE_ONLY_COLUMNS)
+    T.must(SceneSummary.find_by(scene_id: scene_id))
+  end
+
   # The version row for an AI generation. The upsert path skips Versionable's
   # save override, so the snapshot is written here from the freshly-loaded
-  # summary — carrying its generated_at (this revision was AI-authored) and
-  # attributed to the requester, who has no Current.user in a job.
+  # summary — carrying generated_at (this revision was AI-authored), attributed
+  # to the requester, who has no Current.user in a job.
   sig { params(summary: SceneSummary, requested_by_id: Integer).void }
   def snapshot_generation(summary, requested_by_id)
     summary.scene_summary_versions.create!(
-      body: summary.body,
-      generated_at: summary.generated_at,
-      edited_by_id: requested_by_id
+      body: summary.body, generated_at: summary.generated_at, edited_by_id: requested_by_id
     )
   end
 
