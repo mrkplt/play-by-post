@@ -42,7 +42,7 @@ RSpec.describe Ai::Moderation do
       moderation(rules: []).call("a knight")
 
       expect(captured[:authorization]).to eq("Bearer app-key")
-      expect(JSON.parse(captured[:body])).to eq("model" => "omni-moderation-latest", "input" => "a knight")
+      expect(JSON.parse(captured[:body])).to eq("model" => "test/moderation-model", "input" => "a knight")
     end
 
     it "passes the prompt and the parsed result entry to each rule" do

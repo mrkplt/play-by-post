@@ -12,6 +12,8 @@ Rails.application.configure do
   # stub or override these.
   ENV["OPENROUTER_MODEL"] ||= "test/summary-model"
   ENV["OPENROUTER_IMAGE_MODEL"] ||= "test/image-model"
+  ENV["OPENAI_MODERATION_URL"] ||= "https://api.openai.com/v1/moderations"
+  ENV["OPENAI_MODERATION_MODEL"] ||= "test/moderation-model"
 
   # While tests run files are not watched, reloading is not necessary.
   config.enable_reloading = false

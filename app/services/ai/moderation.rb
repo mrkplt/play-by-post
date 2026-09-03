@@ -5,7 +5,8 @@ require "faraday"
 
 module Ai
   # Screens a text prompt before an image generation spends a pool key. It calls
-  # OpenAI's Moderation API (omni-moderation-latest, free) for the raw signal,
+  # OpenAI's Moderation API (endpoint and model are required env vars — set an
+  # OpenAI-compatible moderation endpoint such as omni-moderation-latest) for the raw signal,
   # then hands the prompt and that result to every Ai::Moderation::Rule. Each
   # rule independently enforces one policy and returns an Outcome; if ANY rule
   # moderates, the request is blocked and every failing reason is collected for
@@ -23,9 +24,6 @@ module Ai
   # Scope (plan §4): TEXT pre-gen only — the image output is not screened.
   class Moderation
     extend T::Sig
-
-    DEFAULT_URL = "https://api.openai.com/v1/moderations"
-    MODEL = "omni-moderation-latest"
 
     # The aggregate outcome across all rules: whether generation is blocked, and
     # the reasons from every rule that moderated (for the alert + user notice).
@@ -46,8 +44,12 @@ module Ai
     # to every rule module under Ai::Moderation::Rules; a rule is a module that
     # responds to moderate(prompt, result) (T.untyped since Sorbet has no
     # duck-typed module interface for it).
+    # `url` and the model are required operational config, read from the env (no
+    # default — a missing var raises KeyError rather than silently calling a
+    # stale endpoint/model). `url` stays a constructor param so specs can inject
+    # the stub endpoint; production passes none and it reads OPENAI_MODERATION_URL.
     sig { params(api_key: String, url: String, adapter: T.untyped, rules: T::Array[T.untyped]).void }
-    def initialize(api_key:, url: DEFAULT_URL, adapter: T.unsafe(Faraday).default_adapter, rules: default_rules)
+    def initialize(api_key:, url: ENV.fetch("OPENAI_MODERATION_URL"), adapter: T.unsafe(Faraday).default_adapter, rules: default_rules)
       @api_key = api_key
       @url = url
       @adapter = adapter
@@ -92,8 +94,15 @@ module Ai
     def post_moderation(input)
       connection.post(@url) do |req|
         req.headers["Content-Type"] = "application/json"
-        req.body = JSON.generate(model: MODEL, input: input)
+        req.body = JSON.generate(model: model, input: input)
       end
+    end
+
+    # The moderation model is required operational config — no default, so a
+    # missing OPENAI_MODERATION_MODEL fails loudly (KeyError).
+    sig { returns(String) }
+    def model
+      ENV.fetch("OPENAI_MODERATION_MODEL")
     end
 
     sig { returns(T.untyped) }

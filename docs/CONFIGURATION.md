@@ -68,6 +68,8 @@ Set these in the Coolify UI. The app is broken without them.
 | `APP_HOST` | `config/environments/production.rb:74`, `app/models/branding.rb` | Host for mailer links **and** the brand URL (`Branding.url` → `https://<host>`, used in the OpenAPI server). **Fails silently** for mailer links — see Traps |
 | `OPENROUTER_MODEL` | `app/services/ai/user_generation.rb` | The scene-summary model slug. **Required, no default** — `ENV.fetch` raises `KeyError` if unset (a summary generation fails loudly rather than using a stale model). Not a secret. The test env sets a placeholder in `config/environments/test.rb` |
 | `OPENROUTER_IMAGE_MODEL` | `app/services/character_portrait_generation.rb` | The character-portrait image model slug. **Required, no default** (same `ENV.fetch`-raises contract as `OPENROUTER_MODEL`). Not a secret |
+| `OPENAI_MODERATION_URL` | `app/services/ai/moderation.rb` | The moderation endpoint (e.g. `https://api.openai.com/v1/moderations`). **Required, no default.** Not a secret — the OpenAI *key* is a credential (`openai.api_key`), this is just the URL |
+| `OPENAI_MODERATION_MODEL` | `app/services/ai/moderation.rb` | The moderation model slug (e.g. `omni-moderation-latest`). **Required, no default.** Not a secret |
 
 The database needs no configuration: it is
 SQLite, and `DATABASE_PATH` is set to `/data` in `docker-compose.coolify.yml` rather

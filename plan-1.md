@@ -281,10 +281,11 @@ only `ready` rows (`scope :ready` = `joins(:file_attachment)`).
 
 ### Configuration (resolved)
 
-- **Model names are required env vars — no default, raise if absent** (owner decision):
-  `OPENROUTER_MODEL` (summarization) and `OPENROUTER_IMAGE_MODEL` (portraits). `ENV.fetch`
-  with no default, so a missing var fails loudly rather than using a stale model. The test
-  env sets placeholder slugs in `config/environments/test.rb`.
+- **Model names AND the moderation endpoint are required env vars — no default, raise if
+  absent** (owner decision): `OPENROUTER_MODEL` (summarization), `OPENROUTER_IMAGE_MODEL`
+  (portraits), `OPENAI_MODERATION_MODEL` and `OPENAI_MODERATION_URL` (moderation). `ENV.fetch`
+  with no default, so a missing var fails loudly rather than using a stale model/endpoint. The
+  test env sets placeholders in `config/environments/test.rb`.
 - **Keys are encrypted credentials, not env vars.** The moderation call is OpenAI's
   `/v1/moderations` (a distinct provider from OpenRouter), so it needs an **OpenAI key**:
   `credentials.openai.api_key` (nested under `openai:` in `production.yml.enc`), separate from
