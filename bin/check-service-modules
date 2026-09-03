@@ -45,13 +45,6 @@ def error_class?(superclass)
   !superclass.nil? && superclass.match?(ERROR_SUPERCLASS)
 end
 
-# True when the class inherits from an application base class — any named
-# superclass other than Object/BasicObject. Such a class is a subclass in a
-# hierarchy (Template Method / Strategy) and must stay an instantiable class.
-def inherits_app_base?(superclass)
-  !superclass.nil? && !%w[Object BasicObject].include?(superclass)
-end
-
 def subclassed_anywhere?(name)
   pattern = /class\s+\w+\s*<\s*\b#{Regexp.escape(name)}\b/
   Dir.glob("#{ROOT}/app/**/*.rb").any? do |file|
@@ -85,13 +78,6 @@ def stateless_class?(source)
   definitions = class_definitions(source)
   return false if definitions.all? { |_, superclass| error_class?(superclass) }
   return false if definitions.any? { |name, _| subclassed_anywhere?(name) }
-
-  # A class that inherits from an application base class (not Object) is part of
-  # an inheritance hierarchy — a Template-Method / Strategy subclass (e.g. an
-  # Ai::Moderation::Rule) that MUST be instantiable to be dispatched
-  # polymorphically. It cannot be a module. (Object/BasicObject don't count —
-  # `class X < Object` is still just a plain class.)
-  return false if definitions.any? { |_, superclass| inherits_app_base?(superclass) }
 
   true
 end

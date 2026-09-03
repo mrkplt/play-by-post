@@ -3,25 +3,25 @@
 
 module Ai
   class Moderation
-    # One moderation rule. Each concrete subclass is individually responsible for
-    # enforcing a single rule, given the prompt and the OpenAI Moderation API
-    # result, and returns an Outcome (moderated? + a failure reason).
+    # The shared surface for a moderation rule. Each concrete rule is a MODULE
+    # under Ai::Moderation::Rules with its own `moderate(prompt, result)`; it is
+    # individually responsible for enforcing one policy given the prompt and the
+    # OpenAI Moderation API result, and returns an Outcome (moderated? + reason).
     #
-    # Ai::Moderation instantiates every subclass (Rule.descendants) and runs them
-    # all; if any is moderated, the request is blocked and every failing reason is
-    # collected for the alert and the user-facing violation notice. Adding a new
-    # rule is adding a subclass — no registry to edit.
+    # Rules are stateless process objects, so they are modules, not classes (the
+    # service-module convention) — there is nothing to instantiate. Ai::Moderation
+    # runs every rule module and aggregates; adding a rule is adding a module
+    # under Rules, discovered by reflection (Rules.constants), no registry.
     #
-    # The base #moderate is abstract: it raises, so a subclass that forgets to
-    # implement it fails loudly rather than silently passing content.
-    class Rule
+    # This module provides the block/allow Outcome builders the rules call, and
+    # the Outcome value object. There is no abstract `moderate` here: a rule
+    # module simply defines its own `moderate`, and Ai::Moderation only calls
+    # modules that respond to it.
+    module Rule
       extend T::Sig
-      extend T::Helpers
-      abstract!
 
       # A rule's result: whether it moderated (blocked) the content, and — when
-      # it did — the human-readable reason for the alert/notice. reason is empty
-      # when not moderated.
+      # it did — the human-readable reason for the alert/notice.
       class Outcome < T::Struct
         extend T::Sig
 
@@ -34,26 +34,18 @@ module Ai
         end
       end
 
-      # Enforce this rule against the prompt and the OpenAI moderation result.
-      # `result` is the parsed first `results` entry from the Moderation API
-      # (a Hash with "flagged"/"categories"/"category_scores"), or an empty Hash
-      # when the API returned nothing usable.
-      sig do
-        abstract.params(
-          _prompt: String, _result: T::Hash[String, T.untyped]
-        ).returns(Outcome)
-      end
-      def moderate(_prompt, _result); end
+      class << self
+        extend T::Sig
 
-      # Convenience builders so subclasses read declaratively.
-      sig { params(reason: String).returns(Outcome) }
-      def block(reason)
-        Outcome.new(moderated: true, reason: reason)
-      end
+        sig { params(reason: String).returns(Outcome) }
+        def block(reason)
+          Outcome.new(moderated: true, reason: reason)
+        end
 
-      sig { returns(Outcome) }
-      def allow
-        Outcome.new(moderated: false)
+        sig { returns(Outcome) }
+        def allow
+          Outcome.new(moderated: false)
+        end
       end
     end
   end

@@ -43,10 +43,10 @@ module Ai
 
     # `rules` is injectable so specs drive the aggregation with fake rules and
     # never depend on which concrete rules exist or on their loading. It defaults
-    # to one instance of every concrete Rule subclass; at runtime the app is
-    # eager-loaded (config.eager_load), so every rule file is loaded and present
-    # in descendants.
-    sig { params(api_key: String, url: String, adapter: T.untyped, rules: T::Array[Rule]).void }
+    # to every rule module under Ai::Moderation::Rules; a rule is a module that
+    # responds to moderate(prompt, result) (T.untyped since Sorbet has no
+    # duck-typed module interface for it).
+    sig { params(api_key: String, url: String, adapter: T.untyped, rules: T::Array[T.untyped]).void }
     def initialize(api_key:, url: DEFAULT_URL, adapter: T.unsafe(Faraday).default_adapter, rules: default_rules)
       @api_key = api_key
       @url = url
@@ -69,11 +69,11 @@ module Ai
 
     private
 
-    # One instance of every concrete Rule subclass — a new rule needs only a new
-    # subclass, no registration here.
-    sig { returns(T::Array[Rule]) }
+    # Every rule module under Ai::Moderation::Rules — a new rule needs only a new
+    # module there, discovered by reflection, no registration here.
+    sig { returns(T::Array[T.untyped]) }
     def default_rules
-      T.unsafe(Rule).descendants.map(&:new)
+      Rules.constants.map { |name| Rules.const_get(name) }
     end
 
     # The parsed first `results` entry from the Moderation API (Hash with

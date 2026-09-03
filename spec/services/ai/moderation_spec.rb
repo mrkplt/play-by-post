@@ -10,9 +10,10 @@ require "rails_helper"
 RSpec.describe Ai::Moderation do
   let(:stubs) { "Faraday::Adapter::Test::Stubs".constantize.new }
 
-  # A fake rule returning a fixed outcome, and recording what it was moderated with.
+  # A fake rule (a module-like object responding to #moderate) returning a fixed
+  # outcome, and recording what it was moderated with.
   def fake_rule(moderated:, reason: "", captured: {})
-    rule = instance_double(Ai::Moderation::Rule)
+    rule = double("Rule")
     allow(rule).to receive(:moderate) do |prompt, result|
       captured[:prompt] = prompt
       captured[:result] = result
@@ -101,15 +102,15 @@ RSpec.describe Ai::Moderation do
 
   describe "#default_rules (runtime discovery)" do
     # Reference the concrete rules first so they are loaded (app/services is
-    # autoloaded, not eager-loaded in isolation), making Rule.descendants
-    # complete deterministically — then assert discovery instantiates them.
-    it "instantiates one of every concrete Rule subclass" do
+    # autoloaded, not eager-loaded in isolation), so Rules.constants sees them —
+    # then assert discovery returns every rule module.
+    it "discovers every rule module under Rules" do
       expected = [ Ai::Moderation::Rules::FlaggedCategories, Ai::Moderation::Rules::MinorSafety ]
 
       discovered = described_class.new(api_key: "k").send(:default_rules)
 
-      expect(discovered.map(&:class)).to include(*expected)
-      expect(discovered).to all(be_a(Ai::Moderation::Rule))
+      expect(discovered).to include(*expected)
+      expect(discovered).to all(respond_to(:moderate))
     end
   end
 end
