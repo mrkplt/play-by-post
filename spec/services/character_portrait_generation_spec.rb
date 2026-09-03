@@ -103,7 +103,7 @@ RSpec.describe CharacterPortraitGeneration do
   context "when generation is refused by the image model" do
     before do
       stub_moderation(flagged: false)
-      stub_funding(raises: Ai::ImageRequest::Refused.new("policy"))
+      stub_funding(raises: Ai::Refusal::Error.new("policy"))
     end
 
     it "fails the skeleton with a generic failure reason, no audit row" do

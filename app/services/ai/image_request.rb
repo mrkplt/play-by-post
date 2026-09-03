@@ -16,22 +16,13 @@ module Ai
   #   - a key-attributable HTTP failure (401/402/403/429) → a Faraday::Error
   #     propagates, so Ai::Funding fails over to the next pooled key exactly as
   #     for a chat generation.
-  #   - a content-policy refusal → Ai::ImageRequest::Refused. OpenRouter returns
-  #     this as an HTTP 400 whose error.code is "content_policy_violation" or
-  #     "refusal" (reasons in error.metadata); it is NOT a key failure and must
+  #   - a content-policy refusal → Ai::Refusal::Error, detected by Ai::Refusal
+  #     (the shared, provider-level refusal concept). NOT a key failure and must
   #     not fail over (every key would refuse the same prompt).
-  #
-  # Downstream depends only on the typed Refused, never on the wire shape; the
-  # refusal detection itself lives in Ai::ImageRequest::Refusal.
   class ImageRequest
     extend T::Sig
 
     OPENROUTER_IMAGE_URL = "https://openrouter.ai/api/v1/images"
-
-    # Raised when the provider refuses the prompt on content-policy grounds.
-    # Distinct from a Faraday::Error (which means "this key can't fund the
-    # call") so the caller reacts to it as a block rather than failing over.
-    class Refused < StandardError; end
 
     # The parsed result of a successful image generation.
     Result = Struct.new(:png_bytes, :cost, keyword_init: true)
@@ -48,15 +39,16 @@ module Ai
     end
 
     # Run the generation with the given BYOK key. Returns a Result on success.
-    # A Faraday error is handed to Refusal.for: a content-policy block becomes a
-    # Refused, anything else re-raises (a key-attributable status then fails over
-    # in Ai::Funding, the rest abort). Faraday carries no Sorbet RBI here, so it
-    # is reached through T.unsafe — as EmailContentExtraction reaches Net::HTTP.
+    # A Faraday error is handed to Ai::Refusal.for: a content-policy block becomes
+    # an Ai::Refusal::Error, anything else re-raises (a key-attributable status
+    # then fails over in Ai::Funding, the rest abort). Faraday carries no Sorbet
+    # RBI here, so it is reached through T.unsafe — as EmailContentExtraction
+    # reaches Net::HTTP.
     sig { params(api_key: String).returns(Result) }
     def call(api_key)
       success(post(api_key).body)
     rescue Faraday::Error => error
-      raise Refusal.for(error) || error
+      raise Ai::Refusal.for(error) || error
     end
 
     private
@@ -81,7 +73,7 @@ module Ai
     sig { params(body: T.untyped).returns(Result) }
     def success(body)
       first = first_image(body)
-      raise Refused, "OpenRouter image response contained no image data" if first.nil?
+      raise Ai::Refusal::Error, "OpenRouter image response contained no image data" if first.nil?
 
       Result.new(png_bytes: Base64.decode64(first.fetch("b64_json")), cost: body.dig("usage", "cost"))
     end

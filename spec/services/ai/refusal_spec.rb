@@ -2,26 +2,27 @@
 
 require "rails_helper"
 
-# Ai::ImageRequest::Refusal interprets a Faraday error from the OpenRouter image
-# endpoint as a content-policy Refused, or nil for anything else. The error is
-# untyped (a double exposing #response = { status:, body: <raw JSON string> }).
-RSpec.describe Ai::ImageRequest::Refusal do
+# Ai::Refusal is the shared, provider-level content-policy refusal concept.
+# .for interprets a Faraday error as an Ai::Refusal::Error, or nil for anything
+# else. The error is untyped (a double exposing #response = { status:, body:
+# <raw JSON string> }).
+RSpec.describe Ai::Refusal do
   def error_with(body:)
     double("Faraday::Error", response: { status: 400, body: body })
   end
 
   describe ".for" do
-    it "returns a Refused with the metadata reasons for a content_policy_violation" do
+    it "returns an Error with the metadata reasons for a content_policy_violation" do
       error = error_with(body: JSON.generate("error" => {
         "code" => "content_policy_violation", "message" => "flagged",
         "metadata" => { "reasons" => [ "sexual", "minors" ] }
       }))
 
-      expect(described_class.for(error)).to be_a(Ai::ImageRequest::Refused)
+      expect(described_class.for(error)).to be_a(described_class::Error)
       expect(described_class.for(error).message).to include("sexual, minors")
     end
 
-    it "returns a Refused for a refusal code, using the message when reasons are absent" do
+    it "returns an Error for a refusal code, using the message when reasons are absent" do
       error = error_with(body: JSON.generate("error" => { "code" => "refusal", "message" => "model refused" }))
 
       expect(described_class.for(error).message).to include("model refused")

@@ -266,7 +266,8 @@ matcher:
     - Ai::PortraitPrompt
     - Ai::ImageRequest
     - Ai::ImageRequest::Result
-    - Ai::ImageRequest::Refusal
+    - Ai::Refusal
+    - Ai::Refusal::Error
     - Ai::HttpConnection
     - Ai::Moderation
     - Ai::Moderation::Verdict

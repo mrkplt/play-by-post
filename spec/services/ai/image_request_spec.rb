@@ -64,13 +64,13 @@ RSpec.describe Ai::ImageRequest do
         "metadata" => { "reasons" => [ "sexual", "minors" ] }
       } }, {})
 
-      expect { request.call("key-abc") }.to raise_error(described_class::Refused, /sexual, minors/)
+      expect { request.call("key-abc") }.to raise_error(Ai::Refusal::Error, /sexual, minors/)
     end
 
     it "raises Refused on a 400 refusal code, falling back to the message when reasons are absent" do
       stub_post(stubs, 400, { "error" => { "code" => "refusal", "message" => "the model refused" } }, {})
 
-      expect { request.call("key-abc") }.to raise_error(described_class::Refused, /the model refused/)
+      expect { request.call("key-abc") }.to raise_error(Ai::Refusal::Error, /the model refused/)
     end
 
     it "falls back to the message when the metadata reasons array is empty" do
@@ -78,7 +78,7 @@ RSpec.describe Ai::ImageRequest do
         "code" => "content_policy_violation", "message" => "policy hit", "metadata" => { "reasons" => [] }
       } }, {})
 
-      expect { request.call("key-abc") }.to raise_error(described_class::Refused, /policy hit/)
+      expect { request.call("key-abc") }.to raise_error(Ai::Refusal::Error, /policy hit/)
     end
 
     it "re-raises a 400 that is NOT a content-policy code (not a refusal)" do
@@ -89,12 +89,12 @@ RSpec.describe Ai::ImageRequest do
 
     it "raises Refused when the response contains no image data" do
       stub_post(stubs, 200, { "data" => [] }, {})
-      expect { request.call("key-abc") }.to raise_error(described_class::Refused, /no image data/)
+      expect { request.call("key-abc") }.to raise_error(Ai::Refusal::Error, /no image data/)
     end
 
     it "raises Refused when the response has no data key at all" do
       stub_post(stubs, 200, {}, {})
-      expect { request.call("key-abc") }.to raise_error(described_class::Refused, /no image data/)
+      expect { request.call("key-abc") }.to raise_error(Ai::Refusal::Error, /no image data/)
     end
 
     it "lets a key-attributable HTTP failure propagate for pool failover" do

@@ -31,7 +31,7 @@ class CharacterPortraitGeneration
     return block if verdict.flagged?
 
     complete(generate)
-  rescue Ai::ImageRequest::Refused, Ai::Funding::Exhausted, Faraday::Error => error
+  rescue Ai::Refusal::Error, Ai::Funding::Exhausted, Faraday::Error => error
     fail_with("The portrait could not be generated. Please try again.", log: error.message)
   end
 
