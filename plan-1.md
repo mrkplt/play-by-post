@@ -162,12 +162,23 @@ The controls:
    the prompt, or change the rules. Lives in one constant (`Ai::PortraitSafetyPrompt`),
    unit-tested. (`Ai::PortraitSafetyPrompt` implemented.)
 
-2. **Pre-generation moderation** — `Ai::Moderation` posts the full composed prompt to OpenAI's
-   Moderation API (`omni-moderation-latest`) and returns a `Verdict` (flagged? + violated
-   category names). The job screens BEFORE spending a key and **blocks on flagged**. It
-   **fails closed**: an unparseable response is treated as flagged; a transport error is not
-   swallowed (the job blocks). Endpoint/auth is a configurable seam (`OPENAI_MODERATION_URL`
-   default, app key), stubbed in tests via Faraday's test adapter. (Implemented.)
+2. **Pre-generation moderation — a Rule pipeline** (`Ai::Moderation`). It posts the composed
+   prompt to OpenAI's Moderation API (`omni-moderation-latest`) for the raw signal, then hands
+   `(prompt, result)` to every `Ai::Moderation::Rule` subclass. **The rules ARE the enforcement**
+   (they replace an inline flagged-category check): each rule independently enforces one policy
+   and returns an `Outcome` (`moderated?` + `reason`); `Ai::Moderation` runs them all and
+   `.any?`-s — if any moderates, the `Verdict` is flagged and carries every failing reason for
+   the alert + the user notice. Rules are discovered via `Rule.descendants` at runtime (the app
+   is eager-loaded) and are **injectable** so specs drive the aggregation with fakes. Adding a
+   rule is adding a subclass — no registry.
+   - `Rule` is abstract (`abstract!`, a raising `moderate`) with `block`/`allow` Outcome
+     builders. Shipped rules: `Rules::FlaggedCategories` (blocks on any OpenAI-flagged category)
+     and `Rules::MinorSafety` (zero-tolerance: any non-zero `sexual/minors` score blocks, stricter
+     than OpenAI's own flag).
+   - The job screens BEFORE spending a key and **blocks on flagged**. **Fails closed**: an
+     unparseable API response yields an empty result to the rules; a transport error is not
+     swallowed (propagates, the job blocks). Endpoint/auth is a configurable seam
+     (`DEFAULT_URL`, app key), stubbed in tests via Faraday's test adapter. (Implemented.)
 
 3. **Image-model refusal** — if the image model still refuses at generation time
    (`Ai::ImageRequest::Refused`), that is also a plain block (no image, error toast + log),

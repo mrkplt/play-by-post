@@ -15,7 +15,6 @@ class GamePurgeDeletion
 
   sig { void }
   def delete_all!
-    clear_environment_page_reference
     delete_posts_and_reads
     delete_scenes_and_children
     delete_characters_and_versions
@@ -97,18 +96,19 @@ class GamePurgeDeletion
     NotebookEntry.where(id: ids).in_batches.delete_all
   end
 
+  # The game may reference one of its own pages as its environment page; that FK
+  # is cleared before the pages are deleted so this delete (and the final game
+  # delete) are FK-safe.
   sig { void }
   def delete_pages_and_versions
+    clear_environment_page_reference
     ids = Page.where(game_id: game_id).pluck(:id)
     PageVersion.where(page_id: ids).in_batches.delete_all
     Page.where(id: ids).in_batches.delete_all
   end
 
-  # The game may reference one of its own pages as its environment page. That
-  # FK is cleared first so the later page deletes (and the final game delete)
-  # are FK-safe. unscoped: the game being purged is soft-deleted, so the
-  # default scope would hide it and the update would no-op, leaving the FK to
-  # fail on delete.
+  # unscoped: the game being purged is soft-deleted, so the default scope would
+  # hide it and the update would no-op, leaving the FK to fail on delete.
   sig { void }
   def clear_environment_page_reference
     Game.unscoped.where(id: game_id).update_all(environment_page_id: nil)

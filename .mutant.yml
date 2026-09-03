@@ -263,8 +263,13 @@ matcher:
     - Ai::PortraitPrompt
     - Ai::ImageRequest
     - Ai::ImageRequest::Result
+    - Ai::HttpConnection
     - Ai::Moderation
     - Ai::Moderation::Verdict
+    - Ai::Moderation::Rule
+    - Ai::Moderation::Rule::Outcome
+    - Ai::Moderation::Rules::FlaggedCategories
+    - Ai::Moderation::Rules::MinorSafety
     - Crypto::CryptoService
     - Crypto::Blob
     - Crypto::DecryptionError

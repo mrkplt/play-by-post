@@ -30,10 +30,7 @@ module Ai
     # designated (or its body is blank).
     sig { returns(T.nilable(String)) }
     def game_part
-      body = @game.environment_prompt
-      return nil if body.nil? || body.strip.empty?
-
-      body.strip
+      @game.environment_prompt&.strip&.presence
     end
 
     # The player's own prompt, stripped.

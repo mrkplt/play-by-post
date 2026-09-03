@@ -65,20 +65,11 @@ module Ai
 
     private
 
-    # Pure Faraday transport config; its mutations are either equivalent (T.unsafe
-    # removal) or need a live socket to kill (timeout values, middleware presence).
-    # Behaviour is covered end-to-end via the test adapter.
+    TIMEOUT = 60
+
     sig { params(api_key: String).returns(T.untyped) }
-    # mutant:disable
     def connection(api_key)
-      T.unsafe(Faraday).new do |f|
-        f.request :authorization, "Bearer", api_key
-        f.response :json
-        f.response :raise_error
-        f.options.timeout = 60
-        f.options.open_timeout = 10
-        f.adapter(*Array(@adapter))
-      end
+      HttpConnection.build(api_key: api_key, timeout: TIMEOUT, adapter: @adapter)
     end
 
     # Turn a parsed response body into a Result, or raise Refused. This is the
@@ -89,14 +80,16 @@ module Ai
     def classify(body)
       raise Refused, refusal_message(body) if refused?(body)
 
-      data = body.is_a?(Hash) ? body["data"] : nil
-      first = data.is_a?(Array) ? data.first : nil
+      first = first_image(body)
       raise Refused, "OpenRouter image response contained no image data" if first.nil?
 
-      Result.new(
-        png_bytes: Base64.decode64(first.fetch("b64_json")),
-        cost: body.dig("usage", "cost")
-      )
+      Result.new(png_bytes: Base64.decode64(first.fetch("b64_json")), cost: body.dig("usage", "cost"))
+    end
+
+    sig { params(body: T.untyped).returns(T.untyped) }
+    def first_image(body)
+      data = body.is_a?(Hash) ? body["data"] : nil
+      data.is_a?(Array) ? data.first : nil
     end
 
     sig { params(body: T.untyped).returns(T::Boolean) }
