@@ -16,7 +16,6 @@ module Ai
     extend T::Sig
 
     OPENROUTER_API_BASE = "https://openrouter.ai/api/v1"
-    DEFAULT_MODEL = "openai/gpt-4o"
 
     Result = Struct.new(
       :body, :model_used, :input_tokens, :output_tokens, :cost, :funded_by,
@@ -81,9 +80,12 @@ module Ai
       client.chat(parameters: { model: model, messages: [ { role: "user", content: prompt } ] })
     end
 
+    # The summarization model is required operational config — no default, so a
+    # missing OPENROUTER_MODEL fails loudly (KeyError) rather than silently
+    # summarizing with a stale model.
     sig { returns(String) }
     def model
-      ENV.fetch("OPENROUTER_MODEL", DEFAULT_MODEL)
+      ENV.fetch("OPENROUTER_MODEL")
     end
   end
 end

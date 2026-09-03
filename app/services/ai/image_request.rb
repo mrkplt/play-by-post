@@ -9,21 +9,20 @@ module Ai
   # and a prompt, funded by a single BYOK key, returning the decoded PNG bytes
   # and the reported cost.
   #
-  # This class is the boundary that classifies the provider's response, and it
-  # is deliberately the STUB SEAM for the not-yet-pinned-down OpenRouter refusal
-  # shape (plan §7). The three outcomes it distinguishes:
+  # This class is the boundary that classifies the provider's response. The
+  # three outcomes it distinguishes:
   #
   #   - success            → a Result (png bytes + cost).
   #   - a key-attributable HTTP failure (401/402/403/429) → a Faraday::Error
   #     propagates, so Ai::Funding fails over to the next pooled key exactly as
   #     for a chat generation.
-  #   - a content-policy refusal → Ai::ImageRequest::Refused, which the caller
-  #     turns into the punitive lock path. NOT a key failure — it must not fail
-  #     over to another key (every key would refuse the same disallowed prompt).
+  #   - a content-policy refusal → Ai::ImageRequest::Refused. OpenRouter returns
+  #     this as an HTTP 400 whose error.code is "content_policy_violation" or
+  #     "refusal" (reasons in error.metadata); it is NOT a key failure and must
+  #     not fail over (every key would refuse the same prompt).
   #
-  # Everything downstream depends only on the typed Refused, never on the wire
-  # shape, so pinning down the real OpenRouter refusal payload later is a change
-  # confined to #classify here.
+  # Downstream depends only on the typed Refused, never on the wire shape; the
+  # refusal detection itself lives in Ai::ImageRequest::Refusal.
   class ImageRequest
     extend T::Sig
 
@@ -31,7 +30,7 @@ module Ai
 
     # Raised when the provider refuses the prompt on content-policy grounds.
     # Distinct from a Faraday::Error (which means "this key can't fund the
-    # call") so the caller can react punitively rather than fail over.
+    # call") so the caller reacts to it as a block rather than failing over.
     class Refused < StandardError; end
 
     # The parsed result of a successful image generation.
@@ -48,19 +47,16 @@ module Ai
       @adapter = adapter
     end
 
-    # Run the generation with the given BYOK key. Returns a Result on success;
-    # raises Refused on a content-policy refusal; lets a key-attributable
-    # Faraday::Error propagate for pool failover (Ai::Funding reads its
-    # response_status). Faraday carries no Sorbet RBI here, so it is reached
-    # through T.unsafe — the same way EmailContentExtraction reaches Net::HTTP.
+    # Run the generation with the given BYOK key. Returns a Result on success.
+    # A Faraday error is handed to Refusal.for: a content-policy block becomes a
+    # Refused, anything else re-raises (a key-attributable status then fails over
+    # in Ai::Funding, the rest abort). Faraday carries no Sorbet RBI here, so it
+    # is reached through T.unsafe — as EmailContentExtraction reaches Net::HTTP.
     sig { params(api_key: String).returns(Result) }
     def call(api_key)
-      response = connection(api_key).post(OPENROUTER_IMAGE_URL) do |req|
-        req.headers["Content-Type"] = "application/json"
-        req.body = JSON.generate(model: @model, prompt: @prompt)
-      end
-
-      classify(response.body)
+      success(post(api_key).body)
+    rescue Faraday::Error => error
+      raise Refusal.for(error) || error
     end
 
     private
@@ -68,18 +64,22 @@ module Ai
     TIMEOUT = 60
 
     sig { params(api_key: String).returns(T.untyped) }
+    def post(api_key)
+      connection(api_key).post(OPENROUTER_IMAGE_URL) do |req|
+        req.headers["Content-Type"] = "application/json"
+        req.body = JSON.generate(model: @model, prompt: @prompt)
+      end
+    end
+
+    sig { params(api_key: String).returns(T.untyped) }
     def connection(api_key)
       HttpConnection.build(api_key: api_key, timeout: TIMEOUT, adapter: @adapter)
     end
 
-    # Turn a parsed response body into a Result, or raise Refused. This is the
-    # stub seam: the refusal detection is coded against a placeholder shape (an
-    # explicit `error.type == "moderation"` marker) and revisited once the real
-    # OpenRouter image refusal payload is known — a change confined here.
+    # A successful response body → a Result; a missing image (a 200 with no data)
+    # is treated as a refusal rather than a silent nil.
     sig { params(body: T.untyped).returns(Result) }
-    def classify(body)
-      raise Refused, refusal_message(body) if refused?(body)
-
+    def success(body)
       first = first_image(body)
       raise Refused, "OpenRouter image response contained no image data" if first.nil?
 
@@ -90,18 +90,6 @@ module Ai
     def first_image(body)
       data = body.is_a?(Hash) ? body["data"] : nil
       data.is_a?(Array) ? data.first : nil
-    end
-
-    sig { params(body: T.untyped).returns(T::Boolean) }
-    def refused?(body)
-      return false unless body.is_a?(Hash)
-
-      body.dig("error", "type") == "moderation"
-    end
-
-    sig { params(body: T.untyped).returns(String) }
-    def refusal_message(body)
-      body.dig("error", "message") || "OpenRouter refused the image prompt on content-policy grounds"
     end
   end
 end

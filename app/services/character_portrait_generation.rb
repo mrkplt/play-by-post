@@ -44,7 +44,7 @@ class CharacterPortraitGeneration
 
   sig { returns(Ai::Moderation::Verdict) }
   def verdict
-    @verdict ||= Ai::Moderation.new(api_key: app_key).call(prompt.to_s)
+    @verdict ||= Ai::Moderation.new(api_key: moderation_key).call(prompt.to_s)
   end
 
   sig { returns(Ai::Funding::Spend) }
@@ -110,13 +110,19 @@ class CharacterPortraitGeneration
     AiKeyResolver.new(key_source: Crypto::StoredKeySource.new)
   end
 
+  # The OpenAI key for the moderation pre-screen (Ai::Moderation calls OpenAI's
+  # /v1/moderations, NOT OpenRouter — a distinct credential). Nested under
+  # `openai:` in the encrypted credentials.
   sig { returns(String) }
-  def app_key
-    Rails.application.credentials.openrouter_api_key.to_s
+  def moderation_key
+    Rails.application.credentials.openai.api_key.to_s
   end
 
+  # The image model is required operational config — no default, so a missing
+  # OPENROUTER_IMAGE_MODEL fails loudly (KeyError) rather than generating with a
+  # stale model.
   sig { returns(String) }
   def image_model
-    ENV.fetch("OPENROUTER_IMAGE_MODEL", "openai/gpt-image-1")
+    ENV.fetch("OPENROUTER_IMAGE_MODEL")
   end
 end

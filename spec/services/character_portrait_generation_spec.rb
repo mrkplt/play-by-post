@@ -19,6 +19,10 @@ RSpec.describe CharacterPortraitGeneration do
     described_class.new(image, player.id, "a grizzled dwarven smith").run
   end
 
+  # The moderation OpenAI key lives in encrypted credentials (credentials.openai.api_key);
+  # stub it for every example so building Ai::Moderation doesn't hit real creds.
+  before { allow(Rails.application.credentials).to receive(:openai).and_return(double(api_key: "openai-test-key")) }
+
   def stub_moderation(flagged:, reasons: [])
     verdict = Ai::Moderation::Verdict.new(flagged: flagged, reasons: reasons)
     allow(Ai::Moderation).to receive(:new).and_return(instance_double(Ai::Moderation, call: verdict))
@@ -60,7 +64,7 @@ RSpec.describe CharacterPortraitGeneration do
 
       row = AiGeneration.last
       expect(row).to have_attributes(
-        feature: "character_portrait", model_used: "openai/gpt-image-1",
+        feature: "character_portrait", model_used: "test/image-model",
         requested_by_id: player.id, funded_by_id: payer.id,
         asset_type: "CharacterImage", asset_id: image.id, cost: 0.02
       )

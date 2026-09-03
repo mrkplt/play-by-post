@@ -6,9 +6,8 @@ require "rails_helper"
 # the response: success -> Result, content-policy refusal -> Refused,
 # key-failure -> Faraday::Error propagates for pool failover.
 #
-# The refusal shape here is the STUB SEAM (plan §7): the detection is coded
-# against a placeholder `error.type == "moderation"` marker and revisited when
-# the real OpenRouter payload is known.
+# OpenRouter signals a content-moderation block as an HTTP 400 whose error.code
+# is "content_policy_violation" or "refusal", with reasons in error.metadata.
 #
 # Tests drive the real #connection builder through Faraday's test adapter, so
 # the middleware stack (auth header, JSON parse, raise_error, timeouts) is
@@ -59,14 +58,33 @@ RSpec.describe Ai::ImageRequest do
       expect(request.call("key-abc").cost).to be_nil
     end
 
-    it "raises Refused on a content-policy refusal" do
-      stub_post(stubs, 200, { "error" => { "type" => "moderation", "message" => "blocked" } }, {})
-      expect { request.call("key-abc") }.to raise_error(described_class::Refused, /blocked/)
+    it "raises Refused on a 400 content_policy_violation, carrying the metadata reasons" do
+      stub_post(stubs, 400, { "error" => {
+        "code" => "content_policy_violation", "message" => "flagged",
+        "metadata" => { "reasons" => [ "sexual", "minors" ] }
+      } }, {})
+
+      expect { request.call("key-abc") }.to raise_error(described_class::Refused, /sexual, minors/)
     end
 
-    it "raises Refused with a default message when the refusal omits a message" do
-      stub_post(stubs, 200, { "error" => { "type" => "moderation" } }, {})
-      expect { request.call("key-abc") }.to raise_error(described_class::Refused, /content-policy/)
+    it "raises Refused on a 400 refusal code, falling back to the message when reasons are absent" do
+      stub_post(stubs, 400, { "error" => { "code" => "refusal", "message" => "the model refused" } }, {})
+
+      expect { request.call("key-abc") }.to raise_error(described_class::Refused, /the model refused/)
+    end
+
+    it "falls back to the message when the metadata reasons array is empty" do
+      stub_post(stubs, 400, { "error" => {
+        "code" => "content_policy_violation", "message" => "policy hit", "metadata" => { "reasons" => [] }
+      } }, {})
+
+      expect { request.call("key-abc") }.to raise_error(described_class::Refused, /policy hit/)
+    end
+
+    it "re-raises a 400 that is NOT a content-policy code (not a refusal)" do
+      stub_post(stubs, 400, { "error" => { "code" => "invalid_request", "message" => "bad params" } }, {})
+
+      expect { request.call("key-abc") }.to raise_error(Faraday::Error)
     end
 
     it "raises Refused when the response contains no image data" do

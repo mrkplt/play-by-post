@@ -270,11 +270,25 @@ only `ready` rows (`scope :ready` = `joins(:file_attachment)`).
      made current — the player picks it.
    - **On `Ai::ImageRequest::Refused`, `Ai::Funding::Exhausted`, or a network failure:**
      `image.fail_generation!` with a generic reason, persist nothing else. (No lock.)
-4. **`Ai::ImageRequest` is the stub boundary (owner decision).** We do not yet know
-   OpenRouter's exact refusal payload for the image endpoint, and we deliberately **do not
-   block on it**. The mapping "provider refusal → raise `Refused`" is isolated in
-   `Ai::ImageRequest`; everything downstream depends only on the typed `Refused`, never the
-   wire shape. Pinning the real detection later is a localized change to that one class.
+4. **`Ai::ImageRequest` refusal detection (resolved).** OpenRouter signals a content-moderation
+   block as an **HTTP 400** whose `error.code` is `content_policy_violation` (input/output
+   flagged) or `refusal` (the model explicitly refused), with the reasons in `error.metadata`.
+   Faraday's `raise_error` turns the 400 into a `Faraday::Error`; `Ai::ImageRequest` inspects
+   its response body (parsing the raw JSON — the json middleware doesn't run on the error
+   path) and raises `Refused` (carrying the metadata reasons) for those codes, re-raising any
+   other Faraday error so a key-attributable status still fails over in `Ai::Funding`. The
+   detection is confined to `#refusal_for`.
+
+### Configuration (resolved)
+
+- **Model names are required env vars — no default, raise if absent** (owner decision):
+  `OPENROUTER_MODEL` (summarization) and `OPENROUTER_IMAGE_MODEL` (portraits). `ENV.fetch`
+  with no default, so a missing var fails loudly rather than using a stale model. The test
+  env sets placeholder slugs in `config/environments/test.rb`.
+- **Keys are encrypted credentials, not env vars.** The moderation call is OpenAI's
+  `/v1/moderations` (a distinct provider from OpenRouter), so it needs an **OpenAI key**:
+  `credentials.openai.api_key` (nested under `openai:` in `production.yml.enc`), separate from
+  the existing `credentials.openrouter_api_key`. Documented in `docs/CONFIGURATION.md`.
 
 ---
 

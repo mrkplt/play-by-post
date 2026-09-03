@@ -66,8 +66,10 @@ Set these in the Coolify UI. The app is broken without them.
 |---|---|---|
 | `RAILS_MASTER_KEY` | `encrypted_file.rb:53` | Contents of `config/credentials/production.key`. Without it every credential below is unreadable |
 | `APP_HOST` | `config/environments/production.rb:74`, `app/models/branding.rb` | Host for mailer links **and** the brand URL (`Branding.url` → `https://<host>`, used in the OpenAPI server). **Fails silently** for mailer links — see Traps |
+| `OPENROUTER_MODEL` | `app/services/ai/user_generation.rb` | The scene-summary model slug. **Required, no default** — `ENV.fetch` raises `KeyError` if unset (a summary generation fails loudly rather than using a stale model). Not a secret. The test env sets a placeholder in `config/environments/test.rb` |
+| `OPENROUTER_IMAGE_MODEL` | `app/services/character_portrait_generation.rb` | The character-portrait image model slug. **Required, no default** (same `ENV.fetch`-raises contract as `OPENROUTER_MODEL`). Not a secret |
 
-That is the entire list — two variables. The database needs no configuration: it is
+The database needs no configuration: it is
 SQLite, and `DATABASE_PATH` is set to `/data` in `docker-compose.coolify.yml` rather
 than by hand. There is no `DATABASE_URL` and no database password.
 
@@ -119,7 +121,6 @@ Safe defaults exist; set only to override.
 | `RUNTIME_MODE` | `lib/runtime_mode.rb` (`RuntimeMode`), read at route-draw time in `config/routes.rb` | unset — draws **every** route (default all-in-one process). `api` draws **only the JSON `/api` namespace** (the Cloudflare-bypassing bearer-token data API); `web` draws **everything else** — the Devise/game surface plus the mail ingress (`/mail/inbound`), deploy relay (`/webhooks/deploy`), RSS feed (`/rss/feed`), and Swagger docs (`/api-docs`). Lets the **same image** run a dedicated API-only process on an `api.*` host that bypasses the Cloudflare proxy. The boundary is "is this the JSON data API?", not "does it use a session?". The gate is at route-drawing (an undrawn route is the boundary); eager-load is unchanged. Only the `/up` health check is drawn in every mode, so a container of either mode reports healthy. Coolify container wiring for the `api.*` process is a follow-up |
 | `APP_NAME` | `app/models/branding.rb` (`Branding.display_name`); `config/initializers/rswag_ui.rb`, `rswag_api.rb` read `ENV` directly (pre-autoload) | `Play by Post` — the deployment's display name, shown in the layout title, sidebar wordmark, invitation emails, PWA manifest, and API docs. This instance sets `flailwhale.com` |
 | `STORAGE_REGION` | `config/storage.yml` | `auto` — correct for R2. Prefer `storage.region` in credentials |
-| `OPENROUTER_MODEL` | `app/services/scene_summary_service.rb` | `openai/gpt-4o`. Not a secret, so env var is fine |
 | `RAILS_MAX_THREADS` | `config/database.yml:2`, `config/puma.rb:27` | `5` (DB pool) / `3` (Puma). Compose sets `5` |
 | `RAILS_LOG_LEVEL` | `config/environments/production.rb:55` | `info` |
 | `GLITCHTIP_DSN` | `config/initializers/sentry.rb` (backend Ruby SDK) and `app/models/error_tracking.rb` (`ErrorTracking.dsn`), which the browser SDK tunnel (`ErrorTunnelController` / `ErrorEnvelopeForwardJob`) and the layout read | unset — falls back from the `glitchtip.dsn` credential; if both are unset, error reporting is disabled on **all** surfaces (backend and browser). GlitchTip has no public ingress, so browser events are tunnelled same-origin through `/errors/tunnel` and forwarded to GlitchTip over the backplane — the DSN's own host is never contacted from the browser |
@@ -148,6 +149,7 @@ Stored in `config/credentials/production.yml.enc`. Edit with
 | `resend_api_key` | `config/initializers/resend.rb:6` | Yes — outbound email |
 | `resend_webhook_secret` | `app/controllers/action_mailbox/ingresses/resend/inbound_emails_controller.rb:54` | Yes — `whsec_…` from the Resend dashboard; inbound webhook verification fails without it |
 | `openrouter_api_key` | `app/services/email_content_extractor.rb:22` **and** `app/services/scene_summary_service.rb` | Yes — inbound email parsing *and* scene summaries. Both read the credential; a single value now serves both |
+| `openai.api_key` | `app/services/character_portrait_generation.rb` (`moderation_key`) | Yes for AI character portraits — the OpenAI key for the pre-generation moderation call (`Ai::Moderation` → OpenAI `/v1/moderations`, a **distinct provider** from OpenRouter). Nested under `openai:` in the credentials tree. Without it, portrait generation raises when building the moderation call |
 | `storage.access_key_id` | `config/storage.yml` | Yes — Cloudflare R2 |
 | `storage.secret_access_key` | `config/storage.yml` | Yes — Cloudflare R2 |
 | `storage.bucket` | `config/storage.yml` | Yes — Cloudflare R2 |
