@@ -1,0 +1,37 @@
+<%# The AI portrait generation control, in its own stable target the poll
+    replaces. Pending shows a spinner that a portrait-poll Stimulus controller
+    polls on; the poll's Turbo Stream response replaces this control and the
+    library. Failed shows the reason + form; idle shows just the form. %>
+<div id="<%= Shared::PortraitGeneratorComponent::TARGET_ID %>"
+     class="mt-4 rounded-card border border-card-border p-4">
+  <p class="text-sm font-semibold text-ink mb-2">Generate a portrait with AI</p>
+
+  <% if pending? %>
+    <div data-controller="portrait-poll" data-portrait-poll-url-value="<%= poll_url %>">
+      <%= render Shared::PendingIndicatorComponent.new(message: Shared::PortraitGeneratorComponent::PENDING_MESSAGE) %>
+    </div>
+  <% else %>
+    <% if failed? %>
+      <p class="text-xs text-danger mb-3"><%= failure_reason %></p>
+    <% end %>
+
+    <p class="text-xs text-muted mb-2">
+      Describe your character. Your game's setting and our safety rules are added automatically.
+    </p>
+
+    <%= form_with url: generate_url, method: :post, scope: :portrait do |form| %>
+      <%= render Ui::MarkdownEditorComponent.new(
+            binding: { form: form, field: :prompt },
+            config: Ui::MarkdownEditorComponent::Config.new(
+              edit_height: :sm,
+              regions: [ Ui::MarkdownEditorComponent::ToolbarRegion.new ]),
+            field: Ui::MarkdownEditorComponent::Field.new(
+              placeholder: "A grizzled dwarven smith with a soot-stained apron…",
+              requirement: :required)) %>
+
+      <%= render Ui::ButtonComponent.new(
+            style: Ui::ButtonComponent::Style.new(variant: :primary, size: :sm),
+            html_options: { type: "submit" }) do %>Generate portrait<% end %>
+    <% end %>
+  <% end %>
+</div>

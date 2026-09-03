@@ -7,6 +7,7 @@ RSpec.describe KeyContributionRowPresenter do
   before do
     allow(urls).to receive(:game_key_contributions_path).with(game).and_return("/create")
     allow(urls).to receive(:game_key_contribution_path).with(game, "scene_summary").and_return("/destroy/scene_summary")
+    allow(urls).to receive(:game_key_contribution_path).with(game, "character_portrait").and_return("/destroy/character_portrait")
   end
 
   describe "#name" do
@@ -19,7 +20,7 @@ RSpec.describe KeyContributionRowPresenter do
   describe "#cells" do
     it "returns one cell per pool-fundable feature" do
       presenter = described_class.new(game, contributed_features: Set.new, urls: urls)
-      expect(presenter.cells.map(&:label)).to eq([ "Scene summaries" ])
+      expect(presenter.cells.map(&:label)).to eq([ "Scene summaries", "Character portraits" ])
     end
 
     it "builds an Offered (DELETE, no params) cell at the destroy path when funded" do

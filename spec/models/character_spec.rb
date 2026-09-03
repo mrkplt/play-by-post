@@ -11,6 +11,7 @@ RSpec.describe Character, type: :model do
     end
   end
 
+
   # The snapshot's content and attribution are the logic; writing the row is the
   # after_save hook's job. Assert the attributes directly, and separately that
   # the hook is still wired to them.

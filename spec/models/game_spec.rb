@@ -16,6 +16,12 @@ RSpec.describe Game, type: :model do
     it "is valid with a name" do
       expect(build(:game)).to be_valid
     end
+
+    # The environment_page association + validation live in Game::EnvironmentPage;
+    # behaviour is specced there. Here we only confirm the module is included.
+    it "includes the environment-page behaviour" do
+      expect(described_class.included_modules).to include(Game::EnvironmentPage)
+    end
   end
 
   describe "#game_master?" do

@@ -51,7 +51,7 @@ RSpec.describe Ai::UserGeneration do
 
       before do
         authorize_funder(funder)
-        allow(ENV).to receive(:fetch).with("OPENROUTER_MODEL", described_class::DEFAULT_MODEL).and_return("openai/gpt-4o")
+        allow(ENV).to receive(:fetch).with("OPENROUTER_MODEL").and_return("openai/gpt-4o")
         allow(OpenAI::Client).to receive(:new).and_return(client_double)
         allow(client_double).to receive(:chat).and_return(api_response)
       end
@@ -111,7 +111,7 @@ RSpec.describe Ai::UserGeneration do
       end
 
       before do
-        allow(ENV).to receive(:fetch).with("OPENROUTER_MODEL", described_class::DEFAULT_MODEL).and_return("openai/gpt-4o")
+        allow(ENV).to receive(:fetch).with("OPENROUTER_MODEL").and_return("openai/gpt-4o")
         allow(OpenAI::Client).to receive(:new).and_return(client_double)
       end
 

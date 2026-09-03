@@ -36,6 +36,12 @@
           upload_url: @character_show_presenter.portrait_upload_url,
           title: "Add a portrait",
           add_label: "Add portrait") %>
+
+    <%# AI portrait generation — its own frame the frame-poll reloads. %>
+    <%= render Shared::PortraitGeneratorComponent.new(
+          generate_url: @character_show_presenter.portrait_generation_url,
+          poll_url: @character_show_presenter.portrait_generation_url,
+          pending: false) %>
   <% end %>
 
   <div class="bg-card border border-card-border rounded-card p-4">

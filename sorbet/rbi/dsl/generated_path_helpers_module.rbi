@@ -64,9 +64,6 @@ module GeneratedPathHelpersModule
   def edit_game_scene_scene_summary_path(*args); end
 
   sig { params(args: T.untyped).returns(String) }
-  def edit_profile_path(*args); end
-
-  sig { params(args: T.untyped).returns(String) }
   def error_tunnel_path(*args); end
 
   sig { params(args: T.untyped).returns(String) }
@@ -86,6 +83,9 @@ module GeneratedPathHelpersModule
 
   sig { params(args: T.untyped).returns(String) }
   def game_character_path(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def game_character_portrait_generation_path(*args); end
 
   sig { params(args: T.untyped).returns(String) }
   def game_characters_path(*args); end
@@ -110,6 +110,12 @@ module GeneratedPathHelpersModule
 
   sig { params(args: T.untyped).returns(String) }
   def game_game_links_path(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def game_key_contribution_path(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def game_key_contributions_path(*args); end
 
   sig { params(args: T.untyped).returns(String) }
   def game_notebook_entries_path(*args); end
@@ -359,12 +365,6 @@ module GeneratedPathHelpersModule
 
   sig { params(args: T.untyped).returns(String) }
   def save_draft_game_scene_scene_summary_path(*args); end
-
-  sig { params(args: T.untyped).returns(String) }
-  def status_game_scene_scene_summary_path(*args); end
-
-  sig { params(args: T.untyped).returns(String) }
-  def toggle_ai_summaries_consent_profile_path(*args); end
 
   sig { params(args: T.untyped).returns(String) }
   def toggle_ai_summaries_enabled_game_path(*args); end

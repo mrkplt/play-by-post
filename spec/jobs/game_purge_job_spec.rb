@@ -33,6 +33,9 @@ RSpec.describe GamePurgeJob, type: :job, db: true do
     records[:game_file] = create(:game_file, game: game)
     records[:page] = create(:page, game: game)
     records[:page_version] = records[:page].page_versions.first!
+    # Designate the game's own page as its environment page, so the purge must
+    # nullify games.environment_page_id before deleting pages (FK-safety).
+    game.update!(environment_page: records[:page])
     records[:game_link] = create(:game_link, game: game)
     records[:content_template] = create(:content_template, game: game)
     records[:notebook_entry] = create(:notebook_entry, game: game)

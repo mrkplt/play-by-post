@@ -64,9 +64,6 @@ module GeneratedUrlHelpersModule
   def edit_game_url(*args); end
 
   sig { params(args: T.untyped).returns(String) }
-  def edit_profile_url(*args); end
-
-  sig { params(args: T.untyped).returns(String) }
   def error_tunnel_url(*args); end
 
   sig { params(args: T.untyped).returns(String) }
@@ -83,6 +80,9 @@ module GeneratedUrlHelpersModule
 
   sig { params(args: T.untyped).returns(String) }
   def game_character_images_url(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def game_character_portrait_generation_url(*args); end
 
   sig { params(args: T.untyped).returns(String) }
   def game_character_url(*args); end
@@ -110,6 +110,12 @@ module GeneratedUrlHelpersModule
 
   sig { params(args: T.untyped).returns(String) }
   def game_game_links_url(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def game_key_contribution_url(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def game_key_contributions_url(*args); end
 
   sig { params(args: T.untyped).returns(String) }
   def game_notebook_entries_url(*args); end
@@ -359,12 +365,6 @@ module GeneratedUrlHelpersModule
 
   sig { params(args: T.untyped).returns(String) }
   def save_draft_game_scene_scene_summary_url(*args); end
-
-  sig { params(args: T.untyped).returns(String) }
-  def status_game_scene_scene_summary_url(*args); end
-
-  sig { params(args: T.untyped).returns(String) }
-  def toggle_ai_summaries_consent_profile_url(*args); end
 
   sig { params(args: T.untyped).returns(String) }
   def toggle_ai_summaries_enabled_game_url(*args); end

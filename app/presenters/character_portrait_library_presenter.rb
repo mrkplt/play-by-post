@@ -35,7 +35,7 @@ class CharacterPortraitLibraryPresenter < ImageLibraryPresenter
 
   sig { override.returns(T.untyped) }
   def images
-    @character.character_images.with_attached_file.order(created_at: :desc)
+    @character.character_images.ready.with_attached_file.order(created_at: :desc)
   end
 
   sig { override.params(image: T.untyped).returns(String) }

@@ -43,6 +43,7 @@ class Character < ApplicationRecord
     current_portrait&.display_variant
   end
 
+
   sig { void }
   def archive!
     update!(archived_at: Time.current)

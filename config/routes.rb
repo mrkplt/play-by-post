@@ -161,6 +161,7 @@ Rails.application.routes.draw do
         end
         resources :character_versions, only: %i[show], path: "versions"
         resources :images, only: %i[create update destroy], controller: "character_images"
+        resource :portrait_generation, only: %i[show create], controller: "character_portrait_generations"
       end
     end
     end

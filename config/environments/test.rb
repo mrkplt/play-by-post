@@ -6,6 +6,15 @@
 Rails.application.configure do
   # Settings specified here will take precedence over those in config/application.rb.
 
+  # The AI model env vars are required operational config in production (the code
+  # raises KeyError if unset — no silent stale-model default). Set test-only
+  # placeholder slugs so specs run; individual specs that assert a specific model
+  # stub or override these.
+  ENV["OPENROUTER_MODEL"] ||= "test/summary-model"
+  ENV["OPENROUTER_IMAGE_MODEL"] ||= "test/image-model"
+  ENV["OPENAI_MODERATION_URL"] ||= "https://api.openai.com/v1/moderations"
+  ENV["OPENAI_MODERATION_MODEL"] ||= "test/moderation-model"
+
   # While tests run files are not watched, reloading is not necessary.
   config.enable_reloading = false
 
