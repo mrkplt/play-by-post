@@ -69,6 +69,8 @@ matcher:
     - CharacterVersionPresenter
     - ImageLibraryPresenter
     - CharacterPortraitLibraryPresenter
+    - CharacterPortraitStreamsPresenter
+    - CharacterPortraitStreamsPresenter::State
     - UserAvatarLibraryPresenter
     - UserByokKeyPresenter
     - GameDashboardItemPresenter
@@ -135,6 +137,7 @@ matcher:
     - Shared::GameFlagToggle
     - Shared::ImageLibraryComponent
     - Shared::ImageCropperComponent
+    - Shared::PortraitGeneratorComponent
     - Ui::FormErrorsComponent
     - Ui::SecretFieldComponent
     - Shared::GameControlsComponent
@@ -367,6 +370,7 @@ matcher:
     - FeedbackController
     - Users::SessionsController
     - CharacterImagesController
+    - CharacterPortraitGenerationsController
     - UserImagesController
     - TurnstileVerification
     - CharacterScoped
@@ -384,6 +388,8 @@ matcher:
     - ExportTarget
     - ExportCleanupJob
     - SceneSummaryJob
+    - CharacterPortraitJob
+    - CharacterPortraitGeneration
     - CoolifyDeployJob
     - ErrorEnvelopeForwardJob
     - CoolifyDeployResponse

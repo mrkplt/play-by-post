@@ -45,6 +45,13 @@ class CharacterShowPresenter < BasePresenter
     portrait_library.upload_url
   end
 
+  # Where the generator posts a prompt / the poll reloads (same singleton path,
+  # verb differentiates).
+  sig { returns(String) }
+  def portrait_generation_url
+    @options.fetch(:helpers).game_character_portrait_generation_path(@options.fetch(:game), @model)
+  end
+
   private
 
   sig { returns(CharacterPortraitLibraryPresenter) }

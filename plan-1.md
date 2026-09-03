@@ -230,44 +230,51 @@ composed string.
 
 ---
 
-## 7. The generate flow (async, mirrors SceneSummaryJob)
+## 7. The generate flow (skeleton-first, frame-poll delivery)
 
-1. **Trigger:** a "Generate portrait" affordance in the character portrait library on
-   `characters/show`, visible only when `CharacterImagePolicy#manage?` (owning player). It
-   opens a form with the player's prompt as a **markdown field** (toolbar + preview). Submitting
-   is an **in-place** action (Turbo Stream + toast) per the Turbo-boundary rule.
-2. **Controller** (new action on `CharacterImagesController`, or a nested
-   `character_images/generations` controller): authorize `manage?`, then enqueue
-   `CharacterPortraitJob` and render an in-place "generating…" state.
-3. **`CharacterPortraitJob`**:
+The delivery is modelled on the **BYOK keypair** flow (poll, not broadcast) because a job
+cannot build Active Storage variant URLs outside a request context. The record is created
+first as a **skeleton**, and the job fills it in.
+
+**The skeleton (`CharacterImage` generation state):** a `CharacterImage` can exist before its
+file arrives. New columns: `generated_at` (AI provenance via `AiGenerated::Model`, stamped on
+completion), `failed_at` + `failure_reason` (a failed attempt). States: no file & not failed
+= **pending**; file attached = **ready** (a real portrait); `failed_at` set = **failed** (a
+short-lived carrier for the player-facing reason). The `acceptable_image` validation is now
+**conditional** (`if: file_attached?`), so a fileless skeleton is valid. The library lists
+only `ready` rows (`scope :ready` = `joins(:file_attachment)`).
+
+1. **Trigger:** the `Shared::PortraitGeneratorComponent` on `characters/show`, for the owner
+   (`CharacterImagePolicy#manage?`) — a **markdown** prompt field. It has three states in its
+   own stable target: idle (form), pending (spinner + the `portrait-poll` Stimulus controller),
+   failed (reason + form to retry).
+2. **`CharacterPortraitGenerationsController` (nested singleton resource):**
+   - `#create` — authorize `:manage?`, create the pending skeleton, enqueue
+     `CharacterPortraitJob(image_id, requester_id, prompt)`, render the control's pending state.
+   - `#show` — the **poll target**. The `portrait-poll` controller GETs it (`Accept:
+     text/vnd.turbo-stream.html`) on an interval and applies the returned stream via
+     `Turbo.renderStreamMessage`. Still pending → replace the control with the spinner again
+     (poll continues). Settled → replace the control (idle) **+** refresh the library div
+     (`image_library_character_image`) **+** a completion/failure toast; a failed skeleton's
+     reason is read once and the dead row destroyed (`consume_failure_reason!`). The stream
+     building lives in `CharacterPortraitStreamsPresenter` (keeps the controller thin).
+3. **`CharacterPortraitJob` → `CharacterPortraitGeneration`** (the pipeline, off the queue):
    - Compose the prompt (`Ai::PortraitPrompt`).
-   - **Moderate first:** `Ai::Moderation.new(api_key: app_key).call(composed)`. If
-     `verdict.flagged?`, **block** — log the flagged categories + prompt parts, broadcast a
-     benign error toast, persist nothing, return. (Fail closed: a moderation transport error
-     also blocks.)
+   - **Moderate first:** `Ai::Moderation.new(api_key: app_key).call(composed)`. If flagged,
+     `image.fail_generation!(reason)` and log the categories + prompt parts — **no key spent**.
    - `Ai::Funding.new(resolver:, feature: "character_portrait", game:).call { |key|
      Ai::ImageRequest.new(model:, prompt:).call(key) }` — the game-pool path with failover.
-   - **On success:** in one transaction create the `CharacterImage`, attach the PNG (Active
-     Storage → R2), and write the `AiGeneration` audit row (`asset_type: "CharacterImage"`,
-     `requested_by` = player, `funded_by` = pooled payer, may differ). Do **not**
-     auto-`make_current!` — the player picks it. Broadcast the updated library.
+   - **On success:** in one transaction `image.complete_generation!(png)` (attach the PNG +
+     stamp `generated_at`) and write the `AiGeneration` audit row (`asset_type:
+     "CharacterImage"`, `requested_by` = player, `funded_by` = pooled payer, may differ). Not
+     made current — the player picks it.
    - **On `Ai::ImageRequest::Refused`, `Ai::Funding::Exhausted`, or a network failure:**
-     broadcast a benign error toast, persist nothing, change nothing. (No lock, no placeholder.)
-4. **Distinguishing a moderation refusal from other failures** is the crux: define the
-   detection in `Ai::ImageRequest` (a typed `Ai::ImageRequest::Refused` for a policy refusal
-   vs. letting `Faraday::Error` key-failures flow to `Ai::Funding`'s failover, and other
-   errors propagate). The job rescues `Refused` for the punitive path and `Exhausted`/generic
-   for the benign toast.
-
-   **`Ai::ImageRequest` is the stub boundary (owner decision).** We do not yet know OpenRouter's
-   exact refusal payload shape for the image endpoint, and we deliberately **do not block on
-   it**. The mapping "provider refusal → raise `Refused`" is isolated inside `Ai::ImageRequest`;
-   everything downstream (the job, the lock, the placeholder, the logging, and all their specs)
-   depends only on the typed `Refused`, never on the wire shape. Build and fully test against a
-   **stubbed** `Ai::ImageRequest` that raises `Refused` on demand; pin down the real
-   OpenRouter refusal detection later as a localized change to that one class — no downstream
-   edits. This keeps the seam honest: the punitive behavior is verified now, the provider
-   detail is a follow-up detail, not a follow-up card.
+     `image.fail_generation!` with a generic reason, persist nothing else. (No lock.)
+4. **`Ai::ImageRequest` is the stub boundary (owner decision).** We do not yet know
+   OpenRouter's exact refusal payload for the image endpoint, and we deliberately **do not
+   block on it**. The mapping "provider refusal → raise `Refused`" is isolated in
+   `Ai::ImageRequest`; everything downstream depends only on the typed `Refused`, never the
+   wire shape. Pinning the real detection later is a localized change to that one class.
 
 ---
 

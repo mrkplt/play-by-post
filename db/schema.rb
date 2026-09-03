@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_09_02_000200) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_02_000300) do
   create_table "action_mailbox_inbound_emails", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "message_checksum", null: false
@@ -90,6 +90,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_02_000200) do
     t.integer "character_id", null: false
     t.datetime "created_at", null: false
     t.boolean "current", default: false, null: false
+    t.datetime "failed_at"
+    t.string "failure_reason"
+    t.datetime "generated_at"
     t.datetime "updated_at", null: false
     t.index ["character_id", "current"], name: "index_character_images_on_character_id_and_current"
     t.index ["character_id"], name: "index_character_images_on_character_id"
