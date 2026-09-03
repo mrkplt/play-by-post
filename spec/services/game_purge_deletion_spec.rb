@@ -80,4 +80,25 @@ RSpec.describe GamePurgeDeletion, type: :model, db: true do
     expect { delete!(game) }.not_to raise_error
     expect(Scene.where(id: [ parent.id, child.id ])).to be_empty
   end
+
+  # The game references one of its own pages as its environment page, and it is
+  # soft-deleted before purge. The nullify must run on the *unscoped* game (the
+  # default scope hides soft-deleted games); if it were scoped, the update would
+  # no-op and deleting the page — then the game — would raise on the FK.
+  it "clears a soft-deleted game's environment_page reference so the page delete is FK-safe" do
+    game = create(:game)
+    page = create(:page, game: game)
+    game.update!(environment_page: page)
+    game.soft_delete!
+
+    # A survivor game with its own designated environment page — the nullify must
+    # be scoped to the purged game and leave this one's reference intact.
+    survivor = create(:game)
+    survivor.update!(environment_page: create(:page, game: survivor))
+
+    expect { delete!(game) }.not_to raise_error
+    expect(Page.exists?(page.id)).to be(false)
+    expect(Game.unscoped.exists?(game.id)).to be(false)
+    expect(survivor.reload.environment_page_id).to be_present
+  end
 end

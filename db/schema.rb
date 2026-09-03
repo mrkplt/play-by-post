@@ -112,7 +112,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_02_000200) do
     t.integer "game_id", null: false
     t.boolean "hidden", default: false, null: false
     t.string "name", null: false
-    t.boolean "portrait_locked", default: false, null: false
     t.datetime "updated_at", null: false
     t.integer "user_id", null: false
     t.index ["game_id"], name: "index_characters_on_game_id"

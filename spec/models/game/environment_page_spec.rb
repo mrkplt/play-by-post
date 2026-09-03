@@ -29,7 +29,7 @@ RSpec.describe Game::EnvironmentPage do
       game = create(:game)
       game.environment_page = create(:page, game: create(:game))
       expect(game).not_to be_valid
-      expect(game.errors[:environment_page]).to be_present
+      expect(game.errors[:environment_page]).to include("must be a page in this game")
     end
   end
 end

@@ -11,15 +11,6 @@ RSpec.describe Character, type: :model do
     end
   end
 
-  describe "#portrait_locked?" do
-    it "is false by default" do
-      expect(build(:character).portrait_locked?).to be(false)
-    end
-
-    it "is true once the portrait is locked" do
-      expect(build(:character, portrait_locked: true).portrait_locked?).to be(true)
-    end
-  end
 
   # The snapshot's content and attribution are the logic; writing the row is the
   # after_save hook's job. Assert the attributes directly, and separately that

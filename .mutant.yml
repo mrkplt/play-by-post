@@ -259,6 +259,12 @@ matcher:
     - Ai::Funding::Spend
     - Ai::UserGeneration
     - Ai::UserGeneration::Result
+    - Ai::PortraitSafetyPrompt
+    - Ai::PortraitPrompt
+    - Ai::ImageRequest
+    - Ai::ImageRequest::Result
+    - Ai::Moderation
+    - Ai::Moderation::Verdict
     - Crypto::CryptoService
     - Crypto::Blob
     - Crypto::DecryptionError

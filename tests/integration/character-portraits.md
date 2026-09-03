@@ -28,18 +28,15 @@ the automated coverage is enumerated in §8 of the plan.
    `funded_by` = whichever pool member's key paid (may be P2, may be P1).
 6. P1 can then mark the generated image current via the existing control.
 
-### 2. Provider moderation refusal — punitive lock
-1. As P1, generate with a prompt the provider refuses (simulated via the stubbed
-   `Ai::ImageRequest` raising `Refused` in tests; in manual testing, a prompt the live model
-   rejects).
-2. **Expect:** the character's current portrait becomes the static **"pervert"** image (black
-   background, bold red centered text); the portrait is now **locked**.
-3. **Expect:** the "Generate portrait" affordance is gone/disabled; uploading a new portrait
-   is refused; marking a different library image current is refused — for **both** P1 and the
-   GM.
-4. **Expect:** no `AiGeneration` spend row was written; an error is logged containing the
-   game/env-Page prompt text, the player prompt text, and the full composed prompt.
-5. There is **no in-app way** to unlock (neither P1 nor GM).
+### 2. Moderation blocks a disallowed prompt (pre-generation)
+1. As P1, generate with a prompt that trips OpenAI's Moderation API (simulated via a stubbed
+   `Ai::Moderation` returning a flagged `Verdict` in tests).
+2. **Expect:** generation is **blocked before any key is spent** — no image is generated,
+   nothing is persisted, the character's portrait is unchanged.
+3. **Expect:** a benign error toast to the player; an operator log line with the flagged
+   category names and the game/player prompt parts.
+4. **Expect:** no `Ai::Funding` call and no `AiGeneration` row. No lock, no placeholder — the
+   player may simply try a different prompt.
 
 ### 3. Empty pool / no funding
 1. Ensure no member has an authorized key for `character_portrait` in the game.

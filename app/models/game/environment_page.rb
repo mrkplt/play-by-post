@@ -12,12 +12,17 @@
 class Game
   module EnvironmentPage
     extend T::Sig
+    extend T::Helpers
+
+    # The includer is Game; declaring the ancestor lets Sorbet resolve
+    # environment_page / id / errors without a per-method T.bind (which would
+    # otherwise be an untestable equivalent mutant on every method).
+    requires_ancestor { Game }
 
     # The environment page's markdown body, or nil when none is designated —
     # the setting portion of a portrait prompt.
     sig { returns(T.nilable(String)) }
     def environment_prompt
-      T.bind(self, Game)
       environment_page&.body
     end
 
@@ -27,7 +32,6 @@ class Game
     # GM cannot point a portrait prompt at another game's content.
     sig { void }
     def environment_page_belongs_to_game
-      T.bind(self, Game)
       page = environment_page
       return if page.nil?
       return if page.game_id == id
