@@ -10,10 +10,10 @@ unless skip_coverage
   require "simplecov"
   SimpleCov.start "rails" do
     enable_coverage :branch
-    add_filter "/spec/"
-    add_group "Services", "app/services"
-    add_group "Mailboxes", "app/mailboxes"
-    add_group "Jobs", "app/jobs"
+    skip "/spec/"
+    group "Services", "app/services"
+    group "Mailboxes", "app/mailboxes"
+    group "Jobs", "app/jobs"
     # Always write coverage results even when test-server errors are raised
     # (e.g. MiniMagick failures propagated via Capybara raise_server_errors).
     # SimpleCov's default at_exit skips write_last_run when a previous error

@@ -44,6 +44,7 @@ CONTROLLERS = Dir.glob("#{ROOT}/app/controllers/**/*.rb").sort
 ALLOWED_SKIPS = {
   "invitations_controller.rb" => "accept is public (token-gated, no current_user)",
   "posts_controller.rb"       => "draft plumbing gated by participant/write checks; a draft is always the user's own",
+  "ai_control_plane_controller.rb" => "static explainer, no resource to authorize; any signed-in user may read it",
 }.freeze
 
 # (file basename => reason) — controllers allowed to authorize inline instead of

@@ -1,0 +1,4 @@
+<%= link_to url, class: "inline-flex items-center gap-1 bg-transparent border-0 p-0 cursor-pointer no-underline text-accent font-bold text-[11px]" do %>
+  <%= render Ui::IconComponent.new(name: :help, size: :extra_small) %>
+  <span><%= label %></span>
+<% end %>

@@ -15,7 +15,12 @@
     <%= render Shared::MemberRosterComponent.new(game: @game_presenter, members: @roster) %>
 
     <%# Game Preferences %>
-    <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do %>Game Preferences<% end %>
+    <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do |label| %>
+      <% label.with_action do %>
+        <%= render Ui::InfoLinkComponent.new(url: ai_control_plane_path) %>
+      <% end %>
+      Game Preferences
+    <% end %>
     <div class="bg-card border border-card-border rounded-card px-3.5">
       <%= render Shared::AiSummariesToggleComponent.new(game: @game_presenter, presentation: :row) %>
     </div>

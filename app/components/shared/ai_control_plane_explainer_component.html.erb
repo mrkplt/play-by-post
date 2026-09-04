@@ -1,0 +1,12 @@
+<div class="flex flex-col gap-3">
+  <% SECTIONS.each do |section| %>
+    <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do %><%= section.heading %><% end %>
+    <%= render Ui::CardComponent.new do %>
+      <div class="py-3 flex flex-col gap-2.5">
+        <% section.paragraphs.each do |paragraph| %>
+          <p class="text-[13px] text-row-ink m-0 leading-relaxed"><%= paragraph %></p>
+        <% end %>
+      </div>
+    <% end %>
+  <% end %>
+</div>

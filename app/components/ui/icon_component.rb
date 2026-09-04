@@ -9,7 +9,8 @@ class Ui::IconComponent < ApplicationComponent
   ICON_MAP = T.let({
     crown: "crown-03",
     settings: "settings-01",
-    cancel: "cancel-01"
+    cancel: "cancel-01",
+    help: "help-circle"
   }.freeze, T::Hash[Symbol, String])
 
   # Size variants

@@ -1,0 +1,7 @@
+<%= render Shared::MobileFrameComponent.new do |frame| %>
+  <% frame.with_header do %>
+    <%= render Shared::HeaderComponent.new(title: "How AI works") %>
+  <% end %>
+
+  <%= render Shared::AiControlPlaneExplainerComponent.new %>
+<% end %>

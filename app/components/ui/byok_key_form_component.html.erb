@@ -5,7 +5,10 @@
     deterministic. %>
 <%= helpers.turbo_frame_tag frame_id do %>
   <div class="<%= card_classes %>">
-    <p class="<%= heading_classes %>"><%= heading %></p>
+    <div class="flex items-center justify-between gap-2">
+      <p class="<%= heading_classes %>"><%= heading %></p>
+      <%= render Ui::InfoLinkComponent.new(url: helpers.ai_control_plane_path) %>
+    </div>
 
     <% if pending? %>
       <%= render Shared::PendingIndicatorComponent.new(
