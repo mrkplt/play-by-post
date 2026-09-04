@@ -1,0 +1,7 @@
+<div id="<%= wrapper_id %>">
+  <%= render Shared::SettingCardComponent.new(
+        title: "Player Contributions", toggle_label: toggle_label, toggle_path: toggle_path) do %>
+    Player contributions are currently <strong class="text-ink"><%= status_text %></strong>.
+    When enabled, active players can add pages, links, and files, and delete the ones they created.
+  <% end %>
+</div>

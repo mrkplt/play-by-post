@@ -36,5 +36,21 @@ RSpec.describe GameSettingToggle, :db do
       expect { described_class.new(game, :ai_summaries_enabled).call }
         .to change { game.reload.ai_summaries_enabled? }.from(false).to(true)
     end
+
+    it "words player contributions when switched on" do
+      game.update!(player_contributions_enabled: false)
+
+      expect(described_class.new(game, :player_contributions_enabled).call)
+        .to eq("Players can now add pages, links, and files.")
+      expect(game.reload.player_contributions_enabled?).to be(true)
+    end
+
+    it "words player contributions when switched off" do
+      game.update!(player_contributions_enabled: true)
+
+      expect(described_class.new(game, :player_contributions_enabled).call)
+        .to eq("Player contributions are now off.")
+      expect(game.reload.player_contributions_enabled?).to be(false)
+    end
   end
 end

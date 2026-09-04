@@ -57,20 +57,20 @@ RSpec.describe GameFilePresenter do
   describe "#delete_url" do
     let(:game) { build_stubbed(:game) }
 
-    it "is nil when the viewer cannot manage the game" do
+    it "is nil when the viewer cannot delete this file" do
       helpers = double("helpers")
-      expect(described_class.new(game_file, game: game, helpers: helpers, can_manage: false).delete_url).to be_nil
+      expect(described_class.new(game_file, game: game, helpers: helpers, can_delete: false).delete_url).to be_nil
     end
 
-    it "is nil when no can_manage option is supplied at all" do
+    it "is nil when no can_delete option is supplied at all" do
       helpers = double("helpers")
       expect(described_class.new(game_file, game: game, helpers: helpers).delete_url).to be_nil
     end
 
-    it "returns the game file's delete route for this game and file when the viewer can manage" do
+    it "returns the game file's delete route for this game and file when the viewer can delete it" do
       helpers = double("helpers")
       expect(helpers).to receive(:game_game_file_path).with(game, game_file).and_return("/games/1/game_files/2")
-      expect(described_class.new(game_file, game: game, helpers: helpers, can_manage: true).delete_url)
+      expect(described_class.new(game_file, game: game, helpers: helpers, can_delete: true).delete_url)
         .to eq("/games/1/game_files/2")
     end
   end

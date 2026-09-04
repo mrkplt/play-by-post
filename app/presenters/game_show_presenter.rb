@@ -26,23 +26,32 @@ class GameShowPresenter < BasePresenter
 
   # The game's pages, alphabetised by title — the data behind the Pages tab.
   # A draft page is visible only to a GM (who authored it); non-managers see
-  # only published pages, so an in-progress page never leaks to players.
+  # only published pages, so an in-progress page never leaks to players. Each
+  # page carries its own PagePolicy so the row's Edit/Delete affordances follow
+  # the delete-own rule (Fizzy #18) rather than a single blanket can_manage.
   sig { returns(T::Array[PagePresenter]) }
   def pages
     @pages ||= T.let(
       visible_pages.order(:title).to_a.map do |page|
-        PagePresenter.new(page, game: game, urls: @options.fetch(:urls))
+        PagePresenter.new(
+          page, game: game, urls: @options.fetch(:urls),
+          game_policy: policy_for.call(game), page_policy: policy_for.call(page)
+        )
       end,
       T.nilable(T::Array[PagePresenter])
     )
   end
 
-  # The game's links, newest first — the data behind the Links tab.
+  # The game's links, newest first — the data behind the Links tab. Each link
+  # carries its own GameLinkPolicy so the row's Edit/Delete affordances follow
+  # the delete-own rule (Fizzy #18).
   sig { returns(T::Array[GameLinkPresenter]) }
   def links
     @links ||= T.let(
       game.game_links.order(created_at: :desc).to_a.map do |game_link|
-        GameLinkPresenter.new(game_link, game: game, urls: @options.fetch(:urls))
+        GameLinkPresenter.new(
+          game_link, game: game, urls: @options.fetch(:urls), link_policy: policy_for.call(game_link)
+        )
       end,
       T.nilable(T::Array[GameLinkPresenter])
     )
@@ -56,7 +65,7 @@ class GameShowPresenter < BasePresenter
   def game_files
     @game_files ||= T.let(
       game.game_files.includes(file_attachment: :blob).order(created_at: :desc).to_a.map do |gf|
-        GameFilePresenter.new(gf, game: game, helpers: @options.fetch(:helpers), can_manage: @model.can_manage?)
+        GameFilePresenter.new(gf, game: game, helpers: @options.fetch(:helpers), can_delete: policy_for.call(gf).destroy?)
       end,
       T.nilable(T::Array[GameFilePresenter])
     )
@@ -67,10 +76,11 @@ class GameShowPresenter < BasePresenter
     game_files.any?
   end
 
-  # A blank file record for the Files tab's upload form, wrapped the same way.
+  # A blank file record for the Files tab's upload form, wrapped the same way. A
+  # fresh (unsaved) file is never deletable — it does not exist yet.
   sig { returns(GameFilePresenter) }
   def new_game_file
-    GameFilePresenter.new(game.game_files.new, game: game, helpers: @options.fetch(:helpers), can_manage: @model.can_manage?)
+    GameFilePresenter.new(game.game_files.new, game: game, helpers: @options.fetch(:helpers), can_delete: false)
   end
 
   private
@@ -88,5 +98,14 @@ class GameShowPresenter < BasePresenter
   sig { returns(Game) }
   def game
     @model.model
+  end
+
+  # The record → policy resolver used to decide each row's Edit/Delete
+  # affordances (Fizzy #18). Injected by the controller (via GameScreenPresenter)
+  # so the presenter is handed each policy rather than building one — the
+  # view-layering R2 rule.
+  sig { returns(T.untyped) }
+  def policy_for
+    @options.fetch(:policy_for)
   end
 end

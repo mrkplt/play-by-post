@@ -4,12 +4,37 @@ RSpec.describe GameLinkPresenter do
   let(:game) { build_stubbed(:game) }
   let(:game_link) { build_stubbed(:game_link, game: game, description: "Map", url: "https://example.com/map") }
   let(:urls) { Rails.application.routes.url_helpers }
+  let(:link_policy) { instance_double(GameLinkPolicy, update?: false, destroy?: false) }
 
-  subject(:presenter) { described_class.new(game_link, game: game, urls: urls) }
+  subject(:presenter) { described_class.new(game_link, game: game, urls: urls, link_policy: link_policy) }
 
   describe "#description" do
     it "returns the underlying description" do
       expect(presenter.description).to eq("Map")
+    end
+  end
+
+  describe "#can_edit?" do
+    it "reflects the injected link policy's #update?" do
+      allow(link_policy).to receive(:update?).and_return(true)
+      expect(presenter.can_edit?).to be(true)
+    end
+
+    it "is false when the policy disallows editing" do
+      allow(link_policy).to receive(:update?).and_return(false)
+      expect(presenter.can_edit?).to be(false)
+    end
+  end
+
+  describe "#can_delete?" do
+    it "reflects the injected link policy's #destroy?" do
+      allow(link_policy).to receive(:destroy?).and_return(true)
+      expect(presenter.can_delete?).to be(true)
+    end
+
+    it "is false when the policy disallows deletion" do
+      allow(link_policy).to receive(:destroy?).and_return(false)
+      expect(presenter.can_delete?).to be(false)
     end
   end
 

@@ -17,18 +17,15 @@ class PagePresenter < BasePresenter
   extend T::Sig
   include Draftable::Presentation
 
-  # The viewer may administer the game this page belongs to — the flag behind
-  # the game-nav's GM-only affordances on every page screen.
-  sig { returns(T::Boolean) }
-  def can_manage_game?
-    @options.fetch(:game_policy).manage?
-  end
-
-  # The viewer may edit/delete this page — Shared::PageDetailComponent's
-  # GM-only affordances.
-  sig { returns(T::Boolean) }
-  def can_manage?
-    @options.fetch(:page_policy).manage?
+  # The viewer's capability predicates for this page — game administration
+  # (#can_manage_game?), the detail screen's edit/delete affordance
+  # (#can_manage?), and the per-row edit/delete affordances (#can_edit? /
+  # #can_delete?, Fizzy #18) — grouped into their own presenter to keep this
+  # class under the method ceiling, the same split as #routes. Call sites read
+  # page.actions.can_manage? etc.
+  sig { returns(PageActionsPresenter) }
+  def actions
+    PageActionsPresenter.new(@model, game_policy: @options.fetch(:game_policy), page_policy: @options.fetch(:page_policy))
   end
 
   sig { returns(Game) }

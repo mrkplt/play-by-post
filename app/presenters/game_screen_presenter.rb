@@ -14,6 +14,10 @@ class GameScreenPresenter < BasePresenter
     const :current_user, User
     const :urls, T.untyped
     const :helpers, T.untyped
+    # A record → Pundit policy resolver, supplied by the controller so the
+    # presenter is *handed* each row's policy rather than constructing one
+    # (view-layering R2). GamesController passes `->(record) { policy(record) }`.
+    const :policy_for, T.untyped
   end
 
   # Built together so the panels cannot disagree about the viewer.
@@ -25,7 +29,7 @@ class GameScreenPresenter < BasePresenter
 
     new(
       game,
-      show: GameShowPresenter.new(game, current_user: user, urls: urls, helpers: helpers),
+      show: GameShowPresenter.new(game, current_user: user, urls: urls, helpers: helpers, policy_for: viewer.policy_for),
       roster: GameRosterPresenter.new(game, current_user: user, urls: urls, helpers: helpers),
       scenes: GameScenesPanelPresenter.new(game, current_user: user, helpers: helpers)
     )

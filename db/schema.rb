@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_09_01_180000) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_03_120100) do
   create_table "action_mailbox_inbound_emails", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "message_checksum", null: false
@@ -90,6 +90,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_01_180000) do
     t.integer "character_id", null: false
     t.datetime "created_at", null: false
     t.boolean "current", default: false, null: false
+    t.datetime "failed_at"
+    t.string "failure_reason"
+    t.datetime "generated_at"
     t.datetime "updated_at", null: false
     t.index ["character_id", "current"], name: "index_character_images_on_character_id_and_current"
     t.index ["character_id"], name: "index_character_images_on_character_id"
@@ -168,9 +171,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_01_180000) do
     t.integer "byte_size"
     t.string "content_type"
     t.datetime "created_at", null: false
+    t.integer "created_by_id", null: false
     t.string "filename"
     t.integer "game_id", null: false
     t.datetime "updated_at", null: false
+    t.index ["created_by_id"], name: "index_game_files_on_created_by_id"
     t.index ["game_id"], name: "index_game_files_on_game_id"
   end
 
@@ -188,10 +193,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_01_180000) do
 
   create_table "game_links", force: :cascade do |t|
     t.datetime "created_at", null: false
+    t.integer "created_by_id", null: false
     t.string "description", null: false
     t.integer "game_id", null: false
     t.datetime "updated_at", null: false
     t.string "url", null: false
+    t.index ["created_by_id"], name: "index_game_links_on_created_by_id"
     t.index ["game_id"], name: "index_game_links_on_game_id"
   end
 
@@ -212,12 +219,15 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_01_180000) do
     t.datetime "created_at", null: false
     t.datetime "deleted_at"
     t.text "description"
+    t.integer "environment_page_id"
     t.string "name", null: false
+    t.boolean "player_contributions_enabled", default: false, null: false
     t.integer "post_edit_window_minutes"
     t.boolean "sheets_hidden", default: false, null: false
     t.string "slug", null: false
     t.datetime "updated_at", null: false
     t.index ["deleted_at"], name: "index_games_on_deleted_at"
+    t.index ["environment_page_id"], name: "index_games_on_environment_page_id"
     t.index ["slug"], name: "index_games_on_slug", unique: true
   end
 
@@ -433,11 +443,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_01_180000) do
   add_foreign_key "game_export_requests", "games"
   add_foreign_key "game_export_requests", "users"
   add_foreign_key "game_files", "games"
+  add_foreign_key "game_files", "users", column: "created_by_id"
   add_foreign_key "game_key_authorizations", "games"
   add_foreign_key "game_key_authorizations", "users"
   add_foreign_key "game_links", "games"
+  add_foreign_key "game_links", "users", column: "created_by_id"
   add_foreign_key "game_members", "games"
   add_foreign_key "game_members", "users"
+  add_foreign_key "games", "pages", column: "environment_page_id"
   add_foreign_key "invitations", "games"
   add_foreign_key "invitations", "users", column: "invited_by_id"
   add_foreign_key "notebook_entries", "games"

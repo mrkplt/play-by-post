@@ -6,8 +6,11 @@ RSpec.describe GameShowPresenter do
   let(:urls) { double("urls") }
   let(:helpers) { double("helpers") }
   let(:game_presenter) { GamePresenter.new(game, policy: policy, urls: urls) }
+  # Each row's policy is resolved through this injected lambda (view-layering R2);
+  # a permissive double is enough — these specs assert wrapping, not capabilities.
+  let(:policy_for) { ->(_record) { instance_double(PagePolicy, update?: true, destroy?: true) } }
 
-  subject(:presenter) { described_class.new(game_presenter, urls: urls, helpers: helpers) }
+  subject(:presenter) { described_class.new(game_presenter, urls: urls, helpers: helpers, policy_for: policy_for) }
 
   describe "#pending_invitations" do
     it "returns the game's pending invitations, newest first, wrapped as presenters" do

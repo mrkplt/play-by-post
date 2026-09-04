@@ -4,6 +4,12 @@ class GameFile < ApplicationRecord
   extend T::Sig
 
   belongs_to :game
+  # The member who uploaded this file (Fizzy #18). The column is NOT NULL — every
+  # row names a real creator (existing rows were backfilled to the game's GM;
+  # new ones are stamped at create time) — so this never resolves to nil.
+  # `optional: true` only suppresses the model presence validation; the DB
+  # constraint is the enforcement.
+  belongs_to :created_by, class_name: "User", optional: true
 
   has_one_attached :file
 
@@ -25,6 +31,13 @@ class GameFile < ApplicationRecord
 
   validates :filename, presence: true
   validate :acceptable_file
+
+  # Whether `user` uploaded this file — the "delete your own contribution" gate
+  # (Fizzy #18).
+  sig { params(user: User).returns(T::Boolean) }
+  def created_by?(user)
+    created_by_id == user.id
+  end
 
   sig { returns(T::Boolean) }
   def image?

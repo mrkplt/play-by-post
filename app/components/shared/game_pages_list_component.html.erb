@@ -1,5 +1,5 @@
 <div class="flex flex-col gap-3">
-  <% if can_manage? %>
+  <% if can_contribute? %>
     <%= link_to "New Page", new_game_page_path(game),
           class: "block w-full text-center bg-accent text-accent-ink rounded-control py-2.5 font-bold text-[13px] no-underline" %>
   <% end %>

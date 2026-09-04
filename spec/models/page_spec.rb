@@ -109,4 +109,65 @@ RSpec.describe Page do
       expect(page.to_param).to eq("abc123def456ghij")
     end
   end
+
+  # Authorship is the editor of the earliest version, which never changes as
+  # later revisions accrue — so a page edited by someone else is still created
+  # by its original author (Fizzy #18 delete-own gate).
+  describe "#created_by?" do
+    it "is true for the author of the earliest version" do
+      author = create(:user)
+      page = create(:page, editor: author)
+
+      Current.user = create(:user)
+      page.update!(title: "Edited by someone else")
+
+      expect(page.created_by?(author)).to be(true)
+    end
+
+    it "is false for a later editor who did not create the page" do
+      author = create(:user)
+      later_editor = create(:user)
+      page = create(:page, editor: author)
+
+      Current.user = later_editor
+      page.update!(title: "Edited later")
+
+      expect(page.created_by?(later_editor)).to be(false)
+    end
+
+    it "is false for an unrelated user" do
+      page = create(:page, editor: create(:user))
+      expect(page.created_by?(create(:user))).to be(false)
+    end
+
+    # A page with no versions yet (an unsaved record) is authored by nobody —
+    # the earliest-version lookup is nil, so created_by? is false rather than
+    # raising. Guards the safe-navigation in the lookup.
+    it "is false for a page that has no versions yet" do
+      page = build(:page)
+      expect(page.page_versions).to be_empty
+      expect(page.created_by?(create(:user))).to be(false)
+    end
+
+    # Authorship is the *earliest by created_at*, not merely the first row the DB
+    # happens to return. Insert a second version whose created_at is EARLIER than
+    # the original but which is inserted LATER: the earliest-timestamp editor
+    # (here `earlier`) is the author, provable only if the row is chosen by
+    # created_at and not by insertion order — which kills the dropped-`order`
+    # mutant.
+    it "chooses the earliest version by timestamp, not insertion order" do
+      original_editor = create(:user)
+      earlier = create(:user)
+      page = create(:page, editor: original_editor)
+
+      first_version = page.page_versions.first
+      page.page_versions.create!(
+        title: page.title, body: page.body, edited_by: earlier,
+        created_at: first_version.created_at - 1.day
+      )
+
+      expect(page.created_by?(earlier)).to be(true)
+      expect(page.created_by?(original_editor)).to be(false)
+    end
+  end
 end

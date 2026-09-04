@@ -30,6 +30,25 @@ RSpec.describe GameLinksController, type: :request do
       expect(response.body).to include("Map")
     end
 
+    it "hides the New Link affordance from a player when contributions are off" do
+      sign_in(player)
+      get game_game_links_path(game)
+      expect(response.body).not_to include("New Link")
+    end
+
+    it "shows the New Link affordance to a player when contributions are on" do
+      game.update!(player_contributions_enabled: true)
+      sign_in(player)
+      get game_game_links_path(game)
+      expect(response.body).to include("New Link")
+    end
+
+    it "shows the New Link affordance to the GM" do
+      sign_in(gm)
+      get game_game_links_path(game)
+      expect(response.body).to include("New Link")
+    end
+
     it "is visible to a removed member" do
       sign_in(removed_player)
       get game_game_links_path(game)
@@ -185,6 +204,57 @@ RSpec.describe GameLinksController, type: :request do
       expect {
         delete game_game_link_path(game, link)
       }.not_to change(GameLink, :count)
+    end
+  end
+
+  # Fizzy #18: with player contributions enabled, an active player may add links
+  # and delete the ones they created, but not the GM's or another player's, and
+  # nothing once the GM turns the setting off.
+  describe "player contributions" do
+    context "when enabled" do
+      before { game.update!(player_contributions_enabled: true) }
+
+      it "lets an active player create a link, attributed to them" do
+        sign_in(player)
+        expect {
+          post game_game_links_path(game), params: { game_link: { description: "Wiki", url: "https://example.com/wiki" } }
+        }.to change(GameLink, :count).by(1)
+        expect(GameLink.last.created_by).to eq(player)
+      end
+
+      it "lets a player delete a link they created" do
+        own = create(:game_link, game: game, created_by: player)
+        sign_in(player)
+        expect {
+          delete game_game_link_path(game, own)
+        }.to change(GameLink, :count).by(-1)
+      end
+
+      it "does not let a player delete the GM's link" do
+        gm_link = create(:game_link, game: game, created_by: gm)
+        sign_in(player)
+        expect {
+          delete game_game_link_path(game, gm_link)
+        }.not_to change(GameLink, :count)
+        expect(response).to redirect_to(root_path)
+      end
+    end
+
+    context "when disabled" do
+      it "denies a player creating a link" do
+        sign_in(player)
+        expect {
+          post game_game_links_path(game), params: { game_link: { description: "Wiki", url: "https://example.com/wiki" } }
+        }.not_to change(GameLink, :count)
+      end
+
+      it "denies a player deleting a link they created while it was enabled" do
+        own = create(:game_link, game: game, created_by: player)
+        sign_in(player)
+        expect {
+          delete game_game_link_path(game, own)
+        }.not_to change(GameLink, :count)
+      end
     end
   end
 end

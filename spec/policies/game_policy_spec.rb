@@ -64,6 +64,35 @@ RSpec.describe GamePolicy do
     end
   end
 
+  describe "#contribute? (GM, or an active player when contributions are on)" do
+    before do
+      allow(game).to receive(:game_master?).with(user).and_return(false)
+      allow(game).to receive(:active_member?).with(user).and_return(false)
+      allow(game).to receive(:player_contributions_enabled?).and_return(false)
+    end
+
+    it "is true for the GM regardless of the setting" do
+      allow(game).to receive(:game_master?).with(user).and_return(true)
+      expect(policy.contribute?).to be(true)
+    end
+
+    it "is true for an active member when contributions are enabled" do
+      allow(game).to receive(:active_member?).with(user).and_return(true)
+      allow(game).to receive(:player_contributions_enabled?).and_return(true)
+      expect(policy.contribute?).to be(true)
+    end
+
+    it "is false for an active member when contributions are disabled" do
+      allow(game).to receive(:active_member?).with(user).and_return(true)
+      expect(policy.contribute?).to be(false)
+    end
+
+    it "is false for a non-member even when contributions are enabled" do
+      allow(game).to receive(:player_contributions_enabled?).and_return(true)
+      expect(policy.contribute?).to be(false)
+    end
+  end
+
   describe "#write_access? (active member)" do
     it "is true for an active member (a GM is an active member)" do
       allow(game).to receive(:active_member?).with(user).and_return(true)

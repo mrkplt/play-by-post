@@ -26,6 +26,7 @@ GamePolicy:
     - equivalent: [update?, manage?]
     - equivalent: [destroy?, manage?]
     - equivalent: [feed?, write_access?]
+    - implies: [manage?, contribute?] # Fizzy #18: GM always may contribute; an active player may when the setting is on
     - no_status_blind_grant: write_access?
     - no_status_blind_grant: feed?
   unconstrained: [create?] # any authenticated user may create a game
@@ -64,15 +65,25 @@ FeedbackPolicy:
 
 GameFilePolicy:
   invariants:
-    - equivalent: [create?, manage?]
-    - equivalent: [destroy?, manage?]
+    # The GM (manage?) may always create/delete; player contributions (Fizzy #18)
+    # additively grant an active player create, and delete of their own uploads,
+    # so create?/destroy? are no longer equivalent to manage? — manage? implies
+    # each, but each also has the player-contributor branch.
+    - implies: [manage?, create?]
+    - implies: [manage?, destroy?]
+    - implies: [destroy?, create?] # anyone who may delete a file may also create one
   unconstrained: []
 
 GameLinkPolicy:
   invariants:
-    - equivalent: [create?, manage?]
+    # Player contributions (Fizzy #18): create/delete additively open to an
+    # active player (delete only for the link they created), while editing stays
+    # GM-only. So update? stays equivalent to manage?, but create?/destroy? are
+    # only implied by it.
     - equivalent: [update?, manage?]
-    - equivalent: [destroy?, manage?]
+    - implies: [manage?, create?]
+    - implies: [manage?, destroy?]
+    - implies: [destroy?, create?] # anyone who may delete a link may also create one
   unconstrained: [index?] # game-viewable; the viewable? gate is private
 
 GameMemberPolicy:
@@ -110,10 +121,15 @@ NotebookEntryVersionPolicy:
 
 PagePolicy:
   invariants:
-    - equivalent: [create?, manage?]
+    # Player contributions (Fizzy #18): create/delete additively open to an
+    # active player (delete only for a page they authored), while editing and
+    # publishing stay GM-only. So update?/publish? stay equivalent to manage?,
+    # but create?/destroy? are only implied by it.
     - equivalent: [update?, manage?]
-    - equivalent: [destroy?, manage?]
     - equivalent: [publish?, manage?]
+    - implies: [manage?, create?]
+    - implies: [manage?, destroy?]
+    - implies: [destroy?, create?] # anyone who may delete a page may also create one
   unconstrained: [index?] # show? is a draft-gated read the verifier can't encode (ACCEPTED_REFUSALS)
 
 PageVersionPolicy:

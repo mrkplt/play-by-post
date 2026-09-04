@@ -874,6 +874,51 @@ class Game
     sig { void }
     def description_will_change!; end
 
+    sig { returns(T.nilable(::Integer)) }
+    def environment_page_id; end
+
+    sig { params(value: T.nilable(::Integer)).returns(T.nilable(::Integer)) }
+    def environment_page_id=(value); end
+
+    sig { returns(T::Boolean) }
+    def environment_page_id?; end
+
+    sig { returns(T.nilable(::Integer)) }
+    def environment_page_id_before_last_save; end
+
+    sig { returns(T.untyped) }
+    def environment_page_id_before_type_cast; end
+
+    sig { returns(T::Boolean) }
+    def environment_page_id_came_from_user?; end
+
+    sig { returns(T.nilable([T.nilable(::Integer), T.nilable(::Integer)])) }
+    def environment_page_id_change; end
+
+    sig { returns(T.nilable([T.nilable(::Integer), T.nilable(::Integer)])) }
+    def environment_page_id_change_to_be_saved; end
+
+    sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
+    def environment_page_id_changed?(from: T.unsafe(nil), to: T.unsafe(nil)); end
+
+    sig { returns(T.nilable(::Integer)) }
+    def environment_page_id_in_database; end
+
+    sig { returns(T.nilable([T.nilable(::Integer), T.nilable(::Integer)])) }
+    def environment_page_id_previous_change; end
+
+    sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
+    def environment_page_id_previously_changed?(from: T.unsafe(nil), to: T.unsafe(nil)); end
+
+    sig { returns(T.nilable(::Integer)) }
+    def environment_page_id_previously_was; end
+
+    sig { returns(T.nilable(::Integer)) }
+    def environment_page_id_was; end
+
+    sig { void }
+    def environment_page_id_will_change!; end
+
     sig { returns(::Integer) }
     def id; end
 
@@ -1009,6 +1054,51 @@ class Game
     sig { void }
     def name_will_change!; end
 
+    sig { returns(T::Boolean) }
+    def player_contributions_enabled; end
+
+    sig { params(value: T::Boolean).returns(T::Boolean) }
+    def player_contributions_enabled=(value); end
+
+    sig { returns(T::Boolean) }
+    def player_contributions_enabled?; end
+
+    sig { returns(T.nilable(T::Boolean)) }
+    def player_contributions_enabled_before_last_save; end
+
+    sig { returns(T.untyped) }
+    def player_contributions_enabled_before_type_cast; end
+
+    sig { returns(T::Boolean) }
+    def player_contributions_enabled_came_from_user?; end
+
+    sig { returns(T.nilable([T::Boolean, T::Boolean])) }
+    def player_contributions_enabled_change; end
+
+    sig { returns(T.nilable([T::Boolean, T::Boolean])) }
+    def player_contributions_enabled_change_to_be_saved; end
+
+    sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
+    def player_contributions_enabled_changed?(from: T.unsafe(nil), to: T.unsafe(nil)); end
+
+    sig { returns(T.nilable(T::Boolean)) }
+    def player_contributions_enabled_in_database; end
+
+    sig { returns(T.nilable([T::Boolean, T::Boolean])) }
+    def player_contributions_enabled_previous_change; end
+
+    sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
+    def player_contributions_enabled_previously_changed?(from: T.unsafe(nil), to: T.unsafe(nil)); end
+
+    sig { returns(T.nilable(T::Boolean)) }
+    def player_contributions_enabled_previously_was; end
+
+    sig { returns(T.nilable(T::Boolean)) }
+    def player_contributions_enabled_was; end
+
+    sig { void }
+    def player_contributions_enabled_will_change!; end
+
     sig { returns(T.nilable(::Integer)) }
     def post_edit_window_minutes; end
 
@@ -1067,6 +1157,9 @@ class Game
     def restore_description!; end
 
     sig { void }
+    def restore_environment_page_id!; end
+
+    sig { void }
     def restore_id!; end
 
     sig { void }
@@ -1074,6 +1167,9 @@ class Game
 
     sig { void }
     def restore_name!; end
+
+    sig { void }
+    def restore_player_contributions_enabled!; end
 
     sig { void }
     def restore_post_edit_window_minutes!; end
@@ -1111,6 +1207,12 @@ class Game
     sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
     def saved_change_to_description?(from: T.unsafe(nil), to: T.unsafe(nil)); end
 
+    sig { returns(T.nilable([T.nilable(::Integer), T.nilable(::Integer)])) }
+    def saved_change_to_environment_page_id; end
+
+    sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
+    def saved_change_to_environment_page_id?(from: T.unsafe(nil), to: T.unsafe(nil)); end
+
     sig { returns(T.nilable([::Integer, ::Integer])) }
     def saved_change_to_id; end
 
@@ -1128,6 +1230,12 @@ class Game
 
     sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
     def saved_change_to_name?(from: T.unsafe(nil), to: T.unsafe(nil)); end
+
+    sig { returns(T.nilable([T::Boolean, T::Boolean])) }
+    def saved_change_to_player_contributions_enabled; end
+
+    sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
+    def saved_change_to_player_contributions_enabled?(from: T.unsafe(nil), to: T.unsafe(nil)); end
 
     sig { returns(T.nilable([T.nilable(::Integer), T.nilable(::Integer)])) }
     def saved_change_to_post_edit_window_minutes; end
@@ -1301,6 +1409,9 @@ class Game
     def will_save_change_to_description?(from: T.unsafe(nil), to: T.unsafe(nil)); end
 
     sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
+    def will_save_change_to_environment_page_id?(from: T.unsafe(nil), to: T.unsafe(nil)); end
+
+    sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
     def will_save_change_to_id?(from: T.unsafe(nil), to: T.unsafe(nil)); end
 
     sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
@@ -1308,6 +1419,9 @@ class Game
 
     sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
     def will_save_change_to_name?(from: T.unsafe(nil), to: T.unsafe(nil)); end
+
+    sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
+    def will_save_change_to_player_contributions_enabled?(from: T.unsafe(nil), to: T.unsafe(nil)); end
 
     sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
     def will_save_change_to_post_edit_window_minutes?(from: T.unsafe(nil), to: T.unsafe(nil)); end

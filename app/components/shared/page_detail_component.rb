@@ -28,7 +28,7 @@ class Shared::PageDetailComponent < ApplicationComponent
 
   sig { returns(T::Boolean) }
   def can_manage?
-    page.can_manage?
+    page.actions.can_manage?
   end
 
   # This page is an unpublished draft — drives the draft badge and the Publish

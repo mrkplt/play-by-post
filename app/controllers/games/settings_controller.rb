@@ -21,6 +21,13 @@ module Games
       end
     end
 
+    sig { void }
+    def player_contributions_enabled
+      toggle(:player_contributions_enabled) do |game_presenter|
+        Shared::PlayerContributionsToggleComponent.new(game: game_presenter)
+      end
+    end
+
     private
 
     # Which presentation of the AI-summaries toggle to render back: the

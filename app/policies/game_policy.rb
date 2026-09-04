@@ -53,6 +53,17 @@ class GamePolicy < ApplicationPolicy
     gm?
   end
 
+  # May contribute pages, links, and files to this game (Fizzy #18): the GM
+  # always, an active player when the GM has enabled player contributions. The
+  # game-level answer to "show the create affordances" — the per-record
+  # Page/GameLink/GameFile policies gate the individual write actions, and the
+  # delete-own rule adds authorship on top; this is only the create/visibility
+  # capability the game show page asks.
+  sig { returns(T::Boolean) }
+  def contribute?
+    manage? || (record.player_contributions_enabled? && record.active_member?(user))
+  end
+
   # The player-management screen is visible to any game member; the sections
   # within it that administer the roster are gated separately in the view.
   # Built on view?, not viewable? — a capability composes from the capability

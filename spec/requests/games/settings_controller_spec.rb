@@ -67,4 +67,26 @@ RSpec.describe Games::SettingsController, type: :request do
       expect(response.body).not_to include("A summary is generated automatically each time a scene resolves.")
     end
   end
+
+  describe "PATCH /games/:id/toggle_player_contributions_enabled" do
+    it "flips the flag for the GM and swaps the toggle in place" do
+      sign_in gm
+
+      patch toggle_player_contributions_enabled_game_path(game)
+
+      expect(game.reload.player_contributions_enabled?).to be(true)
+      expect(response).to have_http_status(:ok)
+      expect(response.media_type).to eq("text/vnd.turbo-stream.html")
+      expect(response.body).to include("player_contributions_toggle")
+      expect(response.body).to include("toast_layer")
+    end
+
+    it "denies a player" do
+      sign_in player
+
+      patch toggle_player_contributions_enabled_game_path(game)
+
+      expect(game.reload.player_contributions_enabled?).to be(false)
+    end
+  end
 end
