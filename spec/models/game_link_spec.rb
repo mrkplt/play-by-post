@@ -95,10 +95,5 @@ RSpec.describe GameLink do
       link = build_stubbed(:game_link, created_by: author)
       expect(link.created_by?(other)).to be(false)
     end
-
-    it "is false when the link has no creator" do
-      link = build_stubbed(:game_link, created_by: nil)
-      expect(link.created_by?(author)).to be(false)
-    end
   end
 end

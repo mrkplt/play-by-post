@@ -141,7 +141,7 @@ RSpec.describe AttachmentUploader do
   describe "derived variant assets" do
     # Keeps the database: exercises real Active Storage blob and variant keys.
     it "prefixes variant blob keys with variants/", db: true do
-      game_file = game.game_files.new(filename: "map.png")
+      game_file = game.game_files.new(filename: "map.png", created_by: user)
       described_class.attach(
         attachment: game_file.file,
         attachable: {
@@ -165,7 +165,7 @@ RSpec.describe AttachmentUploader do
       # Drive Preview#process with a stubbed previewer that yields a fake
       # extracted image, so the test does not depend on a system PDF previewer
       # (poppler/mupdf) being installed in CI — it exercises only our key wrap.
-      game_file = game.game_files.new(filename: "rules.pdf")
+      game_file = game.game_files.new(filename: "rules.pdf", created_by: user)
       described_class.attach(
         attachment: game_file.file,
         attachable: {

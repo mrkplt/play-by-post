@@ -2,10 +2,12 @@
 
 # Attribution for player contributions (Fizzy #18): who created each link/file,
 # so the "players delete their own contributions" rule can identify ownership.
-# Nullable because a null means the record predates the feature and belongs to
-# the game's GM — the backfill below stamps those to the GM so ownership is
-# explicit rather than inferred from null. Pages already carry authorship via
-# their earliest PageVersion, so they need no column here.
+# The column is added nullable only long enough to backfill existing rows — all
+# of which predate the feature and are GM contributions, stamped to the game's
+# GM — then made NOT NULL, so every row (past and future) always names a real
+# creator and no code has to defend against a null. New rows are stamped by the
+# controllers at create time. Pages already carry authorship via their earliest
+# PageVersion, so they need no column here.
 class AddCreatedByToGameLinksAndGameFiles < ActiveRecord::Migration[8.1]
   def up
     add_reference :game_links, :created_by, foreign_key: { to_table: :users }
@@ -13,6 +15,9 @@ class AddCreatedByToGameLinksAndGameFiles < ActiveRecord::Migration[8.1]
 
     backfill_to_game_master(:game_links)
     backfill_to_game_master(:game_files)
+
+    change_column_null :game_links, :created_by_id, false
+    change_column_null :game_files, :created_by_id, false
   end
 
   def down

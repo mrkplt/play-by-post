@@ -171,7 +171,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_03_120100) do
     t.integer "byte_size"
     t.string "content_type"
     t.datetime "created_at", null: false
-    t.integer "created_by_id"
+    t.integer "created_by_id", null: false
     t.string "filename"
     t.integer "game_id", null: false
     t.datetime "updated_at", null: false
@@ -193,7 +193,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_03_120100) do
 
   create_table "game_links", force: :cascade do |t|
     t.datetime "created_at", null: false
-    t.integer "created_by_id"
+    t.integer "created_by_id", null: false
     t.string "description", null: false
     t.integer "game_id", null: false
     t.datetime "updated_at", null: false

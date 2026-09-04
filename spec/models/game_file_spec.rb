@@ -167,10 +167,5 @@ RSpec.describe GameFile, type: :model do
       game_file = build_stubbed(:game_file, created_by: author)
       expect(game_file.created_by?(other)).to be(false)
     end
-
-    it "is false when the file has no creator" do
-      game_file = build_stubbed(:game_file, created_by: nil)
-      expect(game_file.created_by?(author)).to be(false)
-    end
   end
 end

@@ -31,8 +31,9 @@ while the setting is on; GMs may delete **any** contribution.
 
 - **Page** — authorship is the earliest `PageVersion.edited_by_id` (existing
   `Page.created_by` scope). No schema change.
-- **GameLink / GameFile** — new nullable `created_by_id` (FK users). Stamped with the
-  acting user on create. Existing rows backfilled to the game's GM.
+- **GameLink / GameFile** — new `created_by_id` (FK users), **NOT NULL**. The migration
+  adds it nullable, backfills existing rows to the game's GM, then enforces NOT NULL;
+  new rows are stamped with the acting user on create.
 
 ## Manual verification
 
