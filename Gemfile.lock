@@ -515,7 +515,7 @@ GEM
     rubydex (0.4.0-arm64-darwin)
     rubydex (0.4.0-x86_64-darwin)
     rubydex (0.4.0-x86_64-linux)
-    rubyzip (3.5.0)
+    rubyzip (3.6.0)
     securerandom (0.4.1)
     sentry-rails (7.0.0)
       railties (>= 5.2.0)
@@ -684,7 +684,7 @@ DEPENDENCIES
   rubocop-erb
   rubocop-rails-omakase
   ruby-openai (~> 8.1)
-  rubyzip (~> 3.2)
+  rubyzip (~> 3.6)
   sentry-rails
   sentry-ruby
   simplecov
