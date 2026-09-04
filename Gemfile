@@ -8,7 +8,11 @@ gem "propshaft"
 gem "tailwindcss-rails"
 # Icon library [https://github.com/Rails-Designer/icons]
 gem "icons"
-gem "resend", "~> 1.6"
+# Pinned below 1.14.0: that release adds an undocumented ActionMailbox::Engine
+# whose route (as: :rails_resend_inbound_emails) collides with this app's custom
+# Resend inbound ingress and breaks boot. Revisit when migrating to the gem's
+# official ingress (Fizzy card filed). See config/routes.rb + the custom controller.
+gem "resend", "~> 1.6", "< 1.14"
 gem "aws-sdk-s3", "~> 1.228", require: false, group: :production
 
 # Error tracking — reports to GlitchTip (self-hosted, Sentry-protocol compatible)
