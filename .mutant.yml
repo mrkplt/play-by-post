@@ -141,6 +141,8 @@ matcher:
     - Shared::GameControlsComponent::Offered
     - Shared::GameControlsComponent::Available
     - Shared::AiSummariesToggleComponent
+    - Shared::AiControlPlaneExplainerComponent
+    - Shared::AiControlPlaneExplainerComponent::Section
     - Shared::SheetsToggleComponent
     - Shared::SceneSummaryComponent
     - Shared::SceneSummaryEntryComponent
@@ -247,6 +249,7 @@ matcher:
     - Ui::PillTabsComponent
     - Ui::ToastComponent
     - Ui::IconComponent
+    - Ui::InfoLinkComponent
     - Ui::TurnstileWidgetComponent
     # Services
     - AiKeyResolver
@@ -317,6 +320,7 @@ matcher:
     - Api::SchemaValidation
     - Api::IndexFilters
     # Controllers
+    - AiControlPlaneController
     - ActionMailbox::Ingresses::Resend::InboundEmailsController
     - Games::KeyContributionsController
     - Webhooks::DeployController

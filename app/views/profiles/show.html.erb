@@ -42,7 +42,12 @@
   <%# AI (AI Control Plane): the viewer's own display preference, then their
       BYOK key. Display preference is a per-user setting, so it heads this
       section rather than sitting among BYOK's key controls. %>
-  <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do %>AI<% end %>
+  <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do |label| %>
+    <% label.with_action do %>
+      <%= render Ui::InfoLinkComponent.new(url: ai_control_plane_path) %>
+    <% end %>
+    AI
+  <% end %>
   <%= render Ui::CardComponent.new do %>
     <%= render Ui::SettingsRowComponent.new(label: "AI display", sub: "How AI-generated content appears to you", position: :last) do %>
       <%= render Ui::ProfileAiDisplayPreferenceControlComponent.new(

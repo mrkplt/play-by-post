@@ -67,6 +67,10 @@ Rails.application.routes.draw do
     get "invitations/:token/accept", to: "invitations#accept", as: :accept_invitation
 
     authenticate :user do
+    # AI Control Plane explainer (Fizzy #113) — a read-only page describing how
+    # AI works (BYOK custody, key resolution, consent gates, display preference,
+    # provenance). Linked from the AI settings surfaces via Ui::InfoLinkComponent.
+    get "ai-control-plane", to: "ai_control_plane#show", as: :ai_control_plane
     resource :feedback, only: %i[create]
     resource :profile, only: %i[show update], controller: "profiles" do
       post :toggle_hide_ooc, on: :collection

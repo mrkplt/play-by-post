@@ -20,6 +20,10 @@ RSpec.describe Ui::IconComponent, type: :component do
     it "maps :cancel to cancel-01" do
       expect(described_class::ICON_MAP[:cancel]).to eq("cancel-01")
     end
+
+    it "maps :help to help-circle" do
+      expect(described_class::ICON_MAP[:help]).to eq("help-circle")
+    end
   end
 
   describe "SIZES" do
