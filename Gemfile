@@ -78,7 +78,7 @@ gem "redcarpet"
 gem "pagy", "~> 43.4"
 
 # Use Active Storage variants [https://guides.rubyonrails.org/active_storage_overview.html#transforming-images]
-gem "image_processing", "~> 2.0"
+gem "image_processing", "~> 2.1"
 # image_processing 2.0 dropped its automatic mini_magick dependency; Active
 # Storage's ImageMagick transformer still requires the gem, so declare it.
 gem "mini_magick", "~> 5.0"
