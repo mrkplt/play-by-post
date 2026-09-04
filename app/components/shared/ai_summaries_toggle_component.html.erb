@@ -8,16 +8,10 @@
       <% end %>
     <% end %>
   <% else %>
-    <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do %>AI Scene Summaries<% end %>
-    <%= render Ui::CardComponent.new do %>
-      <div class="py-3 flex flex-col items-start gap-2.5">
-        <p class="text-[13px] text-row-ink m-0">
-          AI summaries are currently <strong class="text-ink"><%= status_text %></strong>.
-          A summary is generated automatically each time a scene resolves.
-        </p>
-        <%= button_to toggle_label, toggle_path, method: :patch,
-            class: "bg-accent text-accent-ink rounded-control px-4 py-2 font-bold text-[13px] border-0 cursor-pointer" %>
-      </div>
+    <%= render Shared::SettingCardComponent.new(
+          title: "AI Scene Summaries", toggle_label: toggle_label, toggle_path: toggle_path) do %>
+      AI summaries are currently <strong class="text-ink"><%= status_text %></strong>.
+      A summary is generated automatically each time a scene resolves.
     <% end %>
   <% end %>
 </div>
