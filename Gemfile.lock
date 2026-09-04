@@ -232,7 +232,7 @@ GEM
       concurrent-ruby (~> 1.0)
     icons (0.9.0)
       nokogiri (~> 1.16, >= 1.16.4)
-    image_processing (2.0.3)
+    image_processing (2.1.0)
     importmap-rails (2.2.3)
       actionpack (>= 6.0.0)
       activesupport (>= 6.0.0)
@@ -659,7 +659,7 @@ DEPENDENCIES
   draper
   factory_bot_rails
   icons
-  image_processing (~> 2.0)
+  image_processing (~> 2.1)
   importmap-rails
   jbuilder
   json-schema
