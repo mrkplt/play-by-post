@@ -89,6 +89,7 @@ Rails.application.routes.draw do
       member do
         patch :toggle_sheets_hidden, to: "games/settings#sheets_hidden"
         patch :toggle_ai_summaries_enabled, to: "games/settings#ai_summaries_enabled"
+        patch :toggle_player_contributions_enabled, to: "games/settings#player_contributions_enabled"
       end
       # A member offers/revokes their own key as a funding source for this
       # game's game-level AI features (GameKeyAuthorization). Scoped by

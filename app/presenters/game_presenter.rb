@@ -31,6 +31,16 @@ class GamePresenter < BasePresenter
     @options.fetch(:policy).manage?
   end
 
+  # The viewer may add pages, links, and files to this game — the GM always, an
+  # active player when the GM has enabled player contributions (Fizzy #18). A
+  # broader capability than #can_manage?: contribution affordances (New Page,
+  # Add Link, Upload) show for a contributing player, while manage-only controls
+  # (invite, notebook, settings) stay on #can_manage?.
+  sig { returns(T::Boolean) }
+  def can_contribute?
+    @options.fetch(:policy).contribute?
+  end
+
   # The viewer's display name — trivial delegation, but explicit so a
   # component's template calling it on this presenter is Sorbet-checkable
   # (SimpleDelegator passthrough is invisible to static analysis).
@@ -52,6 +62,11 @@ class GamePresenter < BasePresenter
   sig { returns(T::Boolean) }
   def ai_summaries_enabled?
     @model.ai_summaries_enabled?
+  end
+
+  sig { returns(T::Boolean) }
+  def player_contributions_enabled?
+    @model.player_contributions_enabled?
   end
 
   sig { returns(T::Boolean) }

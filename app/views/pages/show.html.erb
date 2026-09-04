@@ -10,7 +10,7 @@
 
   <%= render Shared::PageDetailComponent.new(page: @page_presenter) %>
 
-  <% if @page_presenter.can_manage? %>
+  <% if @page_presenter.actions.can_manage? %>
     <%= render Shared::PageVersionHistoryComponent.new(page: @page_presenter, versions: @page_version_presenters) %>
   <% end %>
 <% end %>

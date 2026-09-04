@@ -9,12 +9,25 @@ RSpec.describe Shared::GameLinksListComponent, type: :component do
       build_stubbed(:game_link, game: game_model, description: "Wiki", url: "https://example.com/wiki")
     ]
   end
-  let(:links) do
-    link_models.map { |l| GameLinkPresenter.new(l, game: game_model, urls: Rails.application.routes.url_helpers) }
+
+  # Each link's Edit/Delete affordance follows its own policy (Fizzy #18), so the
+  # presenter is built with a stubbed GameLinkPolicy per row. `link_capabilities`
+  # sets update?/destroy? for every link in the list.
+  def links(update: false, destroy: false)
+    link_models.map do |l|
+      GameLinkPresenter.new(
+        l, game: game_model, urls: Rails.application.routes.url_helpers,
+        link_policy: instance_double(GameLinkPolicy, update?: update, destroy?: destroy)
+      )
+    end
   end
 
-  def build_component(**overrides)
-    described_class.new(**{ game: game, game_links: links, can_manage: false }.merge(overrides))
+  def build_component(can_contribute: false, update: false, destroy: false, game_links: nil)
+    described_class.new(
+      game: game,
+      game_links: game_links || links(update: update, destroy: destroy),
+      can_contribute: can_contribute
+    )
   end
 
   describe "#row_classes" do
@@ -42,24 +55,30 @@ RSpec.describe Shared::GameLinksListComponent, type: :component do
       expect(anchor[:rel]).to eq("noopener noreferrer")
     end
 
-    it "shows the New Link action only to the GM" do
-      render_inline(build_component(can_manage: true))
+    it "shows the New Link action to a contributor" do
+      render_inline(build_component(can_contribute: true))
       expect(page).to have_link("New Link")
     end
 
-    it "hides the New Link action from a non-GM" do
-      render_inline(build_component(can_manage: false))
+    it "hides the New Link action from a non-contributor" do
+      render_inline(build_component(can_contribute: false))
       expect(page).to have_no_link("New Link")
     end
 
-    it "shows Edit and Delete actions only to the GM" do
-      render_inline(build_component(can_manage: true))
+    it "shows Edit and Delete on a row when the link's policy allows both" do
+      render_inline(build_component(update: true, destroy: true))
       expect(page).to have_link("Edit")
       expect(page).to have_button("Delete")
     end
 
-    it "hides Edit and Delete actions from a non-GM" do
-      render_inline(build_component(can_manage: false))
+    it "shows only Delete on a row the viewer may delete but not edit (an owner)" do
+      render_inline(build_component(update: false, destroy: true))
+      expect(page).to have_no_link("Edit")
+      expect(page).to have_button("Delete")
+    end
+
+    it "shows no row actions when the link's policy allows neither" do
+      render_inline(build_component(update: false, destroy: false))
       expect(page).to have_no_link("Edit")
       expect(page).to have_no_button("Delete")
     end

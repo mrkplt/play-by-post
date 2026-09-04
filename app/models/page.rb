@@ -80,6 +80,15 @@ class Page < ApplicationRecord
     SecureRandom.alphanumeric(SLUG_LENGTH)
   end
 
+  # Whether `user` created this page — the author of its earliest version, which
+  # never changes as later revisions accrue (mirrors the `created_by` scope's
+  # "earliest version" rule). Gates "players delete their own contributions"
+  # (Fizzy #18). A page with no versions yet (unsaved) is authored by nobody.
+  sig { params(user: User).returns(T::Boolean) }
+  def created_by?(user)
+    page_versions.order(:created_at).first&.edited_by_id == user.id
+  end
+
   # The versions association Versionable::Model snapshots through — a page's
   # change history lives in page_versions.
   sig { override.returns(T.untyped) }

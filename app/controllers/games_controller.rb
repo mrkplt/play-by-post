@@ -74,7 +74,9 @@ class GamesController < ApplicationController
 
   sig { returns(GameScreenPresenter) }
   def build_game_screen
-    viewer = GameScreenPresenter::Viewer.new(current_user: current_user, urls: self, helpers: helpers)
+    viewer = GameScreenPresenter::Viewer.new(
+      current_user: current_user, urls: self, helpers: helpers, policy_for: ->(record) { policy(record) }
+    )
     presenter = GamePresenter.new(
       game, policy: policy(game), current_user: current_user, urls: self, helpers: helpers
     )

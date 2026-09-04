@@ -23,9 +23,13 @@ class GameFilePresenter < BasePresenter
     T.cast(@options.fetch(:helpers).rails_blob_path(downloadable, disposition: "attachment"), String)
   end
 
+  # The delete route, or nil when this viewer may not delete this file. Gated on
+  # a per-file capability (Fizzy #18): the GM may delete any file, a contributing
+  # player only one they uploaded, so the affordance is decided per record rather
+  # than by a single game-wide manage flag.
   sig { returns(T.nilable(String)) }
   def delete_url
-    return nil unless @options[:can_manage]
+    return nil unless @options[:can_delete]
 
     T.cast(@options.fetch(:helpers).game_game_file_path(@options.fetch(:game), @model), String)
   end

@@ -23,6 +23,20 @@ class GameLinkPresenter < BasePresenter
     @model.url
   end
 
+  # Per-action row capabilities (Fizzy #18): editing a link stays GM-only, while
+  # deleting is granted to the GM or the link's own author (a contributing
+  # player). The Links-list row shows Edit iff #can_edit?, Delete iff
+  # #can_delete?, so an owner can remove their link without being able to edit it.
+  sig { returns(T::Boolean) }
+  def can_edit?
+    @options.fetch(:link_policy).update?
+  end
+
+  sig { returns(T::Boolean) }
+  def can_delete?
+    @options.fetch(:link_policy).destroy?
+  end
+
   sig { returns(String) }
   def edit_path
     @options.fetch(:urls).edit_game_game_link_path(@options.fetch(:game), @model)

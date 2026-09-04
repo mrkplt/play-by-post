@@ -13,8 +13,8 @@ RSpec.describe Shared::GalleryComponent, type: :component do
 
   let(:view_helpers) { vc_test_view_context }
 
-  def presenter(game_file:, can_manage: false)
-    GameFilePresenter.new(game_file, game: game, helpers: view_helpers, can_manage: can_manage)
+  def presenter(game_file:, can_delete: false)
+    GameFilePresenter.new(game_file, game: game, helpers: view_helpers, can_delete: can_delete)
   end
 
   subject(:component) { described_class.new(game_files: [ presenter(game_file: game_file) ]) }
@@ -48,7 +48,7 @@ RSpec.describe Shared::GalleryComponent, type: :component do
     expect(rendered_component).to have_css("[data-testid='lightbox']", visible: :hidden)
   end
 
-  context "when can_manage is false" do
+  context "when the viewer cannot delete the file" do
     it "does not render the delete button" do
       expect(rendered_component).not_to have_css("[data-lightbox-delete-btn]")
     end
@@ -60,8 +60,8 @@ RSpec.describe Shared::GalleryComponent, type: :component do
     end
   end
 
-  context "when can_manage is true" do
-    subject(:component) { described_class.new(game_files: [ presenter(game_file: game_file, can_manage: true) ]) }
+  context "when the viewer can delete the file" do
+    subject(:component) { described_class.new(game_files: [ presenter(game_file: game_file, can_delete: true) ]) }
 
     it "renders the delete button" do
       expect(rendered_component).to have_css("[data-lightbox-delete-btn]", visible: :hidden)

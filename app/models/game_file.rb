@@ -4,6 +4,10 @@ class GameFile < ApplicationRecord
   extend T::Sig
 
   belongs_to :game
+  # The member who uploaded this file. Nullable for files that predate player
+  # contributions (Fizzy #18) — those were backfilled to the game's GM, so a
+  # live null only occurs transiently before save.
+  belongs_to :created_by, class_name: "User", optional: true
 
   has_one_attached :file
 
@@ -25,6 +29,14 @@ class GameFile < ApplicationRecord
 
   validates :filename, presence: true
   validate :acceptable_file
+
+  # Whether `user` uploaded this file — the "delete your own contribution" gate
+  # (Fizzy #18). A nil creator (should not occur post-backfill) never equals a
+  # real user's id, so no separate nil guard is needed.
+  sig { params(user: User).returns(T::Boolean) }
+  def created_by?(user)
+    created_by_id == user.id
+  end
 
   sig { returns(T::Boolean) }
   def image?

@@ -13,11 +13,11 @@ class Shared::GameLinksListComponent < ApplicationComponent
   # a delete (the rows and the empty-state follow the change).
   DOM_ID = "game_links_list"
 
-  sig { params(game: GamePresenter, game_links: T::Array[GameLinkPresenter], can_manage: T::Boolean).void }
-  def initialize(game:, game_links:, can_manage:)
+  sig { params(game: GamePresenter, game_links: T::Array[GameLinkPresenter], can_contribute: T::Boolean).void }
+  def initialize(game:, game_links:, can_contribute:)
     @game = T.let(game, GamePresenter)
     @game_links = T.let(game_links, T::Array[GameLinkPresenter])
-    @can_manage = T.let(can_manage, T::Boolean)
+    @can_contribute = T.let(can_contribute, T::Boolean)
   end
 
   sig { returns(GamePresenter) }
@@ -26,9 +26,11 @@ class Shared::GameLinksListComponent < ApplicationComponent
   sig { returns(T::Array[GameLinkPresenter]) }
   attr_reader :game_links
 
+  # Whether to show the "New Link" affordance: the GM or a contributing player
+  # (Fizzy #18). Per-row Edit/Delete are decided per link by the presenter.
   sig { returns(T::Boolean) }
-  def can_manage?
-    @can_manage
+  def can_contribute?
+    @can_contribute
   end
 
   sig { returns(T::Boolean) }

@@ -283,4 +283,56 @@ RSpec.describe PagesController, type: :request do
       expect(entry.promoted?).to be(false)
     end
   end
+
+  # Fizzy #18: with player contributions enabled, an active player may create a
+  # page and delete the ones they authored, but not another author's, and
+  # nothing once the GM turns the setting off. A page's authorship is the editor
+  # of its earliest version (Current.user on create).
+  describe "player contributions" do
+    context "when enabled" do
+      before { game.update!(player_contributions_enabled: true) }
+
+      it "lets an active player create a page attributed to them" do
+        sign_in(player)
+        expect {
+          post game_pages_path(game), params: { page: { title: "Player Lore", body: "words", draft: false } }
+        }.to change(Page, :count).by(1)
+        expect(Page.last.created_by?(player)).to be(true)
+      end
+
+      it "lets a player delete a page they authored" do
+        own = create(:page, game: game, editor: player)
+        sign_in(player)
+        expect {
+          delete game_page_path(game, own)
+        }.to change(Page, :count).by(-1)
+      end
+
+      it "does not let a player delete the GM's page" do
+        gm_page = create(:page, game: game, editor: gm)
+        sign_in(player)
+        expect {
+          delete game_page_path(game, gm_page)
+        }.not_to change(Page, :count)
+        expect(response).to redirect_to(root_path)
+      end
+    end
+
+    context "when disabled" do
+      it "denies a player creating a page" do
+        sign_in(player)
+        expect {
+          post game_pages_path(game), params: { page: { title: "Nope", body: "x", draft: false } }
+        }.not_to change(Page, :count)
+      end
+
+      it "denies a player deleting a page they authored while it was enabled" do
+        own = create(:page, game: game, editor: player)
+        sign_in(player)
+        expect {
+          delete game_page_path(game, own)
+        }.not_to change(Page, :count)
+      end
+    end
+  end
 end

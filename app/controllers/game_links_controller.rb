@@ -27,7 +27,7 @@ class GameLinksController < ApplicationController
 
   sig { void }
   def create
-    new_link = game.game_links.new(game_link_params)
+    new_link = game.game_links.new(game_link_params.merge(created_by: current_user))
     authorize new_link
 
     if new_link.save
@@ -68,15 +68,18 @@ class GameLinksController < ApplicationController
 
   private
 
-  # Only #destroy re-renders the list, and it has already authorized managing the
-  # link (it raises otherwise), so the actor can manage the list by construction —
-  # can_manage is true without re-asking the policy.
+  # The list re-rendered in place after a delete. Only #destroy calls this, and
+  # it has already authorized deleting a link — which requires the actor be a
+  # contributor (the GM, or a player deleting their own while contributions are
+  # on) — so can_contribute is true by construction, no need to re-ask the
+  # policy. Each row's Edit/Delete still follows its own link's policy via the
+  # presenter (Fizzy #18).
   sig { returns(Shared::GameLinksListComponent) }
   def links_list
     Shared::GameLinksListComponent.new(
       game: game_presenter,
       game_links: game.game_links.order(created_at: :desc).map { |gl| game_link_presenter(gl) },
-      can_manage: true
+      can_contribute: true
     )
   end
 
@@ -114,7 +117,7 @@ class GameLinksController < ApplicationController
 
   sig { params(link: GameLink).returns(GameLinkPresenter) }
   def game_link_presenter(link)
-    GameLinkPresenter.new(link, game: game, urls: self)
+    GameLinkPresenter.new(link, game: game, urls: self, link_policy: policy(link))
   end
 
   sig { returns(GamePresenter) }

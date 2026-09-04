@@ -9,6 +9,12 @@ RSpec.describe PagePolicy do
 
   before do
     allow(page).to receive(:game).and_return(game)
+    # Defaults: not the GM, not an active member, contributions off, not the
+    # author. Each example flips only the axis it exercises.
+    allow(game).to receive(:game_master?).with(user).and_return(false)
+    allow(game).to receive(:active_member?).with(user).and_return(false)
+    allow(game).to receive(:player_contributions_enabled?).and_return(false)
+    allow(page).to receive(:created_by?).with(user).and_return(false)
   end
 
   describe "#manage? (GM only)" do
@@ -18,26 +24,72 @@ RSpec.describe PagePolicy do
     end
 
     it "is false for a non-GM" do
-      allow(game).to receive(:game_master?).with(user).and_return(false)
       expect(policy.manage?).to be(false)
     end
   end
 
-  describe "#create? / #update? / #destroy? / #publish? (delegate to #manage?)" do
+  describe "#update? / #publish? (GM only, unaffected by player contributions)" do
     it "are true for the GM" do
       allow(game).to receive(:game_master?).with(user).and_return(true)
-      expect(policy.create?).to be(true)
       expect(policy.update?).to be(true)
-      expect(policy.destroy?).to be(true)
       expect(policy.publish?).to be(true)
     end
 
-    it "are false for a non-GM" do
-      allow(game).to receive(:game_master?).with(user).and_return(false)
-      expect(policy.create?).to be(false)
+    it "are false for a contributing active member who authored the page" do
+      allow(game).to receive(:active_member?).with(user).and_return(true)
+      allow(game).to receive(:player_contributions_enabled?).and_return(true)
+      allow(page).to receive(:created_by?).with(user).and_return(true)
       expect(policy.update?).to be(false)
-      expect(policy.destroy?).to be(false)
       expect(policy.publish?).to be(false)
+    end
+  end
+
+  describe "#create?" do
+    it "is true for the GM regardless of the contributions setting" do
+      allow(game).to receive(:game_master?).with(user).and_return(true)
+      expect(policy.create?).to be(true)
+    end
+
+    it "is true for an active member when contributions are enabled" do
+      allow(game).to receive(:active_member?).with(user).and_return(true)
+      allow(game).to receive(:player_contributions_enabled?).and_return(true)
+      expect(policy.create?).to be(true)
+    end
+
+    it "is false for an active member when contributions are disabled" do
+      allow(game).to receive(:active_member?).with(user).and_return(true)
+      expect(policy.create?).to be(false)
+    end
+
+    it "is false for a non-member even when contributions are enabled" do
+      allow(game).to receive(:player_contributions_enabled?).and_return(true)
+      expect(policy.create?).to be(false)
+    end
+  end
+
+  describe "#destroy?" do
+    it "is true for the GM even for a page they did not author" do
+      allow(game).to receive(:game_master?).with(user).and_return(true)
+      expect(policy.destroy?).to be(true)
+    end
+
+    it "is true for a contributing active member who authored the page" do
+      allow(game).to receive(:active_member?).with(user).and_return(true)
+      allow(game).to receive(:player_contributions_enabled?).and_return(true)
+      allow(page).to receive(:created_by?).with(user).and_return(true)
+      expect(policy.destroy?).to be(true)
+    end
+
+    it "is false for an active member who did not author the page" do
+      allow(game).to receive(:active_member?).with(user).and_return(true)
+      allow(game).to receive(:player_contributions_enabled?).and_return(true)
+      expect(policy.destroy?).to be(false)
+    end
+
+    it "is false for the author once contributions are disabled" do
+      allow(game).to receive(:active_member?).with(user).and_return(true)
+      allow(page).to receive(:created_by?).with(user).and_return(true)
+      expect(policy.destroy?).to be(false)
     end
   end
 

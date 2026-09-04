@@ -153,4 +153,24 @@ RSpec.describe GameFile, type: :model do
       expect(game_file.error_message).to eq("Filename can't be blank")
     end
   end
+
+  describe "#created_by?" do
+    let(:author) { build_stubbed(:user) }
+    let(:other) { build_stubbed(:user) }
+
+    it "is true for the user who uploaded the file" do
+      game_file = build_stubbed(:game_file, created_by: author)
+      expect(game_file.created_by?(author)).to be(true)
+    end
+
+    it "is false for a different user" do
+      game_file = build_stubbed(:game_file, created_by: author)
+      expect(game_file.created_by?(other)).to be(false)
+    end
+
+    it "is false when the file has no creator" do
+      game_file = build_stubbed(:game_file, created_by: nil)
+      expect(game_file.created_by?(author)).to be(false)
+    end
+  end
 end

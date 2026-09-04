@@ -98,6 +98,7 @@ matcher:
     - NotebookBoardPresenter
     - NotebookEntryPresenter
     - PagePresenter
+    - PageActionsPresenter
     - PageRoutesPresenter
     - PageVersionPresenter
     - NotebookEntryVersionPresenter
@@ -142,6 +143,7 @@ matcher:
     - Shared::GameControlsComponent::Available
     - Shared::AiSummariesToggleComponent
     - Shared::SheetsToggleComponent
+    - Shared::PlayerContributionsToggleComponent
     - Shared::SceneSummaryComponent
     - Shared::SceneSummaryEntryComponent
     - Shared::SceneSummaryFormComponent
@@ -413,6 +415,7 @@ matcher:
     - PostPolicy
     - GameFilePolicy
     - GameLinkPolicy
+    - PagePolicy
     - ContentTemplatePolicy
     - NotebookEntryPolicy
     - SceneSummaryPolicy

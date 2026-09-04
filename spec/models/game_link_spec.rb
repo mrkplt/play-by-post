@@ -81,4 +81,24 @@ RSpec.describe GameLink do
       expect(link.errors[:url]).to include("must be a valid http(s) URL")
     end
   end
+
+  describe "#created_by?" do
+    let(:author) { build_stubbed(:user) }
+    let(:other) { build_stubbed(:user) }
+
+    it "is true for the user who created the link" do
+      link = build_stubbed(:game_link, created_by: author)
+      expect(link.created_by?(author)).to be(true)
+    end
+
+    it "is false for a different user" do
+      link = build_stubbed(:game_link, created_by: author)
+      expect(link.created_by?(other)).to be(false)
+    end
+
+    it "is false when the link has no creator" do
+      link = build_stubbed(:game_link, created_by: nil)
+      expect(link.created_by?(author)).to be(false)
+    end
+  end
 end

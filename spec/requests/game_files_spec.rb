@@ -169,20 +169,79 @@ RSpec.describe GameFilesController, type: :request do
       expect(flash[:alert]).to eq("You are not authorized to perform this action.")
     end
 
-    context "ordering: authorization must run before the record lookup" do
-      it "denies a non-GM deleting a nonexistent file id with the authorization outcome, not not-found" do
+    # The delete-own rule (Fizzy #18) makes deletion authorization
+    # record-specific — a player may delete a file they uploaded but not one the
+    # GM did — so the record is looked up before it is authorized, and a
+    # nonexistent id 404s uniformly (matching GameLinksController, which has
+    # always looked up first). Existence is not concealed behind the auth check.
+    context "ordering: the record is looked up before it is authorized" do
+      it "gives a non-GM the not-found outcome for a nonexistent file id" do
         sign_in(player)
         delete game_game_file_path(game, id: 0)
         expect(response).to redirect_to(root_path)
-        expect(flash[:alert]).to eq("You are not authorized to perform this action.")
-        expect(flash[:alert]).not_to match(/could not be found/i)
+        expect(flash[:alert]).to match(/could not be found/i)
       end
 
-      it "still gives a GM the not-found outcome for a nonexistent file id" do
+      it "gives a GM the not-found outcome for a nonexistent file id" do
         sign_in(gm)
         delete game_game_file_path(game, id: 0)
         expect(response).to redirect_to(root_path)
         expect(flash[:alert]).to match(/could not be found/i)
+      end
+    end
+  end
+
+  # Fizzy #18: with player contributions enabled, an active player may upload
+  # files and delete the ones they uploaded, but not the GM's, and nothing once
+  # the GM turns the setting off.
+  describe "player contributions" do
+    def upload
+      Rack::Test::UploadedFile.new(StringIO.new("content"), "application/pdf", original_filename: "player.pdf")
+    end
+
+    context "when enabled" do
+      before { game.update!(player_contributions_enabled: true) }
+
+      it "lets an active player upload a file, attributed to them" do
+        sign_in(player)
+        expect {
+          post game_game_files_path(game), params: { game_file: { file: upload } }
+        }.to change(GameFile, :count).by(1)
+        expect(GameFile.last.created_by).to eq(player)
+      end
+
+      it "lets a player delete a file they uploaded" do
+        own = create(:game_file, game: game, created_by: player)
+        sign_in(player)
+        expect {
+          delete game_game_file_path(game, own)
+        }.to change(GameFile, :count).by(-1)
+      end
+
+      it "does not let a player delete the GM's file" do
+        gm_file = create(:game_file, game: game, created_by: gm)
+        sign_in(player)
+        expect {
+          delete game_game_file_path(game, gm_file)
+        }.not_to change(GameFile, :count)
+        expect(response).to redirect_to(root_path)
+      end
+    end
+
+    context "when disabled" do
+      it "denies a player uploading a file" do
+        sign_in(player)
+        expect {
+          post game_game_files_path(game), params: { game_file: { file: upload } }
+        }.not_to change(GameFile, :count)
+      end
+
+      it "denies a player deleting a file they uploaded while it was enabled" do
+        own = create(:game_file, game: game, created_by: player)
+        sign_in(player)
+        expect {
+          delete game_game_file_path(game, own)
+        }.not_to change(GameFile, :count)
       end
     end
   end

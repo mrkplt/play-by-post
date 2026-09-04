@@ -76,7 +76,7 @@
 
     <%# ===== Files panel ===== %>
     <%= render Shared::GameTabsComponent::PanelComponent.new(name: "files") do %>
-      <% if @game_screen.game.can_manage? %>
+      <% if @game_screen.game.can_contribute? %>
         <%= render Shared::FileUploadFormComponent.new(game: @game_screen.game, game_file: @game_screen.show.new_game_file) %>
       <% end %>
       <% unless @game_screen.show.game_files? %>
@@ -89,12 +89,12 @@
 
     <%# ===== Pages panel ===== %>
     <%= render Shared::GameTabsComponent::PanelComponent.new(name: "pages") do %>
-      <%= render Shared::GamePagesListComponent.new(game: @game_screen.game, pages: @game_screen.show.pages, can_manage: @game_screen.game.can_manage?) %>
+      <%= render Shared::GamePagesListComponent.new(game: @game_screen.game, pages: @game_screen.show.pages, can_contribute: @game_screen.game.can_contribute?) %>
     <% end %>
 
     <%# ===== Links panel ===== %>
     <%= render Shared::GameTabsComponent::PanelComponent.new(name: "links") do %>
-      <%= render Shared::GameLinksListComponent.new(game: @game_screen.game, game_links: @game_screen.show.links, can_manage: @game_screen.game.can_manage?) %>
+      <%= render Shared::GameLinksListComponent.new(game: @game_screen.game, game_links: @game_screen.show.links, can_contribute: @game_screen.game.can_contribute?) %>
     <% end %>
 
     <%# ===== Notebook panel (GM only) ===== %>

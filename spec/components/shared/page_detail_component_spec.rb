@@ -7,6 +7,7 @@ RSpec.describe Shared::PageDetailComponent, type: :component do
 
   def presenter_for(page_record, can_manage: false)
     PagePresenter.new(page_record, page_policy: instance_double(PagePolicy, manage?: can_manage),
+                                   game_policy: instance_double(GamePolicy, manage?: can_manage),
                                    game: game, urls: urls)
   end
 

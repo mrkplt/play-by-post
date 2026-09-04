@@ -12,7 +12,11 @@ class GameSettingToggle
   NOTICES = T.let(
     {
       sheets_hidden: { true => "Character sheets are now hidden.", false => "Character sheets are now visible." },
-      ai_summaries_enabled: { true => "AI scene summaries enabled.", false => "AI scene summaries disabled." }
+      ai_summaries_enabled: { true => "AI scene summaries enabled.", false => "AI scene summaries disabled." },
+      player_contributions_enabled: {
+        true => "Players can now add pages, links, and files.",
+        false => "Player contributions are now off."
+      }
     }.freeze,
     T::Hash[Symbol, T::Hash[T::Boolean, String]]
   )

@@ -25,6 +25,30 @@ RSpec.describe GamePresenter do
     end
   end
 
+  describe "#can_contribute?" do
+    it "is true when the injected policy allows contributing" do
+      allow(policy).to receive(:contribute?).and_return(true)
+      expect(presenter.can_contribute?).to be(true)
+    end
+
+    it "is false when the injected policy disallows contributing" do
+      allow(policy).to receive(:contribute?).and_return(false)
+      expect(presenter.can_contribute?).to be(false)
+    end
+  end
+
+  describe "#player_contributions_enabled?" do
+    it "is true when the game has player contributions enabled" do
+      allow(game).to receive(:player_contributions_enabled?).and_return(true)
+      expect(presenter.player_contributions_enabled?).to be(true)
+    end
+
+    it "is false when the game has player contributions disabled" do
+      allow(game).to receive(:player_contributions_enabled?).and_return(false)
+      expect(presenter.player_contributions_enabled?).to be(false)
+    end
+  end
+
   describe "#notebook_board" do
     it "wraps the game in a NotebookBoardPresenter" do
       expect(presenter.notebook_board).to be_a(NotebookBoardPresenter)

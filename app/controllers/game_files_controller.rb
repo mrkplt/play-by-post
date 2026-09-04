@@ -21,14 +21,15 @@ class GameFilesController < ApplicationController
     save_uploaded_game_file(uploaded_file)
   end
 
-  # Authorization runs before the lookup, and deliberately: deciding it against
-  # an unsaved instance keeps the answer independent of whether the id exists,
-  # so an unauthorized caller cannot tell a missing file from a forbidden one.
+  # The delete-own rule (Fizzy #18) makes authorization record-specific — a
+  # player may delete a file they uploaded but not one the GM did — so this
+  # authorizes the looked-up record, not a fresh instance. The lookup precedes
+  # the check; a missing id 404s the same for everyone.
   sig { void }
   def destroy
-    files = game.game_files
-    authorize files.new
-    files.find(params[:id]).destroy
+    file = game.game_files.find(params[:id])
+    authorize file
+    file.destroy
     render_files_in_place(notice: "File deleted.")
   end
 
@@ -69,7 +70,7 @@ class GameFilesController < ApplicationController
   sig { params(uploaded_file: T.untyped).returns(GameFile) }
   def build_uploaded_game_file(uploaded_file)
     original_filename = uploaded_file.original_filename
-    game_file = game.game_files.new(filename: original_filename)
+    game_file = game.game_files.new(filename: original_filename, created_by: current_user)
     AttachmentUploader.attach(
       attachment: game_file.file,
       attachable: uploaded_file,
@@ -90,7 +91,7 @@ class GameFilesController < ApplicationController
   sig { returns(T::Array[GameFilePresenter]) }
   def build_game_file_presenters
     game.game_files.includes(file_attachment: :blob).order(created_at: :desc).map do |gf|
-      GameFilePresenter.new(gf, game: game, helpers: helpers, can_manage: policy(game).manage?)
+      GameFilePresenter.new(gf, game: game, helpers: helpers, can_delete: policy(gf).destroy?)
     end
   end
 

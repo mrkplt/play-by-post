@@ -19,6 +19,8 @@
 
   <%= render Shared::AiSummariesToggleComponent.new(game: @game_presenter) %>
 
+  <%= render Shared::PlayerContributionsToggleComponent.new(game: @game_presenter) %>
+
   <%= render Ui::SectionLabelComponent.new(html_class: "mt-2") do %>Players<% end %>
   <%= render Ui::CardComponent.new do %>
     <%= render Ui::SettingsRowComponent.new(
