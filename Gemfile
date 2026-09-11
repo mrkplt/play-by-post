@@ -9,7 +9,7 @@ gem "tailwindcss-rails"
 # Icon library [https://github.com/Rails-Designer/icons]
 gem "icons"
 gem "resend", "~> 1.6"
-gem "aws-sdk-s3", "~> 1.228", require: false, group: :production
+gem "aws-sdk-s3", "~> 1.230", require: false, group: :production
 
 # Error tracking — reports to GlitchTip (self-hosted, Sentry-protocol compatible)
 gem "sentry-ruby"
