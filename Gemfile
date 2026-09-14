@@ -89,7 +89,7 @@ gem "draper"
 group :development, :test do
   gem "debug", platforms: %i[ mri windows ], require: "debug/prelude"
   gem "brakeman", require: false
-  gem "rubocop", "~> 1.88", require: false
+  gem "rubocop", "~> 1.91", require: false
   gem "rubocop-rails-omakase", require: false
   gem "rubocop-erb", require: false
   gem "rspec-rails"
